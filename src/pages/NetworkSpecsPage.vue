@@ -2,7 +2,31 @@
   <section class="page-grid">
     <article class="glass-panel page-header">
       <h2>{{ t("network.title") }}</h2>
-      <p>HTTP download speed test + ping latency</p>
+      <p>Real-time latency and bandwidth diagnostics</p>
+    </article>
+
+    <article class="glass-panel full-width network-hero">
+      <div class="network-gauge" :style="gaugeStyle">
+        <div>
+          <span>DOWNLOAD</span>
+          <strong>{{ displayGauge.toFixed(0) }}</strong>
+          <small>Mbps</small>
+        </div>
+      </div>
+      <div class="network-hero-side">
+        <div>
+          <span>PING LATENCY</span>
+          <strong>{{ pingAvg }}</strong>
+        </div>
+        <div>
+          <span>UPLOAD SPEED</span>
+          <strong>{{ upMbps.toFixed(2) }} Mbps</strong>
+        </div>
+        <div>
+          <span>PACKET LOSS</span>
+          <strong>{{ pingLoss }}</strong>
+        </div>
+      </div>
     </article>
 
     <article class="glass-panel control-card">
@@ -17,25 +41,25 @@
         <input v-model="pingTarget" />
       </label>
       <div class="row-actions">
-        <button @click="start" :disabled="running">{{ t("network.start") }}</button>
+        <button class="cyber-btn" @click="start" :disabled="running">{{ t("network.start") }}</button>
         <button @click="cancel" :disabled="!running">{{ t("network.cancel") }}</button>
         <button @click="runPing">{{ t("network.ping") }}</button>
       </div>
     </article>
 
     <article class="glass-panel stat-card">
-      <h3>Speed Test</h3>
+      <h3>SPEED TEST TASK</h3>
       <p>Task: {{ activeTask || "-" }}</p>
       <p>Progress: {{ progressMbps }}</p>
-      <p>Result: {{ speedResult }}</p>
+      <p>Last Result: {{ speedResult }}</p>
       <p v-if="lastExportPath">Exported: {{ lastExportPath }}</p>
     </article>
 
     <article class="glass-panel stat-card">
-      <h3>Ping</h3>
-      <p>Target: {{ pingTarget }}</p>
-      <p>Avg: {{ pingAvg }}</p>
-      <p>Loss: {{ pingLoss }}</p>
+      <h3>ACTIVE ENDPOINT</h3>
+      <p>{{ endpoint }}</p>
+      <p>Live down: {{ downMbps.toFixed(2) }} Mbps</p>
+      <p>Live up: {{ upMbps.toFixed(2) }} Mbps</p>
     </article>
 
     <article class="glass-panel full-width">
@@ -82,18 +106,39 @@ const lastExportPath = ref("");
 const settings = computed(() => store.settings);
 const running = computed(() => store.activeSpeedTaskId.length > 0);
 const activeTask = computed(() => store.activeSpeedTaskId);
+const downMbps = computed(() => store.snapshot.network.download_bytes_per_sec * 8 / 1_000_000);
+const upMbps = computed(() => store.snapshot.network.upload_bytes_per_sec * 8 / 1_000_000);
+const displayGauge = computed(() => {
+  if (store.lastSpeedResult) {
+    return store.lastSpeedResult.download_mbps;
+  }
+  if (store.speedProgress) {
+    return store.speedProgress.download_mbps;
+  }
+  return downMbps.value;
+});
+
+const gaugeStyle = computed(() => {
+  const normalized = Math.max(0, Math.min(100, displayGauge.value / 10));
+  return {
+    background: `conic-gradient(#ccff00 ${normalized * 3.6}deg, rgba(255,255,255,0.1) 0deg)`
+  };
+});
+
 const progressMbps = computed(() => {
   if (!store.speedProgress) {
     return "-";
   }
   return `${store.speedProgress.download_mbps.toFixed(2)} Mbps`;
 });
+
 const speedResult = computed(() => {
   if (!store.lastSpeedResult) {
     return "-";
   }
   return `${store.lastSpeedResult.download_mbps.toFixed(2)} Mbps`;
 });
+
 const pingAvg = computed(() => (store.lastPingResult?.avg_ms == null ? "-" : `${store.lastPingResult.avg_ms.toFixed(2)} ms`));
 const pingLoss = computed(() => (store.lastPingResult?.loss_pct == null ? "-" : `${store.lastPingResult.loss_pct.toFixed(2)} %`));
 
