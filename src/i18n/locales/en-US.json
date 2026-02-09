@@ -1,0 +1,37 @@
+{
+  "app": {
+    "name": "PulseCore",
+    "tagline": "Desktop Performance Monitor"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "network": "Network",
+    "hardware": "Hardware",
+    "settings": "Settings",
+    "overlay": "Overlay"
+  },
+  "dashboard": {
+    "title": "Real-time Telemetry",
+    "cpu": "CPU Load",
+    "gpu": "GPU Load",
+    "memory": "Memory",
+    "disk": "Disk",
+    "network": "Network"
+  },
+  "network": {
+    "title": "Network Diagnostics",
+    "start": "Start Speed Test",
+    "cancel": "Cancel",
+    "ping": "Run Ping",
+    "endpoint": "Endpoint"
+  },
+  "settings": {
+    "title": "System Customization",
+    "refresh": "Refresh Rate",
+    "lowPower": "Low Power Rate",
+    "language": "Language",
+    "glassOpacity": "Glass Opacity",
+    "glowIntensity": "Glow Intensity",
+    "save": "Save"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "app": {
+    "name": "PulseCore",
+    "tagline": "桌面性能监控工具"
+  },
+  "nav": {
+    "dashboard": "主仪表盘",
+    "network": "网络诊断",
+    "hardware": "硬件总览",
+    "settings": "系统设置",
+    "overlay": "悬浮窗"
+  },
+  "dashboard": {
+    "title": "实时性能数据",
+    "cpu": "CPU 占用",
+    "gpu": "GPU 占用",
+    "memory": "内存",
+    "disk": "磁盘",
+    "network": "网络"
+  },
+  "network": {
+    "title": "网络测速与延迟",
+    "start": "开始测速",
+    "cancel": "取消",
+    "ping": "执行 Ping",
+    "endpoint": "测速源"
+  },
+  "settings": {
+    "title": "系统定制",
+    "refresh": "刷新频率",
+    "lowPower": "低功耗频率",
+    "language": "语言",
+    "glassOpacity": "毛玻璃透明度",
+    "glowIntensity": "霓虹强度",
+    "save": "保存设置"
+  }
+}

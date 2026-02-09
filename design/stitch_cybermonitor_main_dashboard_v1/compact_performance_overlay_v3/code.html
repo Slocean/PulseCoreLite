@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Compact Performance Overlay v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#2b6cee",
+              "background-light": "#f6f6f8",
+              "background-dark": "#101622",
+              "glass-dark": "rgba(16, 22, 34, 0.65)",
+              "glass-border": "rgba(43, 108, 238, 0.3)",
+            },
+            fontFamily: {
+              "display": ["Space Grotesk", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+            animation: {
+              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'glow': 'glow 3s ease-in-out infinite alternate',
+            },
+            keyframes: {
+              glow: {
+                '0%': { boxShadow: '0 0 5px rgba(43, 108, 238, 0.1), inset 0 0 5px rgba(43, 108, 238, 0.1)' },
+                '100%': { boxShadow: '0 0 20px rgba(43, 108, 238, 0.4), inset 0 0 10px rgba(43, 108, 238, 0.2)' },
+              }
+            }
+          },
+        },
+      }
+    </script>
+<style>
+      .glass-panel {
+        background: rgba(16, 22, 34, 0.85); /* Fallback/Darker base */
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(43, 108, 238, 0.3);
+      }
+      
+      /* Subtle scanline effect overlay */
+      .scanlines {
+        background: linear-gradient(
+          to bottom,
+          rgba(255,255,255,0),
+          rgba(255,255,255,0) 50%,
+          rgba(0,0,0,0.2) 50%,
+          rgba(0,0,0,0.2)
+        );
+        background-size: 100% 4px;
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        pointer-events: none;
+        z-index: 10;
+        opacity: 0.15;
+      }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark min-h-screen flex items-center justify-center font-display overflow-hidden relative" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA8eG6nADUsm6bMTbht3BFZMfSHonsSqzy_F6w21rSgYoNqi_1Y6YWo3KXO39BhEth226DoWiT9KbFg3VW8-qGAQtkIFJ3N3vpGrbLEUVzSF72nGgEXd3zRJUqZD3CQqjrbZW8pFWW2o7LJ4W-vD3DQzJvITyqUGcXWa09E4122Mv1kGK9GNylNFsMXBQ38PvvhRMyQ-LtYDIC3Ntnqea2NNs6DpIvXLTNnkX1_nPK857X0s_t7uypdlTF6hISmy4sLqbokQ50YgfB0'); background-size: cover; background-position: center;">
+<!-- Abstract Tech Background Overlay for Presentation Context -->
+<div class="absolute inset-0 bg-black/60 dark:bg-black/80 z-0" data-alt="Abstract dark cyberpunk city blurred background"></div>
+<!-- Main Widget Container -->
+<div class="relative z-20 w-[320px] glass-panel rounded-xl shadow-2xl animate-glow overflow-hidden">
+<!-- Scanline Overlay -->
+<div class="scanlines rounded-xl"></div>
+<!-- Header -->
+<div class="flex items-center justify-between p-5 border-b border-primary/20 bg-primary/5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-xl">hub</span>
+<h1 class="text-white text-sm font-bold tracking-[0.2em] uppercase">System v3</h1>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs text-primary/80 font-medium tracking-wide">ONLINE</span>
+<div class="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_#2b6cee] animate-pulse-slow"></div>
+</div>
+</div>
+<!-- Resource Bars Section -->
+<div class="p-5 flex flex-col gap-5 relative">
+<!-- CPU -->
+<div class="flex flex-col gap-1.5 group">
+<div class="flex justify-between items-end">
+<span class="text-gray-400 text-xs font-medium tracking-widest">CPU_CORE</span>
+<span class="text-white text-sm font-bold">45%</span>
+</div>
+<div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden relative">
+<div class="absolute top-0 left-0 h-full bg-primary/30 w-full animate-pulse"></div>
+<div class="h-full bg-primary rounded-full shadow-[0_0_10px_#2b6cee]" style="width: 45%;"></div>
+</div>
+</div>
+<!-- GPU -->
+<div class="flex flex-col gap-1.5 group">
+<div class="flex justify-between items-end">
+<span class="text-gray-400 text-xs font-medium tracking-widest">GPU_MEM</span>
+<span class="text-white text-sm font-bold">72%</span>
+</div>
+<div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden relative">
+<div class="h-full bg-primary rounded-full shadow-[0_0_10px_#2b6cee]" style="width: 72%;"></div>
+</div>
+</div>
+<!-- RAM -->
+<div class="flex flex-col gap-1.5 group">
+<div class="flex justify-between items-end">
+<span class="text-gray-400 text-xs font-medium tracking-widest">DDR_RAM</span>
+<span class="text-white text-sm font-bold">24%</span>
+</div>
+<div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden relative">
+<div class="h-full bg-primary rounded-full shadow-[0_0_10px_#2b6cee]" style="width: 24%;"></div>
+</div>
+</div>
+</div>
+<!-- Divider Line -->
+<div class="h-px w-full bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+<!-- Network Section -->
+<div class="p-5 bg-gradient-to-b from-transparent to-black/30">
+<div class="grid grid-cols-2 gap-4">
+<!-- Download -->
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-1.5 text-primary">
+<span class="material-symbols-outlined text-lg">download</span>
+<span class="text-[10px] font-bold tracking-wider opacity-70">DOWN</span>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="text-white text-xl font-bold tracking-tight">450</span>
+<span class="text-gray-500 text-xs font-medium">MB/s</span>
+</div>
+</div>
+<!-- Upload -->
+<div class="flex flex-col gap-1 items-end text-right">
+<div class="flex items-center gap-1.5 text-primary flex-row-reverse">
+<span class="material-symbols-outlined text-lg">upload</span>
+<span class="text-[10px] font-bold tracking-wider opacity-70">UP</span>
+</div>
+<div class="flex items-baseline gap-1 flex-row-reverse">
+<span class="text-white text-xl font-bold tracking-tight">120</span>
+<span class="text-gray-500 text-xs font-medium">MB/s</span>
+</div>
+</div>
+</div>
+<!-- Mini Decorative Graph -->
+<div class="mt-4 flex items-end gap-[2px] h-6 opacity-40">
+<div class="w-1 bg-primary/20 h-[20%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/40 h-[40%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/60 h-[30%] rounded-t-sm"></div>
+<div class="w-1 bg-primary h-[60%] rounded-t-sm shadow-[0_0_5px_#2b6cee]"></div>
+<div class="w-1 bg-primary/80 h-[45%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/50 h-[35%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/30 h-[25%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/20 h-[50%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/40 h-[70%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/20 h-[40%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/20 h-[30%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/20 h-[20%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/20 h-[20%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/20 h-[20%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/20 h-[20%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/40 h-[40%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/60 h-[30%] rounded-t-sm"></div>
+<div class="w-1 bg-primary h-[60%] rounded-t-sm shadow-[0_0_5px_#2b6cee]"></div>
+<div class="w-1 bg-primary/80 h-[45%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/50 h-[35%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/30 h-[25%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/20 h-[50%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/40 h-[70%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/20 h-[40%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/20 h-[30%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/20 h-[20%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/20 h-[20%] rounded-t-sm"></div>
+<div class="w-1 bg-primary/20 h-[20%] rounded-t-sm"></div>
+</div>
+</div>
+</div>
+</body></html>

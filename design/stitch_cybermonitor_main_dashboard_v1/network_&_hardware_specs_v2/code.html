@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Network &amp; Hardware Specs v2</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2b6cee",
+                        "accent-lime": "#ccff00",
+                        "accent-purple": "#b026ff",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#050505",
+                        "glass-border": "rgba(255, 255, 255, 0.08)",
+                        "glass-bg": "rgba(20, 20, 30, 0.6)",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "mono": ["Space Mono", "monospace"]
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(to right, #1f2937 1px, transparent 1px), linear-gradient(to bottom, #1f2937 1px, transparent 1px)",
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        
+        .neon-text-lime {
+            text-shadow: 0 0 5px rgba(204, 255, 0, 0.5);
+        }
+        
+        .neon-text-purple {
+            text-shadow: 0 0 5px rgba(176, 38, 255, 0.5);
+        }
+        
+        .neon-box-shadow {
+            box-shadow: 0 0 15px rgba(43, 108, 238, 0.2);
+        }
+
+        .cyber-grid {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(43, 108, 238, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(43, 108, 238, 0.05) 1px, transparent 1px);
+            mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+        }
+
+        .glass-panel {
+            background: rgba(17, 23, 34, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f1115; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2b6cee; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ccff00; 
+        }
+        
+        /* Speed Gauge Animation */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            50% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(0.95); opacity: 0.5; }
+        }
+        .animate-pulse-slow {
+            animation: pulse-ring 3s infinite cubic-bezier(0.4, 0, 0.6, 1);
+        }
+    </style>
+</head>
+<body class="bg-background-dark text-white overflow-hidden h-screen flex">
+<!-- Sidebar -->
+<aside class="w-20 lg:w-64 flex flex-col border-r border-glass-border bg-[#0a0c10]/90 z-20 relative transition-all duration-300">
+<!-- Brand -->
+<div class="h-20 flex items-center justify-center lg:justify-start lg:px-6 border-b border-glass-border">
+<div class="size-10 rounded-full bg-gradient-to-tr from-primary to-accent-purple flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(43,108,238,0.5)]">
+<span class="material-symbols-outlined text-white">hub</span>
+</div>
+<div class="hidden lg:flex flex-col ml-3">
+<h1 class="text-white text-lg font-bold tracking-widest">CYBER_DECK</h1>
+<p class="text-xs text-primary font-mono tracking-wider">v2.0.4 Online</p>
+</div>
+</div>
+<!-- Navigation -->
+<nav class="flex-1 flex flex-col gap-2 p-3 overflow-y-auto">
+<a class="group flex items-center gap-3 px-3 py-3 rounded-lg bg-primary/20 border border-primary/50 neon-box-shadow transition-all" href="#">
+<span class="material-symbols-outlined text-accent-lime">wifi</span>
+<span class="hidden lg:block text-white text-sm font-medium tracking-wide">Network</span>
+</a>
+<a class="group flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10 transition-all" href="#">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-accent-purple transition-colors">thermometer</span>
+<span class="hidden lg:block text-gray-400 group-hover:text-white text-sm font-medium tracking-wide">Thermal</span>
+</a>
+<a class="group flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10 transition-all" href="#">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">hard_drive</span>
+<span class="hidden lg:block text-gray-400 group-hover:text-white text-sm font-medium tracking-wide">Storage</span>
+</a>
+<a class="group flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10 transition-all" href="#">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-accent-lime transition-colors">memory</span>
+<span class="hidden lg:block text-gray-400 group-hover:text-white text-sm font-medium tracking-wide">Processes</span>
+</a>
+<div class="my-2 border-t border-glass-border"></div>
+<a class="group flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10 transition-all" href="#">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-white transition-colors">settings</span>
+<span class="hidden lg:block text-gray-400 group-hover:text-white text-sm font-medium tracking-wide">Settings</span>
+</a>
+</nav>
+<!-- User Profile -->
+<div class="p-4 border-t border-glass-border">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-cover bg-center border border-glass-border" data-alt="User avatar with futuristic sunglasses" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCJoryiNlldRnav4HDfWYBDFOMO5Veb1IjvArDXXjI6r7kR7W0sKt6Nm57aynsJxp8oY821s1iyKeDyobb1zYMQltm-0ghpK-d8B3AHF8bCpF45hgUcY_W95PJWghieYww1SfdvCEAkkn4CwkqRgTkJkx-SHx3Sb8_J4s91o16nr-axmXIIu1oyh2qFIQ_7pQ3ftH2Zc3fgHuMN31g2b01QothEiwwAGdX9TVw8wOa1rm1cUnCvKgVb-GBLuGud08imxuJGpY8dAWhR');"></div>
+<div class="hidden lg:flex flex-col">
+<span class="text-sm font-bold text-white">Operator_01</span>
+<span class="text-[10px] text-accent-lime font-mono">SYS_ADMIN</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 relative flex flex-col h-full overflow-hidden bg-background-dark">
+<!-- Background Effects -->
+<div class="absolute inset-0 cyber-grid pointer-events-none opacity-40"></div>
+<div class="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] pointer-events-none mix-blend-screen"></div>
+<div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-accent-purple/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen"></div>
+<!-- Header -->
+<header class="flex justify-between items-center px-8 py-6 z-10">
+<div class="flex flex-col">
+<h2 class="text-3xl font-black tracking-tighter text-white">NETWORK DIAGNOSTICS</h2>
+<div class="flex items-center gap-2 mt-1">
+<span class="w-2 h-2 rounded-full bg-accent-lime animate-pulse"></span>
+<p class="text-gray-400 text-sm font-mono uppercase tracking-widest">Real-time latency and bandwidth analysis</p>
+</div>
+</div>
+<div class="flex gap-4">
+<button class="glass-panel hover:bg-white/10 px-4 py-2 rounded text-xs font-mono text-primary border border-primary/30 uppercase tracking-wider transition-colors">
+                    Export Logs
+                </button>
+<button class="glass-panel hover:bg-white/10 px-4 py-2 rounded text-xs font-mono text-accent-lime border border-accent-lime/30 uppercase tracking-wider transition-colors">
+                    Refresh Nodes
+                </button>
+</div>
+</header>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto px-8 pb-8 z-10 scroll-smooth">
+<!-- Top Section: Speed Test Gauge & Key Metrics -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+<!-- Center Gauge Panel -->
+<div class="xl:col-span-2 glass-panel rounded-xl p-8 flex flex-col md:flex-row items-center justify-between relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
+<!-- Gauge Graphic -->
+<div class="relative w-64 h-64 md:w-80 md:h-80 flex items-center justify-center shrink-0">
+<!-- Outer decorative rings -->
+<div class="absolute inset-0 rounded-full border border-white/5"></div>
+<div class="absolute inset-4 rounded-full border border-white/5 border-dashed animate-[spin_60s_linear_infinite]"></div>
+<div class="absolute inset-8 rounded-full border-2 border-primary/20"></div>
+<!-- Progress Arc SVG -->
+<svg class="absolute inset-0 w-full h-full -rotate-90" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="none" r="38" stroke="#1f2937" stroke-width="6"></circle>
+<circle class="drop-shadow-[0_0_10px_rgba(43,108,238,0.5)]" cx="50" cy="50" fill="none" r="38" stroke="url(#gradient)" stroke-dasharray="240" stroke-dashoffset="60" stroke-linecap="round" stroke-width="6"></circle>
+<defs>
+<lineargradient id="gradient" x1="0%" x2="100%" y1="0%" y2="0%">
+<stop offset="0%" stop-color="#ccff00"></stop>
+<stop offset="100%" stop-color="#2b6cee"></stop>
+</lineargradient>
+</defs>
+</svg>
+<!-- Inner Content -->
+<div class="relative z-10 flex flex-col items-center justify-center text-center">
+<div class="text-xs text-gray-400 font-mono mb-1">DOWNLOAD</div>
+<div class="text-5xl font-bold text-white tracking-tighter neon-text-lime">845</div>
+<div class="text-sm text-primary font-bold mt-1">Mbps</div>
+<button class="mt-6 flex items-center gap-2 px-6 py-2 bg-primary/20 hover:bg-primary/40 text-primary hover:text-white border border-primary rounded-full transition-all group-hover:shadow-[0_0_20px_rgba(43,108,238,0.4)]">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+<span class="text-xs font-bold tracking-wider">START TEST</span>
+</button>
+</div>
+</div>
+<!-- Side Stats in Gauge Panel -->
+<div class="flex-1 flex flex-col justify-center gap-6 w-full mt-8 md:mt-0 md:ml-12">
+<div class="flex justify-between items-end border-b border-white/5 pb-2">
+<div>
+<p class="text-gray-400 text-xs font-mono mb-1">PING LATENCY</p>
+<div class="flex items-baseline gap-2">
+<h3 class="text-3xl font-bold text-white">12</h3>
+<span class="text-sm text-gray-500">ms</span>
+</div>
+</div>
+<span class="text-accent-lime text-xs bg-accent-lime/10 px-2 py-1 rounded border border-accent-lime/20">EXCELLENT</span>
+</div>
+<div class="flex justify-between items-end border-b border-white/5 pb-2">
+<div>
+<p class="text-gray-400 text-xs font-mono mb-1">UPLOAD SPEED</p>
+<div class="flex items-baseline gap-2">
+<h3 class="text-3xl font-bold text-white neon-text-purple">428</h3>
+<span class="text-sm text-gray-500">Mbps</span>
+</div>
+</div>
+<div class="h-8 w-24 flex items-end gap-1">
+<div class="w-1 bg-accent-purple/30 h-[40%]"></div>
+<div class="w-1 bg-accent-purple/50 h-[60%]"></div>
+<div class="w-1 bg-accent-purple/70 h-[30%]"></div>
+<div class="w-1 bg-accent-purple h-[80%]"></div>
+<div class="w-1 bg-accent-purple/60 h-[50%]"></div>
+<div class="w-1 bg-accent-purple/40 h-[20%]"></div>
+</div>
+</div>
+<div class="flex justify-between items-end pb-2">
+<div>
+<p class="text-gray-400 text-xs font-mono mb-1">JITTER / LOSS</p>
+<div class="flex items-baseline gap-4">
+<div>
+<span class="text-xl font-bold text-white">2</span>
+<span class="text-xs text-gray-500">ms</span>
+</div>
+<div class="w-px h-4 bg-white/20"></div>
+<div>
+<span class="text-xl font-bold text-white">0</span>
+<span class="text-xs text-gray-500">%</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-green-500">check_circle</span>
+</div>
+</div>
+</div>
+<!-- Right Side: Quick Hardware Summary -->
+<div class="glass-panel rounded-xl p-6 flex flex-col gap-4 relative">
+<div class="flex justify-between items-center mb-2">
+<h3 class="text-lg font-bold text-white tracking-tight">ACTIVE NODE</h3>
+<span class="text-xs font-mono text-primary border border-primary/30 px-2 py-1 rounded">NY_USA_04</span>
+</div>
+<!-- Server Map Placeholder -->
+<div class="h-40 w-full bg-[#0a0c10] rounded-lg border border-white/10 relative overflow-hidden group">
+<div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-4.0.3&amp;auto=format&amp;fit=crop&amp;w=600&amp;q=80')] bg-cover bg-center opacity-40 mix-blend-luminosity group-hover:opacity-60 transition-opacity" data-alt="Stylized map of global network connections" data-location="New York City" style=""></div>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-2 h-2 bg-accent-lime rounded-full animate-ping absolute"></div>
+<div class="w-2 h-2 bg-accent-lime rounded-full relative z-10 box-shadow-[0_0_10px_#ccff00]"></div>
+</div>
+</div>
+<div class="flex flex-col gap-3 mt-2">
+<div class="flex justify-between text-sm">
+<span class="text-gray-400">Connection Type</span>
+<span class="text-white font-mono">Fiber / FTTH</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-gray-400">External IP</span>
+<span class="text-white font-mono blur-[2px] hover:blur-none transition-all cursor-pointer">192.168.X.X</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-gray-400">Protocol</span>
+<span class="text-accent-lime font-mono">IPv6 / TCP</span>
+</div>
+</div>
+<div class="mt-auto pt-4 border-t border-white/5">
+<div class="flex items-center gap-2 text-xs text-gray-500 font-mono">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+                            System Optimized for Gaming
+                        </div>
+</div>
+</div>
+</div>
+<!-- Bottom Section: Detailed Hardware Specs -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- CPU Per-Core Temps -->
+<div class="glass-panel rounded-xl p-6 border-t-4 border-t-primary">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h3 class="text-lg font-bold text-white">CPU THERMALS</h3>
+<p class="text-xs text-gray-400 font-mono mt-1">Ryzen 9 5950X - 16 Cores</p>
+</div>
+<div class="text-right">
+<span class="text-2xl font-bold text-white block">45°C</span>
+<span class="text-[10px] text-accent-lime uppercase tracking-wider">Optimal</span>
+</div>
+</div>
+<div class="grid grid-cols-8 gap-2">
+<!-- Generating 16 Core indicators -->
+<div class="flex flex-col items-center gap-1 group cursor-help">
+<div class="w-full aspect-[3/4] bg-primary/20 rounded-sm relative overflow-hidden">
+<div class="absolute bottom-0 w-full bg-gradient-to-t from-primary to-accent-purple h-[45%] group-hover:brightness-125 transition-all"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-help">
+<div class="w-full aspect-[3/4] bg-primary/20 rounded-sm relative overflow-hidden">
+<div class="absolute bottom-0 w-full bg-gradient-to-t from-primary to-accent-purple h-[52%] group-hover:brightness-125 transition-all"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-help">
+<div class="w-full aspect-[3/4] bg-primary/20 rounded-sm relative overflow-hidden">
+<div class="absolute bottom-0 w-full bg-gradient-to-t from-primary to-accent-purple h-[48%] group-hover:brightness-125 transition-all"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-help">
+<div class="w-full aspect-[3/4] bg-primary/20 rounded-sm relative overflow-hidden">
+<div class="absolute bottom-0 w-full bg-gradient-to-t from-primary to-accent-purple h-[60%] group-hover:brightness-125 transition-all"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-help">
+<div class="w-full aspect-[3/4] bg-primary/20 rounded-sm relative overflow-hidden">
+<div class="absolute bottom-0 w-full bg-gradient-to-t from-primary to-accent-purple h-[42%] group-hover:brightness-125 transition-all"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-help">
+<div class="w-full aspect-[3/4] bg-primary/20 rounded-sm relative overflow-hidden">
+<div class="absolute bottom-0 w-full bg-gradient-to-t from-primary to-accent-purple h-[45%] group-hover:brightness-125 transition-all"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-help">
+<div class="w-full aspect-[3/4] bg-primary/20 rounded-sm relative overflow-hidden">
+<div class="absolute bottom-0 w-full bg-gradient-to-t from-primary to-accent-purple h-[55%] group-hover:brightness-125 transition-all"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-help">
+<div class="w-full aspect-[3/4] bg-primary/20 rounded-sm relative overflow-hidden">
+<div class="absolute bottom-0 w-full bg-gradient-to-t from-primary to-accent-purple h-[49%] group-hover:brightness-125 transition-all"></div>
+</div>
+</div>
+<!-- Second Row -->
+<div class="flex flex-col items-center gap-1 group cursor-help">
+<div class="w-full aspect-[3/4] bg-primary/20 rounded-sm relative overflow-hidden">
+<div class="absolute bottom-0 w-full bg-gradient-to-t from-primary to-accent-purple h-[44%] group-hover:brightness-125 transition-all"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-help">
+<div class="w-full aspect-[3/4] bg-primary/20 rounded-sm relative overflow-hidden">
+<div class="absolute bottom-0 w-full bg-gradient-to-t from-primary to-accent-purple h-[51%] group-hover:brightness-125 transition-all"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-help">
+<div class="w-full aspect-[3/4] bg-primary/20 rounded-sm relative overflow-hidden">
+<div class="absolute bottom-0 w-full bg-gradient-to-t from-primary to-accent-purple h-[47%] group-hover:brightness-125 transition-all"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-help">
+<div class="w-full aspect-[3/4] bg-primary/20 rounded-sm relative overflow-hidden">
+<div class="absolute bottom-0 w-full bg-gradient-to-t from-primary to-accent-purple h-[62%] group-hover:brightness-125 transition-all"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-help">
+<div class="w-full aspect-[3/4] bg-primary/20 rounded-sm relative overflow-hidden">
+<div class="absolute bottom-0 w-full bg-gradient-to-t from-primary to-accent-purple h-[41%] group-hover:brightness-125 transition-all"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-help">
+<div class="w-full aspect-[3/4] bg-primary/20 rounded-sm relative overflow-hidden">
+<div class="absolute bottom-0 w-full bg-gradient-to-t from-primary to-accent-purple h-[46%] group-hover:brightness-125 transition-all"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-help">
+<div class="w-full aspect-[3/4] bg-primary/20 rounded-sm relative overflow-hidden">
+<div class="absolute bottom-0 w-full bg-gradient-to-t from-primary to-accent-purple h-[54%] group-hover:brightness-125 transition-all"></div>
+</div>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-help">
+<div class="w-full aspect-[3/4] bg-primary/20 rounded-sm relative overflow-hidden">
+<div class="absolute bottom-0 w-full bg-gradient-to-t from-primary to-accent-purple h-[48%] group-hover:brightness-125 transition-all"></div>
+</div>
+</div>
+</div>
+<div class="flex justify-between mt-3 text-[10px] text-gray-500 font-mono">
+<span>CORE 0</span>
+<span>CORE 15</span>
+</div>
+</div>
+<!-- Motherboard ID -->
+<div class="glass-panel rounded-xl p-6 border-t-4 border-t-accent-purple flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-accent-purple">developer_board</span>
+<h3 class="text-lg font-bold text-white">MOTHERBOARD</h3>
+</div>
+<div class="space-y-4">
+<div>
+<p class="text-[10px] text-gray-400 uppercase tracking-wider font-mono mb-1">MODEL ID</p>
+<p class="text-white text-lg font-medium leading-none">ASUS ROG Crosshair VIII</p>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<p class="text-[10px] text-gray-400 uppercase tracking-wider font-mono mb-1">CHIPSET</p>
+<p class="text-gray-200">X570 Plus</p>
+</div>
+<div>
+<p class="text-[10px] text-gray-400 uppercase tracking-wider font-mono mb-1">BIOS VER</p>
+<p class="text-accent-lime font-mono">v.4201 (Stable)</p>
+</div>
+</div>
+<div>
+<p class="text-[10px] text-gray-400 uppercase tracking-wider font-mono mb-1">BUS SPEED</p>
+<div class="flex items-center gap-2">
+<div class="h-1 flex-1 bg-white/10 rounded-full overflow-hidden">
+<div class="h-full w-3/4 bg-accent-purple"></div>
+</div>
+<span class="text-xs text-white font-mono">100 MHz</span>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-white/5 flex gap-2">
+<span class="px-2 py-1 rounded bg-white/5 text-[10px] text-gray-300 border border-white/10">PCIe 4.0</span>
+<span class="px-2 py-1 rounded bg-white/5 text-[10px] text-gray-300 border border-white/10">DDR4</span>
+<span class="px-2 py-1 rounded bg-white/5 text-[10px] text-gray-300 border border-white/10">AM4</span>
+</div>
+</div>
+<!-- Storage Health -->
+<div class="glass-panel rounded-xl p-6 border-t-4 border-t-accent-lime flex flex-col">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-accent-lime">database</span>
+<h3 class="text-lg font-bold text-white">STORAGE HEALTH</h3>
+</div>
+<div class="flex-1 flex flex-col gap-4">
+<div class="flex items-center gap-4">
+<!-- Circular Progress -->
+<div class="relative size-16 shrink-0">
+<svg class="size-full -rotate-90" viewbox="0 0 36 36">
+<path class="text-white/10" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="text-accent-lime drop-shadow-[0_0_5px_rgba(204,255,0,0.5)]" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="98, 100" stroke-width="3"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">98%</div>
+</div>
+<div>
+<p class="text-white font-medium">Samsung 980 Pro</p>
+<p class="text-xs text-gray-400 font-mono">2TB NVMe M.2</p>
+<p class="text-[10px] text-accent-lime mt-1 font-mono">SMART STATUS: OK</p>
+</div>
+</div>
+<div class="space-y-3 mt-2">
+<div>
+<div class="flex justify-between text-xs mb-1">
+<span class="text-gray-400">Read Speed</span>
+<span class="text-white font-mono">7,000 MB/s</span>
+</div>
+<div class="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+<div class="h-full w-[95%] bg-accent-lime rounded-full"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs mb-1">
+<span class="text-gray-400">Write Speed</span>
+<span class="text-white font-mono">5,100 MB/s</span>
+</div>
+<div class="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+<div class="h-full w-[75%] bg-accent-lime/70 rounded-full"></div>
+</div>
+</div>
+</div>
+<div class="flex justify-between items-center mt-auto pt-2 border-t border-white/5">
+<span class="text-xs text-gray-500">Free Space</span>
+<span class="text-sm font-bold text-white">1.2 TB / 2.0 TB</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

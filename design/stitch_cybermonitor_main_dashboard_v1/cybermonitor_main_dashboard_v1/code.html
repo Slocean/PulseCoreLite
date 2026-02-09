@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CyberMonitor Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2b6cee",
+                        "cyber-cyan": "#00f3ff",
+                        "cyber-pink": "#bc13fe",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#050a14", // Deepened for cyberpunk feel
+                        "glass-border": "rgba(255, 255, 255, 0.08)",
+                        "glass-bg": "rgba(16, 22, 34, 0.6)"
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "mono": ["Space Mono", "monospace"] // Fallback if needed
+                    },
+                    backgroundImage: {
+                        'cyber-grid': "linear-gradient(rgba(43, 108, 238, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(43, 108, 238, 0.05) 1px, transparent 1px)",
+                        'radial-glow': "radial-gradient(circle at 50% 50%, rgba(43, 108, 238, 0.15), transparent 70%)"
+                    },
+                    boxShadow: {
+                        'neon-blue': '0 0 10px rgba(43, 108, 238, 0.5), 0 0 20px rgba(43, 108, 238, 0.3)',
+                        'neon-cyan': '0 0 10px rgba(0, 243, 255, 0.5), 0 0 20px rgba(0, 243, 255, 0.3)',
+                        'neon-pink': '0 0 10px rgba(188, 19, 254, 0.5), 0 0 20px rgba(188, 19, 254, 0.3)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #050a14;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(43, 108, 238, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(188, 19, 254, 0.08), transparent 25%);
+        }
+        .cyber-grid-bg {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #050a14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
+        
+        .glass-panel {
+            background: rgba(16, 22, 34, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .text-glow {
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+        
+        .animate-pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        
+        .scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, rgba(43, 108, 238, 0.1), transparent);
+            pointer-events: none;
+            animation: scanline 8s linear infinite;
+        }
+    </style>
+</head>
+<body class="font-display text-white min-h-screen overflow-hidden flex flex-col relative selection:bg-cyber-cyan selection:text-black">
+<!-- Ambient Background Effects -->
+<div class="fixed inset-0 cyber-grid-bg pointer-events-none z-0"></div>
+<div class="fixed inset-0 scanline z-0 opacity-20"></div>
+<!-- Main Window Container -->
+<div class="relative z-10 flex flex-col h-screen max-w-[1600px] mx-auto p-4 md:p-6 lg:p-8 gap-6">
+<!-- Header -->
+<header class="flex items-center justify-between glass-panel rounded-xl px-6 py-4 relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-transparent opacity-50"></div>
+<div class="flex items-center gap-4 relative z-10">
+<div class="w-10 h-10 rounded bg-primary/20 flex items-center justify-center border border-primary/50 shadow-neon-blue">
+<span class="material-symbols-outlined text-cyber-cyan">hub</span>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-widest text-white">CYBERMONITOR <span class="text-primary text-xs font-normal tracking-normal ml-2 opacity-70">v1.0.4 // REL_CANDIDATE</span></h1>
+<div class="flex items-center gap-2 text-xs text-gray-400">
+<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        SYSTEM ONLINE • UPTIME: 04:23:12
+                    </div>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5 text-gray-400 hover:text-white">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5 text-gray-400 hover:text-white">
+<span class="material-symbols-outlined text-[20px]">remove</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg bg-red-500/10 hover:bg-red-500/20 transition-colors border border-red-500/20 text-red-400 hover:text-red-200">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+</header>
+<!-- Main Content Grid -->
+<main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
+<!-- Left Column: CPU & GPU (4 cols) -->
+<div class="lg:col-span-4 flex flex-col gap-6 h-full overflow-y-auto pr-1">
+<!-- CPU Card -->
+<div class="glass-panel rounded-2xl p-6 flex flex-col items-center justify-center relative overflow-hidden group hover:border-cyber-cyan/30 transition-colors duration-500">
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyber-cyan to-transparent opacity-50"></div>
+<div class="w-full flex justify-between items-start mb-4 z-10">
+<div class="flex flex-col">
+<h3 class="text-sm font-bold text-gray-400 tracking-wider">CPU LOAD</h3>
+<span class="text-xs text-cyber-cyan font-mono">INTEL I9-13900K</span>
+</div>
+<span class="material-symbols-outlined text-gray-600">memory</span>
+</div>
+<div class="relative w-48 h-48 flex items-center justify-center mb-4">
+<!-- Background Circle -->
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="none" r="40" stroke="#1f2937" stroke-width="8"></circle>
+<!-- Progress Circle -->
+<circle class="drop-shadow-[0_0_10px_rgba(0,243,255,0.5)] transition-all duration-1000 ease-out" cx="50" cy="50" fill="none" r="40" stroke="#00f3ff" stroke-dasharray="251.2" stroke-dashoffset="165" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-4xl font-bold text-white tracking-tighter text-glow">34%</span>
+<span class="text-xs text-gray-400 mt-1">4.2 GHz</span>
+</div>
+</div>
+<div class="w-full grid grid-cols-2 gap-4 mt-2">
+<div class="bg-black/40 rounded-lg p-3 border border-white/5">
+<div class="text-xs text-gray-500 mb-1">TEMP</div>
+<div class="text-lg font-bold text-white flex items-center gap-1">
+                                45°C
+                                <span class="material-symbols-outlined text-green-400 text-sm">thermostat</span>
+</div>
+</div>
+<div class="bg-black/40 rounded-lg p-3 border border-white/5">
+<div class="text-xs text-gray-500 mb-1">FAN SPEED</div>
+<div class="text-lg font-bold text-white flex items-center gap-1">
+                                1250 <span class="text-xs font-normal text-gray-500 mt-1">RPM</span>
+</div>
+</div>
+</div>
+</div>
+<!-- GPU Card -->
+<div class="glass-panel rounded-2xl p-6 flex flex-col items-center justify-center relative overflow-hidden group hover:border-cyber-pink/30 transition-colors duration-500">
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyber-pink to-transparent opacity-50"></div>
+<div class="w-full flex justify-between items-start mb-4 z-10">
+<div class="flex flex-col">
+<h3 class="text-sm font-bold text-gray-400 tracking-wider">GPU LOAD</h3>
+<span class="text-xs text-cyber-pink font-mono">NVIDIA RTX 4090</span>
+</div>
+<span class="material-symbols-outlined text-gray-600">videogame_asset</span>
+</div>
+<div class="relative w-48 h-48 flex items-center justify-center mb-4">
+<!-- Background Circle -->
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="none" r="40" stroke="#1f2937" stroke-width="8"></circle>
+<!-- Progress Circle -->
+<circle class="drop-shadow-[0_0_10px_rgba(188,19,254,0.5)] transition-all duration-1000 ease-out" cx="50" cy="50" fill="none" r="40" stroke="#bc13fe" stroke-dasharray="251.2" stroke-dashoffset="220" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-4xl font-bold text-white tracking-tighter text-glow">12%</span>
+<span class="text-xs text-gray-400 mt-1">2150 MHz</span>
+</div>
+</div>
+<div class="w-full grid grid-cols-2 gap-4 mt-2">
+<div class="bg-black/40 rounded-lg p-3 border border-white/5">
+<div class="text-xs text-gray-500 mb-1">TEMP</div>
+<div class="text-lg font-bold text-white flex items-center gap-1">
+                                52°C
+                                <span class="material-symbols-outlined text-green-400 text-sm">thermostat</span>
+</div>
+</div>
+<div class="bg-black/40 rounded-lg p-3 border border-white/5">
+<div class="text-xs text-gray-500 mb-1">VRAM</div>
+<div class="text-lg font-bold text-white flex items-center gap-1">
+                                12 <span class="text-xs font-normal text-gray-500 mt-1">GB</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Middle Column: Graphs & Stats (5 cols) -->
+<div class="lg:col-span-5 flex flex-col gap-6 h-full">
+<!-- RAM Usage -->
+<div class="glass-panel rounded-2xl p-6 flex flex-col flex-1 relative overflow-hidden">
+<div class="flex justify-between items-center mb-6">
+<div>
+<h3 class="text-sm font-bold text-gray-400 tracking-wider">RAM USAGE</h3>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold text-white">16.4 GB</span>
+<span class="text-sm text-gray-500">/ 32 GB</span>
+</div>
+</div>
+<div class="px-2 py-1 bg-primary/20 rounded text-xs text-primary border border-primary/30">DDR5-6000</div>
+</div>
+<div class="flex-1 w-full min-h-[120px] relative">
+<svg class="w-full h-full absolute bottom-0" preserveaspectratio="none" viewbox="0 0 300 100">
+<defs>
+<lineargradient id="grad-ram" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" style="stop-color:rgba(43, 108, 238, 0.4);stop-opacity:1"></stop>
+<stop offset="100%" style="stop-color:rgba(43, 108, 238, 0.0);stop-opacity:0"></stop>
+</lineargradient>
+</defs>
+<path d="M0,80 Q30,70 60,85 T120,70 T180,90 T240,60 T300,80 V100 H0 Z" fill="url(#grad-ram)"></path>
+<path class="drop-shadow-[0_0_5px_rgba(43,108,238,0.8)]" d="M0,80 Q30,70 60,85 T120,70 T180,90 T240,60 T300,80" fill="none" stroke="#2b6cee" stroke-width="2"></path>
+</svg>
+<!-- Grid Lines -->
+<div class="absolute inset-0 border-t border-b border-white/5 flex flex-col justify-between pointer-events-none">
+<div class="w-full h-px bg-white/5"></div>
+<div class="w-full h-px bg-white/5"></div>
+<div class="w-full h-px bg-white/5"></div>
+</div>
+</div>
+</div>
+<!-- Disk I/O -->
+<div class="glass-panel rounded-2xl p-6 flex flex-col flex-1 relative overflow-hidden">
+<div class="flex justify-between items-center mb-6">
+<div>
+<h3 class="text-sm font-bold text-gray-400 tracking-wider">DISK I/O</h3>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold text-white">450 MB/s</span>
+<span class="text-sm text-green-400 flex items-center text-xs"><span class="material-symbols-outlined text-[14px] mr-1">arrow_upward</span> Read</span>
+</div>
+</div>
+<div class="px-2 py-1 bg-white/5 rounded text-xs text-gray-400 border border-white/10">NVMe 2TB</div>
+</div>
+<div class="flex-1 w-full min-h-[120px] relative">
+<svg class="w-full h-full absolute bottom-0" preserveaspectratio="none" viewbox="0 0 300 100">
+<defs>
+<lineargradient id="grad-disk" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" style="stop-color:rgba(0, 243, 255, 0.4);stop-opacity:1"></stop>
+<stop offset="100%" style="stop-color:rgba(0, 243, 255, 0.0);stop-opacity:0"></stop>
+</lineargradient>
+</defs>
+<path d="M0,90 L30,40 L45,85 L70,30 L90,90 L120,85 L140,50 L160,90 L200,85 L220,60 L240,90 L300,88 V100 H0 Z" fill="url(#grad-disk)"></path>
+<path class="drop-shadow-[0_0_5px_rgba(0,243,255,0.8)]" d="M0,90 L30,40 L45,85 L70,30 L90,90 L120,85 L140,50 L160,90 L200,85 L220,60 L240,90 L300,88" fill="none" stroke="#00f3ff" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<!-- Grid Lines -->
+<div class="absolute inset-0 border-t border-b border-white/5 flex flex-col justify-between pointer-events-none">
+<div class="w-full h-px bg-white/5"></div>
+<div class="w-full h-px bg-white/5"></div>
+<div class="w-full h-px bg-white/5"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Network & Actions (3 cols) -->
+<div class="lg:col-span-3 flex flex-col gap-6 h-full">
+<!-- Network Module -->
+<div class="glass-panel rounded-2xl p-6 flex flex-col h-full relative overflow-hidden border-t-4 border-t-primary">
+<div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay"></div>
+<h3 class="text-sm font-bold text-gray-400 tracking-wider mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg">wifi_tethering</span>
+                        NETWORK
+                    </h3>
+<div class="flex flex-col gap-6 flex-1">
+<div class="grid grid-cols-1 gap-4">
+<div class="bg-black/40 p-4 rounded-xl border border-white/5 flex items-center justify-between">
+<div>
+<div class="text-xs text-gray-500 mb-1">DOWNLOAD</div>
+<div class="text-2xl font-bold text-white">845 <span class="text-sm font-normal text-gray-500">Mbps</span></div>
+</div>
+<span class="material-symbols-outlined text-green-400 text-3xl opacity-80">download</span>
+</div>
+<div class="bg-black/40 p-4 rounded-xl border border-white/5 flex items-center justify-between">
+<div>
+<div class="text-xs text-gray-500 mb-1">UPLOAD</div>
+<div class="text-2xl font-bold text-white">412 <span class="text-sm font-normal text-gray-500">Mbps</span></div>
+</div>
+<span class="material-symbols-outlined text-blue-400 text-3xl opacity-80">upload</span>
+</div>
+<div class="bg-black/40 p-4 rounded-xl border border-white/5 flex items-center justify-between">
+<div>
+<div class="text-xs text-gray-500 mb-1">PING</div>
+<div class="text-2xl font-bold text-white">14 <span class="text-sm font-normal text-gray-500">ms</span></div>
+</div>
+<span class="material-symbols-outlined text-purple-400 text-3xl opacity-80">dns</span>
+</div>
+</div>
+</div>
+<div class="mt-8">
+<button class="w-full group relative overflow-hidden rounded-xl bg-primary p-4 transition-all hover:bg-blue-600 hover:shadow-neon-blue">
+<div class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1s_infinite]"></div>
+<div class="flex items-center justify-center gap-3 relative z-10">
+<span class="material-symbols-outlined animate-pulse">speed</span>
+<span class="font-bold tracking-widest text-lg">INITIATE SPEED TEST</span>
+</div>
+</button>
+</div>
+<div class="mt-6 pt-6 border-t border-white/10">
+<h4 class="text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider">Active Interfaces</h4>
+<div class="space-y-2">
+<div class="flex items-center justify-between text-sm">
+<span class="text-gray-300 flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                    Ethernet 2
+                                </span>
+<span class="text-gray-500 text-xs">192.168.1.42</span>
+</div>
+<div class="flex items-center justify-between text-sm opacity-50">
+<span class="text-gray-300 flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                                    Wi-Fi 6E
+                                </span>
+<span class="text-gray-500 text-xs">Disconnected</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer / Status Bar -->
+<footer class="glass-panel rounded-xl px-6 py-3 flex flex-wrap justify-between items-center text-xs text-gray-400 gap-4">
+<div class="flex gap-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">thermostat</span>
+<span>System Temp: <span class="text-white">Normal</span></span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">bolt</span>
+<span>Power Draw: <span class="text-white">340W</span></span>
+</div>
+</div>
+<div class="flex gap-4 items-center">
+<span class="animate-pulse-slow w-2 h-2 rounded-full bg-primary"></span>
+<span>DATA STREAM: LIVE</span>
+<span class="text-gray-600">|</span>
+<span>SERVER: US-EAST-1</span>
+</div>
+</footer>
+</div>
+<style>
+        @keyframes shimmer {
+            100% {
+                transform: translateX(100%);
+            }
+        }
+    </style>
+</body></html>

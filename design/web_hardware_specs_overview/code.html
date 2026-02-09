@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Web Hardware Specs Overview</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2525f4",
+                        "background-light": "#f5f5f8",
+                        "background-dark": "#050510",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(37, 37, 244, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .neon-glow {
+            text-shadow: 0 0 10px rgba(37, 37, 244, 0.8);
+        }
+        .neon-border {
+            box-shadow: inset 0 0 15px rgba(37, 37, 244, 0.2), 0 0 5px rgba(37, 37, 244, 0.2);
+        }
+        .digital-rain {
+            background: linear-gradient(180deg, rgba(37, 37, 244, 0) 0%, rgba(37, 37, 244, 0.05) 50%, rgba(37, 37, 244, 0) 100%);
+            background-size: 100% 200%;
+        }
+        .cyber-corner {
+            clip-path: polygon(0 0, 100% 0, 100% 80%, 85% 100%, 0 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen overflow-x-hidden relative">
+<!-- Background Decorative Elements -->
+<div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+<div class="absolute top-0 left-1/4 w-px h-full bg-primary/10"></div>
+<div class="absolute top-0 right-1/4 w-px h-full bg-primary/10"></div>
+<div class="absolute top-1/3 left-0 w-full h-px bg-primary/5"></div>
+<div class="absolute top-2/3 left-0 w-full h-px bg-primary/5"></div>
+<div class="digital-rain absolute inset-0 opacity-30"></div>
+</div>
+<!-- Main Content Wrapper -->
+<div class="relative z-10 flex flex-col min-h-screen max-w-md mx-auto">
+<!-- Header / TopAppBar -->
+<header class="flex items-center justify-between p-6 pt-8">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-primary/20 rounded-lg border border-primary/30 neon-border">
+<span class="material-symbols-outlined text-primary neon-glow">memory</span>
+</div>
+<div>
+<h1 class="text-xs uppercase tracking-[0.2em] text-primary font-bold">System Core</h1>
+<p class="text-xl font-bold tracking-tight">iPhone 15 Pro</p>
+</div>
+</div>
+<button class="w-10 h-10 flex items-center justify-center glass-card rounded-full border-primary/20">
+<span class="material-symbols-outlined text-white text-xl">refresh</span>
+</button>
+</header>
+<!-- Status Bar -->
+<div class="px-6 mb-6">
+<div class="glass-card rounded-xl p-4 flex items-center justify-between border-l-4 border-l-primary">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse"></div>
+<span class="text-sm font-medium uppercase tracking-widest opacity-80">System Online</span>
+</div>
+<div class="text-right">
+<span class="text-xs opacity-50 uppercase block">Uptime</span>
+<span class="text-sm font-mono">142:22:09</span>
+</div>
+</div>
+</div>
+<!-- Grid Layout -->
+<main class="flex-1 px-6 pb-24">
+<h2 class="text-xs uppercase tracking-[0.3em] opacity-40 mb-4 font-bold">Hardware Matrix</h2>
+<div class="grid grid-cols-2 gap-4">
+<!-- CPU Card -->
+<div class="glass-card rounded-xl p-4 flex flex-col gap-4 cyber-corner group hover:border-primary/50 transition-colors">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary/80 group-hover:neon-glow transition-all">computer</span>
+<span class="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded border border-primary/30">CORE</span>
+</div>
+<div>
+<p class="text-[10px] uppercase opacity-50 tracking-tighter">Processor</p>
+<h3 class="font-bold text-sm leading-tight">A17 Pro</h3>
+<p class="text-xs font-mono text-primary mt-1">3.78 GHz</p>
+</div>
+<div class="mt-2 h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[42%]"></div>
+</div>
+</div>
+<!-- GPU Card -->
+<div class="glass-card rounded-xl p-4 flex flex-col gap-4 cyber-corner group hover:border-primary/50 transition-colors">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary/80 group-hover:neon-glow transition-all">videogame_asset</span>
+<span class="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded border border-primary/30">MTL3</span>
+</div>
+<div>
+<p class="text-[10px] uppercase opacity-50 tracking-tighter">Graphics</p>
+<h3 class="font-bold text-sm leading-tight">6-Core GPU</h3>
+<p class="text-xs font-mono text-primary mt-1">Ray Tracing</p>
+</div>
+<div class="mt-2 h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[15%] shadow-[0_0_8px_rgba(37,37,244,0.5)]"></div>
+</div>
+</div>
+<!-- RAM Card -->
+<div class="glass-card rounded-xl p-4 flex flex-col gap-4 cyber-corner group hover:border-primary/50 transition-colors">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary/80 group-hover:neon-glow transition-all">memory_alt</span>
+<span class="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded border border-primary/30">DDR5</span>
+</div>
+<div>
+<p class="text-[10px] uppercase opacity-50 tracking-tighter">Memory</p>
+<h3 class="font-bold text-sm leading-tight">8GB LPDDR5</h3>
+<p class="text-xs font-mono text-primary mt-1">5.2 GB Free</p>
+</div>
+<div class="mt-2 h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[65%]"></div>
+</div>
+</div>
+<!-- Storage Card -->
+<div class="glass-card rounded-xl p-4 flex flex-col gap-4 cyber-corner group hover:border-primary/50 transition-colors">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary/80 group-hover:neon-glow transition-all">database</span>
+<span class="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded border border-primary/30">NVME</span>
+</div>
+<div>
+<p class="text-[10px] uppercase opacity-50 tracking-tighter">Storage</p>
+<h3 class="font-bold text-sm leading-tight">256GB Flash</h3>
+<p class="text-xs font-mono text-primary mt-1">112GB Used</p>
+</div>
+<div class="mt-2 h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[48%]"></div>
+</div>
+</div>
+</div>
+<!-- Detailed Stats Section -->
+<div class="mt-8">
+<h2 class="text-xs uppercase tracking-[0.3em] opacity-40 mb-4 font-bold">Data Stream</h2>
+<div class="space-y-3">
+<div class="glass-card rounded-lg p-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-lg">router</span>
+<span class="text-sm font-medium">Network Interface</span>
+</div>
+<span class="text-xs font-mono opacity-70">192.168.1.104</span>
+</div>
+<div class="glass-card rounded-lg p-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-lg">thermostat</span>
+<span class="text-sm font-medium">Core Temp</span>
+</div>
+<span class="text-sm font-mono text-green-400">34°C</span>
+</div>
+<div class="glass-card rounded-lg p-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-lg">bolt</span>
+<span class="text-sm font-medium">Energy Consumption</span>
+</div>
+<span class="text-sm font-mono">1.2W</span>
+</div>
+</div>
+</div>
+<!-- Large Visual Element -->
+<div class="mt-8 relative h-40 rounded-xl overflow-hidden glass-card border-primary/20">
+<div class="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent"></div>
+<div class="absolute inset-0 flex flex-col justify-end p-6">
+<div class="flex justify-between items-end">
+<div>
+<p class="text-[10px] uppercase tracking-widest text-primary font-bold">Render Engine</p>
+<h3 class="text-2xl font-bold italic tracking-tighter">NEURAL NET V.4</h3>
+</div>
+<div class="text-right">
+<p class="text-xs font-mono opacity-60">Throughput</p>
+<p class="text-lg font-bold">35 TOPS</p>
+</div>
+</div>
+</div>
+<img class="w-full h-full object-cover mix-blend-overlay opacity-50" data-alt="Futuristic blue network digital neural connections pattern" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaYswxJ-Wzi8AsnWM-5Z6NAIQDSQoam0ZK68kzYzCExuf80Kn2m5VerJqpT_hogAQ-rce6jEG1z3W5OYvdyt4QrKIM5hNbm9H1liKTipEcjdliEqkH_m0RESOLDUfv3U-SKuVm0EYxSngl6X8KpwtnL5zRn5lldu1t8WYmWHstXQmdu7-wnoYT8fM4mIZRtMq8wTzGWcgBtj9wrslTi_P_tW4v4HRJINPWAjCUq4Lyd71aS63gSegllYqzWOtZrwzElpqSGQ7hIhkP"/>
+</div>
+</main>
+<!-- Tab Bar (iOS style) -->
+<nav class="fixed bottom-0 left-0 right-0 glass-card border-t border-t-white/10 px-6 py-4 flex justify-between items-center max-w-md mx-auto rounded-t-3xl backdrop-blur-2xl">
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined fill-1">dashboard</span>
+<span class="text-[10px] uppercase font-bold tracking-tighter">Core</span>
+</a>
+<a class="flex flex-col items-center gap-1 opacity-40" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-[10px] uppercase font-bold tracking-tighter">Logs</span>
+</a>
+<a class="flex flex-col items-center gap-1 opacity-40" href="#">
+<span class="material-symbols-outlined">security</span>
+<span class="text-[10px] uppercase font-bold tracking-tighter">Shield</span>
+</a>
+<a class="flex flex-col items-center gap-1 opacity-40" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] uppercase font-bold tracking-tighter">Setup</span>
+</a>
+</nav>
+</div>
+</body></html>

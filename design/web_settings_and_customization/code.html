@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Web Settings and Customization</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2525f4",
+                        "background-light": "#f5f5f8",
+                        "background-dark": "#0a0a14",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .neon-glow {
+            box-shadow: 0 0 15px rgba(37, 37, 244, 0.4);
+        }
+        .scanline {
+            background: linear-gradient(to bottom, transparent 50%, rgba(37, 37, 244, 0.05) 51%);
+            background-size: 100% 4px;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0a14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2525f4;
+            border-radius: 10px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark overflow-x-hidden">
+<!-- TopAppBar -->
+<div class="flex items-center bg-white/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50 p-4 border-b border-slate-200 dark:border-white/10 justify-between">
+<div class="text-slate-900 dark:text-white flex size-10 shrink-0 items-center justify-center cursor-pointer">
+<span class="material-symbols-outlined text-2xl">arrow_back_ios</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center">System Customization</h2>
+<div class="flex w-10 items-center justify-end">
+<button class="flex cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-transparent text-slate-900 dark:text-white p-0">
+<span class="material-symbols-outlined text-2xl">settings_suggest</span>
+</button>
+</div>
+</div>
+<main class="flex-1 pb-24">
+<!-- Live Preview Section -->
+<div class="p-4 @container">
+<div class="flex flex-col items-stretch justify-start rounded-xl @xl:flex-row @xl:items-start shadow-xl bg-slate-100 dark:bg-[#15152a] overflow-hidden border border-slate-200 dark:border-primary/20">
+<div class="relative w-full aspect-video bg-slate-200 dark:bg-[#0c0c1e] flex items-center justify-center overflow-hidden p-6">
+<!-- Abstract Dashboard Preview UI -->
+<div class="w-full h-full glass-panel rounded-lg p-3 flex flex-col gap-2 relative">
+<div class="flex justify-between items-center mb-1">
+<div class="w-12 h-2 bg-primary/40 rounded-full"></div>
+<div class="w-4 h-4 rounded-full bg-primary neon-glow"></div>
+</div>
+<div class="grid grid-cols-2 gap-2">
+<div class="h-10 bg-white/5 rounded-md border border-white/10 flex items-center justify-center">
+<div class="w-2/3 h-1 bg-white/20 rounded-full"></div>
+</div>
+<div class="h-10 bg-white/5 rounded-md border border-white/10 flex items-center justify-center">
+<div class="w-2/3 h-1 bg-white/20 rounded-full"></div>
+</div>
+</div>
+<div class="flex-1 bg-primary/10 rounded-md border border-primary/20 flex flex-col p-2 gap-1">
+<div class="w-full h-1 bg-primary/30 rounded-full"></div>
+<div class="w-4/5 h-1 bg-primary/30 rounded-full"></div>
+<div class="w-1/2 h-1 bg-primary/30 rounded-full"></div>
+</div>
+<div class="absolute inset-0 scanline pointer-events-none opacity-20"></div>
+</div>
+<div class="absolute top-2 right-2 flex items-center gap-1 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded text-[10px] text-primary uppercase font-bold tracking-widest border border-primary/30">
+<span class="flex h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
+                            Live
+                        </div>
+</div>
+<div class="flex w-full min-w-72 grow flex-col items-stretch justify-center gap-1 py-4 px-4">
+<p class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">Real-time Visualization</p>
+<div class="flex items-end gap-3 justify-between">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-normal leading-normal">Changes propagate instantly to your active terminal interface.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Visual Parameters -->
+<div class="px-4 py-2 mt-4">
+<h3 class="text-slate-900 dark:text-white text-sm font-bold uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+<span class="w-8 h-[1px] bg-primary"></span>
+                    Visual Parameters
+                </h3>
+<div class="space-y-6">
+<!-- Glass Opacity Slider -->
+<div class="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-4">
+<div class="flex justify-between items-center mb-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">blur_on</span>
+<p class="text-slate-900 dark:text-white text-base font-medium">Glass Opacity</p>
+</div>
+<span class="text-primary font-bold font-display">75%</span>
+</div>
+<div class="relative flex h-6 w-full items-center">
+<div class="flex h-1.5 flex-1 rounded-full bg-slate-200 dark:bg-white/10">
+<div class="h-full w-[75%] rounded-full bg-primary neon-glow relative">
+<div class="absolute right-0 -top-2 size-5 rounded-full bg-white shadow-lg border-2 border-primary"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Glow Intensity Slider -->
+<div class="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-4">
+<div class="flex justify-between items-center mb-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">flare</span>
+<p class="text-slate-900 dark:text-white text-base font-medium">Glow Intensity</p>
+</div>
+<span class="text-primary font-bold font-display">40%</span>
+</div>
+<div class="relative flex h-6 w-full items-center">
+<div class="flex h-1.5 flex-1 rounded-full bg-slate-200 dark:bg-white/10">
+<div class="h-full w-[40%] rounded-full bg-primary neon-glow relative">
+<div class="absolute right-0 -top-2 size-5 rounded-full bg-white shadow-lg border-2 border-primary"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Neon Theme Accents -->
+<div class="px-4 py-6 mt-2">
+<h3 class="text-slate-900 dark:text-white text-sm font-bold uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+<span class="w-8 h-[1px] bg-primary"></span>
+                    Theme Accents
+                </h3>
+<div class="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
+<div class="flex-shrink-0 size-12 rounded-lg bg-primary border-4 border-white dark:border-white/20 ring-4 ring-primary/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-white">check</span>
+</div>
+<div class="flex-shrink-0 size-12 rounded-lg bg-[#f4258d] border-2 border-transparent"></div>
+<div class="flex-shrink-0 size-12 rounded-lg bg-[#25f4a4] border-2 border-transparent"></div>
+<div class="flex-shrink-0 size-12 rounded-lg bg-[#f4a425] border-2 border-transparent"></div>
+<div class="flex-shrink-0 size-12 rounded-lg bg-[#9d25f4] border-2 border-transparent"></div>
+<div class="flex-shrink-0 size-12 rounded-lg bg-slate-800 border-2 border-white/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-white/50">add</span>
+</div>
+</div>
+</div>
+<!-- Modular Components -->
+<div class="px-4 py-2">
+<h3 class="text-slate-900 dark:text-white text-sm font-bold uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+<span class="w-8 h-[1px] bg-primary"></span>
+                    Modular Blocks
+                </h3>
+<div class="space-y-3">
+<!-- Network Traffic Toggle -->
+<div class="flex items-center justify-between p-4 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">language</span>
+</div>
+<div>
+<p class="text-slate-900 dark:text-white font-medium">Network Traffic</p>
+<p class="text-xs text-slate-500">Live global bandwidth monitor</p>
+</div>
+</div>
+<div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-primary transition-colors duration-200 ease-in-out">
+<span class="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+</div>
+</div>
+<!-- Latency Heatmap Toggle -->
+<div class="flex items-center justify-between p-4 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">grid_view</span>
+</div>
+<div>
+<p class="text-slate-900 dark:text-white font-medium">Latency Heatmap</p>
+<p class="text-xs text-slate-500">Visual node response distribution</p>
+</div>
+</div>
+<div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-primary transition-colors duration-200 ease-in-out">
+<span class="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+</div>
+</div>
+<!-- Security Audit Toggle -->
+<div class="flex items-center justify-between p-4 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-slate-200 dark:bg-white/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-400">policy</span>
+</div>
+<div>
+<p class="text-slate-900 dark:text-white font-medium opacity-60">Security Logs</p>
+<p class="text-xs text-slate-500">Real-time threat detection feed</p>
+</div>
+</div>
+<div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-slate-300 dark:bg-white/10 transition-colors duration-200 ease-in-out">
+<span class="translate-x-0 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Action Bar -->
+<div class="fixed bottom-0 left-0 right-0 p-4 bg-white/80 dark:bg-background-dark/80 backdrop-blur-xl border-t border-slate-200 dark:border-white/10 flex gap-3">
+<button class="flex-1 h-12 rounded-xl bg-slate-200 dark:bg-white/10 text-slate-900 dark:text-white font-bold uppercase text-xs tracking-widest border border-slate-300 dark:border-white/10">
+                Reset
+            </button>
+<button class="flex-[2] h-12 rounded-xl bg-primary text-white font-bold uppercase text-xs tracking-widest neon-glow shadow-primary/20">
+                Apply System Sync
+            </button>
+</div>
+</div>
+</body></html>
