@@ -2,7 +2,7 @@
   <section class="page-grid settings-page">
     <article class="glass-panel page-header">
       <h2>{{ t("settings.title") }}</h2>
-      <p>Live preview + modular controls for your cyber dashboard</p>
+      <p>{{ t("settings.subtitle") }}</p>
     </article>
 
     <article class="glass-panel full-width settings-preview">
@@ -19,14 +19,17 @@
         </div>
       </div>
       <div class="preview-meta">
-        <h3>Live Visual Preview</h3>
-        <p>Glass {{ Math.round(draft.glass_opacity * 100) }}% · Glow {{ Math.round(draft.glow_intensity * 100) }}%</p>
-        <p>Accent {{ draft.accent }}</p>
+        <h3>{{ t("settings.previewTitle") }}</h3>
+        <p>
+          {{ t("settings.previewGlass") }} {{ Math.round(draft.glass_opacity * 100) }}% ·
+          {{ t("settings.previewGlow") }} {{ Math.round(draft.glow_intensity * 100) }}%
+        </p>
+        <p>{{ t("settings.previewAccent") }} {{ draft.accent }}</p>
       </div>
     </article>
 
     <article class="glass-panel control-card">
-      <h3>Sampling & Language</h3>
+      <h3>{{ t("settings.samplingLanguage") }}</h3>
       <label>
         {{ t("settings.refresh") }} (ms)
         <input v-model.number="draft.refresh_rate_ms" type="number" min="250" max="5000" step="50" />
@@ -38,18 +41,18 @@
       <label>
         {{ t("settings.language") }}
         <select v-model="draft.language">
-          <option value="zh-CN">中文</option>
-          <option value="en-US">English</option>
+          <option value="zh-CN">{{ t("language.zh") }}</option>
+          <option value="en-US">{{ t("language.en") }}</option>
         </select>
       </label>
       <label>
-        History retention (days)
+        {{ t("settings.historyRetention") }}
         <input v-model.number="draft.history_retention_days" type="number" min="1" max="365" step="1" />
       </label>
     </article>
 
     <article class="glass-panel control-card">
-      <h3>Theme & Effects</h3>
+      <h3>{{ t("settings.themeEffects") }}</h3>
       <label>
         {{ t("settings.glassOpacity") }}
         <input v-model.number="draft.glass_opacity" type="range" min="0.2" max="1" step="0.05" />
@@ -59,29 +62,29 @@
         <input v-model.number="draft.glow_intensity" type="range" min="0" max="1" step="0.05" />
       </label>
       <label>
-        Accent color
+        {{ t("settings.accentColor") }}
         <input v-model="draft.accent" type="color" />
       </label>
       <label class="inline-check">
         <input v-model="draft.sensor_boost_enabled" type="checkbox" />
-        Sensor Boost (reserved)
+        {{ t("settings.sensorBoost") }}
       </label>
     </article>
 
     <article class="glass-panel full-width modules-card">
-      <h3>Modular Blocks</h3>
+      <h3>{{ t("settings.modules") }}</h3>
       <div class="modules-grid">
-        <label><input v-model="draft.module_toggles.show_cpu" type="checkbox" /> CPU Panel</label>
-        <label><input v-model="draft.module_toggles.show_gpu" type="checkbox" /> GPU Panel</label>
-        <label><input v-model="draft.module_toggles.show_memory" type="checkbox" /> Memory Panel</label>
-        <label><input v-model="draft.module_toggles.show_disk" type="checkbox" /> Disk Panel</label>
-        <label><input v-model="draft.module_toggles.show_network" type="checkbox" /> Network Panel</label>
+        <label><input v-model="draft.module_toggles.show_cpu" type="checkbox" /> {{ t("settings.moduleCpu") }}</label>
+        <label><input v-model="draft.module_toggles.show_gpu" type="checkbox" /> {{ t("settings.moduleGpu") }}</label>
+        <label><input v-model="draft.module_toggles.show_memory" type="checkbox" /> {{ t("settings.moduleMemory") }}</label>
+        <label><input v-model="draft.module_toggles.show_disk" type="checkbox" /> {{ t("settings.moduleDisk") }}</label>
+        <label><input v-model="draft.module_toggles.show_network" type="checkbox" /> {{ t("settings.moduleNetwork") }}</label>
       </div>
     </article>
 
     <article class="glass-panel full-width">
-      <h3>Speedtest Endpoints</h3>
-      <p>One URL per line</p>
+      <h3>{{ t("settings.endpoints") }}</h3>
+      <p>{{ t("settings.endpointsHint") }}</p>
       <textarea v-model="endpointsText" rows="5"></textarea>
       <div class="row-actions" style="margin-top: 10px">
         <button class="cyber-btn" @click="save">{{ t("settings.save") }}</button>

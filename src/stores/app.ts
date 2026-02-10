@@ -75,6 +75,7 @@ export const useAppStore = defineStore("app", {
   state: () => ({
     ready: false,
     bootstrapped: false,
+    bigScreen: false,
     mode: "normal" as "normal" | "low_power",
     snapshot: emptySnapshot(),
     historySeries: [] as TelemetrySnapshot[],
@@ -289,6 +290,9 @@ export const useAppStore = defineStore("app", {
       }
       await api.toggleOverlay(visible);
     },
+    async setBigScreenMode(enabled: boolean) {
+      this.bigScreen = enabled;
+    },
     async setLowPowerMode(lowPower: boolean) {
       if (!inTauri()) {
         this.mode = lowPower ? "low_power" : "normal";
@@ -302,3 +306,5 @@ export const useAppStore = defineStore("app", {
     }
   }
 });
+
+

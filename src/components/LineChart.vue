@@ -26,7 +26,7 @@ function render() {
   chart.setOption({
     animation: true,
     backgroundColor: "transparent",
-    grid: { left: 20, right: 16, top: 16, bottom: 20 },
+    grid: { left: 24, right: 18, top: 18, bottom: 24 },
     xAxis: {
       type: "category",
       data: props.values.map((_, idx) => idx + 1),
@@ -39,7 +39,7 @@ function render() {
       axisLine: { show: false },
       axisTick: { show: false },
       splitLine: { lineStyle: { color: "rgba(255,255,255,0.08)" } },
-      axisLabel: { color: "#8ca0d9", fontSize: 10 }
+      axisLabel: { color: "#a3b5e8", fontSize: 11, fontWeight: 600 }
     },
     series: [
       {
@@ -47,7 +47,7 @@ function render() {
         data: props.values,
         smooth: true,
         symbol: "none",
-        lineStyle: { width: 2, color: props.color },
+        lineStyle: { width: 2.4, color: props.color },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             { offset: 0, color: `${props.color}66` },

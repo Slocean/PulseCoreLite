@@ -1,4 +1,7 @@
-use std::process::Command;
+use std::{
+    collections::BTreeSet,
+    process::Command,
+};
 
 use sysinfo::{Disks, System};
 
@@ -18,47 +21,150 @@ pub fn collect_hardware_info() -> HardwareInfo {
     let total_gb = (sys.total_memory() as f64 / (1024.0 * 1024.0 * 1024.0)).max(1.0);
     let ram_spec = format!("{total_gb:.0} GB");
 
-    let disk_models = disk_models().unwrap_or_else(|| {
-        let disks = Disks::new_with_refreshed_list();
-        disks
-            .list()
-            .iter()
-            .map(|d| d.name().to_string_lossy().to_string())
-            .collect::<Vec<_>>()
-    });
+    let disk_models = disk_drive_models().unwrap_or_else(fallback_disk_models);
 
     HardwareInfo {
         cpu_model,
-        gpu_model: first_wmic_value(&["path", "win32_VideoController", "get", "Name", "/value"])
-            .unwrap_or_else(|| "N/A".to_string()),
+        gpu_model: gpu_models().unwrap_or_else(|| "N/A".to_string()),
         ram_spec,
         disk_models: if disk_models.is_empty() {
             vec!["Unknown disk".to_string()]
         } else {
             disk_models
         },
-        motherboard: first_wmic_value(&["baseboard", "get", "product", "/value"])
-            .unwrap_or_else(|| "Unknown motherboard".to_string()),
-        device_brand: first_wmic_value(&["computersystem", "get", "manufacturer", "/value"])
-            .unwrap_or_else(|| "Unknown vendor".to_string()),
+        motherboard: motherboard_name().unwrap_or_else(|| "Unknown motherboard".to_string()),
+        device_brand: manufacturer_name().unwrap_or_else(|| "Unknown vendor".to_string()),
     }
 }
 
-fn disk_models() -> Option<Vec<String>> {
-    let raw = run_wmic(&["diskdrive", "get", "model", "/value"])?;
-    let mut out = Vec::new();
-    for line in raw.lines() {
-        if let Some(v) = line.strip_prefix("Model=") {
-            let item = v.trim();
-            if !item.is_empty() {
-                out.push(item.to_string());
+fn fallback_disk_models() -> Vec<String> {
+    let disks = Disks::new_with_refreshed_list();
+    let mut list = Vec::new();
+    let mut dedup = BTreeSet::new();
+
+    for disk in disks.list() {
+        let mount = disk.mount_point().to_string_lossy().to_string();
+        let name = disk.name().to_string_lossy().to_string();
+        let item = format!("{} · {}", mount, name);
+        if dedup.insert(item.clone()) {
+            list.push(item);
+        }
+    }
+
+    list
+}
+
+fn gpu_models() -> Option<String> {
+    let script = r#"
+$items = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue |
+  Select-Object -ExpandProperty Name
+$items | Where-Object { $_ -and $_.Trim().Length -gt 0 } | ForEach-Object { $_.Trim() }
+"#;
+
+    let mut names = run_powershell_lines(script)?;
+    names.retain(|name| !name.is_empty());
+    names.sort();
+    names.dedup();
+
+    if names.is_empty() {
+        return first_wmic_value(&["path", "win32_VideoController", "get", "Name", "/value"]);
+    }
+
+    Some(names.join(" / "))
+}
+
+fn disk_drive_models() -> Option<Vec<String>> {
+    let script = r#"
+$rows = Get-CimInstance Win32_LogicalDisk -Filter "DriveType=3" -ErrorAction SilentlyContinue | ForEach-Object {
+  $logicalDisk = $_
+  $partitions = Get-CimAssociatedInstance -InputObject $logicalDisk -Association Win32_LogicalDiskToPartition -ErrorAction SilentlyContinue
+  foreach ($partition in $partitions) {
+    $drives = Get-CimAssociatedInstance -InputObject $partition -Association Win32_DiskDriveToDiskPartition -ErrorAction SilentlyContinue
+    foreach ($drive in $drives) {
+      "{0}|{1}" -f $logicalDisk.DeviceID, $drive.Model
+    }
+  }
+}
+$rows | Sort-Object -Unique
+"#;
+
+    let lines = run_powershell_lines(script)?;
+    let mut list = Vec::new();
+    let mut dedup = BTreeSet::new();
+
+    for line in lines {
+        if let Some((drive, model)) = line.split_once('|') {
+            let drive = drive.trim();
+            let model = model.trim();
+            if !drive.is_empty() && !model.is_empty() {
+                let item = format!("{} · {}", drive, model);
+                if dedup.insert(item.clone()) {
+                    list.push(item);
+                }
             }
         }
     }
-    if out.is_empty() {
+
+    if list.is_empty() {
         None
     } else {
-        Some(out)
+        Some(list)
+    }
+}
+
+fn motherboard_name() -> Option<String> {
+    let script = r#"
+(Get-CimInstance Win32_BaseBoard -ErrorAction SilentlyContinue |
+  Select-Object -First 1 -ExpandProperty Product)
+"#;
+
+    run_powershell_lines(script)
+        .and_then(|mut rows| rows.drain(..).find(|row| !row.trim().is_empty()))
+        .or_else(|| first_wmic_value(&["baseboard", "get", "product", "/value"]))
+}
+
+fn manufacturer_name() -> Option<String> {
+    let script = r#"
+(Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue |
+  Select-Object -First 1 -ExpandProperty Manufacturer)
+"#;
+
+    run_powershell_lines(script)
+        .and_then(|mut rows| rows.drain(..).find(|row| !row.trim().is_empty()))
+        .or_else(|| first_wmic_value(&["computersystem", "get", "manufacturer", "/value"]))
+}
+
+fn run_powershell_lines(script: &str) -> Option<Vec<String>> {
+    #[cfg(target_os = "windows")]
+    {
+        let output = Command::new("powershell.exe")
+            .args(["-NoProfile", "-Command", script])
+            .output()
+            .ok()?;
+
+        if !output.status.success() {
+            return None;
+        }
+
+        let text = String::from_utf8_lossy(&output.stdout);
+        let lines = text
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .map(ToOwned::to_owned)
+            .collect::<Vec<_>>();
+
+        if lines.is_empty() {
+            None
+        } else {
+            Some(lines)
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = script;
+        None
     }
 }
 

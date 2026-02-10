@@ -1,4 +1,7 @@
-use std::time::Instant;
+use std::{
+    process::Command,
+    time::{Duration, Instant},
+};
 
 use chrono::Utc;
 use sysinfo::{Disks, Networks, System};
@@ -14,6 +17,8 @@ pub struct SystemCollector {
     prev_rx: u64,
     prev_tx: u64,
     prev_tick: Instant,
+    gpu_cache: GpuMetrics,
+    last_gpu_poll: Instant,
 }
 
 impl SystemCollector {
@@ -34,6 +39,13 @@ impl SystemCollector {
             prev_rx,
             prev_tx,
             prev_tick: Instant::now(),
+            gpu_cache: GpuMetrics {
+                usage_pct: None,
+                temperature_c: None,
+                memory_used_mb: None,
+                memory_total_mb: None,
+            },
+            last_gpu_poll: Instant::now() - Duration::from_secs(10),
         }
     }
 
@@ -41,6 +53,7 @@ impl SystemCollector {
         self.system.refresh_cpu_usage();
         self.system.refresh_memory();
         self.networks.refresh(true);
+        self.disks.refresh(true);
 
         let cpu_usage = self.system.global_cpu_usage() as f64;
         let frequency = if self.system.cpus().is_empty() {
@@ -81,6 +94,8 @@ impl SystemCollector {
         self.prev_tx = tx_total;
         self.prev_tick = Instant::now();
 
+        let gpu_metrics = self.refresh_gpu_metrics();
+
         TelemetrySnapshot {
             timestamp: Utc::now(),
             cpu: CpuMetrics {
@@ -88,12 +103,7 @@ impl SystemCollector {
                 frequency_mhz: frequency,
                 temperature_c: None,
             },
-            gpu: GpuMetrics {
-                usage_pct: None,
-                temperature_c: None,
-                memory_used_mb: None,
-                memory_total_mb: None,
-            },
+            gpu: gpu_metrics,
             memory: MemoryMetrics {
                 used_mb: memory_used_mb,
                 total_mb: memory_total_mb,
@@ -124,4 +134,95 @@ impl SystemCollector {
         }
         (rx, tx)
     }
+
+    fn refresh_gpu_metrics(&mut self) -> GpuMetrics {
+        if self.last_gpu_poll.elapsed() < Duration::from_secs(2) {
+            return self.gpu_cache.clone();
+        }
+
+        self.last_gpu_poll = Instant::now();
+        if let Some(metrics) = query_gpu_metrics_windows() {
+            self.gpu_cache = metrics;
+        }
+
+        self.gpu_cache.clone()
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn query_gpu_metrics_windows() -> Option<GpuMetrics> {
+    let script = r#"
+$usage = $null
+$memUsedMb = $null
+$memTotalMb = $null
+
+$engine = Get-Counter '\GPU Engine(*)\Utilization Percentage' -ErrorAction SilentlyContinue
+if ($engine) {
+  $samples = $engine.CounterSamples |
+    Where-Object { $_.Path -like '*engtype_3D*' -or $_.Path -like '*engtype_Compute*' } |
+    ForEach-Object { [double]$_.CookedValue }
+  if ($samples.Count -eq 0) {
+    $samples = $engine.CounterSamples | ForEach-Object { [double]$_.CookedValue }
+  }
+  if ($samples.Count -gt 0) {
+    $usage = ($samples | Measure-Object -Sum).Sum
+  }
+}
+
+$adapterMemory = Get-Counter '\GPU Adapter Memory(*)\Dedicated Usage' -ErrorAction SilentlyContinue
+if ($adapterMemory) {
+  $totalBytes = ($adapterMemory.CounterSamples | ForEach-Object { [double]$_.CookedValue } | Measure-Object -Sum).Sum
+  if ($totalBytes -gt 0) {
+    $memUsedMb = $totalBytes / 1MB
+  }
+}
+
+$videoController = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | Where-Object { $_.AdapterRAM -gt 0 }
+if ($videoController) {
+  $adapterRam = ($videoController | Measure-Object -Property AdapterRAM -Sum).Sum
+  if ($adapterRam -gt 0) {
+    $memTotalMb = $adapterRam / 1MB
+  }
+}
+
+if ($usage -ne $null) {
+  $usage = [Math]::Min([Math]::Max([double]$usage, 0), 100)
+}
+
+[PSCustomObject]@{
+  usage = $usage
+  memUsedMb = $memUsedMb
+  memTotalMb = $memTotalMb
+} | ConvertTo-Json -Compress
+"#;
+
+    let output = Command::new("powershell.exe")
+        .args(["-NoProfile", "-Command", script])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+
+    let raw = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if raw.is_empty() {
+        return None;
+    }
+
+    let payload: serde_json::Value = serde_json::from_str(&raw).ok()?;
+    let usage_pct = payload.get("usage").and_then(|v| v.as_f64());
+    let memory_used_mb = payload.get("memUsedMb").and_then(|v| v.as_f64());
+    let memory_total_mb = payload.get("memTotalMb").and_then(|v| v.as_f64());
+
+    Some(GpuMetrics {
+        usage_pct,
+        temperature_c: None,
+        memory_used_mb,
+        memory_total_mb,
+    })
+}
+
+#[cfg(not(target_os = "windows"))]
+fn query_gpu_metrics_windows() -> Option<GpuMetrics> {
+    None
 }

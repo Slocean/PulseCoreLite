@@ -2,28 +2,28 @@
   <section class="page-grid">
     <article class="glass-panel page-header">
       <h2>{{ t("network.title") }}</h2>
-      <p>Real-time latency and bandwidth diagnostics</p>
+      <p>{{ t("network.subtitle") }}</p>
     </article>
 
     <article class="glass-panel full-width network-hero">
       <div class="network-gauge" :style="gaugeStyle">
         <div>
-          <span>DOWNLOAD</span>
+          <span>{{ t("network.download") }}</span>
           <strong>{{ displayGauge.toFixed(0) }}</strong>
           <small>Mbps</small>
         </div>
       </div>
       <div class="network-hero-side">
         <div>
-          <span>PING LATENCY</span>
+          <span>{{ t("network.pingLatency") }}</span>
           <strong>{{ pingAvg }}</strong>
         </div>
         <div>
-          <span>UPLOAD SPEED</span>
+          <span>{{ t("network.uploadSpeed") }}</span>
           <strong>{{ upMbps.toFixed(2) }} Mbps</strong>
         </div>
         <div>
-          <span>PACKET LOSS</span>
+          <span>{{ t("network.packetLoss") }}</span>
           <strong>{{ pingLoss }}</strong>
         </div>
       </div>
@@ -37,7 +37,7 @@
         </select>
       </label>
       <label>
-        Ping target
+        {{ t("network.pingTarget") }}
         <input v-model="pingTarget" />
       </label>
       <div class="row-actions">
@@ -48,34 +48,34 @@
     </article>
 
     <article class="glass-panel stat-card">
-      <h3>SPEED TEST TASK</h3>
-      <p>Task: {{ activeTask || "-" }}</p>
-      <p>Progress: {{ progressMbps }}</p>
-      <p>Last Result: {{ speedResult }}</p>
-      <p v-if="lastExportPath">Exported: {{ lastExportPath }}</p>
+      <h3>{{ t("network.taskCard") }}</h3>
+      <p>{{ t("network.task") }}: {{ activeTask || "-" }}</p>
+      <p>{{ t("network.progress") }}: {{ progressMbps }}</p>
+      <p>{{ t("network.lastResult") }}: {{ speedResult }}</p>
+      <p v-if="lastExportPath">{{ t("network.exported") }}: {{ lastExportPath }}</p>
     </article>
 
     <article class="glass-panel stat-card">
-      <h3>ACTIVE ENDPOINT</h3>
+      <h3>{{ t("network.activeEndpoint") }}</h3>
       <p>{{ endpoint }}</p>
-      <p>Live down: {{ downMbps.toFixed(2) }} Mbps</p>
-      <p>Live up: {{ upMbps.toFixed(2) }} Mbps</p>
+      <p>{{ t("network.liveDown") }}: {{ downMbps.toFixed(2) }} Mbps</p>
+      <p>{{ t("network.liveUp") }}: {{ upMbps.toFixed(2) }} Mbps</p>
     </article>
 
     <article class="glass-panel full-width">
-      <h3>History</h3>
+      <h3>{{ t("network.history") }}</h3>
 
       <div class="history-filters">
         <label>
-          From
+          {{ t("network.from") }}
           <input v-model="fromDate" type="date" />
         </label>
         <label>
-          To
+          {{ t("network.to") }}
           <input v-model="toDate" type="date" />
         </label>
         <label>
-          Page Size
+          {{ t("network.pageSize") }}
           <select v-model.number="pageSize">
             <option :value="10">10</option>
             <option :value="20">20</option>
@@ -85,47 +85,47 @@
       </div>
 
       <div class="row-actions">
-        <button @click="applyHistoryFilter">Apply Filter</button>
-        <button @click="clearHistoryFilter">Clear Filter</button>
-        <button @click="exportHistory">Export CSV</button>
+        <button @click="applyHistoryFilter">{{ t("network.applyFilter") }}</button>
+        <button @click="clearHistoryFilter">{{ t("network.clearFilter") }}</button>
+        <button @click="exportHistory">{{ t("network.exportCsv") }}</button>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th>Time</th>
-            <th>Endpoint</th>
-            <th>Download Mbps</th>
-            <th>Latency</th>
+            <th>{{ t("network.time") }}</th>
+            <th>{{ t("network.endpoint") }}</th>
+            <th>{{ t("network.downloadMbps") }}</th>
+            <th>{{ t("network.latency") }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="store.historyLoading">
-            <td colspan="4">Loading...</td>
+            <td colspan="4">{{ t("common.loading") }}</td>
           </tr>
           <tr v-else-if="store.historyPage.items.length === 0">
-            <td colspan="4">No history records found.</td>
+            <td colspan="4">{{ t("network.noHistory") }}</td>
           </tr>
           <tr v-else v-for="item in store.historyPage.items" :key="item.task_id + item.started_at">
             <td>{{ item.started_at }}</td>
             <td>{{ item.endpoint }}</td>
             <td>{{ item.download_mbps.toFixed(2) }}</td>
-            <td>{{ item.latency_ms ?? "N/A" }}</td>
+            <td>{{ item.latency_ms == null ? t("common.na") : item.latency_ms.toFixed(2) }}</td>
           </tr>
         </tbody>
       </table>
 
       <div class="pagination">
-        <button @click="goToPage(currentPage - 1)" :disabled="currentPage <= 1">Prev</button>
-        <span>Page {{ currentPage }} / {{ totalPages }} · {{ store.historyPage.total }} rows</span>
-        <button @click="goToPage(currentPage + 1)" :disabled="currentPage >= totalPages">Next</button>
+        <button @click="goToPage(currentPage - 1)" :disabled="currentPage <= 1">{{ t("network.prev") }}</button>
+        <span>{{ t("network.pageInfo", { page: currentPage, total: totalPages, rows: store.historyPage.total }) }}</span>
+        <button @click="goToPage(currentPage + 1)" :disabled="currentPage >= totalPages">{{ t("network.next") }}</button>
       </div>
     </article>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
 import { api, inTauri } from "../services/tauri";
@@ -147,6 +147,16 @@ const downMbps = computed(() => (store.snapshot.network.download_bytes_per_sec *
 const upMbps = computed(() => (store.snapshot.network.upload_bytes_per_sec * 8) / 1_000_000);
 const currentPage = computed(() => store.historyFilter.page);
 const totalPages = computed(() => store.totalHistoryPages);
+
+watch(
+  () => store.settings.speedtest_endpoints,
+  (next) => {
+    if (!next.includes(endpoint.value)) {
+      endpoint.value = next[0] ?? "";
+    }
+  },
+  { deep: true }
+);
 
 const displayGauge = computed(() => {
   if (store.lastSpeedResult) {
@@ -246,7 +256,7 @@ async function exportHistory() {
   };
 
   if (!inTauri()) {
-    lastExportPath.value = "Tauri runtime required";
+    lastExportPath.value = t("network.tauriRequired");
     return;
   }
 

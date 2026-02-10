@@ -1,5 +1,5 @@
 <template>
-  <div class="app-root" :style="themeVars">
+  <div class="app-root" :style="themeVars" :class="{ 'app-root--bigscreen': store.bigScreen }">
     <div v-if="isOverlay" class="overlay-shell">
       <router-view />
     </div>
@@ -9,7 +9,7 @@
       <div class="ambient-glow ambient-glow--left"></div>
       <div class="ambient-glow ambient-glow--right"></div>
 
-      <aside class="cyber-sidebar glass-panel">
+      <aside v-if="!store.bigScreen" class="cyber-sidebar glass-panel">
         <div class="brand-block">
           <div class="brand-icon">PC</div>
           <div>
@@ -39,7 +39,7 @@
 
         <div class="sidebar-meta">
           <div>
-            <span class="meta-label">MODE</span>
+            <span class="meta-label">{{ t("app.mode") }}</span>
             <strong>{{ modeLabel }}</strong>
           </div>
           <button class="cyber-btn" @click="toggleOverlay(true)">
@@ -47,28 +47,44 @@
             {{ t("nav.overlay") }}
           </button>
           <select v-model="locale" @change="onLocaleChange">
-            <option value="zh-CN">中文</option>
-            <option value="en-US">English</option>
+            <option value="zh-CN">{{ t("language.zh") }}</option>
+            <option value="en-US">{{ t("language.en") }}</option>
           </select>
         </div>
       </aside>
 
       <main class="main-shell">
-        <header class="topbar glass-panel">
+        <header v-if="!store.bigScreen" class="topbar glass-panel">
           <div>
-            <p class="meta-label">SYSTEM STATUS</p>
+            <p class="meta-label">{{ t("app.systemStatus") }}</p>
             <h2>{{ pageTitle }}</h2>
           </div>
           <div class="topbar-right">
+            <button
+              v-if="isDashboard"
+              class="cyber-btn cyber-btn--ghost"
+              type="button"
+              @click="setBigScreen(true)"
+            >
+              <span class="material-symbols-outlined">fullscreen</span>
+              {{ t("app.bigScreen") }}
+            </button>
             <span class="uptime-dot"></span>
             <span>{{ new Date(snapshot.timestamp).toLocaleTimeString() }}</span>
           </div>
         </header>
 
-        <section class="page-wrap">
+        <section class="page-wrap" :class="{ 'page-wrap--bigscreen': store.bigScreen }">
           <router-view />
         </section>
       </main>
+
+      <div v-if="store.bigScreen" class="bigscreen-exit">
+        <button class="cyber-btn" type="button" @click="setBigScreen(false)">
+          <span class="material-symbols-outlined">fullscreen_exit</span>
+          {{ t("app.exitBigScreen") }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -85,8 +101,9 @@ const route = useRoute();
 const { t, locale } = useI18n();
 
 const snapshot = computed(() => store.snapshot);
-const modeLabel = computed(() => (store.mode === "low_power" ? "LOW POWER" : "NORMAL"));
+const modeLabel = computed(() => (store.mode === "low_power" ? t("app.modeLowPower") : t("app.modeNormal")));
 const isOverlay = computed(() => route.path === "/overlay");
+const isDashboard = computed(() => route.path === "/dashboard");
 const pageTitle = computed(() => {
   if (route.path === "/network") return t("nav.network");
   if (route.path === "/hardware") return t("nav.hardware");
@@ -101,23 +118,54 @@ const themeVars = computed(() => ({
 }));
 
 function onVisibility() {
-  store.setLowPowerMode(document.hidden);
+  void store.setLowPowerMode(document.hidden);
 }
 
 function onBlur() {
-  store.setLowPowerMode(true);
+  void store.setLowPowerMode(true);
 }
 
 function onFocus() {
-  store.setLowPowerMode(false);
+  void store.setLowPowerMode(false);
 }
 
 function onLocaleChange() {
-  store.updateSettings({ language: locale.value as "zh-CN" | "en-US" });
+  void store.updateSettings({ language: locale.value as "zh-CN" | "en-US" });
 }
 
 function toggleOverlay(visible: boolean) {
-  store.toggleOverlay(visible);
+  void store.toggleOverlay(visible);
+}
+
+async function setBigScreen(enabled: boolean) {
+  store.bigScreen = enabled;
+
+  if (!document.fullscreenEnabled) {
+    return;
+  }
+
+  try {
+    if (enabled && !document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+    }
+    if (!enabled && document.fullscreenElement) {
+      await document.exitFullscreen();
+    }
+  } catch {
+    // Ignore fullscreen permission or platform errors and keep CSS-based large-screen mode.
+  }
+}
+
+function onFullscreenChanged() {
+  if (!document.fullscreenElement && store.bigScreen) {
+    store.bigScreen = false;
+  }
+}
+
+function onKeyDown(event: KeyboardEvent) {
+  if (event.key === "Escape" && store.bigScreen) {
+    void setBigScreen(false);
+  }
 }
 
 onMounted(async () => {
@@ -126,12 +174,16 @@ onMounted(async () => {
   document.addEventListener("visibilitychange", onVisibility);
   window.addEventListener("blur", onBlur);
   window.addEventListener("focus", onFocus);
+  window.addEventListener("keydown", onKeyDown);
+  document.addEventListener("fullscreenchange", onFullscreenChanged);
 });
 
 onUnmounted(() => {
   document.removeEventListener("visibilitychange", onVisibility);
   window.removeEventListener("blur", onBlur);
   window.removeEventListener("focus", onFocus);
+  window.removeEventListener("keydown", onKeyDown);
+  document.removeEventListener("fullscreenchange", onFullscreenChanged);
   store.dispose();
 });
 
@@ -139,6 +191,15 @@ watch(
   () => store.settings.language,
   (lang) => {
     locale.value = lang;
+  }
+);
+
+watch(
+  () => route.path,
+  (path) => {
+    if (path !== "/dashboard" && store.bigScreen) {
+      void setBigScreen(false);
+    }
   }
 );
 </script>
