@@ -532,14 +532,17 @@ textarea {
 
 /* Overlay */
 .overlay-shell {
-  min-height: 100vh;
-  padding: 10px;
+  display: inline-flex;
+  align-items: flex-start;
+  padding: 0;
+  width: fit-content;
+  height: fit-content;
   background: transparent;
 }
 
 .overlay-widget {
-  width: 100%;
-  max-width: 320px;
+  width: fit-content;
+  max-width: none;
   padding: 16px;
   position: relative;
   overflow: hidden;
@@ -1349,7 +1352,7 @@ th {
 
 /* Overlay configure */
 .overlay-widget {
-  max-width: 360px;
+  max-width: none;
 }
 
 .overlay-header-actions {

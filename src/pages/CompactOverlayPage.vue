@@ -1,12 +1,12 @@
 <template>
-  <section class="overlay-widget overlay-widget--cyber" @mousedown="startDragging" @dblclick.prevent.stop>
-    <header @mousedown="startDragging" @dblclick.prevent.stop>
+  <section ref="overlayRef" class="overlay-widget overlay-widget--cyber" @dblclick.prevent.stop>
+    <header>
       <div class="overlay-title">
         <h3>{{ t('overlay.title') }}</h3>
         <p>PULSECORE v2.0.4_CYBER</p>
       </div>
       <div class="overlay-header-actions">
-        <div class="overlay-drag" @mousedown.stop="startDragging" @dblclick.prevent.stop>
+        <div class="overlay-drag" @mousedown.stop="startDragging">
           <span class="material-symbols-outlined">drag_indicator</span>
         </div>
         <button
@@ -157,6 +157,11 @@ const showConfig = ref(false);
 const startedAt = Date.now();
 const uptimeLabel = ref('00:00:00');
 let uptimeTimer: number | undefined;
+const overlayRef = ref<HTMLElement | null>(null);
+let resizeObserver: ResizeObserver | undefined;
+let resizeFrame: number | undefined;
+let lastSize = { width: 0, height: 0 };
+let windowApiPromise: Promise<typeof import('@tauri-apps/api/window')> | undefined;
 
 const cpuUsagePct = computed(() => snapshot.value.cpu.usage_pct);
 const gpuUsagePct = computed(() => snapshot.value.gpu.usage_pct ?? 0);
@@ -214,8 +219,44 @@ async function startDragging() {
   if (!inTauri()) {
     return;
   }
-  const { getCurrentWindow } = await import('@tauri-apps/api/window');
+  const { getCurrentWindow } = await getWindowApi();
   await getCurrentWindow().startDragging();
+}
+
+async function getWindowApi() {
+  if (!windowApiPromise) {
+    windowApiPromise = import('@tauri-apps/api/window');
+  }
+  return windowApiPromise;
+}
+
+async function applyWindowSize(width: number, height: number) {
+  if (!inTauri()) {
+    return;
+  }
+  const nextWidth = Math.max(1, Math.ceil(width));
+  const nextHeight = Math.max(1, Math.ceil(height));
+  if (nextWidth === lastSize.width && nextHeight === lastSize.height) {
+    return;
+  }
+  lastSize = { width: nextWidth, height: nextHeight };
+  const { getCurrentWindow, LogicalSize } = await getWindowApi();
+  await getCurrentWindow().setSize(new LogicalSize(nextWidth, nextHeight));
+}
+
+function scheduleResize() {
+  if (resizeFrame != null) {
+    return;
+  }
+  resizeFrame = window.requestAnimationFrame(() => {
+    resizeFrame = undefined;
+    const element = overlayRef.value;
+    if (!element) {
+      return;
+    }
+    const rect = element.getBoundingClientRect();
+    void applyWindowSize(rect.width, rect.height);
+  });
 }
 
 function formatUptime(ms: number) {
@@ -239,11 +280,30 @@ function updateUptime() {
 onMounted(() => {
   updateUptime();
   uptimeTimer = window.setInterval(updateUptime, 1000);
+  if (!inTauri()) {
+    return;
+  }
+  const element = overlayRef.value;
+  if (!element || typeof ResizeObserver === 'undefined') {
+    return;
+  }
+  resizeObserver = new ResizeObserver(() => {
+    scheduleResize();
+  });
+  resizeObserver.observe(element);
+  scheduleResize();
 });
 
 onUnmounted(() => {
   if (uptimeTimer) {
     window.clearInterval(uptimeTimer);
+  }
+  if (resizeObserver && overlayRef.value) {
+    resizeObserver.unobserve(overlayRef.value);
+  }
+  resizeObserver = undefined;
+  if (resizeFrame != null) {
+    window.cancelAnimationFrame(resizeFrame);
   }
 });
 </script>
