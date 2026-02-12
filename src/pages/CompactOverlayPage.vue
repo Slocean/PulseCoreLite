@@ -142,6 +142,7 @@ import { useAppStore } from '../stores/app';
 import packageJson from '../../package.json';
 
 const OVERLAY_PREF_KEY = 'pulsecore.overlay_prefs';
+const OVERLAY_POS_KEY = 'pulsecore.overlay_pos';
 
 interface OverlayPrefs {
   showCpu: boolean;
@@ -164,6 +165,9 @@ let resizeObserver: ResizeObserver | undefined;
 let resizeFrame: number | undefined;
 let lastSize = { width: 0, height: 0 };
 let windowApiPromise: Promise<typeof import('@tauri-apps/api/window')> | undefined;
+let moveUnlisten: (() => void) | undefined;
+let moveFrame: number | undefined;
+let lastPosition = { x: 0, y: 0 };
 
 const cpuUsagePct = computed(() => snapshot.value.cpu.usage_pct);
 const gpuUsagePct = computed(() => snapshot.value.gpu.usage_pct ?? 0);
@@ -213,6 +217,30 @@ function loadPrefs(): OverlayPrefs {
   }
 }
 
+function loadPosition() {
+  try {
+    const raw = localStorage.getItem(OVERLAY_POS_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw) as { x?: number; y?: number };
+    if (typeof parsed.x !== 'number' || typeof parsed.y !== 'number') {
+      return null;
+    }
+    return { x: parsed.x, y: parsed.y };
+  } catch {
+    return null;
+  }
+}
+
+function savePosition(next: { x: number; y: number }) {
+  if (next.x === lastPosition.x && next.y === lastPosition.y) {
+    return;
+  }
+  lastPosition = next;
+  localStorage.setItem(OVERLAY_POS_KEY, JSON.stringify(next));
+}
+
 function hide() {
   void store.toggleOverlay(false);
 }
@@ -244,6 +272,27 @@ async function applyWindowSize(width: number, height: number) {
   lastSize = { width: nextWidth, height: nextHeight };
   const { getCurrentWindow, LogicalSize } = await getWindowApi();
   await getCurrentWindow().setSize(new LogicalSize(nextWidth, nextHeight));
+}
+
+async function restorePosition() {
+  const saved = loadPosition();
+  if (!saved) {
+    return;
+  }
+  const { getCurrentWindow, LogicalPosition } = await getWindowApi();
+  await getCurrentWindow().setPosition(new LogicalPosition(saved.x, saved.y));
+}
+
+function schedulePositionSave() {
+  if (moveFrame != null) {
+    return;
+  }
+  moveFrame = window.requestAnimationFrame(async () => {
+    moveFrame = undefined;
+    const { getCurrentWindow } = await getWindowApi();
+    const pos = await getCurrentWindow().outerPosition();
+    savePosition({ x: pos.x, y: pos.y });
+  });
 }
 
 function scheduleResize() {
@@ -285,6 +334,16 @@ onMounted(() => {
   if (!inTauri()) {
     return;
   }
+  void restorePosition();
+  void getWindowApi()
+    .then(({ getCurrentWindow }) =>
+      getCurrentWindow().onMoved(() => {
+        schedulePositionSave();
+      })
+    )
+    .then(unlisten => {
+      moveUnlisten = unlisten;
+    });
   const element = overlayRef.value;
   if (!element || typeof ResizeObserver === 'undefined') {
     return;
@@ -295,7 +354,6 @@ onMounted(() => {
   resizeObserver.observe(element);
   scheduleResize();
 });
-
 onUnmounted(() => {
   if (uptimeTimer) {
     window.clearInterval(uptimeTimer);
@@ -306,6 +364,13 @@ onUnmounted(() => {
   resizeObserver = undefined;
   if (resizeFrame != null) {
     window.cancelAnimationFrame(resizeFrame);
+  }
+  if (moveUnlisten) {
+    moveUnlisten();
+  }
+  moveUnlisten = undefined;
+  if (moveFrame != null) {
+    window.cancelAnimationFrame(moveFrame);
   }
 });
 </script>

@@ -3,5 +3,11 @@
   "identifier": "default",
   "description": "Default capability for PulseCore windows",
   "windows": ["main", "overlay"],
-  "permissions": ["core:default", "core:window:allow-start-dragging", "core:window:allow-set-size"]
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-set-size",
+    "core:window:allow-outer-position",
+    "core:window:allow-set-position"
+  ]
 }
