@@ -596,6 +596,7 @@ textarea {
   cursor: pointer;
   transition: all 160ms ease;
   color: rgba(255, 255, 255, 0.5);
+  line-height: 1;
 }
 
 .overlay-action:hover {
@@ -626,6 +627,12 @@ textarea {
 
 .overlay-drag .material-symbols-outlined {
   font-size: 18px;
+}
+
+.overlay-action .material-symbols-outlined {
+  font-size: 18px;
+  line-height: 1;
+  display: block;
 }
 
 .overlay-metrics {
