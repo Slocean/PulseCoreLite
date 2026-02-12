@@ -42,6 +42,10 @@
         {{ t('overlay.showMemory') }}
       </label>
       <label>
+        <input v-model="prefs.showDisk" type="checkbox" />
+        {{ t('overlay.showDisk') }}
+      </label>
+      <label>
         <input v-model="prefs.showDown" type="checkbox" />
         {{ t('overlay.showDown') }}
       </label>
@@ -96,6 +100,21 @@
             :style="{ width: `${memoryUsagePct}%` }"></span>
         </div>
       </div>
+
+      <div v-if="prefs.showDisk" class="overlay-metric">
+        <div class="overlay-metric-top">
+          <div class="overlay-metric-label">
+            <span class="material-symbols-outlined overlay-icon overlay-icon--cpu">hard_drive</span>
+            <span class="overlay-metric-name">{{ t('overlay.disk') }}</span>
+          </div>
+          <span class="overlay-metric-value overlay-glow-pink">{{ diskUsageLabel }}</span>
+        </div>
+        <div class="overlay-progress">
+          <span
+            class="overlay-progress-fill overlay-progress-fill--pink"
+            :style="{ width: `${diskUsagePct}%` }"></span>
+        </div>
+      </div>
     </div>
 
     <div class="overlay-divider"></div>
@@ -148,6 +167,7 @@ interface OverlayPrefs {
   showCpu: boolean;
   showGpu: boolean;
   showMemory: boolean;
+  showDisk: boolean;
   showDown: boolean;
   showUp: boolean;
 }
@@ -172,11 +192,13 @@ let lastPosition = { x: 0, y: 0 };
 const cpuUsagePct = computed(() => snapshot.value.cpu.usage_pct);
 const gpuUsagePct = computed(() => snapshot.value.gpu.usage_pct ?? 0);
 const memoryUsagePct = computed(() => snapshot.value.memory.usage_pct);
+const diskUsagePct = computed(() => snapshot.value.disk.usage_pct);
 const cpuUsageLabel = computed(() => `${snapshot.value.cpu.usage_pct.toFixed(1)}%`);
 const gpuUsageLabel = computed(() =>
   snapshot.value.gpu.usage_pct == null ? t('common.na') : `${snapshot.value.gpu.usage_pct.toFixed(1)}%`
 );
 const memoryUsageLabel = computed(() => `${snapshot.value.memory.usage_pct.toFixed(1)}%`);
+const diskUsageLabel = computed(() => `${snapshot.value.disk.usage_pct.toFixed(1)}%`);
 const downloadSpeed = computed(() => (snapshot.value.network.download_bytes_per_sec / 1024 / 1024).toFixed(2));
 const uploadSpeed = computed(() => (snapshot.value.network.upload_bytes_per_sec / 1024 / 1024).toFixed(2));
 
@@ -195,6 +217,7 @@ function loadPrefs(): OverlayPrefs {
     showCpu: true,
     showGpu: true,
     showMemory: true,
+    showDisk: true,
     showDown: true,
     showUp: true
   };
@@ -209,6 +232,7 @@ function loadPrefs(): OverlayPrefs {
       showCpu: parsed.showCpu ?? fallback.showCpu,
       showGpu: parsed.showGpu ?? fallback.showGpu,
       showMemory: parsed.showMemory ?? fallback.showMemory,
+      showDisk: parsed.showDisk ?? fallback.showDisk,
       showDown: parsed.showDown ?? fallback.showDown,
       showUp: parsed.showUp ?? fallback.showUp
     };

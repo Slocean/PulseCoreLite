@@ -174,11 +174,13 @@
     "cpu": "CPU",
     "gpu": "GPU",
     "memory": "Memory",
+    "disk": "Disk",
     "down": "Down",
     "up": "Up",
     "showCpu": "Show CPU",
     "showGpu": "Show GPU",
     "showMemory": "Show Memory",
+    "showDisk": "Show Disk",
     "showDown": "Show Download",
     "showUp": "Show Upload"
   }

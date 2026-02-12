@@ -174,11 +174,13 @@
     "cpu": "CPU",
     "gpu": "GPU",
     "memory": "内存",
+    "disk": "磁盘",
     "down": "下载",
     "up": "上传",
     "showCpu": "显示 CPU",
     "showGpu": "显示 GPU",
     "showMemory": "显示内存",
+    "showDisk": "显示磁盘",
     "showDown": "显示下载",
     "showUp": "显示上传"
   }
