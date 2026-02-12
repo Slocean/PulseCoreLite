@@ -28,6 +28,10 @@
       </div>
     </header>
 
+    <div v-if="overlayDisplay.show_hardware_info" class="overlay-hardware">
+      {{ hardwareInfoLabel }}
+    </div>
+
     <div v-if="showConfig" class="overlay-config" @mousedown.stop>
       <label>
         <input v-model="prefs.showCpu" type="checkbox" />
@@ -62,7 +66,12 @@
             <span class="material-symbols-outlined overlay-icon overlay-icon--cpu">memory</span>
             <span class="overlay-metric-name">{{ t('overlay.cpu') }}</span>
           </div>
-          <span class="overlay-metric-value overlay-glow-cyan">{{ cpuUsageLabel }}</span>
+          <div class="overlay-metric-values">
+            <span v-if="overlayDisplay.show_values" class="overlay-metric-value-sub">{{ cpuDetailLabel }}</span>
+            <span v-if="overlayDisplay.show_percent" class="overlay-metric-value overlay-glow-cyan">
+              {{ cpuPercentLabel }}
+            </span>
+          </div>
         </div>
         <div class="overlay-progress">
           <span
@@ -77,7 +86,12 @@
             <span class="material-symbols-outlined overlay-icon overlay-icon--gpu">developer_board</span>
             <span class="overlay-metric-name">{{ t('overlay.gpu') }}</span>
           </div>
-          <span class="overlay-metric-value overlay-glow-pink">{{ gpuUsageLabel }}</span>
+          <div class="overlay-metric-values">
+            <span v-if="overlayDisplay.show_values" class="overlay-metric-value-sub">{{ gpuDetailLabel }}</span>
+            <span v-if="overlayDisplay.show_percent" class="overlay-metric-value overlay-glow-pink">
+              {{ gpuPercentLabel }}
+            </span>
+          </div>
         </div>
         <div class="overlay-progress">
           <span
@@ -92,7 +106,12 @@
             <span class="material-symbols-outlined overlay-icon overlay-icon--cpu">memory_alt</span>
             <span class="overlay-metric-name">{{ t('overlay.memory') }}</span>
           </div>
-          <span class="overlay-metric-value overlay-glow-cyan">{{ memoryUsageLabel }}</span>
+          <div class="overlay-metric-values">
+            <span v-if="overlayDisplay.show_values" class="overlay-metric-value-sub">{{ memoryUsageLabel }}</span>
+            <span v-if="overlayDisplay.show_percent" class="overlay-metric-value overlay-glow-cyan">
+              {{ memoryPercentLabel }}
+            </span>
+          </div>
         </div>
         <div class="overlay-progress">
           <span
@@ -108,15 +127,14 @@
               <span class="material-symbols-outlined overlay-icon overlay-icon--cpu">hard_drive</span>
               <span class="overlay-metric-name">{{ disk.name }}</span>
             </div>
-            <div style="display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2">
-              <span class="overlay-metric-value overlay-glow-pink">{{ disk.usage_pct.toFixed(1) }}%</span>
-              <span style="font-size: 0.7em; opacity: 0.7">
-                {{ disk.used_gb.toFixed(0) }}/{{ disk.total_gb.toFixed(0) }} GB
-              </span>
-              <div style="display: flex; gap: 4px; font-size: 0.6em; opacity: 0.6">
-                <span>R: {{ ((disk.read_bytes_per_sec || 0) / 1024 / 1024).toFixed(1) }} MB/s</span>
-                <span>W: {{ ((disk.write_bytes_per_sec || 0) / 1024 / 1024).toFixed(1) }} MB/s</span>
+            <div class="overlay-metric-values overlay-metric-values--disk">
+              <div v-if="overlayDisplay.show_values" class="overlay-metric-value-block">
+                <span class="overlay-metric-value-sub">{{ diskUsageLabel(disk) }}</span>
+                <span class="overlay-metric-value-io">{{ diskIoLabel(disk) }}</span>
               </div>
+              <span v-if="overlayDisplay.show_percent" class="overlay-metric-value overlay-glow-pink">
+                {{ diskPercentLabel(disk) }}
+              </span>
             </div>
           </div>
           <div class="overlay-progress">
@@ -187,6 +205,7 @@ const { t } = useI18n();
 const store = useAppStore();
 const appVersion = packageJson.version;
 const snapshot = computed(() => store.snapshot);
+const overlayDisplay = computed(() => store.settings.overlay_display);
 const showConfig = ref(false);
 const startedAt = Date.now();
 const uptimeLabel = ref('00:00:00');
@@ -204,9 +223,13 @@ const cpuUsagePct = computed(() => snapshot.value.cpu.usage_pct);
 const gpuUsagePct = computed(() => snapshot.value.gpu.usage_pct ?? 0);
 const memoryUsagePct = computed(() => snapshot.value.memory.usage_pct);
 const disks = computed(() => snapshot.value.disks);
-const cpuUsageLabel = computed(() => {
-  const parts = [`${snapshot.value.cpu.usage_pct.toFixed(1)}%`];
-
+const cpuPercentLabel = computed(() => `${snapshot.value.cpu.usage_pct.toFixed(1)}%`);
+const gpuPercentLabel = computed(() =>
+  snapshot.value.gpu.usage_pct == null ? t('common.na') : `${snapshot.value.gpu.usage_pct.toFixed(1)}%`
+);
+const memoryPercentLabel = computed(() => `${snapshot.value.memory.usage_pct.toFixed(1)}%`);
+const cpuDetailLabel = computed(() => {
+  const parts: string[] = [];
   const freq = snapshot.value.cpu.frequency_mhz;
   const maxFreq = store.hardwareInfo.cpu_max_freq_mhz;
 
@@ -219,11 +242,20 @@ const cpuUsageLabel = computed(() => {
   if (snapshot.value.cpu.temperature_c) {
     parts.push(`${snapshot.value.cpu.temperature_c.toFixed(0)}°C`);
   }
-  return parts.join(' · ');
+  return parts.length > 0 ? parts.join(' · ') : t('common.na');
 });
-const gpuUsageLabel = computed(() =>
-  snapshot.value.gpu.usage_pct == null ? t('common.na') : `${snapshot.value.gpu.usage_pct.toFixed(1)}%`
-);
+const gpuDetailLabel = computed(() => {
+  const parts: string[] = [];
+  if (snapshot.value.gpu.memory_used_mb != null && snapshot.value.gpu.memory_total_mb != null) {
+    parts.push(
+      `${t('overlay.vram')} ${snapshot.value.gpu.memory_used_mb.toFixed(0)}/${snapshot.value.gpu.memory_total_mb.toFixed(0)} MB`
+    );
+  }
+  if (snapshot.value.gpu.frequency_mhz != null) {
+    parts.push(`${t('overlay.freq')} ${formatGpuFreq(snapshot.value.gpu.frequency_mhz)}`);
+  }
+  return parts.length > 0 ? parts.join(' · ') : t('common.na');
+});
 const memoryUsageLabel = computed(() => {
   const used = (snapshot.value.memory.used_mb / 1024).toFixed(1);
   const total = (snapshot.value.memory.total_mb / 1024).toFixed(0);
@@ -231,6 +263,14 @@ const memoryUsageLabel = computed(() => {
 });
 const downloadSpeed = computed(() => (snapshot.value.network.download_bytes_per_sec / 1024 / 1024).toFixed(2));
 const uploadSpeed = computed(() => (snapshot.value.network.upload_bytes_per_sec / 1024 / 1024).toFixed(2));
+const hardwareInfoLabel = computed(() => {
+  const parts = [
+    store.hardwareInfo.device_brand,
+    store.hardwareInfo.cpu_model,
+    store.hardwareInfo.gpu_model
+  ].filter(part => part && part.trim().length > 0);
+  return parts.length > 0 ? parts.join(' · ') : t('common.na');
+});
 
 const prefs = reactive<OverlayPrefs>(loadPrefs());
 
@@ -380,6 +420,27 @@ function formatUptime(ms: number) {
 
 function updateUptime() {
   uptimeLabel.value = formatUptime(Date.now() - startedAt);
+}
+
+function formatGpuFreq(value: number) {
+  if (!Number.isFinite(value)) {
+    return t('common.na');
+  }
+  return `${(value / 1000).toFixed(2)} GHz`;
+}
+
+function diskUsageLabel(disk: { used_gb: number; total_gb: number }) {
+  return `${disk.used_gb.toFixed(0)}/${disk.total_gb.toFixed(0)} GB`;
+}
+
+function diskPercentLabel(disk: { usage_pct: number }) {
+  return `${disk.usage_pct.toFixed(1)}%`;
+}
+
+function diskIoLabel(disk: { read_bytes_per_sec: number | null; write_bytes_per_sec: number | null }) {
+  const read = ((disk.read_bytes_per_sec || 0) / 1024 / 1024).toFixed(1);
+  const write = ((disk.write_bytes_per_sec || 0) / 1024 / 1024).toFixed(1);
+  return `R: ${read} MB/s · W: ${write} MB/s`;
 }
 
 onMounted(() => {

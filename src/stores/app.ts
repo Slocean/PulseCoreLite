@@ -20,7 +20,7 @@ function emptySnapshot(): TelemetrySnapshot {
   return {
     timestamp: new Date().toISOString(),
     cpu: { usage_pct: 0, frequency_mhz: null, temperature_c: null },
-    gpu: { usage_pct: null, temperature_c: null, memory_used_mb: null, memory_total_mb: null },
+    gpu: { usage_pct: null, temperature_c: null, memory_used_mb: null, memory_total_mb: null, frequency_mhz: null },
     memory: { used_mb: 0, total_mb: 1, usage_pct: 0 },
     disks: [],
     network: { download_bytes_per_sec: 0, upload_bytes_per_sec: 0, latency_ms: null },
@@ -46,7 +46,12 @@ function defaultSettings(): AppSettings {
     language: 'zh-CN',
     speedtest_endpoints: ['https://speed.hetzner.de/100MB.bin', 'https://proof.ovh.net/files/100Mb.dat'],
     history_retention_days: 30,
-    sensor_boost_enabled: false
+    sensor_boost_enabled: false,
+    overlay_display: {
+      show_values: true,
+      show_percent: true,
+      show_hardware_info: false
+    }
   };
 }
 
@@ -188,6 +193,13 @@ export const useAppStore = defineStore('app', {
             usage_pct: Math.max(5, Math.min(90, this.snapshot.cpu.usage_pct + (Math.random() * 16 - 8))),
             frequency_mhz: 4200,
             temperature_c: 40 + Math.random() * 20
+          },
+          gpu: {
+            ...this.snapshot.gpu,
+            usage_pct: Math.max(3, Math.min(95, (this.snapshot.gpu.usage_pct ?? 30) + (Math.random() * 18 - 9))),
+            memory_total_mb: 8192,
+            memory_used_mb: 2400 + Math.random() * 800,
+            frequency_mhz: 1500 + Math.random() * 200
           },
           memory: {
             ...this.snapshot.memory,

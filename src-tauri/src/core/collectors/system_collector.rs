@@ -47,6 +47,7 @@ impl SystemCollector {
                 temperature_c: None,
                 memory_used_mb: None,
                 memory_total_mb: None,
+                frequency_mhz: None,
             },
             last_gpu_poll: Instant::now() - Duration::from_secs(10),
         }
@@ -182,6 +183,7 @@ fn query_gpu_metrics_windows() -> Option<GpuMetrics> {
 $usage = $null
 $memUsedMb = $null
 $memTotalMb = $null
+$freqMhz = $null
 
 $engine = Get-Counter '\GPU Engine(*)\Utilization Percentage' -ErrorAction SilentlyContinue
 if ($engine) {
@@ -193,6 +195,14 @@ if ($engine) {
   }
   if ($samples.Count -gt 0) {
     $usage = ($samples | Measure-Object -Sum).Sum
+  }
+}
+
+$freqCounter = Get-Counter '\GPU Engine(*)\Frequency' -ErrorAction SilentlyContinue
+if ($freqCounter) {
+  $freqSamples = $freqCounter.CounterSamples | ForEach-Object { [double]$_.CookedValue }
+  if ($freqSamples.Count -gt 0) {
+    $freqMhz = ($freqSamples | Measure-Object -Average).Average
   }
 }
 
@@ -220,6 +230,7 @@ if ($usage -ne $null) {
   usage = $usage
   memUsedMb = $memUsedMb
   memTotalMb = $memTotalMb
+  freqMhz = $freqMhz
 } | ConvertTo-Json -Compress
 "#;
 
@@ -240,12 +251,14 @@ if ($usage -ne $null) {
     let usage_pct = payload.get("usage").and_then(|v| v.as_f64());
     let memory_used_mb = payload.get("memUsedMb").and_then(|v| v.as_f64());
     let memory_total_mb = payload.get("memTotalMb").and_then(|v| v.as_f64());
+    let frequency_mhz = payload.get("freqMhz").and_then(|v| v.as_f64());
 
     Some(GpuMetrics {
         usage_pct,
         temperature_c: None,
         memory_used_mb,
         memory_total_mb,
+        frequency_mhz,
     })
 }
 

@@ -71,6 +71,22 @@
       </label>
     </article>
 
+    <article class="glass-panel control-card">
+      <h3>{{ t("settings.overlayAdvanced") }}</h3>
+      <label class="inline-check">
+        <input v-model="draft.overlay_display.show_values" type="checkbox" />
+        {{ t("settings.overlayShowValues") }}
+      </label>
+      <label class="inline-check">
+        <input v-model="draft.overlay_display.show_percent" type="checkbox" />
+        {{ t("settings.overlayShowPercent") }}
+      </label>
+      <label class="inline-check">
+        <input v-model="draft.overlay_display.show_hardware_info" type="checkbox" />
+        {{ t("settings.overlayShowHardware") }}
+      </label>
+    </article>
+
     <article class="glass-panel full-width modules-card">
       <h3>{{ t("settings.modules") }}</h3>
       <div class="modules-grid">
@@ -102,7 +118,11 @@ import { useAppStore } from "../stores/app";
 const store = useAppStore();
 const { t } = useI18n();
 
-const draft = reactive({ ...store.settings, module_toggles: { ...store.settings.module_toggles } });
+const draft = reactive({
+  ...store.settings,
+  module_toggles: { ...store.settings.module_toggles },
+  overlay_display: { ...store.settings.overlay_display }
+});
 const endpointsText = ref(store.settings.speedtest_endpoints.join("\n"));
 
 const previewStyle = computed(() => ({
@@ -114,7 +134,10 @@ const previewStyle = computed(() => ({
 watch(
   () => store.settings,
   (next) => {
-    Object.assign(draft, next, { module_toggles: { ...next.module_toggles } });
+    Object.assign(draft, next, {
+      module_toggles: { ...next.module_toggles },
+      overlay_display: { ...next.overlay_display }
+    });
     endpointsText.value = next.speedtest_endpoints.join("\n");
   },
   { deep: true }

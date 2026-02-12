@@ -86,6 +86,7 @@ impl AppState {
                 temperature_c: None,
                 memory_used_mb: None,
                 memory_total_mb: None,
+                frequency_mhz: None,
             },
             memory: crate::types::MemoryMetrics {
                 used_mb: 0.0,

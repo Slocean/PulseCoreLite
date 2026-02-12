@@ -156,6 +156,10 @@
     "glowIntensity": "Glow Intensity",
     "accentColor": "Accent Color",
     "sensorBoost": "Sensor Boost (reserved)",
+    "overlayAdvanced": "Overlay Advanced Display",
+    "overlayShowValues": "Show Values",
+    "overlayShowPercent": "Show Percent",
+    "overlayShowHardware": "Show Model & Brand",
     "modules": "Modules",
     "moduleCpu": "CPU Panel",
     "moduleGpu": "GPU Panel",
@@ -182,6 +186,8 @@
     "showMemory": "Show Memory",
     "showDisk": "Show Disk",
     "showDown": "Show Download",
-    "showUp": "Show Upload"
+    "showUp": "Show Upload",
+    "vram": "VRAM",
+    "freq": "Frequency"
   }
 }
