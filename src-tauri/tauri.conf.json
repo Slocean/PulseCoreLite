@@ -27,6 +27,8 @@
         "url": "index.html#/overlay",
         "width": 340,
         "height": 260,
+        "resizable": false,
+        "maximizable": false,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,

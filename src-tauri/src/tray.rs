@@ -26,6 +26,8 @@ pub fn setup_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()> {
                     match tauri::WebviewWindowBuilder::new(app, "overlay", tauri::WebviewUrl::App("index.html#/overlay".into()))
                         .title("PulseCore Overlay")
                         .always_on_top(true)
+                        .resizable(false)
+                        .maximizable(false)
                         .decorations(false)
                         .transparent(true)
                         .inner_size(340.0, 260.0)

@@ -287,6 +287,8 @@ pub async fn toggle_overlay(app: AppHandle, visible: bool) -> CmdResult<bool> {
         WebviewWindowBuilder::new(&app, "overlay", WebviewUrl::App("index.html#/overlay".into()))
             .title("PulseCore Overlay")
             .always_on_top(true)
+            .resizable(false)
+            .maximizable(false)
             .decorations(false)
             .transparent(true)
             .inner_size(340.0, 260.0)

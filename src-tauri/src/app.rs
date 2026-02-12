@@ -97,6 +97,8 @@ pub fn ensure_overlay_window(app: &AppHandle) -> tauri::Result<()> {
     tauri::WebviewWindowBuilder::new(app, "overlay", tauri::WebviewUrl::App("index.html#/overlay".into()))
         .title("PulseCore Overlay")
         .always_on_top(true)
+        .resizable(false)
+        .maximizable(false)
         .decorations(false)
         .transparent(true)
         .inner_size(340.0, 260.0)

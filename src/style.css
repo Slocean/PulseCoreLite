@@ -609,6 +609,21 @@ textarea {
   gap: 8px;
 }
 
+.overlay-drag {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: move;
+}
+
+.overlay-drag .material-symbols-outlined {
+  font-size: 18px;
+}
+
 .overlay-metrics {
   display: grid;
   gap: 14px;
