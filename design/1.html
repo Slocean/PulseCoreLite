@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>PulseCore Dark Mode Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0&amp;display=swap"
+      rel="stylesheet" />
+    <style type="text/tailwindcss">
+      :root {
+        --bg-deep: #0b0e14;
+        --card-bg: #13171f;
+        --accent-cyan: #00f2ff;
+        --accent-purple: #bc13fe;
+        --border-subtle: rgba(255, 255, 255, 0.08);
+        --text-muted: #94a3b8;
+      }
+      body {
+        background-color: var(--bg-deep);
+        color: #e2e8f0;
+        font-family: 'Inter', sans-serif;
+      }
+      .glow-cyan {
+        filter: drop-shadow(0 0 8px rgba(0, 242, 255, 0.4));
+      }
+      .glow-purple {
+        filter: drop-shadow(0 0 8px rgba(188, 19, 254, 0.4));
+      }
+      .sidebar-icon {
+        @apply text-slate-500 hover:text-[var(--accent-cyan)] transition-all duration-300;
+      }
+      .sidebar-icon.active {
+        @apply text-[var(--accent-cyan)] glow-cyan;
+      }
+      .glass-panel {
+        background: var(--card-bg);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+      }
+      .progress-ring {
+        transform: rotate(-90deg);
+      }
+      .progress-ring-circle {
+        transition: stroke-dashoffset 0.35s;
+        stroke-linecap: round;
+      }
+      .chart-gradient {
+        background: linear-gradient(180deg, rgba(0, 242, 255, 0.1) 0%, rgba(0, 242, 255, 0) 100%);
+      }
+      .mono {
+        font-family: 'JetBrains Mono', monospace;
+      }
+    </style>
+  </head>
+  <body class="flex h-screen overflow-hidden">
+    <aside
+      class="w-20 lg:w-64 border-r border-[var(--border-subtle)] bg-[var(--bg-deep)] flex flex-col items-center lg:items-start p-6 space-y-8">
+      <div class="flex items-center gap-3 mb-6 px-2">
+        <div
+          class="w-10 h-10 bg-[var(--accent-cyan)] rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(0,242,255,0.3)]">
+          <span class="material-symbols-outlined text-slate-900 font-bold">bolt</span>
+        </div>
+        <span class="hidden lg:block text-xl font-bold tracking-tight text-white">PulseCore</span>
+      </div>
+      <nav class="flex-1 w-full space-y-2">
+        <a
+          class="flex items-center gap-4 px-3 py-3 text-[var(--accent-cyan)] bg-cyan-500/10 rounded-xl border border-cyan-500/20 glow-cyan"
+          href="#">
+          <span class="material-symbols-outlined">dashboard</span>
+          <span class="hidden lg:block font-medium">Dashboard</span>
+        </a>
+        <a
+          class="flex items-center gap-4 px-3 py-3 text-slate-400 hover:text-white transition-colors rounded-xl"
+          href="#">
+          <span class="material-symbols-outlined">router</span>
+          <span class="hidden lg:block font-medium">Network</span>
+        </a>
+        <a
+          class="flex items-center gap-4 px-3 py-3 text-slate-400 hover:text-white transition-colors rounded-xl"
+          href="#">
+          <span class="material-symbols-outlined">memory</span>
+          <span class="hidden lg:block font-medium">Hardware</span>
+        </a>
+        <a
+          class="flex items-center gap-4 px-3 py-3 text-slate-400 hover:text-white transition-colors rounded-xl"
+          href="#">
+          <span class="material-symbols-outlined">storage</span>
+          <span class="hidden lg:block font-medium">Storage</span>
+        </a>
+        <a
+          class="flex items-center gap-4 px-3 py-3 text-slate-400 hover:text-white transition-colors rounded-xl"
+          href="#">
+          <span class="material-symbols-outlined">settings</span>
+          <span class="hidden lg:block font-medium">Settings</span>
+        </a>
+      </nav>
+      <div class="w-full pt-6 border-t border-[var(--border-subtle)]">
+        <div class="flex items-center gap-3 px-2">
+          <div class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 overflow-hidden">
+            <img
+              alt="avatar"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAB1F3kpVg1v95JL7SfqbMb5Nx9VhF15bzQcqJYs3ZCKptbhOKM13AEZY6k2NJvZI3wKUpRdbGBGIRwBZ62oAfW71Taahkwoq7fs5aVe-tKWbRzLg4yW7grdkLfsi2W4s8i7BD77SSsDU0VfM8vRQl_C89RSGh1SIa8Ct6c-YusMgU0c-Q39IpysxtrpIV8mmY7XAUcKE7HVO3G5S_qOFZ5v9P8wHQGgMDYeAcQ0YWMoNbgzSr9ImYTpAn_uJAXz0rqqt6ddLx5uYkN" />
+          </div>
+          <div class="hidden lg:block">
+            <p class="text-xs font-semibold text-white">Admin Root</p>
+            <p class="text-[10px] text-slate-500">System Ops</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+    <main class="flex-1 flex flex-col h-full overflow-y-auto">
+      <header
+        class="h-20 border-b border-[var(--border-subtle)] flex items-center justify-between px-8 bg-[var(--bg-deep)]/80 backdrop-blur-md sticky top-0 z-10">
+        <div>
+          <h1 class="text-2xl font-semibold text-white tracking-wide">Main Dashboard</h1>
+          <p class="text-xs text-[var(--text-muted)] uppercase tracking-widest mt-0.5">
+            Real-time Performance Metrics
+          </p>
+        </div>
+        <div class="flex items-center gap-6">
+          <div
+            class="flex items-center gap-3 bg-slate-900/50 px-4 py-2 rounded-lg border border-[var(--border-subtle)]">
+            <span class="material-symbols-outlined text-xs text-[var(--accent-cyan)]">schedule</span>
+            <span class="mono text-sm font-medium tracking-widest text-[var(--accent-cyan)]">14:52:08 UTC</span>
+          </div>
+          <button
+            class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm rounded-lg transition-colors border border-slate-700">
+            <span class="material-symbols-outlined text-sm">fullscreen</span>
+            <span class="hidden md:block">Full Screen</span>
+          </button>
+        </div>
+      </header>
+      <div class="p-8 space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="glass-panel p-6 flex flex-col items-center justify-between min-h-[220px]">
+            <div class="w-full flex justify-between items-start">
+              <span class="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">CPU Load</span>
+              <span class="material-symbols-outlined text-slate-500 text-sm">more_vert</span>
+            </div>
+            <div class="relative flex items-center justify-center">
+              <svg class="progress-ring" height="120" width="120">
+                <circle
+                  class="text-slate-800"
+                  cx="60"
+                  cy="60"
+                  fill="transparent"
+                  r="50"
+                  stroke="currentColor"
+                  stroke-width="8"></circle>
+                <circle
+                  class="text-[var(--accent-cyan)] glow-cyan progress-ring-circle"
+                  cx="60"
+                  cy="60"
+                  fill="transparent"
+                  r="50"
+                  stroke="currentColor"
+                  stroke-dasharray="314.159"
+                  stroke-dashoffset="245"
+                  stroke-width="8"></circle>
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span class="text-2xl font-bold text-white mono">22%</span>
+                <span class="text-[10px] text-slate-500 uppercase">utilization</span>
+              </div>
+            </div>
+            <div class="text-center">
+              <p class="text-xs font-medium text-slate-300">Intel Core i9-13900K</p>
+              <p class="text-[10px] text-[var(--accent-cyan)] uppercase mt-1">5.4 GHz • 48°C</p>
+            </div>
+          </div>
+          <div class="glass-panel p-6 flex flex-col items-center justify-between min-h-[220px]">
+            <div class="w-full flex justify-between items-start">
+              <span class="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">GPU Load</span>
+              <span class="material-symbols-outlined text-slate-500 text-sm">more_vert</span>
+            </div>
+            <div class="relative flex items-center justify-center">
+              <svg class="progress-ring" height="120" width="120">
+                <circle
+                  class="text-slate-800"
+                  cx="60"
+                  cy="60"
+                  fill="transparent"
+                  r="50"
+                  stroke="currentColor"
+                  stroke-width="8"></circle>
+                <circle
+                  class="text-[var(--accent-purple)] glow-purple progress-ring-circle"
+                  cx="60"
+                  cy="60"
+                  fill="transparent"
+                  r="50"
+                  stroke="currentColor"
+                  stroke-dasharray="314.159"
+                  stroke-dashoffset="40"
+                  stroke-width="8"></circle>
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span class="text-2xl font-bold text-white mono">87%</span>
+                <span class="text-[10px] text-slate-500 uppercase">Rendering</span>
+              </div>
+            </div>
+            <div class="text-center">
+              <p class="text-xs font-medium text-slate-300">NVIDIA RTX 4090 Ti</p>
+              <p class="text-[10px] text-[var(--accent-purple)] uppercase mt-1">24 GB VRAM • 62°C</p>
+            </div>
+          </div>
+          <div class="glass-panel p-6 flex flex-col justify-between">
+            <div class="w-full flex justify-between items-start mb-4">
+              <span class="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                Network Speed
+              </span>
+              <span class="material-symbols-outlined text-[var(--accent-cyan)] text-sm">speed</span>
+            </div>
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="material-symbols-outlined text-emerald-400 text-lg">download</span>
+                  <div>
+                    <p class="text-[10px] text-slate-500 uppercase">Download</p>
+                    <p class="text-lg font-bold mono leading-tight">
+                      842.5
+                      <span class="text-[10px] text-slate-500">Mbps</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="h-px bg-[var(--border-subtle)]"></div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="material-symbols-outlined text-cyan-400 text-lg">upload</span>
+                  <div>
+                    <p class="text-[10px] text-slate-500 uppercase">Upload</p>
+                    <p class="text-lg font-bold mono leading-tight">
+                      156.2
+                      <span class="text-[10px] text-slate-500">Mbps</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4 flex items-center justify-between text-[10px] text-slate-500 uppercase font-bold">
+              <span>Ping: 12ms</span>
+              <span>Jitter: 2ms</span>
+            </div>
+          </div>
+          <div class="glass-panel p-6 flex flex-col justify-between">
+            <div class="w-full flex justify-between items-start mb-4">
+              <span class="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                Storage Health
+              </span>
+              <span class="material-symbols-outlined text-emerald-500 text-sm">verified</span>
+            </div>
+            <div class="space-y-4">
+              <div>
+                <div class="flex justify-between items-end mb-1">
+                  <p class="text-xs text-slate-300">NVMe SSD (System)</p>
+                  <p class="text-xs text-slate-500 mono">64%</p>
+                </div>
+                <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                  <div class="h-full bg-cyan-500 w-[64%] shadow-[0_0_8px_rgba(6,182,212,0.5)]"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between items-end mb-1">
+                  <p class="text-xs text-slate-300">Mass Archive (RAID 5)</p>
+                  <p class="text-xs text-slate-500 mono">21%</p>
+                </div>
+                <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                  <div class="h-full bg-purple-500 w-[21%] shadow-[0_0_8px_rgba(168,85,247,0.5)]"></div>
+                </div>
+              </div>
+            </div>
+            <div
+              class="mt-4 flex items-center justify-center gap-2 py-1.5 bg-emerald-500/10 rounded-md border border-emerald-500/20">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span class="text-[10px] text-emerald-400 font-bold uppercase">All Disks Healthy</span>
+            </div>
+          </div>
+        </div>
+        <div class="glass-panel p-8">
+          <div class="flex items-center justify-between mb-8">
+            <div>
+              <h3 class="text-lg font-semibold text-white">Memory Usage Profile</h3>
+              <p class="text-sm text-slate-500">Dynamic swap and physical allocation (Last 60 Minutes)</p>
+            </div>
+            <div class="flex gap-2">
+              <span
+                class="px-3 py-1 bg-slate-900 border border-[var(--border-subtle)] text-[10px] rounded text-slate-400 mono">
+                ACTIVE: 12.4 GB
+              </span>
+              <span
+                class="px-3 py-1 bg-slate-900 border border-[var(--border-subtle)] text-[10px] rounded text-slate-400 mono">
+                TOTAL: 64 GB
+              </span>
+            </div>
+          </div>
+          <div class="h-64 relative flex items-end gap-1">
+            <div class="absolute inset-0 flex flex-col justify-between">
+              <div class="w-full h-px bg-[var(--border-subtle)]"></div>
+              <div class="w-full h-px bg-[var(--border-subtle)]/50"></div>
+              <div class="w-full h-px bg-[var(--border-subtle)]/50"></div>
+              <div class="w-full h-px bg-[var(--border-subtle)]/50"></div>
+            </div>
+            <div
+              class="flex-1 bg-cyan-500/20 h-[40%] rounded-t-sm border-t-2 border-cyan-400 shadow-[0_-5px_15px_rgba(34,211,238,0.1)]"></div>
+            <div class="flex-1 bg-cyan-500/20 h-[42%] rounded-t-sm border-t-2 border-cyan-400"></div>
+            <div class="flex-1 bg-cyan-500/20 h-[38%] rounded-t-sm border-t-2 border-cyan-400"></div>
+            <div class="flex-1 bg-cyan-500/20 h-[45%] rounded-t-sm border-t-2 border-cyan-400"></div>
+            <div
+              class="flex-1 bg-cyan-500/20 h-[50%] rounded-t-sm border-t-2 border-cyan-400 shadow-[0_-5px_15px_rgba(34,211,238,0.1)]"></div>
+            <div class="flex-1 bg-cyan-500/20 h-[48%] rounded-t-sm border-t-2 border-cyan-400"></div>
+            <div
+              class="flex-1 bg-cyan-500/20 h-[55%] rounded-t-sm border-t-2 border-cyan-400 shadow-[0_-5px_15px_rgba(34,211,238,0.1)]"></div>
+            <div
+              class="flex-1 bg-cyan-500/20 h-[65%] rounded-t-sm border-t-2 border-cyan-400 shadow-[0_-5px_15px_rgba(34,211,238,0.2)]"></div>
+            <div class="flex-1 bg-cyan-500/20 h-[60%] rounded-t-sm border-t-2 border-cyan-400"></div>
+            <div class="flex-1 bg-cyan-500/20 h-[58%] rounded-t-sm border-t-2 border-cyan-400"></div>
+            <div class="flex-1 bg-cyan-500/20 h-[62%] rounded-t-sm border-t-2 border-cyan-400"></div>
+            <div
+              class="flex-1 bg-cyan-500/20 h-[70%] rounded-t-sm border-t-2 border-cyan-400 shadow-[0_-5px_15px_rgba(34,211,238,0.2)]"></div>
+            <div class="flex-1 bg-cyan-500/20 h-[68%] rounded-t-sm border-t-2 border-cyan-400"></div>
+            <div class="flex-1 bg-cyan-500/20 h-[65%] rounded-t-sm border-t-2 border-cyan-400"></div>
+            <div
+              class="flex-1 bg-cyan-500/20 h-[75%] rounded-t-sm border-t-2 border-cyan-400 shadow-[0_-5px_15px_rgba(34,211,238,0.2)]"></div>
+            <div
+              class="flex-1 bg-cyan-500/20 h-[82%] rounded-t-sm border-t-2 border-cyan-400 shadow-[0_-10px_20px_rgba(34,211,238,0.3)]"></div>
+            <div class="flex-1 bg-cyan-500/20 h-[78%] rounded-t-sm border-t-2 border-cyan-400"></div>
+            <div class="flex-1 bg-cyan-500/20 h-[72%] rounded-t-sm border-t-2 border-cyan-400"></div>
+            <div class="flex-1 bg-cyan-500/20 h-[60%] rounded-t-sm border-t-2 border-cyan-400"></div>
+            <div class="flex-1 bg-cyan-500/20 h-[55%] rounded-t-sm border-t-2 border-cyan-400"></div>
+          </div>
+          <div class="mt-4 flex justify-between text-[10px] text-slate-500 mono uppercase">
+            <span>-60 min</span>
+            <span>-45 min</span>
+            <span>-30 min</span>
+            <span>-15 min</span>
+            <span>Now</span>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="glass-panel p-6 lg:col-span-2">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Process Monitor</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left">
+                <thead>
+                  <tr class="text-[10px] text-slate-500 uppercase border-b border-[var(--border-subtle)]">
+                    <th class="pb-3 font-semibold">Process Name</th>
+                    <th class="pb-3 font-semibold">PID</th>
+                    <th class="pb-3 font-semibold">CPU</th>
+                    <th class="pb-3 font-semibold">Memory</th>
+                    <th class="pb-3 font-semibold">User</th>
+                    <th class="pb-3 font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody class="text-xs">
+                  <tr class="border-b border-[var(--border-subtle)]/50 hover:bg-white/5 transition-colors">
+                    <td class="py-3 text-slate-200">System Idle Process</td>
+                    <td class="py-3 mono text-slate-500">0</td>
+                    <td class="py-3 mono text-cyan-400">74.2%</td>
+                    <td class="py-3 mono">12 KB</td>
+                    <td class="py-3">SYSTEM</td>
+                    <td class="py-3">
+                      <span class="px-2 py-0.5 rounded-full bg-slate-800 text-[10px]">Background</span>
+                    </td>
+                  </tr>
+                  <tr class="border-b border-[var(--border-subtle)]/50 hover:bg-white/5 transition-colors">
+                    <td class="py-3 text-slate-200">PulseCoreEngine.exe</td>
+                    <td class="py-3 mono text-slate-500">4291</td>
+                    <td class="py-3 mono text-cyan-400">4.1%</td>
+                    <td class="py-3 mono">452 MB</td>
+                    <td class="py-3">Admin</td>
+                    <td class="py-3">
+                      <span class="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 text-[10px]">
+                        Critical
+                      </span>
+                    </td>
+                  </tr>
+                  <tr class="border-b border-[var(--border-subtle)]/50 hover:bg-white/5 transition-colors">
+                    <td class="py-3 text-slate-200">Docker Desktop</td>
+                    <td class="py-3 mono text-slate-500">1204</td>
+                    <td class="py-3 mono text-cyan-400">2.8%</td>
+                    <td class="py-3 mono">2.1 GB</td>
+                    <td class="py-3">Admin</td>
+                    <td class="py-3">
+                      <span class="px-2 py-0.5 rounded-full bg-slate-800 text-[10px]">Running</span>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-white/5 transition-colors">
+                    <td class="py-3 text-slate-200">Chrome Backend</td>
+                    <td class="py-3 mono text-slate-500">8820</td>
+                    <td class="py-3 mono text-cyan-400">1.2%</td>
+                    <td class="py-3 mono">891 MB</td>
+                    <td class="py-3">Admin</td>
+                    <td class="py-3">
+                      <span class="px-2 py-0.5 rounded-full bg-slate-800 text-[10px]">Running</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="glass-panel p-6">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Environment</h3>
+            <div class="space-y-4">
+              <div
+                class="flex items-center justify-between p-3 bg-slate-900/40 rounded-lg border border-[var(--border-subtle)]">
+                <div class="flex items-center gap-3">
+                  <span class="material-symbols-outlined text-orange-400">thermostat</span>
+                  <span class="text-xs text-slate-400">Ambient Temp</span>
+                </div>
+                <span class="mono text-sm font-bold">24.2°C</span>
+              </div>
+              <div
+                class="flex items-center justify-between p-3 bg-slate-900/40 rounded-lg border border-[var(--border-subtle)]">
+                <div class="flex items-center gap-3">
+                  <span class="material-symbols-outlined text-blue-400">cloud</span>
+                  <span class="text-xs text-slate-400">Fan Speed</span>
+                </div>
+                <span class="mono text-sm font-bold">1,240 RPM</span>
+              </div>
+              <div
+                class="flex items-center justify-between p-3 bg-slate-900/40 rounded-lg border border-[var(--border-subtle)]">
+                <div class="flex items-center gap-3">
+                  <span class="material-symbols-outlined text-purple-400">bolt</span>
+                  <span class="text-xs text-slate-400">Total Power</span>
+                </div>
+                <span class="mono text-sm font-bold">342 Watts</span>
+              </div>
+              <div
+                class="flex items-center justify-between p-3 bg-slate-900/40 rounded-lg border border-[var(--border-subtle)]">
+                <div class="flex items-center gap-3">
+                  <span class="material-symbols-outlined text-green-400">verified_user</span>
+                  <span class="text-xs text-slate-400">Uptime</span>
+                </div>
+                <span class="mono text-sm font-bold">4d 12h 44m</span>
+              </div>
+            </div>
+            <div class="mt-6">
+              <button
+                class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-slate-900 text-xs font-bold rounded-lg transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(8,145,178,0.3)]">
+                Export Log Report
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

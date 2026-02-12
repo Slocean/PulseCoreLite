@@ -9,68 +9,72 @@
       <div class="ambient-glow ambient-glow--left"></div>
       <div class="ambient-glow ambient-glow--right"></div>
 
-      <aside v-if="!store.bigScreen" class="cyber-sidebar glass-panel">
-        <div class="brand-block">
-          <div class="brand-icon">PC</div>
-          <div>
-            <h1>{{ t("app.name") }}</h1>
-            <p>{{ t("app.tagline") }}</p>
+      <aside v-if="!store.bigScreen" class="cyber-sidebar">
+        <div class="sidebar-brand">
+          <div class="brand-icon">
+            <span class="material-symbols-outlined">bolt</span>
           </div>
+          <span class="brand-text">{{ t("app.name") }}</span>
         </div>
 
         <nav class="nav-links">
           <RouterLink to="/dashboard" class="nav-link">
             <span class="material-symbols-outlined">dashboard</span>
-            <span>{{ t("nav.dashboard") }}</span>
+            <span class="nav-text">{{ t("nav.dashboard") }}</span>
           </RouterLink>
           <RouterLink to="/network" class="nav-link">
-            <span class="material-symbols-outlined">wifi</span>
-            <span>{{ t("nav.network") }}</span>
+            <span class="material-symbols-outlined">router</span>
+            <span class="nav-text">{{ t("nav.network") }}</span>
           </RouterLink>
           <RouterLink to="/hardware" class="nav-link">
             <span class="material-symbols-outlined">memory</span>
-            <span>{{ t("nav.hardware") }}</span>
+            <span class="nav-text">{{ t("nav.hardware") }}</span>
           </RouterLink>
           <RouterLink to="/settings" class="nav-link">
-            <span class="material-symbols-outlined">tune</span>
-            <span>{{ t("nav.settings") }}</span>
+            <span class="material-symbols-outlined">settings</span>
+            <span class="nav-text">{{ t("nav.settings") }}</span>
           </RouterLink>
         </nav>
 
         <div class="sidebar-meta">
-          <div>
+          <div class="sidebar-mode">
             <span class="meta-label">{{ t("app.mode") }}</span>
             <strong>{{ modeLabel }}</strong>
           </div>
-          <button class="cyber-btn" @click="toggleOverlay(true)">
+          <button class="cyber-btn" type="button" @click="toggleOverlay(true)">
             <span class="material-symbols-outlined">stacked_line_chart</span>
-            {{ t("nav.overlay") }}
+            <span class="nav-text">{{ t("nav.overlay") }}</span>
           </button>
           <select v-model="locale" @change="onLocaleChange">
             <option value="zh-CN">{{ t("language.zh") }}</option>
             <option value="en-US">{{ t("language.en") }}</option>
           </select>
         </div>
+
+        <div class="sidebar-profile">
+          <div class="profile-avatar">AR</div>
+          <div class="profile-meta">
+            <p>{{ t("app.userName") }}</p>
+            <span>{{ t("app.userRole") }}</span>
+          </div>
+        </div>
       </aside>
 
       <main class="main-shell">
         <header v-if="!store.bigScreen" class="topbar glass-panel">
-          <div>
-            <p class="meta-label">{{ t("app.systemStatus") }}</p>
-            <h2>{{ pageTitle }}</h2>
+          <div class="topbar-title">
+            <h1>{{ isDashboard ? t("dashboard.title") : pageTitle }}</h1>
+            <p class="topbar-subtitle">{{ isDashboard ? t("dashboard.subtitle") : t("app.systemStatus") }}</p>
           </div>
           <div class="topbar-right">
-            <button
-              v-if="isDashboard"
-              class="cyber-btn cyber-btn--ghost"
-              type="button"
-              @click="setBigScreen(true)"
-            >
+            <div class="time-pill">
+              <span class="material-symbols-outlined">schedule</span>
+              <span class="mono">{{ utcTime }} UTC</span>
+            </div>
+            <button v-if="isDashboard" class="topbar-action" type="button" @click="setBigScreen(true)">
               <span class="material-symbols-outlined">fullscreen</span>
-              {{ t("app.bigScreen") }}
+              <span class="nav-text">{{ t("app.bigScreen") }}</span>
             </button>
-            <span class="uptime-dot"></span>
-            <span>{{ new Date(snapshot.timestamp).toLocaleTimeString() }}</span>
           </div>
         </header>
 
@@ -116,6 +120,17 @@ const themeVars = computed(() => ({
   "--glass-alpha": String(store.settings.glass_opacity),
   "--glow-scale": String(store.settings.glow_intensity)
 }));
+
+const utcTime = computed(() => {
+  const formatter = new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZone: "UTC"
+  });
+  return formatter.format(new Date(snapshot.value.timestamp));
+});
 
 function onVisibility() {
   void store.setLowPowerMode(document.hidden);
