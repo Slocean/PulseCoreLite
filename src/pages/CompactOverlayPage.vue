@@ -282,15 +282,14 @@ const memoryUsageLabel = computed(() => {
 const downloadSpeed = computed(() => (snapshot.value.network.download_bytes_per_sec / 1024 / 1024).toFixed(2));
 const uploadSpeed = computed(() => (snapshot.value.network.upload_bytes_per_sec / 1024 / 1024).toFixed(2));
 const latencyLabel = computed(() => {
-  const value = snapshot.value.network.latency_ms;
+  const pingLatency = store.lastPingResult?.avg_ms ?? null;
+  const speedLatency = store.lastSpeedResult?.latency_ms ?? null;
+  const snapshotLatency = snapshot.value.network.latency_ms ?? null;
+  const value = pingLatency ?? speedLatency ?? snapshotLatency;
   return value == null ? t('common.na') : `${value.toFixed(0)} ms`;
 });
-const cpuHardwareLabel = computed(() =>
-  formatHardwareLabel([store.hardwareInfo.device_brand, store.hardwareInfo.cpu_model])
-);
-const gpuHardwareLabel = computed(() =>
-  formatHardwareLabel([store.hardwareInfo.device_brand, store.hardwareInfo.gpu_model])
-);
+const cpuHardwareLabel = computed(() => formatHardwareLabel([store.hardwareInfo.cpu_model]));
+const gpuHardwareLabel = computed(() => formatHardwareLabel([store.hardwareInfo.gpu_model]));
 const memoryHardwareLabel = computed(() => formatHardwareLabel([store.hardwareInfo.ram_spec]));
 
 const prefs = reactive<OverlayPrefs>(loadPrefs());
