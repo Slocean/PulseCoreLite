@@ -28,10 +28,6 @@
       </div>
     </header>
 
-    <div v-if="prefs.showHardwareInfo" class="overlay-hardware">
-      {{ hardwareInfoLabel }}
-    </div>
-
     <div v-if="showConfig" class="overlay-config" @mousedown.stop>
       <label>
         <input v-model="prefs.showCpu" type="checkbox" />
@@ -79,6 +75,7 @@
             <div class="overlay-metric-text">
               <span class="overlay-metric-name">{{ t('overlay.cpu') }}</span>
               <span v-if="prefs.showValues" class="overlay-metric-detail">{{ cpuDetailLabel }}</span>
+              <span v-if="prefs.showHardwareInfo" class="overlay-metric-hardware">{{ cpuHardwareLabel }}</span>
             </div>
           </div>
           <span v-if="prefs.showPercent" class="overlay-metric-value overlay-glow-cyan">
@@ -99,6 +96,7 @@
             <div class="overlay-metric-text">
               <span class="overlay-metric-name">{{ t('overlay.gpu') }}</span>
               <span v-if="prefs.showValues" class="overlay-metric-detail">{{ gpuDetailLabel }}</span>
+              <span v-if="prefs.showHardwareInfo" class="overlay-metric-hardware">{{ gpuHardwareLabel }}</span>
             </div>
           </div>
           <span v-if="prefs.showPercent" class="overlay-metric-value overlay-glow-pink">
@@ -119,6 +117,7 @@
             <div class="overlay-metric-text">
               <span class="overlay-metric-name">{{ t('overlay.memory') }}</span>
               <span v-if="prefs.showValues" class="overlay-metric-detail">{{ memoryUsageLabel }}</span>
+              <span v-if="prefs.showHardwareInfo" class="overlay-metric-hardware">{{ memoryHardwareLabel }}</span>
             </div>
           </div>
           <span v-if="prefs.showPercent" class="overlay-metric-value overlay-glow-cyan">
@@ -160,7 +159,22 @@
 
     <div class="overlay-divider"></div>
 
+    <div class="overlay-network-meta">
+      <span>{{ t('overlay.latency') }}</span>
+      <strong>{{ latencyLabel }}</strong>
+    </div>
+
     <footer class="overlay-network">
+      <div v-if="prefs.showUp" class="overlay-network-item overlay-network-item--right">
+        <div class="overlay-network-label">
+          <span class="material-symbols-outlined">upload</span>
+          <span>{{ t('overlay.up') }}</span>
+        </div>
+        <div class="overlay-network-value overlay-glow-cyan">
+          {{ uploadSpeed }}
+          <span>MB/s</span>
+        </div>
+      </div>
       <div v-if="prefs.showDown" class="overlay-network-item">
         <div class="overlay-network-label">
           <span class="material-symbols-outlined">download</span>
@@ -171,16 +185,6 @@
           <span>MB/s</span>
         </div>
       </div>
-      <div v-if="prefs.showUp" class="overlay-network-item">
-        <div class="overlay-network-label">
-          <span class="material-symbols-outlined">upload</span>
-          <span>{{ t('overlay.up') }}</span>
-        </div>
-        <div class="overlay-network-value overlay-glow-cyan">
-          {{ uploadSpeed }}
-          <span>MB/s</span>
-        </div>
-      </div>
     </footer>
 
     <div class="overlay-status">
@@ -188,7 +192,7 @@
         <span class="overlay-status-dot"></span>
         <span>SYSTEM STABLE</span>
       </div>
-      <span>Uptime: {{ uptimeLabel }}</span>
+      <span class="overlay-status-uptime">Uptime: {{ uptimeLabel }}</span>
     </div>
   </section>
 </template>
@@ -277,14 +281,17 @@ const memoryUsageLabel = computed(() => {
 });
 const downloadSpeed = computed(() => (snapshot.value.network.download_bytes_per_sec / 1024 / 1024).toFixed(2));
 const uploadSpeed = computed(() => (snapshot.value.network.upload_bytes_per_sec / 1024 / 1024).toFixed(2));
-const hardwareInfoLabel = computed(() => {
-  const parts = [
-    store.hardwareInfo.device_brand,
-    store.hardwareInfo.cpu_model,
-    store.hardwareInfo.gpu_model
-  ].filter(part => part && part.trim().length > 0);
-  return parts.length > 0 ? parts.join(' · ') : t('common.na');
+const latencyLabel = computed(() => {
+  const value = snapshot.value.network.latency_ms;
+  return value == null ? t('common.na') : `${value.toFixed(0)} ms`;
 });
+const cpuHardwareLabel = computed(() =>
+  formatHardwareLabel([store.hardwareInfo.device_brand, store.hardwareInfo.cpu_model])
+);
+const gpuHardwareLabel = computed(() =>
+  formatHardwareLabel([store.hardwareInfo.device_brand, store.hardwareInfo.gpu_model])
+);
+const memoryHardwareLabel = computed(() => formatHardwareLabel([store.hardwareInfo.ram_spec]));
 
 const prefs = reactive<OverlayPrefs>(loadPrefs());
 
@@ -461,6 +468,11 @@ function diskIoLabel(disk: { read_bytes_per_sec: number | null; write_bytes_per_
   const read = ((disk.read_bytes_per_sec || 0) / 1024 / 1024).toFixed(1);
   const write = ((disk.write_bytes_per_sec || 0) / 1024 / 1024).toFixed(1);
   return `R: ${read} MB/s · W: ${write} MB/s`;
+}
+
+function formatHardwareLabel(parts: Array<string | null | undefined>) {
+  const cleaned = parts.filter(part => part && part.trim().length > 0) as string[];
+  return cleaned.length > 0 ? cleaned.join(' · ') : t('common.na');
 }
 
 onMounted(() => {
