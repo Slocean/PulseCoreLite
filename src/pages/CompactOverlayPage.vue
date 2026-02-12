@@ -3,7 +3,7 @@
     <header>
       <div class="overlay-title">
         <h3>{{ t('overlay.title') }}</h3>
-        <p>PULSECORE v2.0.4_CYBER</p>
+        <p>{{ t('overlay.subtitle') }} v{{ appVersion }}</p>
       </div>
       <div class="overlay-header-actions">
         <div class="overlay-drag" @mousedown.stop="startDragging">
@@ -139,6 +139,7 @@ import { useI18n } from 'vue-i18n';
 
 import { inTauri } from '../services/tauri';
 import { useAppStore } from '../stores/app';
+import packageJson from '../../package.json';
 
 const OVERLAY_PREF_KEY = 'pulsecore.overlay_prefs';
 
@@ -152,6 +153,7 @@ interface OverlayPrefs {
 
 const { t } = useI18n();
 const store = useAppStore();
+const appVersion = packageJson.version;
 const snapshot = computed(() => store.snapshot);
 const showConfig = ref(false);
 const startedAt = Date.now();
