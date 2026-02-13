@@ -6,9 +6,12 @@
     @mousedown="handleOverlayMouseDown">
     <header>
       <div class="overlay-title">
+        <div class="badge">
+          {{ t('overlay.badge') }}
+        </div>
         <span>
           <span class="title">{{ t('overlay.title') }}</span>
-          <span class="version">v{{ appVersion }}</span>
+          <!-- <span class="version">v{{ appVersion }}</span> -->
         </span>
       </div>
       <div class="overlay-header-actions">
