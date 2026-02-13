@@ -264,6 +264,11 @@ body {
   text-align: center;
 }
 
+.overlay-network-item--hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .overlay-network-label {
   display: flex;
   align-items: center;
