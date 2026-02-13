@@ -25,7 +25,7 @@ pub struct SystemCollector {
 
 impl SystemCollector {
     pub fn new() -> Self {
-        let mut system = System::new_all();
+        let system = System::new_all();
 
         let mut networks = Networks::new_with_refreshed_list();
         networks.refresh(true);

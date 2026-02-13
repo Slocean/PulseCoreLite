@@ -20,7 +20,7 @@ pub type SharedState = Arc<AppState>;
 impl AppState {
     pub async fn initialize() -> anyhow::Result<SharedState> {
         let settings = AppSettings::default();
-        let mut collector = SystemCollector::new();
+        let collector = SystemCollector::new();
         let initial_snapshot = empty_snapshot();
         let hardware_info = empty_hardware_info();
 
