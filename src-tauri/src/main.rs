@@ -1,6 +1,5 @@
 mod app;
 mod core;
-mod db;
 mod ipc;
 mod state;
 mod types;
@@ -16,9 +15,7 @@ fn main() {
         .init();
 
     let builder = tauri::Builder::default().setup(|app| {
-        let (db_path, export_dir) =
-            crate::app::app_data_paths(app).expect("failed to resolve app data paths");
-        let state = tauri::async_runtime::block_on(AppState::initialize(db_path, export_dir))
+        let state = tauri::async_runtime::block_on(AppState::initialize())
             .expect("failed to initialize PulseCore state");
 
         app.manage(state.clone());
