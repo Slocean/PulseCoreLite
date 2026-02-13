@@ -174,10 +174,13 @@
               <span class="material-symbols-outlined overlay-icon overlay-icon--cpu">hard_drive</span>
               <div class="overlay-metric-text">
                 <span class="overlay-metric-name">{{ disk.name }}</span>
-                <span v-if="prefs.showValues" class="overlay-metric-detail">
-                  {{ diskUsageLabel(disk) }}
+                <div v-if="prefs.showValues">
+                  <span class="overlay-metric-detail">{{ diskUsageLabel(disk) }}</span>
+                  <span class="overlay-metric-io" style="margin-left: 8px">{{ diskIoLabel(disk) }}</span>
+                </div>
+                <span v-if="prefs.showHardwareInfo" class="overlay-metric-hardware">
+                  {{ getDiskHardwareLabel(disk.name) }}
                 </span>
-                <span v-if="prefs.showValues" class="overlay-metric-io">{{ diskIoLabel(disk) }}</span>
               </div>
             </div>
             <span v-if="prefs.showPercent" class="overlay-metric-value overlay-glow-pink">
@@ -537,6 +540,24 @@ function formatHardwareLabel(parts: Array<string | null | undefined>) {
     .map(part => normalizeHardwareModel(part as string))
     .filter(part => part.length > 0);
   return cleaned.length > 0 ? cleaned.join(' · ') : t('common.na');
+}
+
+function getDiskHardwareLabel(mountPoint: string) {
+  const driveLetter = mountPoint.replace(/[\\/]$/, '');
+  const match = store.hardwareInfo.disk_models.find(
+    modelStr => modelStr.startsWith(driveLetter + ' ') || modelStr.startsWith(driveLetter + '·')
+  );
+
+  if (match) {
+    // match is "C: · Model Name", we want "Model Name"
+    const parts = match.split('·');
+    if (parts.length > 1) {
+      const rawModel = parts.slice(1).join('·');
+      return normalizeHardwareModel(rawModel);
+    }
+    return normalizeHardwareModel(match);
+  }
+  return t('common.na');
 }
 
 onMounted(() => {
