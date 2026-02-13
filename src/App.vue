@@ -10,7 +10,7 @@
 import { onMounted, onUnmounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import CompactOverlayPage from './pages/CompactOverlayPage.vue';
+import CompactOverlayPage from './pages/index.vue';
 import { useAppStore } from './stores/app';
 
 const store = useAppStore();
