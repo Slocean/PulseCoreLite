@@ -112,8 +112,8 @@ const segments = computed(() => {
     parts.push({
       id: 'ram',
       label: 'RAM',
-      value: memPct.value,
-      extra: memUsage.value
+      value: memPct.value
+      // extra: memUsage.value
     });
   }
 
@@ -142,7 +142,11 @@ async function openContextMenu(event: MouseEvent) {
   }
 
   const [{ Menu, CheckMenuItem, MenuItem, PredefinedMenuItem }, { LogicalPosition }, { getCurrentWindow }] =
-    await Promise.all([import('@tauri-apps/api/menu'), import('@tauri-apps/api/dpi'), import('@tauri-apps/api/window')]);
+    await Promise.all([
+      import('@tauri-apps/api/menu'),
+      import('@tauri-apps/api/dpi'),
+      import('@tauri-apps/api/window')
+    ]);
 
   const items = [
     await MenuItem.new({
