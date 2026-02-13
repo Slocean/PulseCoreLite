@@ -16,7 +16,7 @@
           <span class="material-symbols-outlined">drag_handle</span>
         </div>
         <button
-          class="overlay-action"
+          class="overlay-action overlay-action--info"
           type="button"
           @mousedown.stop
           @click="minimizeToTray"
@@ -24,7 +24,7 @@
           <span class="material-symbols-outlined">remove</span>
         </button>
         <button
-          class="overlay-action"
+          class="overlay-action overlay-action--primary"
           type="button"
           @mousedown.stop
           @click="showConfig = !showConfig"
