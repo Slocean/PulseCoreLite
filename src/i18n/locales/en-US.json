@@ -24,6 +24,7 @@
     "showPercent": "Percent",
     "showHardware": "Hardware Info",
     "showWarning": "Usage Warning",
+    "showDragHandle": "Show Drag Handle",
     "closeToTray": "Close to System Tray",
     "refreshRate": "Refresh Rate",
     "language": "Language / 语言",

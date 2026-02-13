@@ -1,14 +1,18 @@
 <template>
-  <section ref="overlayRef" class="overlay-widget overlay-widget--cyber" @dblclick.prevent.stop>
+  <section
+    ref="overlayRef"
+    class="overlay-widget overlay-widget--cyber"
+    @dblclick.prevent.stop
+    @mousedown="handleOverlayMouseDown">
     <header>
       <div class="overlay-title">
         <h3>{{ t('overlay.title') }}</h3>
         <p>v{{ appVersion }}</p>
       </div>
       <div class="overlay-header-actions">
-        <!-- <div class="overlay-drag" @mousedown.stop="startDragging">
+        <div v-if="prefs.showDragHandle" class="overlay-drag" @mousedown.stop="startDragging">
           <span class="material-symbols-outlined">drag_handle</span>
-        </div> -->
+        </div>
         <button
           class="overlay-action"
           type="button"
@@ -81,6 +85,10 @@
         <label>
           <input v-model="prefs.showWarning" type="checkbox" />
           {{ t('overlay.showWarning') }}
+        </label>
+        <label>
+          <input v-model="prefs.showDragHandle" type="checkbox" />
+          {{ t('overlay.showDragHandle') }}
         </label>
         <label>
           <input v-model="closeToTray" type="checkbox" />
@@ -289,6 +297,7 @@ interface OverlayPrefs {
   showPercent: boolean;
   showHardwareInfo: boolean;
   showWarning: boolean;
+  showDragHandle: boolean;
 }
 
 const { t } = useI18n();
@@ -392,7 +401,8 @@ function loadPrefs(): OverlayPrefs {
     showValues: true,
     showPercent: true,
     showHardwareInfo: false,
-    showWarning: true
+    showWarning: true,
+    showDragHandle: false
   };
 
   try {
@@ -412,7 +422,8 @@ function loadPrefs(): OverlayPrefs {
       showValues: parsed.showValues ?? fallback.showValues,
       showPercent: parsed.showPercent ?? fallback.showPercent,
       showHardwareInfo: parsed.showHardwareInfo ?? fallback.showHardwareInfo,
-      showWarning: parsed.showWarning ?? fallback.showWarning
+      showWarning: parsed.showWarning ?? fallback.showWarning,
+      showDragHandle: parsed.showDragHandle ?? fallback.showDragHandle
     };
   } catch {
     return fallback;
@@ -465,6 +476,23 @@ async function startDragging() {
   }
   const { getCurrentWindow } = await getWindowApi();
   await getCurrentWindow().startDragging();
+}
+
+function handleOverlayMouseDown(event: MouseEvent) {
+  if (prefs.showDragHandle) {
+    return;
+  }
+  const target = event.target as HTMLElement | null;
+  if (!target) {
+    return;
+  }
+  if (target.closest('.overlay-header-actions')) {
+    return;
+  }
+  if (target.closest('button, input, select, textarea, label, .overlay-config')) {
+    return;
+  }
+  void startDragging();
 }
 
 async function getWindowApi() {
