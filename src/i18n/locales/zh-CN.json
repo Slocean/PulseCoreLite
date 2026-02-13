@@ -3,9 +3,10 @@
     "na": "不可用"
   },
   "overlay": {
-    "title": "PulseCoreLite",
+    "title": "PulseCore",
+    "badge": "Lite",
     "configure": "配置",
-    "minimizeToTray": "收起到系统托盘",
+    "minimizeToTray": "最小化",
     "close": "关闭",
     "cpu": "CPU",
     "gpu": "GPU",

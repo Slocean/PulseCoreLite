@@ -3,9 +3,10 @@
     "na": "N/A"
   },
   "overlay": {
-    "title": "PulseCoreLite",
+    "title": "PulseCore",
+    "badge": "Lite",
     "configure": "Configure",
-    "minimizeToTray": "Minimize to Tray",
+    "minimizeToTray": "Minimize",
     "close": "Close",
     "cpu": "CPU",
     "gpu": "GPU",

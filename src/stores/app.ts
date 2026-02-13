@@ -268,6 +268,13 @@ export const useAppStore = defineStore('app', {
       await this.ensureTray();
       await this.toggleOverlay(false);
     },
+    async minimizeOverlay() {
+      if (!inTauri()) {
+        return;
+      }
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      await getCurrentWindow().minimize();
+    },
     async exitApp() {
       if (!inTauri()) {
         return;

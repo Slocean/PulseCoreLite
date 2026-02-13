@@ -78,7 +78,7 @@ body {
 
 .overlay-title .version {
   margin: 4px 0 0;
-  padding-left: 5px;
+  padding-left: 2px;
   font-size: 10px;
   color: rgba(255, 255, 255, 0.38);
   letter-spacing: 0.12em;
@@ -123,13 +123,13 @@ body {
 .overlay-header-actions {
   justify-content: flex-end;
   display: flex;
-  gap: 9px;
+  gap: 7px;
   margin-top: 0;
 }
 
 .overlay-drag {
-  width: 32px;
-  height: 32px;
+  width: 20px;
+  height: 28px;
   border-radius: 10px;
   /* border: 1px solid rgba(255, 255, 255, 0.18); */
   border: none;

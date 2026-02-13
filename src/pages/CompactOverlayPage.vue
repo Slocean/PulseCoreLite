@@ -19,7 +19,7 @@
           class="overlay-action overlay-action--info"
           type="button"
           @mousedown.stop
-          @click="minimizeToTray"
+          @click="minimizeOverlay"
           :title="t('overlay.minimizeToTray')">
           <span class="material-symbols-outlined">remove</span>
         </button>
@@ -464,8 +464,8 @@ function handleClose() {
   void store.exitApp();
 }
 
-function minimizeToTray() {
-  void store.minimizeToTray();
+function minimizeOverlay() {
+  void store.minimizeOverlay();
 }
 
 function setLanguage(language: 'zh-CN' | 'en-US') {
