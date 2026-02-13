@@ -67,12 +67,15 @@ pub struct HardwareInfo {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppSettings {
     pub language: String,
+    #[serde(rename = "closeToTray")]
+    pub close_to_tray: bool,
 }
 
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
             language: "zh-CN".to_string(),
+            close_to_tray: false,
         }
     }
 }

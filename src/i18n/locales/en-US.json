@@ -5,6 +5,7 @@
   "overlay": {
     "title": "PulseCoreLite",
     "configure": "Configure",
+    "minimizeToTray": "Minimize to Tray",
     "close": "Close",
     "cpu": "CPU",
     "gpu": "GPU",
@@ -23,6 +24,7 @@
     "showPercent": "Percent",
     "showHardware": "Hardware Info",
     "showWarning": "Usage Warning",
+    "closeToTray": "Close to System Tray",
     "refreshRate": "Refresh Rate",
     "language": "Language / 语言",
     "langZh": "中文",

@@ -5,9 +5,12 @@
   "windows": ["main", "overlay"],
   "permissions": [
     "core:default",
+    "core:app:allow-default-window-icon",
     "core:window:allow-start-dragging",
     "core:window:allow-set-size",
     "core:window:allow-outer-position",
-    "core:window:allow-set-position"
+    "core:window:allow-set-position",
+    "core:window:allow-hide",
+    "core:window:allow-show"
   ]
 }

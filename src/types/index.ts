@@ -56,6 +56,7 @@ export interface HardwareInfo {
 
 export interface AppSettings {
   language: "zh-CN" | "en-US";
+  closeToTray: boolean;
 }
 
 export interface AppBootstrap {

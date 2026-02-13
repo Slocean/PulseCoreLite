@@ -38,6 +38,12 @@ pub async fn set_refresh_rate(state: State<'_, SharedState>, rate_ms: u64) -> Cm
 }
 
 #[tauri::command]
+pub async fn exit_app(app: AppHandle) -> CmdResult<()> {
+    app.exit(0);
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn get_hardware_info(state: State<'_, SharedState>) -> CmdResult<crate::types::HardwareInfo> {
     let info = device_info::collect_hardware_info();
     let mut lock = state.hardware_info.write().await;

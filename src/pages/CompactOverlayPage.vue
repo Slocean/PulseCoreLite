@@ -13,6 +13,14 @@
           class="overlay-action"
           type="button"
           @mousedown.stop
+          @click="minimizeToTray"
+          :title="t('overlay.minimizeToTray')">
+          <span class="material-symbols-outlined">move_to_inbox</span>
+        </button>
+        <button
+          class="overlay-action"
+          type="button"
+          @mousedown.stop
           @click="showConfig = !showConfig"
           :title="t('overlay.configure')">
           <span class="material-symbols-outlined">settings</span>
@@ -21,7 +29,7 @@
           class="overlay-action overlay-action--danger"
           type="button"
           @mousedown.stop
-          @click="hide"
+          @click="handleClose"
           :title="t('overlay.close')">
           <span class="material-symbols-outlined">close</span>
         </button>
@@ -73,6 +81,10 @@
         <label>
           <input v-model="prefs.showWarning" type="checkbox" />
           {{ t('overlay.showWarning') }}
+        </label>
+        <label>
+          <input v-model="closeToTray" type="checkbox" />
+          {{ t('overlay.closeToTray') }}
         </label>
         <div class="overlay-config-language">
           <span class="overlay-config-label">{{ t('overlay.language') }}</span>
@@ -284,6 +296,10 @@ const store = useAppStore();
 const appVersion = packageJson.version;
 const snapshot = computed(() => store.snapshot);
 const showConfig = ref(false);
+const closeToTray = computed({
+  get: () => store.settings.closeToTray,
+  set: value => store.setCloseToTray(value)
+});
 const startedAt = Date.now();
 const uptimeLabel = ref('00:00:00');
 const refreshRate = ref(1000);
@@ -427,8 +443,16 @@ function savePosition(next: { x: number; y: number }) {
   localStorage.setItem(OVERLAY_POS_KEY, JSON.stringify(next));
 }
 
-function hide() {
-  void store.toggleOverlay(false);
+function handleClose() {
+  if (store.settings.closeToTray) {
+    void store.minimizeToTray();
+    return;
+  }
+  void store.exitApp();
+}
+
+function minimizeToTray() {
+  void store.minimizeToTray();
 }
 
 function setLanguage(language: 'zh-CN' | 'en-US') {

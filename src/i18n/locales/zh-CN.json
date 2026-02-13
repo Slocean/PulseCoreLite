@@ -5,6 +5,7 @@
   "overlay": {
     "title": "PulseCoreLite",
     "configure": "配置",
+    "minimizeToTray": "收起到系统托盘",
     "close": "关闭",
     "cpu": "CPU",
     "gpu": "GPU",
@@ -23,6 +24,7 @@
     "showPercent": "百分比",
     "showHardware": "硬件型号",
     "showWarning": "占用预警",
+    "closeToTray": "关闭后运行到系统托盘",
     "refreshRate": "刷新时间",
     "language": "语言 / Language",
     "langZh": "中文",

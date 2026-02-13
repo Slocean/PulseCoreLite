@@ -33,8 +33,13 @@ function readStoredSettings(): Partial<AppSettings> | null {
       return null;
     }
     const parsed = JSON.parse(raw) as Partial<AppSettings>;
-    if (parsed.language === 'zh-CN' || parsed.language === 'en-US') {
-      return { language: parsed.language };
+    const hasLanguage = parsed.language === 'zh-CN' || parsed.language === 'en-US';
+    const hasCloseToTray = typeof parsed.closeToTray === 'boolean';
+    if (hasLanguage || hasCloseToTray) {
+      return {
+        ...(hasLanguage ? { language: parsed.language } : {}),
+        ...(hasCloseToTray ? { closeToTray: parsed.closeToTray } : {})
+      };
     }
     return null;
   } catch {
@@ -43,14 +48,15 @@ function readStoredSettings(): Partial<AppSettings> | null {
 }
 
 function resolveSettings(settings?: AppSettings | null): AppSettings {
-  const base = settings ?? { language: 'zh-CN' };
+  const base = settings ?? { language: 'zh-CN', closeToTray: false };
   const stored = readStoredSettings();
   if (!stored) {
     return base;
   }
   return {
     ...base,
-    language: stored.language ?? base.language
+    language: stored.language ?? base.language,
+    closeToTray: stored.closeToTray ?? base.closeToTray
   };
 }
 
@@ -134,7 +140,8 @@ export const useAppStore = defineStore('app', {
     snapshot: emptySnapshot(),
     hardwareInfo: readStoredHardwareInfo() ?? emptyHardware(),
     settings: defaultSettings(),
-    unlisteners: [] as Array<() => void>
+    unlisteners: [] as Array<() => void>,
+    trayReady: false
   }),
   actions: {
     pushSnapshot(snapshot: TelemetrySnapshot) {
@@ -153,6 +160,7 @@ export const useAppStore = defineStore('app', {
       if (inTauri()) {
         const bootstrap = await api.getInitialState();
         this.applyBootstrap(bootstrap);
+        void this.ensureTray();
         await this.bindEvents();
         void this.refreshHardwareInfo();
       } else {
@@ -204,6 +212,67 @@ export const useAppStore = defineStore('app', {
         language
       };
       persistSettings(this.settings);
+    },
+    setCloseToTray(closeToTray: boolean) {
+      if (this.settings.closeToTray === closeToTray) {
+        return;
+      }
+      this.settings = {
+        ...this.settings,
+        closeToTray
+      };
+      persistSettings(this.settings);
+    },
+    async ensureTray() {
+      if (!inTauri() || this.trayReady) {
+        return;
+      }
+      const [{ TrayIcon }, { Menu }, { defaultWindowIcon }] = await Promise.all([
+        import('@tauri-apps/api/tray'),
+        import('@tauri-apps/api/menu'),
+        import('@tauri-apps/api/app')
+      ]);
+      const showWindow = async () => {
+        await this.toggleOverlay(true);
+      };
+      const exitApp = async () => {
+        await this.exitApp();
+      };
+      const menu = await Menu.new({
+        items: [
+          { id: 'show', text: '显示主窗口', action: showWindow },
+          { id: 'quit', text: '退出', action: exitApp }
+        ]
+      });
+      const icon = await defaultWindowIcon();
+      const trayOptions: Parameters<typeof TrayIcon.new>[0] = {
+        menu,
+        menuOnLeftClick: true,
+        tooltip: 'PulseCoreLite',
+        action: async event => {
+          if (event.type === 'DoubleClick') {
+            await showWindow();
+          }
+        }
+      };
+      if (icon) {
+        trayOptions.icon = icon;
+      }
+      await TrayIcon.new(trayOptions);
+      this.trayReady = true;
+    },
+    async minimizeToTray() {
+      if (!inTauri()) {
+        return;
+      }
+      await this.ensureTray();
+      await this.toggleOverlay(false);
+    },
+    async exitApp() {
+      if (!inTauri()) {
+        return;
+      }
+      await api.exitApp();
     },
     dispose() {
       this.unlisteners.forEach(fn => fn());

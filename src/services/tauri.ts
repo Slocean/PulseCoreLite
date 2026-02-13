@@ -27,5 +27,6 @@ export const api = {
   getInitialState: () => tauriInvoke<AppBootstrap>("get_initial_state"),
   getHardwareInfo: () => tauriInvoke<HardwareInfo>("get_hardware_info"),
   toggleOverlay: (visible: boolean) => tauriInvoke<boolean>("toggle_overlay", { visible }),
-  setRefreshRate: (rateMs: number) => tauriInvoke<void>("set_refresh_rate", { rateMs })
+  setRefreshRate: (rateMs: number) => tauriInvoke<void>("set_refresh_rate", { rateMs }),
+  exitApp: () => tauriInvoke<void>("exit_app")
 };
