@@ -20,12 +20,12 @@ pub struct SystemCollector {
     prev_tick: Instant,
     gpu_cache: GpuMetrics,
     last_gpu_poll: Instant,
+    warmup_done: bool,
 }
 
 impl SystemCollector {
     pub fn new() -> Self {
         let mut system = System::new_all();
-        system.refresh_all();
 
         let mut networks = Networks::new_with_refreshed_list();
         networks.refresh(true);
@@ -49,7 +49,8 @@ impl SystemCollector {
                 memory_total_mb: None,
                 frequency_mhz: None,
             },
-            last_gpu_poll: Instant::now() - Duration::from_secs(10),
+            last_gpu_poll: Instant::now(),
+            warmup_done: false,
         }
     }
 
@@ -58,7 +59,11 @@ impl SystemCollector {
         self.system.refresh_memory();
         self.networks.refresh(true);
         self.disks.refresh(true);
-        self.components.refresh(true);
+        if self.warmup_done {
+            self.components.refresh(true);
+        } else {
+            self.warmup_done = true;
+        }
 
         let cpu_usage = self.system.global_cpu_usage() as f64;
         let frequency = if self.system.cpus().is_empty() {

@@ -1,5 +1,5 @@
 import type { UnlistenFn } from "@tauri-apps/api/event";
-import type { AppBootstrap } from "../types";
+import type { AppBootstrap, HardwareInfo } from "../types";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -25,6 +25,7 @@ export function inTauri(): boolean {
 
 export const api = {
   getInitialState: () => tauriInvoke<AppBootstrap>("get_initial_state"),
+  getHardwareInfo: () => tauriInvoke<HardwareInfo>("get_hardware_info"),
   toggleOverlay: (visible: boolean) => tauriInvoke<boolean>("toggle_overlay", { visible }),
   setRefreshRate: (rateMs: number) => tauriInvoke<void>("set_refresh_rate", { rateMs })
 };

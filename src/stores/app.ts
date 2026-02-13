@@ -3,6 +3,7 @@ import { api, inTauri, listenEvent } from '../services/tauri';
 import type { AppBootstrap, AppSettings, HardwareInfo, TelemetrySnapshot } from '../types';
 
 const SETTINGS_KEY = 'pulsecorelite.settings';
+const HARDWARE_KEY = 'pulsecorelite.hardware_info';
 
 function emptySnapshot(): TelemetrySnapshot {
   return {
@@ -76,12 +77,62 @@ function emptyHardware(): HardwareInfo {
   };
 }
 
+function readStoredHardwareInfo(): HardwareInfo | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  try {
+    const raw = window.localStorage.getItem(HARDWARE_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw) as HardwareInfo;
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+    return {
+      cpu_model: parsed.cpu_model ?? '',
+      cpu_max_freq_mhz: parsed.cpu_max_freq_mhz ?? null,
+      gpu_model: parsed.gpu_model ?? '',
+      ram_spec: parsed.ram_spec ?? '',
+      disk_models: Array.isArray(parsed.disk_models) ? parsed.disk_models : [],
+      motherboard: parsed.motherboard ?? '',
+      device_brand: parsed.device_brand ?? ''
+    };
+  } catch {
+    return null;
+  }
+}
+
+function persistHardwareInfo(info: HardwareInfo) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  window.localStorage.setItem(HARDWARE_KEY, JSON.stringify(info));
+}
+
+function resolveHardwareInfo(payload?: HardwareInfo | null): HardwareInfo {
+  const stored = readStoredHardwareInfo();
+  const fallback = stored ?? emptyHardware();
+  if (!payload) {
+    return fallback;
+  }
+  const hasData =
+    payload.cpu_model ||
+    payload.gpu_model ||
+    payload.ram_spec ||
+    payload.disk_models.length > 0 ||
+    payload.motherboard ||
+    payload.device_brand;
+  return hasData ? payload : fallback;
+}
+
 export const useAppStore = defineStore('app', {
   state: () => ({
     ready: false,
     bootstrapped: false,
     snapshot: emptySnapshot(),
-    hardwareInfo: emptyHardware(),
+    hardwareInfo: readStoredHardwareInfo() ?? emptyHardware(),
     settings: defaultSettings(),
     unlisteners: [] as Array<() => void>
   }),
@@ -91,7 +142,7 @@ export const useAppStore = defineStore('app', {
     },
     applyBootstrap(payload: AppBootstrap) {
       this.settings = resolveSettings(payload.settings);
-      this.hardwareInfo = payload.hardware_info ?? emptyHardware();
+      this.hardwareInfo = resolveHardwareInfo(payload.hardware_info);
       this.pushSnapshot(payload.latest_snapshot ?? emptySnapshot());
     },
     async bootstrap() {
@@ -103,6 +154,7 @@ export const useAppStore = defineStore('app', {
         const bootstrap = await api.getInitialState();
         this.applyBootstrap(bootstrap);
         await this.bindEvents();
+        void this.refreshHardwareInfo();
       } else {
         this.applyBootstrap({
           latest_snapshot: emptySnapshot(),
@@ -113,6 +165,18 @@ export const useAppStore = defineStore('app', {
 
       this.bootstrapped = true;
       this.ready = true;
+    },
+    async refreshHardwareInfo() {
+      if (!inTauri()) {
+        return;
+      }
+      try {
+        const info = await api.getHardwareInfo();
+        this.hardwareInfo = info;
+        persistHardwareInfo(info);
+      } catch {
+        return;
+      }
     },
     async bindEvents() {
       this.unlisteners.push(

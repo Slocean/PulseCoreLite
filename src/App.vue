@@ -7,11 +7,11 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import { onMounted, onUnmounted, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 
-import CompactOverlayPage from "./pages/CompactOverlayPage.vue";
-import { useAppStore } from "./stores/app";
+import CompactOverlayPage from './pages/CompactOverlayPage.vue';
+import { useAppStore } from './stores/app';
 
 const store = useAppStore();
 const { locale } = useI18n();
@@ -27,7 +27,7 @@ onUnmounted(() => {
 
 watch(
   () => store.settings.language,
-  (lang) => {
+  lang => {
     locale.value = lang;
   }
 );

@@ -37,6 +37,7 @@ pub fn start_telemetry_loop(app: AppHandle, state: SharedState) {
 pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
     builder.invoke_handler(tauri::generate_handler![
         commands::get_initial_state,
+        commands::get_hardware_info,
         commands::toggle_overlay,
         commands::set_refresh_rate
     ])
