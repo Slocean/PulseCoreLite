@@ -15,7 +15,7 @@
           @mousedown.stop
           @click="minimizeToTray"
           :title="t('overlay.minimizeToTray')">
-          <span class="material-symbols-outlined">move_to_inbox</span>
+          <span class="material-symbols-outlined">remove</span>
         </button>
         <button
           class="overlay-action"
