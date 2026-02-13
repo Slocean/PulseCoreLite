@@ -22,6 +22,9 @@
     "showValues": "Show Values",
     "showPercent": "Show Percent",
     "showHardware": "Show Hardware Model",
+    "language": "Language",
+    "langZh": "中文",
+    "langEn": "English",
     "latency": "Network Latency",
     "vram": "VRAM",
     "freq": "Frequency"

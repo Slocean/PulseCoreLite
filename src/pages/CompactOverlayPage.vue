@@ -69,6 +69,25 @@
         <input v-model="prefs.showHardwareInfo" type="checkbox" />
         {{ t('overlay.showHardware') }}
       </label>
+      <div class="overlay-config-language">
+        <span class="overlay-config-label">{{ t('overlay.language') }}</span>
+        <div class="overlay-lang-buttons">
+          <button
+            type="button"
+            class="overlay-lang-button"
+            :class="{ 'overlay-lang-button--active': store.settings.language === 'zh-CN' }"
+            @click="setLanguage('zh-CN')">
+            {{ t('overlay.langZh') }}
+          </button>
+          <button
+            type="button"
+            class="overlay-lang-button"
+            :class="{ 'overlay-lang-button--active': store.settings.language === 'en-US' }"
+            @click="setLanguage('en-US')">
+            {{ t('overlay.langEn') }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="overlay-metrics">
@@ -371,6 +390,10 @@ function savePosition(next: { x: number; y: number }) {
 
 function hide() {
   void store.toggleOverlay(false);
+}
+
+function setLanguage(language: 'zh-CN' | 'en-US') {
+  store.setLanguage(language);
 }
 
 async function startDragging() {

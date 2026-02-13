@@ -22,6 +22,9 @@
     "showValues": "显示具体值",
     "showPercent": "显示百分比",
     "showHardware": "显示硬件型号",
+    "language": "语言",
+    "langZh": "中文",
+    "langEn": "English",
     "latency": "网络延迟",
     "vram": "显存",
     "freq": "频率"

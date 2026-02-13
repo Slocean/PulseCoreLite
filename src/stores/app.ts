@@ -2,6 +2,8 @@ import { defineStore } from 'pinia';
 import { api, inTauri, listenEvent } from '../services/tauri';
 import type { AppBootstrap, AppSettings, HardwareInfo, TelemetrySnapshot } from '../types';
 
+const SETTINGS_KEY = 'pulsecore.settings';
+
 function emptySnapshot(): TelemetrySnapshot {
   return {
     timestamp: new Date().toISOString(),
@@ -20,10 +22,46 @@ function emptySnapshot(): TelemetrySnapshot {
   };
 }
 
-function defaultSettings(): AppSettings {
+function readStoredSettings(): Partial<AppSettings> | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  try {
+    const raw = window.localStorage.getItem(SETTINGS_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw) as Partial<AppSettings>;
+    if (parsed.language === 'zh-CN' || parsed.language === 'en-US') {
+      return { language: parsed.language };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function resolveSettings(settings?: AppSettings | null): AppSettings {
+  const base = settings ?? { language: 'zh-CN' };
+  const stored = readStoredSettings();
+  if (!stored) {
+    return base;
+  }
   return {
-    language: 'zh-CN'
+    ...base,
+    language: stored.language ?? base.language
   };
+}
+
+function persistSettings(settings: AppSettings) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function defaultSettings(): AppSettings {
+  return resolveSettings();
 }
 
 function emptyHardware(): HardwareInfo {
@@ -52,7 +90,7 @@ export const useAppStore = defineStore('app', {
       this.snapshot = snapshot;
     },
     applyBootstrap(payload: AppBootstrap) {
-      this.settings = payload.settings ?? defaultSettings();
+      this.settings = resolveSettings(payload.settings);
       this.hardwareInfo = payload.hardware_info ?? emptyHardware();
       this.pushSnapshot(payload.latest_snapshot ?? emptySnapshot());
     },
@@ -86,6 +124,16 @@ export const useAppStore = defineStore('app', {
         return;
       }
       await api.toggleOverlay(visible);
+    },
+    setLanguage(language: AppSettings['language']) {
+      if (this.settings.language === language) {
+        return;
+      }
+      this.settings = {
+        ...this.settings,
+        language
+      };
+      persistSettings(this.settings);
     },
     dispose() {
       this.unlisteners.forEach(fn => fn());
