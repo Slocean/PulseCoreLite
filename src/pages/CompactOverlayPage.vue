@@ -183,34 +183,40 @@
     <div class="overlay-divider"></div>
 
     <footer class="overlay-network">
-      <div v-if="prefs.showUp" class="overlay-network-item">
-        <div class="overlay-network-label">
-          <span class="material-symbols-outlined">upload</span>
-          <span>{{ t('overlay.up') }}</span>
-        </div>
-        <div class="overlay-network-value overlay-glow-cyan">
-          {{ uploadSpeed }}
-          <span>MB/s</span>
-        </div>
+      <div class="overlay-network-item">
+        <template v-if="prefs.showUp">
+          <div class="overlay-network-label">
+            <span class="material-symbols-outlined">upload</span>
+            <span>{{ t('overlay.up') }}</span>
+          </div>
+          <div class="overlay-network-value overlay-glow-cyan">
+            {{ uploadSpeed }}
+            <span>MB/s</span>
+          </div>
+        </template>
       </div>
-      <div v-if="prefs.showLatency" class="overlay-network-item">
-        <div class="overlay-network-label">
-          <span class="material-symbols-outlined">network_ping</span>
-          <span>{{ t('overlay.latency') }}</span>
-        </div>
-        <div class="overlay-network-value overlay-glow-cyan">
-          {{ latencyLabel }}
-        </div>
+      <div class="overlay-network-item">
+        <template v-if="prefs.showLatency">
+          <div class="overlay-network-label">
+            <span class="material-symbols-outlined">network_ping</span>
+            <span>{{ t('overlay.latency') }}</span>
+          </div>
+          <div class="overlay-network-value overlay-glow-cyan">
+            {{ latencyLabel }}
+          </div>
+        </template>
       </div>
-      <div v-if="prefs.showDown" class="overlay-network-item">
-        <div class="overlay-network-label">
-          <span class="material-symbols-outlined">download</span>
-          <span>{{ t('overlay.down') }}</span>
-        </div>
-        <div class="overlay-network-value overlay-glow-cyan">
-          {{ downloadSpeed }}
-          <span>MB/s</span>
-        </div>
+      <div class="overlay-network-item">
+        <template v-if="prefs.showDown">
+          <div class="overlay-network-label">
+            <span class="material-symbols-outlined">download</span>
+            <span>{{ t('overlay.down') }}</span>
+          </div>
+          <div class="overlay-network-value overlay-glow-cyan">
+            {{ downloadSpeed }}
+            <span>MB/s</span>
+          </div>
+        </template>
       </div>
     </footer>
 
