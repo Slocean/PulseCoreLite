@@ -441,7 +441,7 @@ body {
 }
 
 .overlay-config-range input[type='range'] {
-  width: 100px;
+  width: 130px;
   accent-color: var(--cyan);
   margin: 0;
   display: block;
