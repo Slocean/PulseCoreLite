@@ -20,6 +20,8 @@ function emptySnapshot(): TelemetrySnapshot {
     memory: { used_mb: 0, total_mb: 1, usage_pct: 0 },
     disks: [],
     network: { download_bytes_per_sec: 0, upload_bytes_per_sec: 0, latency_ms: null },
+    appCpuUsagePct: null,
+    appMemoryMb: null,
     power_watts: null
   };
 }

@@ -42,7 +42,7 @@
 
     <OverlayNetworkFooter :prefs="prefs" :network="metrics.network" />
 
-    <OverlayStatusBar :uptimeLabel="uptimeLabel" />
+    <OverlayStatusBar :uptimeLabel="uptimeLabel" :appUsageLabel="appUsageLabel" />
   </section>
 
   <OverlayDialog
@@ -98,6 +98,18 @@ const factoryResetHotkey = computed({
 const { prefs } = useOverlayPrefs();
 const { refreshRate, handleRefreshRateChange } = useOverlayRefreshRate(store);
 const { uptimeLabel } = useOverlayUptime();
+const appUsageLabel = computed(() => {
+  const snap = store.snapshot;
+  const cpu = snap.appCpuUsagePct;
+  const mem = snap.appMemoryMb;
+  if (cpu == null && mem == null) {
+    return t('common.na');
+  }
+  const parts: string[] = [];
+  if (cpu != null) parts.push(`${cpu.toFixed(1)}%`);
+  if (mem != null) parts.push(`${mem.toFixed(0)}MB`);
+  return parts.join(' · ');
+});
 const {
   metrics,
   getUsageClass,

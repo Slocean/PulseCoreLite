@@ -74,6 +74,15 @@ const latency = computed(() => {
   return value == null ? null : `${value.toFixed(0)}ms`;
 });
 
+const appCpuPct = computed(() => {
+  const value = snapshot.value.appCpuUsagePct;
+  return value == null ? null : `${value.toFixed(1)}%`;
+});
+const appMem = computed(() => {
+  const value = snapshot.value.appMemoryMb;
+  return value == null ? null : `${value.toFixed(0)}MB`;
+});
+
 function usageClass(value: number, base: 'cyan' | 'pink') {
   if (value > 85) return 'overlay-glow-red';
   if (value > 75) return 'overlay-glow-orange';
@@ -115,6 +124,16 @@ const segments = computed(() => {
       label: 'RAM',
       value: memPct.value
       // extra: memUsage.value
+    });
+  }
+
+  if (appCpuPct.value || appMem.value) {
+    parts.push({
+      id: 'app',
+      label: 'APP',
+      value: appCpuPct.value ?? t('common.na'),
+      extra: appMem.value ?? undefined,
+      valueClass: 'overlay-glow-cyan'
     });
   }
 

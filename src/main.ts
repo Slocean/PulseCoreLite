@@ -11,6 +11,6 @@ import '@fontsource/inter/700.css';
 import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/500.css';
 import '@fontsource/material-symbols-outlined';
-import './style.css';
+import './main.css';
 
 createApp(App).use(createPinia()).use(i18n).mount('#app');

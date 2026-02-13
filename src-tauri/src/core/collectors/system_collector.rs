@@ -4,7 +4,7 @@ use std::{
 };
 
 use chrono::Utc;
-use sysinfo::{Components, Disks, Networks, System};
+use sysinfo::{Components, Disks, Networks, Pid, ProcessesToUpdate, System};
 
 use crate::types::{
     CpuMetrics, DiskMetrics, GpuMetrics, MemoryMetrics, NetworkMetrics, TelemetrySnapshot,
@@ -21,11 +21,13 @@ pub struct SystemCollector {
     gpu_cache: GpuMetrics,
     last_gpu_poll: Instant,
     warmup_done: bool,
+    current_pid: Pid,
 }
 
 impl SystemCollector {
     pub fn new() -> Self {
         let system = System::new_all();
+        let current_pid = Pid::from_u32(std::process::id());
 
         let mut networks = Networks::new_with_refreshed_list();
         networks.refresh(true);
@@ -51,12 +53,15 @@ impl SystemCollector {
             },
             last_gpu_poll: Instant::now(),
             warmup_done: false,
+            current_pid,
         }
     }
 
     pub fn collect(&mut self) -> TelemetrySnapshot {
         self.system.refresh_cpu_usage();
         self.system.refresh_memory();
+        self.system
+            .refresh_processes(ProcessesToUpdate::Some(&[self.current_pid]), true);
         self.networks.refresh(true);
         self.disks.refresh(true);
         if self.warmup_done {
@@ -134,6 +139,9 @@ impl SystemCollector {
         self.prev_tick = Instant::now();
 
         let gpu_metrics = self.refresh_gpu_metrics();
+        let process = self.system.process(self.current_pid);
+        let app_cpu_usage_pct = process.map(|p| p.cpu_usage() as f64);
+        let app_memory_mb = process.map(|p| p.memory() as f64 / (1024.0 * 1024.0));
 
         TelemetrySnapshot {
             timestamp: Utc::now(),
@@ -154,6 +162,8 @@ impl SystemCollector {
                 upload_bytes_per_sec: tx_rate,
                 latency_ms: None,
             },
+            app_cpu_usage_pct,
+            app_memory_mb,
             power_watts: None,
         }
     }

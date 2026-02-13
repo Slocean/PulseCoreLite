@@ -41,6 +41,8 @@ export interface TelemetrySnapshot {
   memory: MemoryMetrics;
   disks: DiskMetrics[];
   network: NetworkMetrics;
+  appCpuUsagePct: number | null;
+  appMemoryMb: number | null;
   power_watts: number | null;
 }
 

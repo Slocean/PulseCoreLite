@@ -1,29 +1,31 @@
 <template>
   <div class="overlay-config" @mousedown.stop>
-    <label>
-      <input v-model="prefs.showCpu" type="checkbox" />
-      {{ t('overlay.showCpu') }}
-    </label>
-    <label>
-      <input v-model="prefs.showGpu" type="checkbox" />
-      {{ t('overlay.showGpu') }}
-    </label>
-    <label>
-      <input v-model="prefs.showMemory" type="checkbox" />
-      {{ t('overlay.showMemory') }}
-    </label>
-    <label>
-      <input v-model="prefs.showDisk" type="checkbox" />
-      {{ t('overlay.showDisk') }}
-    </label>
-    <label>
-      <input v-model="prefs.showDown" type="checkbox" />
-      {{ t('overlay.showDown') }}
-    </label>
-    <label>
-      <input v-model="prefs.showUp" type="checkbox" />
-      {{ t('overlay.showUp') }}
-    </label>
+    <div class="overlay-config-grid overlay-config-grid--3">
+      <label>
+        <input v-model="prefs.showCpu" type="checkbox" />
+        {{ t('overlay.showCpu') }}
+      </label>
+      <label>
+        <input v-model="prefs.showGpu" type="checkbox" />
+        {{ t('overlay.showGpu') }}
+      </label>
+      <label>
+        <input v-model="prefs.showMemory" type="checkbox" />
+        {{ t('overlay.showMemory') }}
+      </label>
+      <label>
+        <input v-model="prefs.showDisk" type="checkbox" />
+        {{ t('overlay.showDisk') }}
+      </label>
+      <label>
+        <input v-model="prefs.showDown" type="checkbox" />
+        {{ t('overlay.showDown') }}
+      </label>
+      <label>
+        <input v-model="prefs.showUp" type="checkbox" />
+        {{ t('overlay.showUp') }}
+      </label>
+    </div>
     <label>
       <input v-model="prefs.showLatency" type="checkbox" />
       {{ t('overlay.showLatency') }}
@@ -58,9 +60,10 @@
     </label>
     <div class="overlay-config-taskbar">
       <span class="overlay-config-label">{{ t('overlay.taskbarMonitor') }}</span>
-      <button type="button" class="overlay-lang-button" @click="taskbarMonitorEnabled = !taskbarMonitorEnabled">
-        {{ taskbarMonitorEnabled ? t('overlay.taskbarMonitorClose') : t('overlay.taskbarMonitorOpen') }}
-      </button>
+      <label class="overlay-switch" :aria-label="t('overlay.taskbarMonitor')">
+        <input v-model="taskbarMonitorEnabled" type="checkbox" role="switch" />
+        <span class="overlay-switch-track" aria-hidden="true"></span>
+      </label>
     </div>
     <div class="overlay-config-language">
       <span class="overlay-config-label">{{ t('overlay.language') }}</span>

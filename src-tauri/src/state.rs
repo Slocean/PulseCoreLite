@@ -70,6 +70,8 @@ fn empty_snapshot() -> TelemetrySnapshot {
             upload_bytes_per_sec: 0.0,
             latency_ms: None,
         },
+        app_cpu_usage_pct: None,
+        app_memory_mb: None,
         power_watts: None,
     }
 }

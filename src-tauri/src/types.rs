@@ -50,6 +50,10 @@ pub struct TelemetrySnapshot {
     pub memory: MemoryMetrics,
     pub disks: Vec<DiskMetrics>,
     pub network: NetworkMetrics,
+    #[serde(rename = "appCpuUsagePct")]
+    pub app_cpu_usage_pct: Option<f64>,
+    #[serde(rename = "appMemoryMb")]
+    pub app_memory_mb: Option<f64>,
     pub power_watts: Option<f64>,
 }
 
