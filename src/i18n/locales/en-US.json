@@ -28,6 +28,7 @@
     "showDragHandle": "Show Drag Handle",
     "closeToTray": "Close to System Tray",
     "rememberPosition": "Remember Last Position",
+    "alwaysOnTop": "Always on Top",
     "taskbarMonitor": "Taskbar Monitor",
     "taskbarMonitorOpen": "Open",
     "taskbarMonitorClose": "Close",

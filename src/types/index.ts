@@ -59,6 +59,7 @@ export interface AppSettings {
   closeToTray: boolean;
   rememberOverlayPosition: boolean;
   taskbarMonitorEnabled: boolean;
+  taskbarAlwaysOnTop: boolean;
   factoryResetHotkey: string | null;
 }
 

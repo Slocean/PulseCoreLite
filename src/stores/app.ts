@@ -41,16 +41,25 @@ function readStoredSettings(): Partial<AppSettings> | null {
       hasOwn('rememberOverlayPosition') && typeof parsed.rememberOverlayPosition === 'boolean';
     const hasTaskbarMonitorEnabled =
       hasOwn('taskbarMonitorEnabled') && typeof parsed.taskbarMonitorEnabled === 'boolean';
+    const hasTaskbarAlwaysOnTop = hasOwn('taskbarAlwaysOnTop') && typeof parsed.taskbarAlwaysOnTop === 'boolean';
     const hasFactoryResetHotkey =
       hasOwn('factoryResetHotkey') &&
       (parsed.factoryResetHotkey == null || typeof parsed.factoryResetHotkey === 'string');
 
-    if (hasLanguage || hasCloseToTray || hasRememberOverlayPosition || hasTaskbarMonitorEnabled || hasFactoryResetHotkey) {
+    if (
+      hasLanguage ||
+      hasCloseToTray ||
+      hasRememberOverlayPosition ||
+      hasTaskbarMonitorEnabled ||
+      hasTaskbarAlwaysOnTop ||
+      hasFactoryResetHotkey
+    ) {
       return {
         ...(hasLanguage ? { language: parsed.language } : {}),
         ...(hasCloseToTray ? { closeToTray: parsed.closeToTray } : {}),
         ...(hasRememberOverlayPosition ? { rememberOverlayPosition: parsed.rememberOverlayPosition } : {}),
         ...(hasTaskbarMonitorEnabled ? { taskbarMonitorEnabled: parsed.taskbarMonitorEnabled } : {}),
+        ...(hasTaskbarAlwaysOnTop ? { taskbarAlwaysOnTop: parsed.taskbarAlwaysOnTop } : {}),
         ...(hasFactoryResetHotkey ? { factoryResetHotkey: parsed.factoryResetHotkey ?? null } : {})
       };
     }
@@ -66,6 +75,7 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
     closeToTray: false,
     rememberOverlayPosition: true,
     taskbarMonitorEnabled: false,
+    taskbarAlwaysOnTop: true,
     factoryResetHotkey: null
   };
 
@@ -81,6 +91,8 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
       typeof candidate.taskbarMonitorEnabled === 'boolean'
         ? candidate.taskbarMonitorEnabled
         : fallback.taskbarMonitorEnabled,
+    taskbarAlwaysOnTop:
+      typeof candidate.taskbarAlwaysOnTop === 'boolean' ? candidate.taskbarAlwaysOnTop : fallback.taskbarAlwaysOnTop,
     factoryResetHotkey:
       candidate.factoryResetHotkey == null || typeof candidate.factoryResetHotkey === 'string'
         ? candidate.factoryResetHotkey
@@ -97,6 +109,7 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
     closeToTray: stored.closeToTray ?? base.closeToTray,
     rememberOverlayPosition: stored.rememberOverlayPosition ?? base.rememberOverlayPosition,
     taskbarMonitorEnabled: stored.taskbarMonitorEnabled ?? base.taskbarMonitorEnabled,
+    taskbarAlwaysOnTop: stored.taskbarAlwaysOnTop ?? base.taskbarAlwaysOnTop,
     factoryResetHotkey: stored.factoryResetHotkey ?? base.factoryResetHotkey
   };
 }
@@ -121,6 +134,22 @@ async function getCurrentWindowLabel(): Promise<string | null> {
     return getCurrentWindow().label;
   } catch {
     return null;
+  }
+}
+
+async function broadcastSettingsSync() {
+  if (!inTauri()) {
+    return;
+  }
+  try {
+    const { getCurrentWindow } = await import('@tauri-apps/api/window');
+    const win = getCurrentWindow();
+    await Promise.allSettled([
+      win.emitTo('main', 'pulsecorelite://settings-sync', null),
+      win.emitTo('taskbar', 'pulsecorelite://settings-sync', null)
+    ]);
+  } catch {
+    // ignore
   }
 }
 
@@ -275,6 +304,7 @@ export const useAppStore = defineStore('app', {
         language
       };
       persistSettings(this.settings);
+      void broadcastSettingsSync();
     },
     setCloseToTray(closeToTray: boolean) {
       if (this.settings.closeToTray === closeToTray) {
@@ -285,6 +315,7 @@ export const useAppStore = defineStore('app', {
         closeToTray
       };
       persistSettings(this.settings);
+      void broadcastSettingsSync();
     },
     setRememberOverlayPosition(rememberOverlayPosition: boolean) {
       if (this.settings.rememberOverlayPosition === rememberOverlayPosition) {
@@ -298,6 +329,18 @@ export const useAppStore = defineStore('app', {
         window.localStorage.removeItem(OVERLAY_POS_KEY);
       }
       persistSettings(this.settings);
+      void broadcastSettingsSync();
+    },
+    setTaskbarAlwaysOnTop(taskbarAlwaysOnTop: boolean) {
+      if (this.settings.taskbarAlwaysOnTop === taskbarAlwaysOnTop) {
+        return;
+      }
+      this.settings = {
+        ...this.settings,
+        taskbarAlwaysOnTop
+      };
+      persistSettings(this.settings);
+      void broadcastSettingsSync();
     },
     async setTaskbarMonitorEnabled(taskbarMonitorEnabled: boolean) {
       if (this.settings.taskbarMonitorEnabled === taskbarMonitorEnabled) {
@@ -336,6 +379,7 @@ export const useAppStore = defineStore('app', {
         factoryResetHotkey
       };
       persistSettings(this.settings);
+      void broadcastSettingsSync();
     },
     factoryReset() {
       if (typeof window === 'undefined') {
@@ -471,7 +515,7 @@ export const useAppStore = defineStore('app', {
         y,
         transparent: true,
         decorations: false,
-        alwaysOnTop: true,
+        alwaysOnTop: this.settings.taskbarAlwaysOnTop,
         skipTaskbar: true,
         visible: true,
         focus: false,

@@ -17,6 +17,7 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
   let moveUnlisten: (() => void) | undefined;
   let moveFrame: number | undefined;
   let lastPosition: { x: number; y: number } | null = null;
+  let rememberInit = false;
 
   const getWindowApi = async () => {
     if (!windowApiPromise) {
@@ -160,7 +161,23 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
       lastPosition = null;
       if (!enabled) {
         localStorage.removeItem(TASKBAR_POS_KEY);
+        rememberInit = true;
+        return;
       }
+      // When the user enables "remember position" at runtime, capture the current
+      // window position immediately so the next launch restores to the expected spot.
+      if (rememberInit && inTauri()) {
+        void (async () => {
+          try {
+            const { getCurrentWindow } = await getWindowApi();
+            const pos = await getCurrentWindow().outerPosition();
+            savePosition({ x: pos.x, y: pos.y });
+          } catch {
+            // ignore
+          }
+        })();
+      }
+      rememberInit = true;
     },
     { immediate: true }
   );
@@ -247,4 +264,3 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
 
   return { barRef, handleMouseDown, startDragging, scheduleResize };
 }
-

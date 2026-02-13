@@ -33,6 +33,7 @@ const { t } = useI18n();
 const { prefs } = useTaskbarPrefs();
 
 const rememberPosition = computed(() => store.settings.rememberOverlayPosition);
+const alwaysOnTop = computed(() => store.settings.taskbarAlwaysOnTop);
 const { barRef, handleMouseDown, scheduleResize } = useTaskbarWindow({ rememberPosition });
 
 const snapshot = computed(() => store.snapshot);
@@ -155,6 +156,25 @@ async function openContextMenu(event: MouseEvent) {
     }),
     await PredefinedMenuItem.new({ item: 'Separator' }),
     await CheckMenuItem.new({
+      text: t('overlay.alwaysOnTop'),
+      checked: alwaysOnTop.value,
+      action: async () => {
+        const next = !alwaysOnTop.value;
+        store.setTaskbarAlwaysOnTop(next);
+        try {
+          await getCurrentWindow().setAlwaysOnTop(next);
+        } catch {
+          // ignore
+        }
+      }
+    }),
+    await CheckMenuItem.new({
+      text: t('overlay.rememberPosition'),
+      checked: rememberPosition.value,
+      action: () => store.setRememberOverlayPosition(!rememberPosition.value)
+    }),
+    await PredefinedMenuItem.new({ item: 'Separator' }),
+    await CheckMenuItem.new({
       text: t('overlay.cpu'),
       checked: prefs.showCpu,
       action: () => (prefs.showCpu = !prefs.showCpu)
@@ -243,4 +263,20 @@ async function syncTaskbarHeightVar() {
 onMounted(() => {
   void syncTaskbarHeightVar();
 });
+
+watch(
+  alwaysOnTop,
+  enabled => {
+    if (!inTauri()) return;
+    void (async () => {
+      try {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        await getCurrentWindow().setAlwaysOnTop(enabled);
+      } catch {
+        // ignore
+      }
+    })();
+  },
+  { immediate: true }
+);
 </script>

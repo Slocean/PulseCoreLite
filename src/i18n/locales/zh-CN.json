@@ -28,6 +28,7 @@
     "showDragHandle": "拖拽按钮",
     "closeToTray": "退出到托盘",
     "rememberPosition": "记住上次位置",
+    "alwaysOnTop": "总是置顶",
     "taskbarMonitor": "任务栏监测",
     "taskbarMonitorOpen": "开启",
     "taskbarMonitorClose": "关闭",
