@@ -91,16 +91,14 @@
         </div>
         <div class="overlay-config-range">
           <span class="overlay-config-label">{{ t('overlay.refreshRate') }}</span>
-          <div class="overlay-config-slider-wrap">
-            <span class="overlay-config-value">{{ refreshRate }}ms</span>
-            <input
-              type="range"
-              min="100"
-              max="2000"
-              step="100"
-              v-model.number="refreshRate"
-              @change="handleRefreshRateChange" />
-          </div>
+          <span class="overlay-config-value">{{ refreshRate }}ms</span>
+          <input
+            type="range"
+            min="100"
+            max="2000"
+            step="100"
+            v-model.number="refreshRate"
+            @change="handleRefreshRateChange" />
         </div>
       </div>
     </Transition>

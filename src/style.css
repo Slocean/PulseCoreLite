@@ -424,25 +424,24 @@ body {
   grid-column: 1 / -1;
   display: flex;
   flex-direction: row;
-  align-items: flex-end;
-  gap: 12px;
-}
-
-.overlay-config-slider-wrap {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  gap: 4px;
+  align-items: center;
+  margin-top: 4px;
 }
 
 .overlay-config-value {
   font-size: 10px;
   color: rgba(255, 255, 255, 0.6);
   line-height: 1;
+  margin-left: 8px;
+  margin-right: 12px;
+  width: 40px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
 }
 
 .overlay-config-range input[type='range'] {
-  width: 100%;
+  width: 100px;
   accent-color: var(--cyan);
   margin: 0;
   display: block;
