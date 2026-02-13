@@ -60,14 +60,15 @@ body {
 .overlay-widget header {
   display: flex;
   justify-content: space-between;
-  align-items: start;
+  align-items: center;
   margin-bottom: 14px;
 }
 
-.overlay-title h3 {
+.overlay-title .title {
   margin: 0;
   font-size: 13px;
   letter-spacing: 0.22em;
+  font-weight: bold;
   text-transform: uppercase;
   color: var(--cyan);
   text-shadow:
@@ -75,8 +76,9 @@ body {
     0 0 14px rgba(0, 242, 255, 0.25);
 }
 
-.overlay-title p {
+.overlay-title .version {
   margin: 4px 0 0;
+  padding-left: 5px;
   font-size: 10px;
   color: rgba(255, 255, 255, 0.38);
   letter-spacing: 0.12em;
@@ -112,7 +114,7 @@ body {
 .overlay-header-actions {
   display: flex;
   gap: 4px;
-  margin-top: -2px;
+  margin-top: 0;
 }
 
 .overlay-drag {

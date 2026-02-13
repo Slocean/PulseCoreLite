@@ -6,8 +6,10 @@
     @mousedown="handleOverlayMouseDown">
     <header>
       <div class="overlay-title">
-        <h3>{{ t('overlay.title') }}</h3>
-        <p>v{{ appVersion }}</p>
+        <span>
+          <span class="title">{{ t('overlay.title') }}</span>
+          <span class="version">v{{ appVersion }}</span>
+        </span>
       </div>
       <div class="overlay-header-actions">
         <div v-if="prefs.showDragHandle" class="overlay-drag" @mousedown.stop="startDragging">
