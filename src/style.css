@@ -696,7 +696,7 @@ html.window-taskbar body {
 .taskbar-row {
   display: inline-flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 3px;
 }
 
 .taskbar-sep {
@@ -714,12 +714,13 @@ html.window-taskbar body {
 .taskbar-k {
   font-size: 10px;
   letter-spacing: 0.18em;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.8);
   text-transform: uppercase;
 }
 
 .taskbar-v {
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  font-family:
+    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
   font-size: 13px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -728,10 +729,11 @@ html.window-taskbar body {
 }
 
 .taskbar-extra {
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  font-family:
+    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.06em;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.8);
   text-transform: uppercase;
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
