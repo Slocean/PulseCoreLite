@@ -70,6 +70,10 @@
           <input v-model="prefs.showHardwareInfo" type="checkbox" />
           {{ t('overlay.showHardware') }}
         </label>
+        <label>
+          <input v-model="prefs.showWarning" type="checkbox" />
+          {{ t('overlay.showWarning') }}
+        </label>
         <div class="overlay-config-language">
           <span class="overlay-config-label">{{ t('overlay.language') }}</span>
           <div class="overlay-lang-buttons">
@@ -114,13 +118,14 @@
               <span v-if="prefs.showHardwareInfo" class="overlay-metric-hardware">{{ cpuHardwareLabel }}</span>
             </div>
           </div>
-          <span v-if="prefs.showPercent" class="overlay-metric-value overlay-glow-cyan">
+          <span v-if="prefs.showPercent" class="overlay-metric-value" :class="getUsageClass(cpuUsagePct, 'cyan')">
             {{ cpuPercentLabel }}
           </span>
         </div>
         <div class="overlay-progress">
           <span
-            class="overlay-progress-fill overlay-progress-fill--cyan"
+            class="overlay-progress-fill"
+            :class="getProgressClass(cpuUsagePct, 'cyan')"
             :style="{ width: `${cpuUsagePct}%` }"></span>
         </div>
       </div>
@@ -135,13 +140,14 @@
               <span v-if="prefs.showHardwareInfo" class="overlay-metric-hardware">{{ gpuHardwareLabel }}</span>
             </div>
           </div>
-          <span v-if="prefs.showPercent" class="overlay-metric-value overlay-glow-pink">
+          <span v-if="prefs.showPercent" class="overlay-metric-value" :class="getUsageClass(gpuUsagePct, 'pink')">
             {{ gpuPercentLabel }}
           </span>
         </div>
         <div class="overlay-progress">
           <span
-            class="overlay-progress-fill overlay-progress-fill--pink"
+            class="overlay-progress-fill"
+            :class="getProgressClass(gpuUsagePct, 'pink')"
             :style="{ width: `${gpuUsagePct}%` }"></span>
         </div>
       </div>
@@ -156,13 +162,17 @@
               <span v-if="prefs.showHardwareInfo" class="overlay-metric-hardware">{{ memoryHardwareLabel }}</span>
             </div>
           </div>
-          <span v-if="prefs.showPercent" class="overlay-metric-value overlay-glow-cyan">
+          <span
+            v-if="prefs.showPercent"
+            class="overlay-metric-value"
+            :class="getUsageClass(memoryUsagePct, 'cyan')">
             {{ memoryPercentLabel }}
           </span>
         </div>
         <div class="overlay-progress">
           <span
-            class="overlay-progress-fill overlay-progress-fill--cyan"
+            class="overlay-progress-fill"
+            :class="getProgressClass(memoryUsagePct, 'cyan')"
             :style="{ width: `${memoryUsagePct}%` }"></span>
         </div>
       </div>
@@ -183,13 +193,17 @@
                 </span>
               </div>
             </div>
-            <span v-if="prefs.showPercent" class="overlay-metric-value overlay-glow-pink">
+            <span
+              v-if="prefs.showPercent"
+              class="overlay-metric-value"
+              :class="getUsageClass(disk.usage_pct, 'pink')">
               {{ diskPercentLabel(disk) }}
             </span>
           </div>
           <div class="overlay-progress">
             <span
-              class="overlay-progress-fill overlay-progress-fill--pink"
+              class="overlay-progress-fill"
+              :class="getProgressClass(disk.usage_pct, 'pink')"
               :style="{ width: `${disk.usage_pct}%` }"></span>
           </div>
         </div>
@@ -262,6 +276,7 @@ interface OverlayPrefs {
   showValues: boolean;
   showPercent: boolean;
   showHardwareInfo: boolean;
+  showWarning: boolean;
 }
 
 const { t } = useI18n();
@@ -360,7 +375,8 @@ function loadPrefs(): OverlayPrefs {
     showLatency: true,
     showValues: true,
     showPercent: true,
-    showHardwareInfo: false
+    showHardwareInfo: false,
+    showWarning: true
   };
 
   try {
@@ -379,7 +395,8 @@ function loadPrefs(): OverlayPrefs {
       showLatency: parsed.showLatency ?? fallback.showLatency,
       showValues: parsed.showValues ?? fallback.showValues,
       showPercent: parsed.showPercent ?? fallback.showPercent,
-      showHardwareInfo: parsed.showHardwareInfo ?? fallback.showHardwareInfo
+      showHardwareInfo: parsed.showHardwareInfo ?? fallback.showHardwareInfo,
+      showWarning: parsed.showWarning ?? fallback.showWarning
     };
   } catch {
     return fallback;
@@ -540,6 +557,32 @@ function formatHardwareLabel(parts: Array<string | null | undefined>) {
     .map(part => normalizeHardwareModel(part as string))
     .filter(part => part.length > 0);
   return cleaned.length > 0 ? cleaned.join(' · ') : t('common.na');
+}
+
+function getUsageClass(value: number, baseColor: 'cyan' | 'pink') {
+  if (!prefs.showWarning) {
+    return `overlay-glow-${baseColor}`;
+  }
+  if (value > 85) {
+    return 'overlay-glow-red';
+  }
+  if (value > 75) {
+    return 'overlay-glow-orange';
+  }
+  return `overlay-glow-${baseColor}`;
+}
+
+function getProgressClass(value: number, baseColor: 'cyan' | 'pink') {
+  if (!prefs.showWarning) {
+    return `overlay-progress-fill--${baseColor}`;
+  }
+  if (value > 85) {
+    return 'overlay-progress-fill--red';
+  }
+  if (value > 75) {
+    return 'overlay-progress-fill--orange';
+  }
+  return `overlay-progress-fill--${baseColor}`;
 }
 
 function getDiskHardwareLabel(disk: { name: string; total_gb: number }) {
