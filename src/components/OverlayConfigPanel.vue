@@ -52,6 +52,10 @@
       <input v-model="closeToTray" type="checkbox" />
       {{ t('overlay.closeToTray') }}
     </label>
+    <label>
+      <input v-model="rememberOverlayPosition" type="checkbox" />
+      {{ t('overlay.rememberPosition') }}
+    </label>
     <div class="overlay-config-language">
       <span class="overlay-config-label">{{ t('overlay.language') }}</span>
       <div class="overlay-lang-buttons">
@@ -92,14 +96,36 @@
         step="5"
         v-model.number="backgroundOpacity" />
     </div>
+    <div class="overlay-config-hotkey">
+      <span class="overlay-config-label">{{ t('overlay.factoryResetHotkey') }}</span>
+      <div class="overlay-config-hotkey-controls">
+        <button type="button" class="overlay-lang-button" @click="beginHotkeyCapture">
+          {{ recordingHotkey ? t('overlay.hotkeyRecording') : hotkeyLabel }}
+        </button>
+        <button
+          type="button"
+          class="overlay-lang-button"
+          :disabled="factoryResetHotkey == null"
+          @click="factoryResetHotkey = null">
+          {{ t('overlay.hotkeyClear') }}
+        </button>
+      </div>
+    </div>
+    <div class="overlay-config-reset">
+      <button type="button" class="overlay-config-danger" @click="confirmFactoryReset">
+        {{ t('overlay.factoryReset') }}
+      </button>
+    </div>
     <div class="overlay-config-version">v{{ appVersion }}</div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { OverlayPrefs } from '../composables/useOverlayPrefs';
+import { hotkeyFromEvent, hotkeyToString } from '../utils/hotkey';
 
 defineProps<{
   appVersion: string;
@@ -108,13 +134,68 @@ defineProps<{
 
 const prefs = defineModel<OverlayPrefs>('prefs', { required: true });
 const closeToTray = defineModel<boolean>('closeToTray', { required: true });
+const rememberOverlayPosition = defineModel<boolean>('rememberOverlayPosition', { required: true });
+const factoryResetHotkey = defineModel<string | null>('factoryResetHotkey', { required: true });
 const refreshRate = defineModel<number>('refreshRate', { required: true });
 const backgroundOpacity = defineModel<number>('backgroundOpacity', { required: true });
 
 const emit = defineEmits<{
   (e: 'setLanguage', value: 'zh-CN' | 'en-US'): void;
   (e: 'refreshRateChange'): void;
+  (e: 'factoryReset'): void;
 }>();
 
 const { t } = useI18n();
+
+const recordingHotkey = ref(false);
+let hotkeyUnlisten: (() => void) | null = null;
+
+const hotkeyLabel = computed(() => factoryResetHotkey.value ?? t('overlay.hotkeyNotSet'));
+
+function stopHotkeyCapture() {
+  if (hotkeyUnlisten) {
+    hotkeyUnlisten();
+    hotkeyUnlisten = null;
+  }
+  recordingHotkey.value = false;
+}
+
+function beginHotkeyCapture() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  if (recordingHotkey.value) {
+    stopHotkeyCapture();
+    return;
+  }
+
+  recordingHotkey.value = true;
+  const handler = (event: KeyboardEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey && event.key === 'Escape') {
+      stopHotkeyCapture();
+      return;
+    }
+
+    const hotkey = hotkeyFromEvent(event);
+    if (!hotkey) {
+      return;
+    }
+    factoryResetHotkey.value = hotkeyToString(hotkey);
+    stopHotkeyCapture();
+  };
+
+  window.addEventListener('keydown', handler, true);
+  hotkeyUnlisten = () => window.removeEventListener('keydown', handler, true);
+}
+
+function confirmFactoryReset() {
+  emit('factoryReset');
+}
+
+onUnmounted(() => {
+  stopHotkeyCapture();
+});
 </script>

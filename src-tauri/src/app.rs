@@ -40,6 +40,7 @@ pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Bu
         commands::get_hardware_info,
         commands::toggle_overlay,
         commands::set_refresh_rate,
+        commands::confirm_factory_reset,
         commands::exit_app
     ])
 }

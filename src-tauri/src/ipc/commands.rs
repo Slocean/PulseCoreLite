@@ -14,6 +14,43 @@ pub async fn get_initial_state(state: State<'_, SharedState>) -> CmdResult<AppBo
 }
 
 #[tauri::command]
+pub fn confirm_factory_reset(title: String, message: String) -> CmdResult<bool> {
+    #[cfg(windows)]
+    {
+        use std::{ffi::OsStr, os::windows::ffi::OsStrExt};
+        use windows_sys::Win32::UI::WindowsAndMessaging::{
+            MessageBoxW, IDYES, MB_ICONWARNING, MB_SETFOREGROUND, MB_TOPMOST, MB_YESNO,
+        };
+
+        let title_w: Vec<u16> = OsStr::new(&title).encode_wide().chain(std::iter::once(0)).collect();
+        let message_w: Vec<u16> = OsStr::new(&message)
+            .encode_wide()
+            .chain(std::iter::once(0))
+            .collect();
+
+        // Use a native system dialog (not a webview `window.confirm`).
+        // Owner window is null to avoid HWND plumbing; this still shows a real OS dialog.
+        let result = unsafe {
+            MessageBoxW(
+                std::ptr::null_mut(),
+                message_w.as_ptr(),
+                title_w.as_ptr(),
+                MB_YESNO | MB_ICONWARNING | MB_TOPMOST | MB_SETFOREGROUND,
+            )
+        };
+
+        return Ok(result == IDYES);
+    }
+
+    #[cfg(not(windows))]
+    {
+        let _ = title;
+        let _ = message;
+        Err("System dialog is not implemented for this platform.".to_string())
+    }
+}
+
+#[tauri::command]
 pub async fn toggle_overlay(app: AppHandle, visible: bool) -> CmdResult<bool> {
     let win = app
         .get_webview_window("main")

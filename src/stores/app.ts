@@ -4,6 +4,7 @@ import type { AppBootstrap, AppSettings, HardwareInfo, TelemetrySnapshot } from 
 
 const SETTINGS_KEY = 'pulsecorelite.settings';
 const HARDWARE_KEY = 'pulsecorelite.hardware_info';
+const OVERLAY_POS_KEY = 'pulsecorelite.overlay_pos';
 
 function emptySnapshot(): TelemetrySnapshot {
   return {
@@ -33,12 +34,21 @@ function readStoredSettings(): Partial<AppSettings> | null {
       return null;
     }
     const parsed = JSON.parse(raw) as Partial<AppSettings>;
+    const hasOwn = (key: keyof AppSettings) => Object.prototype.hasOwnProperty.call(parsed, key);
     const hasLanguage = parsed.language === 'zh-CN' || parsed.language === 'en-US';
     const hasCloseToTray = typeof parsed.closeToTray === 'boolean';
-    if (hasLanguage || hasCloseToTray) {
+    const hasRememberOverlayPosition =
+      hasOwn('rememberOverlayPosition') && typeof parsed.rememberOverlayPosition === 'boolean';
+    const hasFactoryResetHotkey =
+      hasOwn('factoryResetHotkey') &&
+      (parsed.factoryResetHotkey == null || typeof parsed.factoryResetHotkey === 'string');
+
+    if (hasLanguage || hasCloseToTray || hasRememberOverlayPosition || hasFactoryResetHotkey) {
       return {
         ...(hasLanguage ? { language: parsed.language } : {}),
-        ...(hasCloseToTray ? { closeToTray: parsed.closeToTray } : {})
+        ...(hasCloseToTray ? { closeToTray: parsed.closeToTray } : {}),
+        ...(hasRememberOverlayPosition ? { rememberOverlayPosition: parsed.rememberOverlayPosition } : {}),
+        ...(hasFactoryResetHotkey ? { factoryResetHotkey: parsed.factoryResetHotkey ?? null } : {})
       };
     }
     return null;
@@ -48,7 +58,27 @@ function readStoredSettings(): Partial<AppSettings> | null {
 }
 
 function resolveSettings(settings?: AppSettings | null): AppSettings {
-  const base = settings ?? { language: 'zh-CN', closeToTray: false };
+  const fallback: AppSettings = {
+    language: 'zh-CN',
+    closeToTray: false,
+    rememberOverlayPosition: true,
+    factoryResetHotkey: null
+  };
+
+  const candidate = settings ?? fallback;
+  const base: AppSettings = {
+    language: candidate.language === 'en-US' ? 'en-US' : 'zh-CN',
+    closeToTray: typeof candidate.closeToTray === 'boolean' ? candidate.closeToTray : fallback.closeToTray,
+    rememberOverlayPosition:
+      typeof candidate.rememberOverlayPosition === 'boolean'
+        ? candidate.rememberOverlayPosition
+        : fallback.rememberOverlayPosition,
+    factoryResetHotkey:
+      candidate.factoryResetHotkey == null || typeof candidate.factoryResetHotkey === 'string'
+        ? candidate.factoryResetHotkey
+        : fallback.factoryResetHotkey
+  };
+
   const stored = readStoredSettings();
   if (!stored) {
     return base;
@@ -56,7 +86,9 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
   return {
     ...base,
     language: stored.language ?? base.language,
-    closeToTray: stored.closeToTray ?? base.closeToTray
+    closeToTray: stored.closeToTray ?? base.closeToTray,
+    rememberOverlayPosition: stored.rememberOverlayPosition ?? base.rememberOverlayPosition,
+    factoryResetHotkey: stored.factoryResetHotkey ?? base.factoryResetHotkey
   };
 }
 
@@ -222,6 +254,37 @@ export const useAppStore = defineStore('app', {
         closeToTray
       };
       persistSettings(this.settings);
+    },
+    setRememberOverlayPosition(rememberOverlayPosition: boolean) {
+      if (this.settings.rememberOverlayPosition === rememberOverlayPosition) {
+        return;
+      }
+      this.settings = {
+        ...this.settings,
+        rememberOverlayPosition
+      };
+      if (!rememberOverlayPosition && typeof window !== 'undefined') {
+        window.localStorage.removeItem(OVERLAY_POS_KEY);
+      }
+      persistSettings(this.settings);
+    },
+    setFactoryResetHotkey(factoryResetHotkey: string | null) {
+      if (this.settings.factoryResetHotkey === factoryResetHotkey) {
+        return;
+      }
+      this.settings = {
+        ...this.settings,
+        factoryResetHotkey
+      };
+      persistSettings(this.settings);
+    },
+    factoryReset() {
+      if (typeof window === 'undefined') {
+        return;
+      }
+      // Factory reset: clear all persisted local data.
+      window.localStorage.clear();
+      window.location.reload();
     },
     async ensureTray() {
       if (!inTauri() || this.trayReady) {

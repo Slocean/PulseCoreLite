@@ -57,6 +57,8 @@ export interface HardwareInfo {
 export interface AppSettings {
   language: "zh-CN" | "en-US";
   closeToTray: boolean;
+  rememberOverlayPosition: boolean;
+  factoryResetHotkey: string | null;
 }
 
 export interface AppBootstrap {

@@ -506,6 +506,48 @@ body {
   cursor: pointer;
 }
 
+.overlay-config-hotkey {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.overlay-config-hotkey-controls {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.overlay-config-hotkey-controls .overlay-lang-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.overlay-config-reset {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+
+.overlay-config-danger {
+  border: 1px dashed rgba(255, 59, 59, 0.45);
+  background: rgba(255, 59, 59, 0.08);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: #ff9a9a;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.overlay-config-danger:hover {
+  border-color: rgba(255, 59, 59, 0.7);
+  color: #ffd2d2;
+}
+
 .overlay-config-version {
   grid-column: 1 / -1;
   justify-self: end;

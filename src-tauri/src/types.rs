@@ -69,6 +69,10 @@ pub struct AppSettings {
     pub language: String,
     #[serde(rename = "closeToTray")]
     pub close_to_tray: bool,
+    #[serde(rename = "rememberOverlayPosition")]
+    pub remember_overlay_position: bool,
+    #[serde(rename = "factoryResetHotkey")]
+    pub factory_reset_hotkey: Option<String>,
 }
 
 impl Default for AppSettings {
@@ -76,6 +80,8 @@ impl Default for AppSettings {
         Self {
             language: "zh-CN".to_string(),
             close_to_tray: false,
+            remember_overlay_position: true,
+            factory_reset_hotkey: None,
         }
     }
 }
