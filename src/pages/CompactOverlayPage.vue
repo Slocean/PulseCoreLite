@@ -6,9 +6,9 @@
         <p>v{{ appVersion }}</p>
       </div>
       <div class="overlay-header-actions">
-        <div class="overlay-drag" @mousedown.stop="startDragging">
+        <!-- <div class="overlay-drag" @mousedown.stop="startDragging">
           <span class="material-symbols-outlined">drag_handle</span>
-        </div>
+        </div> -->
         <button
           class="overlay-action"
           type="button"
