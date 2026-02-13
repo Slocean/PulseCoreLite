@@ -179,7 +179,7 @@
                   <span class="overlay-metric-io" style="margin-left: 8px">{{ diskIoLabel(disk) }}</span>
                 </div>
                 <span v-if="prefs.showHardwareInfo" class="overlay-metric-hardware">
-                  {{ getDiskHardwareLabel(disk.name) }}
+                  {{ getDiskHardwareLabel(disk) }}
                 </span>
               </div>
             </div>
@@ -542,22 +542,27 @@ function formatHardwareLabel(parts: Array<string | null | undefined>) {
   return cleaned.length > 0 ? cleaned.join(' · ') : t('common.na');
 }
 
-function getDiskHardwareLabel(mountPoint: string) {
+function getDiskHardwareLabel(disk: { name: string; total_gb: number }) {
+  const mountPoint = disk.name;
   const driveLetter = mountPoint.replace(/[\\/]$/, '');
   const match = store.hardwareInfo.disk_models.find(
     modelStr => modelStr.startsWith(driveLetter + ' ') || modelStr.startsWith(driveLetter + '·')
   );
+
+  let modelName = t('common.na');
 
   if (match) {
     // match is "C: · Model Name", we want "Model Name"
     const parts = match.split('·');
     if (parts.length > 1) {
       const rawModel = parts.slice(1).join('·');
-      return normalizeHardwareModel(rawModel);
+      modelName = normalizeHardwareModel(rawModel);
+    } else {
+      modelName = normalizeHardwareModel(match);
     }
-    return normalizeHardwareModel(match);
   }
-  return t('common.na');
+
+  return `${modelName} · ${disk.total_gb.toFixed(0)} GB`;
 }
 
 onMounted(() => {
