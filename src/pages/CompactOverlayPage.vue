@@ -7,7 +7,7 @@
       </div>
       <div class="overlay-header-actions">
         <div class="overlay-drag" @mousedown.stop="startDragging">
-          <span class="material-symbols-outlined">drag_indicator</span>
+          <span class="material-symbols-outlined">drag_handle</span>
         </div>
         <button
           class="overlay-action"
@@ -15,7 +15,7 @@
           @mousedown.stop
           @click="showConfig = !showConfig"
           :title="t('overlay.configure')">
-          <span class="material-symbols-outlined">tune</span>
+          <span class="material-symbols-outlined">settings</span>
         </button>
         <button
           class="overlay-action overlay-action--danger"
