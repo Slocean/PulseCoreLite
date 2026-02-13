@@ -18,8 +18,10 @@ pub fn collect_hardware_info() -> HardwareInfo {
         .filter(|s| !s.trim().is_empty())
         .unwrap_or_else(|| "Unknown CPU".to_string());
 
-    let total_gb = (sys.total_memory() as f64 / (1024.0 * 1024.0 * 1024.0)).max(1.0);
-    let ram_spec = format!("{total_gb:.0} GB");
+    let ram_spec = ram_details().unwrap_or_else(|| {
+        let total_gb = (sys.total_memory() as f64 / (1024.0 * 1024.0 * 1024.0)).max(1.0);
+        format!("{total_gb:.0} GB")
+    });
 
     let disk_models = disk_drive_models().unwrap_or_else(fallback_disk_models);
 
@@ -36,6 +38,32 @@ pub fn collect_hardware_info() -> HardwareInfo {
         motherboard: motherboard_name().unwrap_or_else(|| "Unknown motherboard".to_string()),
         device_brand: manufacturer_name().unwrap_or_else(|| "Unknown vendor".to_string()),
     }
+}
+
+fn ram_details() -> Option<String> {
+    let script = r#"
+$mem = Get-CimInstance Win32_PhysicalMemory -ErrorAction SilentlyContinue
+if ($mem) {
+    $total = ($mem | Measure-Object -Property Capacity -Sum).Sum
+    $speed = ($mem | Measure-Object -Property Speed -Maximum).Maximum
+    $type = ($mem | Select-Object -First 1 -ExpandProperty SMBIOSMemoryType)
+    
+    $typeStr = "DDR"
+    switch ($type) {
+        20 { $typeStr = "DDR" }
+        21 { $typeStr = "DDR2" }
+        24 { $typeStr = "DDR3" }
+        26 { $typeStr = "DDR4" }
+        30 { $typeStr = "DDR5" }
+        34 { $typeStr = "LPDDR5" }
+        default { $typeStr = "DDR" }
+    }
+
+    "{0} {1}MHz {2}G" -f $typeStr, $speed, [math]::Round($total / 1GB)
+}
+"#;
+    run_powershell_lines(script)
+        .and_then(|lines| lines.first().map(|s| s.trim().to_string()))
 }
 
 fn fallback_disk_models() -> Vec<String> {

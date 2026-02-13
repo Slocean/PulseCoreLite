@@ -2410,7 +2410,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pulsecore"
+name = "pulsecorelite"
 version = "0.1.0"
 dependencies = [
  "anyhow",

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{atomic::AtomicU64, Arc};
 
 use tokio::sync::{Mutex, RwLock};
 
@@ -12,6 +12,7 @@ pub struct AppState {
     pub hardware_info: HardwareInfo,
     pub latest_snapshot: RwLock<TelemetrySnapshot>,
     pub collector: Mutex<SystemCollector>,
+    pub refresh_rate_ms: AtomicU64,
 }
 
 pub type SharedState = Arc<AppState>;
@@ -28,6 +29,7 @@ impl AppState {
             hardware_info,
             latest_snapshot: RwLock::new(initial_snapshot),
             collector: Mutex::new(collector),
+            refresh_rate_ms: AtomicU64::new(1000),
         }))
     }
 

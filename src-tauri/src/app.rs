@@ -28,7 +28,8 @@ pub fn start_telemetry_loop(app: AppHandle, state: SharedState) {
                 let _ = win.set_title(&title);
             }
 
-            tokio::time::sleep(Duration::from_millis(500)).await;
+            let rate = state.refresh_rate_ms.load(std::sync::atomic::Ordering::Relaxed);
+            tokio::time::sleep(Duration::from_millis(rate)).await;
         }
     });
 }
@@ -36,6 +37,7 @@ pub fn start_telemetry_loop(app: AppHandle, state: SharedState) {
 pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
     builder.invoke_handler(tauri::generate_handler![
         commands::get_initial_state,
-        commands::toggle_overlay
+        commands::toggle_overlay,
+        commands::set_refresh_rate
     ])
 }

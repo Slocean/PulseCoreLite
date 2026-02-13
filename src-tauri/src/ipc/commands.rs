@@ -29,4 +29,12 @@ pub async fn toggle_overlay(app: AppHandle, visible: bool) -> CmdResult<bool> {
     Ok(true)
 }
 
+#[tauri::command]
+pub async fn set_refresh_rate(state: State<'_, SharedState>, rate_ms: u64) -> CmdResult<()> {
+    use std::sync::atomic::Ordering;
+    let rate = rate_ms.clamp(100, 10000);
+    state.refresh_rate_ms.store(rate, Ordering::Relaxed);
+    Ok(())
+}
+
 

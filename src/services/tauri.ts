@@ -25,5 +25,6 @@ export function inTauri(): boolean {
 
 export const api = {
   getInitialState: () => tauriInvoke<AppBootstrap>("get_initial_state"),
-  toggleOverlay: (visible: boolean) => tauriInvoke<boolean>("toggle_overlay", { visible })
+  toggleOverlay: (visible: boolean) => tauriInvoke<boolean>("toggle_overlay", { visible }),
+  setRefreshRate: (rateMs: number) => tauriInvoke<void>("set_refresh_rate", { rateMs })
 };

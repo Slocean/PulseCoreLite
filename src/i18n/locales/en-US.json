@@ -3,7 +3,7 @@
     "na": "N/A"
   },
   "overlay": {
-    "title": "PulseCore",
+    "title": "PulseCoreLite",
     "configure": "Configure",
     "close": "Close",
     "cpu": "CPU",
@@ -21,8 +21,9 @@
     "showLatency": "Network Latency",
     "showValues": "Values",
     "showPercent": "Percent",
-    "showHardware": "Hardware Model",
-    "language": "Language",
+    "showHardware": "Hardware Info",
+    "refreshRate": "Refresh Rate",
+    "language": "Language / 语言",
     "langZh": "中文",
     "langEn": "English",
     "latency": "Network Latency",

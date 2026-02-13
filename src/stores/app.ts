@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { api, inTauri, listenEvent } from '../services/tauri';
 import type { AppBootstrap, AppSettings, HardwareInfo, TelemetrySnapshot } from '../types';
 
-const SETTINGS_KEY = 'pulsecore.settings';
+const SETTINGS_KEY = 'pulsecorelite.settings';
 
 function emptySnapshot(): TelemetrySnapshot {
   return {
@@ -124,6 +124,12 @@ export const useAppStore = defineStore('app', {
         return;
       }
       await api.toggleOverlay(visible);
+    },
+    async setRefreshRate(rateMs: number) {
+      if (!inTauri()) {
+        return;
+      }
+      await api.setRefreshRate(rateMs);
     },
     setLanguage(language: AppSettings['language']) {
       if (this.settings.language === language) {

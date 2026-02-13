@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "PulseCore Overlay",
+        "title": "PulseCoreLite Overlay",
         "url": "index.html",
         "width": 340,
         "height": 260,

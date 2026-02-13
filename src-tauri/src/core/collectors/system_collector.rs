@@ -214,20 +214,17 @@ if ($adapterMemory) {
   }
 }
 
-$adapterMemoryLimit = Get-Counter '\GPU Adapter Memory(*)\Dedicated Limit' -ErrorAction SilentlyContinue
-if ($adapterMemoryLimit) {
-  $limitBytes = ($adapterMemoryLimit.CounterSamples | ForEach-Object { [double]$_.CookedValue } | Measure-Object -Maximum).Maximum
-  if ($limitBytes -gt 0) {
-    $memTotalMb = $limitBytes / 1MB
-  }
+$videoController = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | Sort-Object -Property AdapterRAM -Descending | Select-Object -First 1
+if ($videoController -and $videoController.AdapterRAM -gt 0) {
+  $memTotalMb = $videoController.AdapterRAM / 1MB
 }
 
 if ($memTotalMb -eq $null) {
-  $videoController = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | Where-Object { $_.AdapterRAM -gt 0 }
-  if ($videoController) {
-    $adapterRam = ($videoController | Measure-Object -Property AdapterRAM -Maximum).Maximum
-    if ($adapterRam -gt 0) {
-      $memTotalMb = $adapterRam / 1MB
+  $adapterMemoryLimit = Get-Counter '\GPU Adapter Memory(*)\Dedicated Limit' -ErrorAction SilentlyContinue
+  if ($adapterMemoryLimit) {
+    $limitBytes = ($adapterMemoryLimit.CounterSamples | ForEach-Object { [double]$_.CookedValue } | Measure-Object -Maximum).Maximum
+    if ($limitBytes -gt 0) {
+      $memTotalMb = $limitBytes / 1MB
     }
   }
 }
