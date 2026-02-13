@@ -516,7 +516,7 @@ body {
 
 .overlay-config-hotkey-controls {
   display: inline-flex;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
@@ -648,7 +648,9 @@ body {
 
 .overlay-dialog-enter-active,
 .overlay-dialog-leave-active {
-  transition: opacity 180ms ease, transform 180ms ease;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
 }
 
 .overlay-dialog-enter-from,
