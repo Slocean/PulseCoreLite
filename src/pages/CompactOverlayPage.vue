@@ -477,8 +477,20 @@ function diskIoLabel(disk: { read_bytes_per_sec: number | null; write_bytes_per_
   return `R: ${read} MB/s · W: ${write} MB/s`;
 }
 
+function normalizeHardwareModel(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return '';
+  }
+  const segments = trimmed.split(' / ').map(part => part.trim()).filter(Boolean);
+  return segments.length > 0 ? segments[segments.length - 1] : trimmed;
+}
+
 function formatHardwareLabel(parts: Array<string | null | undefined>) {
-  const cleaned = parts.filter(part => part && part.trim().length > 0) as string[];
+  const cleaned = parts
+    .filter(part => part && part.trim().length > 0)
+    .map(part => normalizeHardwareModel(part as string))
+    .filter(part => part.length > 0);
   return cleaned.length > 0 ? cleaned.join(' · ') : t('common.na');
 }
 

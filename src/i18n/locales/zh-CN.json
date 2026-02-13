@@ -21,7 +21,7 @@
     "showLatency": "显示网络延迟",
     "showValues": "显示具体值",
     "showPercent": "显示百分比",
-    "showHardware": "显示型号与品牌",
+    "showHardware": "显示硬件型号",
     "latency": "网络延迟",
     "vram": "显存",
     "freq": "频率"

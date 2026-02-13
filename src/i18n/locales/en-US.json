@@ -21,7 +21,7 @@
     "showLatency": "Show Network Latency",
     "showValues": "Show Values",
     "showPercent": "Show Percent",
-    "showHardware": "Show Model & Brand",
+    "showHardware": "Show Hardware Model",
     "latency": "Network Latency",
     "vram": "VRAM",
     "freq": "Frequency"
