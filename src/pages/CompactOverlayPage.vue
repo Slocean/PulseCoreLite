@@ -291,10 +291,7 @@ const memoryUsageLabel = computed(() => {
 const downloadSpeed = computed(() => (snapshot.value.network.download_bytes_per_sec / 1024 / 1024).toFixed(2));
 const uploadSpeed = computed(() => (snapshot.value.network.upload_bytes_per_sec / 1024 / 1024).toFixed(2));
 const latencyLabel = computed(() => {
-  const pingLatency = store.lastPingResult?.avg_ms ?? null;
-  const speedLatency = store.lastSpeedResult?.latency_ms ?? null;
-  const snapshotLatency = snapshot.value.network.latency_ms ?? null;
-  const value = pingLatency ?? speedLatency ?? snapshotLatency;
+  const value = snapshot.value.network.latency_ms ?? null;
   return value == null ? t('common.na') : `${value.toFixed(0)} ms`;
 });
 const cpuHardwareLabel = computed(() => formatHardwareLabel([store.hardwareInfo.cpu_model]));

@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { api, inTauri, listenEvent } from "../services/tauri";
-import type { AppBootstrap, AppSettings, HardwareInfo, PingResult, SpeedTestResult, TelemetrySnapshot } from "../types";
+import type { AppBootstrap, AppSettings, HardwareInfo, TelemetrySnapshot } from "../types";
 
 function emptySnapshot(): TelemetrySnapshot {
   return {
@@ -45,8 +45,6 @@ export const useAppStore = defineStore("app", {
     snapshot: emptySnapshot(),
     hardwareInfo: mockHardware(),
     settings: defaultSettings(),
-    lastSpeedResult: null as SpeedTestResult | null,
-    lastPingResult: null as PingResult | null,
     unlisteners: [] as Array<() => void>
   }),
   actions: {
@@ -82,16 +80,6 @@ export const useAppStore = defineStore("app", {
     async bindEvents() {
       this.unlisteners.push(
         await listenEvent<TelemetrySnapshot>("telemetry://snapshot", payload => this.pushSnapshot(payload))
-      );
-      this.unlisteners.push(
-        await listenEvent<SpeedTestResult>("network://speedtest_done", payload => {
-          this.lastSpeedResult = payload;
-        })
-      );
-      this.unlisteners.push(
-        await listenEvent<PingResult>("network://ping_done", payload => {
-          this.lastPingResult = payload;
-        })
       );
     },
     bootstrapMockFeed() {

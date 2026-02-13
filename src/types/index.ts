@@ -58,28 +58,6 @@ export interface AppSettings {
   language: "zh-CN" | "en-US";
 }
 
-export interface SpeedTestResult {
-  task_id: string;
-  endpoint: string;
-  download_mbps: number;
-  upload_mbps: number | null;
-  latency_ms: number | null;
-  jitter_ms: number | null;
-  loss_pct: number | null;
-  started_at: string;
-  duration_ms: number;
-}
-
-export interface PingResult {
-  target: string;
-  min_ms: number | null;
-  max_ms: number | null;
-  avg_ms: number | null;
-  jitter_ms: number | null;
-  loss_pct: number | null;
-  samples: number[];
-}
-
 export interface AppBootstrap {
   settings: AppSettings;
   hardware_info: HardwareInfo;
