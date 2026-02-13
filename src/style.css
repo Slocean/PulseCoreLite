@@ -83,7 +83,8 @@ body {
 }
 
 .overlay-action {
-  border: 1px dashed rgba(255, 255, 255, 0.18);
+  /* border: 1px dashed rgba(255, 255, 255, 0.18); */
+  border: none;
   background: transparent;
   border-radius: 10px;
   width: 32px;
@@ -95,6 +96,7 @@ body {
   transition: all 160ms ease;
   color: rgba(255, 255, 255, 0.5);
   line-height: 1;
+  outline: none;
 }
 
 .overlay-action:hover {
@@ -109,7 +111,7 @@ body {
 
 .overlay-header-actions {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   margin-top: -2px;
 }
 
@@ -117,7 +119,8 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 10px;
-  border: 1px dashed rgba(255, 255, 255, 0.18);
+  /* border: 1px solid rgba(255, 255, 255, 0.18); */
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
