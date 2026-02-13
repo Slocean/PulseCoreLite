@@ -27,6 +27,7 @@
     "showWarning": "Usage Warning",
     "showDragHandle": "Show Drag Handle",
     "closeToTray": "Close to System Tray",
+    "backgroundOpacity": "Background Opacity",
     "refreshRate": "Refresh Rate",
     "language": "Language / 语言",
     "langZh": "中文",

@@ -17,6 +17,7 @@
         v-model:prefs="prefs"
         v-model:closeToTray="closeToTray"
         v-model:refreshRate="refreshRate"
+        v-model:backgroundOpacity="prefs.backgroundOpacity"
         :app-version="appVersion"
         :language="store.settings.language"
         @setLanguage="setLanguage"
@@ -42,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import OverlayConfigPanel from '../components/OverlayConfigPanel.vue';
 import OverlayHeader from '../components/OverlayHeader.vue';
@@ -79,6 +80,22 @@ const {
 const { overlayRef, startDragging, handleOverlayMouseDown } = useOverlayWindow({
   allowDrag: computed(() => prefs.showDragHandle)
 });
+
+const applyBackgroundOpacity = (value: number) => {
+  if (typeof document === 'undefined') {
+    return;
+  }
+  const safeValue = Math.min(100, Math.max(0, value));
+  document.documentElement.style.setProperty('--overlay-bg-opacity', String(safeValue / 100));
+};
+
+watch(
+  () => prefs.backgroundOpacity,
+  value => {
+    applyBackgroundOpacity(value);
+  },
+  { immediate: true }
+);
 
 function handleClose() {
   if (store.settings.closeToTray) {

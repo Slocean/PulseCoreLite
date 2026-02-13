@@ -82,6 +82,16 @@
         v-model.number="refreshRate"
         @change="emit('refreshRateChange')" />
     </div>
+    <div class="overlay-config-range">
+      <span class="overlay-config-label">{{ t('overlay.backgroundOpacity') }}</span>
+      <span class="overlay-config-value">{{ backgroundOpacity }}%</span>
+      <input
+        type="range"
+        min="0"
+        max="100"
+        step="5"
+        v-model.number="backgroundOpacity" />
+    </div>
     <div class="overlay-config-version">v{{ appVersion }}</div>
   </div>
 </template>
@@ -99,6 +109,7 @@ defineProps<{
 const prefs = defineModel<OverlayPrefs>('prefs', { required: true });
 const closeToTray = defineModel<boolean>('closeToTray', { required: true });
 const refreshRate = defineModel<number>('refreshRate', { required: true });
+const backgroundOpacity = defineModel<number>('backgroundOpacity', { required: true });
 
 const emit = defineEmits<{
   (e: 'setLanguage', value: 'zh-CN' | 'en-US'): void;
