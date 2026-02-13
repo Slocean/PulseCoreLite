@@ -3,7 +3,6 @@ mod core;
 mod db;
 mod ipc;
 mod state;
-mod tray;
 mod types;
 
 use crate::state::AppState;
@@ -23,8 +22,6 @@ fn main() {
             .expect("failed to initialize PulseCore state");
 
         app.manage(state.clone());
-        crate::tray::setup_tray(&app.handle())?;
-        crate::app::ensure_overlay_window(&app.handle())?;
         crate::app::start_telemetry_loop(app.handle().clone(), state);
 
         Ok(())

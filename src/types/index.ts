@@ -1,5 +1,3 @@
-export type Mode = "normal" | "low_power";
-
 export interface CpuMetrics {
   usage_pct: number;
   frequency_mhz: number | null;
@@ -56,52 +54,8 @@ export interface HardwareInfo {
   device_brand: string;
 }
 
-export interface ModuleToggles {
-  show_cpu: boolean;
-  show_gpu: boolean;
-  show_memory: boolean;
-  show_disk: boolean;
-  show_network: boolean;
-}
-
 export interface AppSettings {
-  refresh_rate_ms: number;
-  low_power_rate_ms: number;
-  module_toggles: ModuleToggles;
-  theme: "cyber-dark";
-  accent: string;
-  glass_opacity: number;
-  glow_intensity: number;
   language: "zh-CN" | "en-US";
-  speedtest_endpoints: string[];
-  history_retention_days: number;
-  sensor_boost_enabled: boolean;
-}
-
-export interface SettingsPatch {
-  refresh_rate_ms?: number;
-  low_power_rate_ms?: number;
-  module_toggles?: Partial<ModuleToggles>;
-  theme?: "cyber-dark";
-  accent?: string;
-  glass_opacity?: number;
-  glow_intensity?: number;
-  language?: "zh-CN" | "en-US";
-  speedtest_endpoints?: string[];
-  history_retention_days?: number;
-  sensor_boost_enabled?: boolean;
-}
-
-export interface SpeedTestConfig {
-  endpoint: string;
-  max_seconds: number;
-}
-
-export interface SpeedTestProgress {
-  task_id: string;
-  downloaded_bytes: number;
-  elapsed_ms: number;
-  download_mbps: number;
 }
 
 export interface SpeedTestResult {
@@ -124,33 +78,6 @@ export interface PingResult {
   jitter_ms: number | null;
   loss_pct: number | null;
   samples: number[];
-}
-
-export interface HistoryFilter {
-  page: number;
-  page_size: number;
-  from?: string;
-  to?: string;
-}
-
-export interface HistoryPage {
-  total: number;
-  items: SpeedTestResult[];
-}
-
-export interface TimeRange {
-  from?: string;
-  to?: string;
-}
-
-export interface ExportResult {
-  path: string;
-  rows: number;
-}
-
-export interface WarningEvent {
-  message: string;
-  source: string;
 }
 
 export interface AppBootstrap {

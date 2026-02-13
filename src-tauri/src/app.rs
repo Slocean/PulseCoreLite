@@ -89,26 +89,6 @@ pub fn start_telemetry_loop(app: AppHandle, state: SharedState) {
     });
 }
 
-pub fn ensure_overlay_window(app: &AppHandle) -> tauri::Result<()> {
-    if app.get_webview_window("overlay").is_some() {
-        return Ok(());
-    }
-
-    tauri::WebviewWindowBuilder::new(app, "overlay", tauri::WebviewUrl::App("index.html#/overlay".into()))
-        .title("PulseCore Overlay")
-        .always_on_top(true)
-        .resizable(false)
-        .maximizable(false)
-        .decorations(false)
-        .transparent(true)
-        .inner_size(340.0, 260.0)
-        .skip_taskbar(true)
-        .visible(false)
-        .build()?;
-
-    Ok(())
-}
-
 pub fn app_data_paths(app: &tauri::App) -> anyhow::Result<(PathBuf, PathBuf)> {
     let app_data = app.path().app_data_dir().context("failed to resolve app data dir")?;
     Ok((app_data.join("pulsecore.db"), app_data.join("exports")))

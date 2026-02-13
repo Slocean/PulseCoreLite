@@ -13,18 +13,8 @@
     "windows": [
       {
         "label": "main",
-        "title": "PulseCore",
-        "width": 1440,
-        "height": 920,
-        "minWidth": 1000,
-        "minHeight": 680,
-        "resizable": true,
-        "fullscreen": false
-      },
-      {
-        "label": "overlay",
         "title": "PulseCore Overlay",
-        "url": "index.html#/overlay",
+        "url": "index.html",
         "width": 340,
         "height": 260,
         "resizable": false,
@@ -32,7 +22,7 @@
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,
-        "visible": false,
+        "visible": true,
         "skipTaskbar": true
       }
     ],

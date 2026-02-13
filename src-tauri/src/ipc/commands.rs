@@ -5,7 +5,7 @@ use std::{
 
 use chrono::Utc;
 use futures_util::StreamExt;
-use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::{select, sync::oneshot};
 use tracing::{error, warn};
 use uuid::Uuid;
@@ -281,21 +281,9 @@ pub async fn export_history_csv(
 
 #[tauri::command]
 pub async fn toggle_overlay(app: AppHandle, visible: bool) -> CmdResult<bool> {
-    let win = if let Some(window) = app.get_webview_window("overlay") {
-        window
-    } else {
-        WebviewWindowBuilder::new(&app, "overlay", WebviewUrl::App("index.html#/overlay".into()))
-            .title("PulseCore Overlay")
-            .always_on_top(true)
-            .resizable(false)
-            .maximizable(false)
-            .decorations(false)
-            .transparent(true)
-            .inner_size(340.0, 260.0)
-            .skip_taskbar(true)
-            .build()
-            .map_err(err)?
-    };
+    let win = app
+        .get_webview_window("main")
+        .ok_or_else(|| "main window not found".to_string())?;
 
     if visible {
         win.show().map_err(err)?;

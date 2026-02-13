@@ -1,20 +1,6 @@
-import { defineStore } from 'pinia';
-import { api, inTauri, listenEvent } from '../services/tauri';
-import type {
-  AppBootstrap,
-  AppSettings,
-  HardwareInfo,
-  HistoryFilter,
-  HistoryPage,
-  PingResult,
-  SpeedTestConfig,
-  SpeedTestProgress,
-  SpeedTestResult,
-  TelemetrySnapshot,
-  WarningEvent
-} from '../types';
-
-const HISTORY_LIMIT = 120;
+import { defineStore } from "pinia";
+import { api, inTauri, listenEvent } from "../services/tauri";
+import type { AppBootstrap, AppSettings, HardwareInfo, PingResult, SpeedTestResult, TelemetrySnapshot } from "../types";
 
 function emptySnapshot(): TelemetrySnapshot {
   return {
@@ -36,90 +22,41 @@ function emptySnapshot(): TelemetrySnapshot {
 
 function defaultSettings(): AppSettings {
   return {
-    refresh_rate_ms: 500,
-    low_power_rate_ms: 2000,
-    module_toggles: {
-      show_cpu: true,
-      show_gpu: true,
-      show_memory: true,
-      show_disk: true,
-      show_network: true
-    },
-    theme: 'cyber-dark',
-    accent: '#2b6cee',
-    glass_opacity: 0.75,
-    glow_intensity: 0.4,
-    language: 'zh-CN',
-    speedtest_endpoints: ['https://speed.hetzner.de/100MB.bin', 'https://proof.ovh.net/files/100Mb.dat'],
-    history_retention_days: 30,
-    sensor_boost_enabled: false
+    language: "zh-CN"
   };
 }
 
 function mockHardware(): HardwareInfo {
   return {
-    cpu_model: 'Mock CPU',
+    cpu_model: "Mock CPU",
     cpu_max_freq_mhz: 4500,
-    gpu_model: 'N/A',
-    ram_spec: '16GB',
-    disk_models: ['Mock NVMe'],
-    motherboard: 'N/A',
-    device_brand: 'PulseCore Dev'
+    gpu_model: "N/A",
+    ram_spec: "16GB",
+    disk_models: ["Mock NVMe"],
+    motherboard: "N/A",
+    device_brand: "PulseCore Dev"
   };
 }
 
-function defaultHistoryFilter(): HistoryFilter {
-  return {
-    page: 1,
-    page_size: 10
-  };
-}
-
-export const useAppStore = defineStore('app', {
+export const useAppStore = defineStore("app", {
   state: () => ({
     ready: false,
     bootstrapped: false,
-    bigScreen: false,
-    mode: 'normal' as 'normal' | 'low_power',
     snapshot: emptySnapshot(),
-    historySeries: [] as TelemetrySnapshot[],
     hardwareInfo: mockHardware(),
     settings: defaultSettings(),
-    warnings: [] as WarningEvent[],
-    activeSpeedTaskId: '' as string,
-    speedProgress: null as SpeedTestProgress | null,
     lastSpeedResult: null as SpeedTestResult | null,
     lastPingResult: null as PingResult | null,
-    historyPage: { total: 0, items: [] } as HistoryPage,
-    historyFilter: defaultHistoryFilter() as HistoryFilter,
-    historyLoading: false,
     unlisteners: [] as Array<() => void>
   }),
-  getters: {
-    cpuHistory(state): number[] {
-      return state.historySeries.map(x => x.cpu.usage_pct);
-    },
-    memoryHistory(state): number[] {
-      return state.historySeries.map(x => x.memory.usage_pct);
-    },
-    networkDownHistory(state): number[] {
-      return state.historySeries.map(x => x.network.download_bytes_per_sec / (1024 * 1024));
-    },
-    totalHistoryPages(state): number {
-      return Math.max(1, Math.ceil(state.historyPage.total / state.historyFilter.page_size));
-    }
-  },
   actions: {
-    pushWarning(warning: WarningEvent) {
-      this.warnings.unshift(warning);
-      this.warnings = this.warnings.slice(0, 16);
-    },
     pushSnapshot(snapshot: TelemetrySnapshot) {
       this.snapshot = snapshot;
-      this.historySeries.push(snapshot);
-      if (this.historySeries.length > HISTORY_LIMIT) {
-        this.historySeries.shift();
-      }
+    },
+    applyBootstrap(payload: AppBootstrap) {
+      this.settings = payload.settings ?? defaultSettings();
+      this.hardwareInfo = payload.hardware_info ?? mockHardware();
+      this.pushSnapshot(payload.latest_snapshot ?? emptySnapshot());
     },
     async bootstrap() {
       if (this.bootstrapped) {
@@ -130,7 +67,6 @@ export const useAppStore = defineStore('app', {
         const bootstrap = await api.getInitialState();
         this.applyBootstrap(bootstrap);
         await this.bindEvents();
-        await this.queryHistory();
       } else {
         this.applyBootstrap({
           latest_snapshot: emptySnapshot(),
@@ -138,48 +74,22 @@ export const useAppStore = defineStore('app', {
           settings: defaultSettings()
         });
         this.bootstrapMockFeed();
-        await this.queryHistory();
       }
 
       this.bootstrapped = true;
       this.ready = true;
     },
-    applyBootstrap(payload: AppBootstrap) {
-      this.settings = payload.settings;
-      this.hardwareInfo = payload.hardware_info;
-      this.pushSnapshot(payload.latest_snapshot);
-    },
     async bindEvents() {
       this.unlisteners.push(
-        await listenEvent<TelemetrySnapshot>('telemetry://snapshot', payload => this.pushSnapshot(payload))
+        await listenEvent<TelemetrySnapshot>("telemetry://snapshot", payload => this.pushSnapshot(payload))
       );
       this.unlisteners.push(
-        await listenEvent<{ mode: 'normal' | 'low_power' }>('telemetry://mode_changed', payload => {
-          this.mode = payload.mode;
-        })
-      );
-      this.unlisteners.push(
-        await listenEvent<WarningEvent>('system://warning', payload => this.pushWarning(payload))
-      );
-      this.unlisteners.push(
-        await listenEvent<SpeedTestProgress>('network://speedtest_progress', payload => {
-          if (payload.task_id === this.activeSpeedTaskId) {
-            this.speedProgress = payload;
-          }
-        })
-      );
-      this.unlisteners.push(
-        await listenEvent<SpeedTestResult>('network://speedtest_done', payload => {
+        await listenEvent<SpeedTestResult>("network://speedtest_done", payload => {
           this.lastSpeedResult = payload;
-          if (payload.task_id === this.activeSpeedTaskId) {
-            this.activeSpeedTaskId = '';
-          }
-          this.speedProgress = null;
-          void this.queryHistory({ page: 1 });
         })
       );
       this.unlisteners.push(
-        await listenEvent<PingResult>('network://ping_done', payload => {
+        await listenEvent<PingResult>("network://ping_done", payload => {
           this.lastPingResult = payload;
         })
       );
@@ -210,8 +120,8 @@ export const useAppStore = defineStore('app', {
           },
           disks: [
             {
-              name: 'C:\\',
-              label: 'System',
+              name: "C:\\",
+              label: "System",
               total_gb: 2000,
               used_gb: 960,
               usage_pct: 48,
@@ -219,8 +129,8 @@ export const useAppStore = defineStore('app', {
               write_bytes_per_sec: Math.random() * 80_000_000
             },
             {
-              name: 'D:\\',
-              label: 'Data',
+              name: "D:\\",
+              label: "Data",
               total_gb: 4000,
               used_gb: 2000,
               usage_pct: 50,
@@ -237,91 +147,11 @@ export const useAppStore = defineStore('app', {
         this.pushSnapshot(next);
       }, 500);
     },
-    async updateSettings(patch: Partial<AppSettings>) {
-      if (!inTauri()) {
-        this.settings = { ...this.settings, ...patch };
-        return;
-      }
-      this.settings = await api.updateSettings(patch);
-    },
-    async startSpeedTest(config: SpeedTestConfig) {
-      if (!inTauri()) {
-        this.lastSpeedResult = {
-          task_id: `mock-${Date.now()}`,
-          endpoint: config.endpoint,
-          download_mbps: 780,
-          upload_mbps: null,
-          latency_ms: 14,
-          jitter_ms: 3,
-          loss_pct: 0,
-          started_at: new Date().toISOString(),
-          duration_ms: 5000
-        };
-        this.historyPage.items.unshift(this.lastSpeedResult);
-        this.historyPage.total += 1;
-        return;
-      }
-      this.speedProgress = null;
-      this.activeSpeedTaskId = await api.startSpeedTest(config);
-    },
-    async cancelSpeedTest() {
-      if (!this.activeSpeedTaskId || !inTauri()) {
-        return;
-      }
-      await api.cancelSpeedTest(this.activeSpeedTaskId);
-      this.activeSpeedTaskId = '';
-      this.speedProgress = null;
-    },
-    async runPing(target: string, count = 4) {
-      if (!inTauri()) {
-        this.lastPingResult = {
-          target,
-          min_ms: 10,
-          max_ms: 18,
-          avg_ms: 12,
-          jitter_ms: 2,
-          loss_pct: 0,
-          samples: [10, 11, 12, 18]
-        };
-        return;
-      }
-      this.lastPingResult = await api.runPingTest(target, count);
-    },
-    async queryHistory(filter: Partial<HistoryFilter> = {}) {
-      const merged: HistoryFilter = {
-        ...this.historyFilter,
-        ...filter,
-        page: Math.max(1, filter.page ?? this.historyFilter.page),
-        page_size: Math.min(100, Math.max(1, filter.page_size ?? this.historyFilter.page_size))
-      };
-      this.historyFilter = merged;
-
-      if (!inTauri()) {
-        return;
-      }
-
-      this.historyLoading = true;
-      try {
-        this.historyPage = await api.queryHistory(merged);
-      } finally {
-        this.historyLoading = false;
-      }
-    },
     async toggleOverlay(visible: boolean) {
       if (!inTauri()) {
         return;
       }
       await api.toggleOverlay(visible);
-    },
-    async setBigScreenMode(enabled: boolean) {
-      this.bigScreen = enabled;
-    },
-    async setLowPowerMode(lowPower: boolean) {
-      if (!inTauri()) {
-        this.mode = lowPower ? 'low_power' : 'normal';
-        return;
-      }
-      await api.setLowPowerMode(lowPower);
     },
     dispose() {
       this.unlisteners.forEach(fn => fn());
