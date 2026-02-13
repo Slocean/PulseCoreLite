@@ -88,4 +88,34 @@ pub async fn get_hardware_info(state: State<'_, SharedState>) -> CmdResult<crate
     Ok(info)
 }
 
+#[tauri::command]
+pub fn get_taskbar_info() -> CmdResult<Option<crate::types::TaskbarInfo>> {
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::UI::Shell::{APPBARDATA, SHAppBarMessage, ABM_GETTASKBARPOS};
+
+        let mut data: APPBARDATA = unsafe { std::mem::zeroed() };
+        data.cbSize = std::mem::size_of::<APPBARDATA>() as u32;
+
+        // Returns non-zero on success.
+        let ok = unsafe { SHAppBarMessage(ABM_GETTASKBARPOS, &mut data as *mut APPBARDATA) };
+        if ok == 0 {
+            return Ok(None);
+        }
+
+        return Ok(Some(crate::types::TaskbarInfo {
+            edge: data.uEdge,
+            left: data.rc.left,
+            top: data.rc.top,
+            right: data.rc.right,
+            bottom: data.rc.bottom,
+        }));
+    }
+
+    #[cfg(not(windows))]
+    {
+        Ok(None)
+    }
+}
+
 

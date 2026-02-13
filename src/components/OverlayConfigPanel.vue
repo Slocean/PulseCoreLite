@@ -56,6 +56,12 @@
       <input v-model="rememberOverlayPosition" type="checkbox" />
       {{ t('overlay.rememberPosition') }}
     </label>
+    <div class="overlay-config-taskbar">
+      <span class="overlay-config-label">{{ t('overlay.taskbarMonitor') }}</span>
+      <button type="button" class="overlay-lang-button" @click="taskbarMonitorEnabled = !taskbarMonitorEnabled">
+        {{ taskbarMonitorEnabled ? t('overlay.taskbarMonitorClose') : t('overlay.taskbarMonitorOpen') }}
+      </button>
+    </div>
     <div class="overlay-config-language">
       <span class="overlay-config-label">{{ t('overlay.language') }}</span>
       <div class="overlay-lang-buttons">
@@ -133,6 +139,7 @@ defineProps<{
 const prefs = defineModel<OverlayPrefs>('prefs', { required: true });
 const closeToTray = defineModel<boolean>('closeToTray', { required: true });
 const rememberOverlayPosition = defineModel<boolean>('rememberOverlayPosition', { required: true });
+const taskbarMonitorEnabled = defineModel<boolean>('taskbarMonitorEnabled', { required: true });
 const factoryResetHotkey = defineModel<string | null>('factoryResetHotkey', { required: true });
 const refreshRate = defineModel<number>('refreshRate', { required: true });
 const backgroundOpacity = defineModel<number>('backgroundOpacity', { required: true });

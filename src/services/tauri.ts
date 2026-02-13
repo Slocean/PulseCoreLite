@@ -1,5 +1,5 @@
 import type { UnlistenFn } from "@tauri-apps/api/event";
-import type { AppBootstrap, HardwareInfo } from "../types";
+import type { AppBootstrap, HardwareInfo, TaskbarInfo } from "../types";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -30,5 +30,6 @@ export const api = {
   setRefreshRate: (rateMs: number) => tauriInvoke<void>("set_refresh_rate", { rateMs }),
   confirmFactoryReset: (title: string, message: string) =>
     tauriInvoke<boolean>("confirm_factory_reset", { title, message }),
+  getTaskbarInfo: () => tauriInvoke<TaskbarInfo | null>("get_taskbar_info"),
   exitApp: () => tauriInvoke<void>("exit_app")
 };

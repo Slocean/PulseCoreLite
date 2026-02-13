@@ -58,6 +58,7 @@ export interface AppSettings {
   language: "zh-CN" | "en-US";
   closeToTray: boolean;
   rememberOverlayPosition: boolean;
+  taskbarMonitorEnabled: boolean;
   factoryResetHotkey: string | null;
 }
 
@@ -65,4 +66,12 @@ export interface AppBootstrap {
   settings: AppSettings;
   hardware_info: HardwareInfo;
   latest_snapshot: TelemetrySnapshot;
+}
+
+export interface TaskbarInfo {
+  edge: number;
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
 }

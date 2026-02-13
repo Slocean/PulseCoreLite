@@ -28,6 +28,9 @@
     "showDragHandle": "拖拽按钮",
     "closeToTray": "退出到托盘",
     "rememberPosition": "记住上次位置",
+    "taskbarMonitor": "任务栏监测",
+    "taskbarMonitorOpen": "开启",
+    "taskbarMonitorClose": "关闭",
     "backgroundOpacity": "背景透明度",
     "refreshRate": "刷新时间",
     "language": "语言 / Language",
@@ -44,6 +47,11 @@
     "dialogClose": "关闭",
     "latency": "网络延迟",
     "vram": "显存",
-    "freq": "频率"
+    "freq": "频率",
+    "cpuTemp": "CPU 温度",
+    "cpuFreq": "CPU 频率",
+    "gpuTemp": "GPU 温度",
+    "openMainWindow": "显示主窗口",
+    "closeTaskbarMonitor": "关闭任务栏监测"
   }
 }

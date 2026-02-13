@@ -71,6 +71,8 @@ pub struct AppSettings {
     pub close_to_tray: bool,
     #[serde(rename = "rememberOverlayPosition")]
     pub remember_overlay_position: bool,
+    #[serde(rename = "taskbarMonitorEnabled")]
+    pub taskbar_monitor_enabled: bool,
     #[serde(rename = "factoryResetHotkey")]
     pub factory_reset_hotkey: Option<String>,
 }
@@ -81,6 +83,7 @@ impl Default for AppSettings {
             language: "zh-CN".to_string(),
             close_to_tray: false,
             remember_overlay_position: true,
+            taskbar_monitor_enabled: false,
             factory_reset_hotkey: None,
         }
     }
@@ -91,4 +94,14 @@ pub struct AppBootstrap {
     pub settings: AppSettings,
     pub hardware_info: HardwareInfo,
     pub latest_snapshot: TelemetrySnapshot,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskbarInfo {
+    /// `ABE_LEFT`=0, `ABE_TOP`=1, `ABE_RIGHT`=2, `ABE_BOTTOM`=3.
+    pub edge: u32,
+    pub left: i32,
+    pub top: i32,
+    pub right: i32,
+    pub bottom: i32,
 }

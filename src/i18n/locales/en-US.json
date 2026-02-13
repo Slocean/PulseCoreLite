@@ -28,6 +28,9 @@
     "showDragHandle": "Show Drag Handle",
     "closeToTray": "Close to System Tray",
     "rememberPosition": "Remember Last Position",
+    "taskbarMonitor": "Taskbar Monitor",
+    "taskbarMonitorOpen": "Open",
+    "taskbarMonitorClose": "Close",
     "backgroundOpacity": "Background Opacity",
     "refreshRate": "Refresh Rate",
     "language": "Language / 语言",
@@ -44,6 +47,11 @@
     "dialogClose": "Close",
     "latency": "Network Latency",
     "vram": "VRAM",
-    "freq": "Frequency"
+    "freq": "Frequency",
+    "cpuTemp": "CPU Temp",
+    "cpuFreq": "CPU Freq",
+    "gpuTemp": "GPU Temp",
+    "openMainWindow": "Show Main Window",
+    "closeTaskbarMonitor": "Close Taskbar Monitor"
   }
 }

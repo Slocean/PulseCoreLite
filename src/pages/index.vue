@@ -17,6 +17,7 @@
         v-model:prefs="prefs"
         v-model:closeToTray="closeToTray"
         v-model:rememberOverlayPosition="rememberOverlayPosition"
+        v-model:taskbarMonitorEnabled="taskbarMonitorEnabled"
         v-model:factoryResetHotkey="factoryResetHotkey"
         v-model:refreshRate="refreshRate"
         v-model:backgroundOpacity="prefs.backgroundOpacity"
@@ -85,6 +86,10 @@ const closeToTray = computed({
 const rememberOverlayPosition = computed({
   get: () => store.settings.rememberOverlayPosition,
   set: value => store.setRememberOverlayPosition(value)
+});
+const taskbarMonitorEnabled = computed({
+  get: () => store.settings.taskbarMonitorEnabled,
+  set: value => void store.setTaskbarMonitorEnabled(value)
 });
 const factoryResetHotkey = computed({
   get: () => store.settings.factoryResetHotkey,

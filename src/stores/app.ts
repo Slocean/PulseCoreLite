@@ -39,15 +39,18 @@ function readStoredSettings(): Partial<AppSettings> | null {
     const hasCloseToTray = typeof parsed.closeToTray === 'boolean';
     const hasRememberOverlayPosition =
       hasOwn('rememberOverlayPosition') && typeof parsed.rememberOverlayPosition === 'boolean';
+    const hasTaskbarMonitorEnabled =
+      hasOwn('taskbarMonitorEnabled') && typeof parsed.taskbarMonitorEnabled === 'boolean';
     const hasFactoryResetHotkey =
       hasOwn('factoryResetHotkey') &&
       (parsed.factoryResetHotkey == null || typeof parsed.factoryResetHotkey === 'string');
 
-    if (hasLanguage || hasCloseToTray || hasRememberOverlayPosition || hasFactoryResetHotkey) {
+    if (hasLanguage || hasCloseToTray || hasRememberOverlayPosition || hasTaskbarMonitorEnabled || hasFactoryResetHotkey) {
       return {
         ...(hasLanguage ? { language: parsed.language } : {}),
         ...(hasCloseToTray ? { closeToTray: parsed.closeToTray } : {}),
         ...(hasRememberOverlayPosition ? { rememberOverlayPosition: parsed.rememberOverlayPosition } : {}),
+        ...(hasTaskbarMonitorEnabled ? { taskbarMonitorEnabled: parsed.taskbarMonitorEnabled } : {}),
         ...(hasFactoryResetHotkey ? { factoryResetHotkey: parsed.factoryResetHotkey ?? null } : {})
       };
     }
@@ -62,6 +65,7 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
     language: 'zh-CN',
     closeToTray: false,
     rememberOverlayPosition: true,
+    taskbarMonitorEnabled: false,
     factoryResetHotkey: null
   };
 
@@ -73,6 +77,10 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
       typeof candidate.rememberOverlayPosition === 'boolean'
         ? candidate.rememberOverlayPosition
         : fallback.rememberOverlayPosition,
+    taskbarMonitorEnabled:
+      typeof candidate.taskbarMonitorEnabled === 'boolean'
+        ? candidate.taskbarMonitorEnabled
+        : fallback.taskbarMonitorEnabled,
     factoryResetHotkey:
       candidate.factoryResetHotkey == null || typeof candidate.factoryResetHotkey === 'string'
         ? candidate.factoryResetHotkey
@@ -88,6 +96,7 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
     language: stored.language ?? base.language,
     closeToTray: stored.closeToTray ?? base.closeToTray,
     rememberOverlayPosition: stored.rememberOverlayPosition ?? base.rememberOverlayPosition,
+    taskbarMonitorEnabled: stored.taskbarMonitorEnabled ?? base.taskbarMonitorEnabled,
     factoryResetHotkey: stored.factoryResetHotkey ?? base.factoryResetHotkey
   };
 }
@@ -101,6 +110,18 @@ function persistSettings(settings: AppSettings) {
 
 function defaultSettings(): AppSettings {
   return resolveSettings();
+}
+
+async function getCurrentWindowLabel(): Promise<string | null> {
+  if (!inTauri()) {
+    return null;
+  }
+  try {
+    const { getCurrentWindow } = await import('@tauri-apps/api/window');
+    return getCurrentWindow().label;
+  } catch {
+    return null;
+  }
 }
 
 function emptyHardware(): HardwareInfo {
@@ -192,7 +213,11 @@ export const useAppStore = defineStore('app', {
       if (inTauri()) {
         const bootstrap = await api.getInitialState();
         this.applyBootstrap(bootstrap);
-        void this.ensureTray();
+        const label = await getCurrentWindowLabel();
+        if (label === 'main') {
+          void this.ensureTray();
+          void this.ensureTaskbarMonitor();
+        }
         await this.bindEvents();
         void this.refreshHardwareInfo();
       } else {
@@ -221,6 +246,12 @@ export const useAppStore = defineStore('app', {
     async bindEvents() {
       this.unlisteners.push(
         await listenEvent<TelemetrySnapshot>('telemetry://snapshot', payload => this.pushSnapshot(payload))
+      );
+      this.unlisteners.push(
+        await listenEvent<null>('pulsecorelite://settings-sync', () => {
+          // Another window updated persisted settings; re-hydrate from storage.
+          this.settings = resolveSettings(this.settings);
+        })
       );
     },
     async toggleOverlay(visible: boolean) {
@@ -267,6 +298,34 @@ export const useAppStore = defineStore('app', {
         window.localStorage.removeItem(OVERLAY_POS_KEY);
       }
       persistSettings(this.settings);
+    },
+    async setTaskbarMonitorEnabled(taskbarMonitorEnabled: boolean) {
+      if (this.settings.taskbarMonitorEnabled === taskbarMonitorEnabled) {
+        return;
+      }
+      this.settings = {
+        ...this.settings,
+        taskbarMonitorEnabled
+      };
+      persistSettings(this.settings);
+
+      if (!inTauri()) {
+        return;
+      }
+
+      const label = await getCurrentWindowLabel();
+      if (label === 'main') {
+        await this.ensureTaskbarMonitor();
+        return;
+      }
+
+      // Non-main windows: ask main to re-sync its settings state.
+      try {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        await getCurrentWindow().emitTo('main', 'pulsecorelite://settings-sync', null);
+      } catch {
+        // best-effort; ignore
+      }
     },
     setFactoryResetHotkey(factoryResetHotkey: string | null) {
       if (this.settings.factoryResetHotkey === factoryResetHotkey) {
@@ -337,6 +396,105 @@ export const useAppStore = defineStore('app', {
       }
       const { getCurrentWindow } = await import('@tauri-apps/api/window');
       await getCurrentWindow().minimize();
+    },
+    async ensureTaskbarMonitor() {
+      if (!inTauri()) {
+        return;
+      }
+      if (this.settings.taskbarMonitorEnabled) {
+        await this.openTaskbarMonitor();
+      } else {
+        await this.closeTaskbarMonitor();
+      }
+    },
+    async openTaskbarMonitor() {
+      if (!inTauri()) {
+        return;
+      }
+
+      const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+      const { primaryMonitor } = await import('@tauri-apps/api/window');
+
+      const existing = await WebviewWindow.getByLabel('taskbar');
+      if (existing) {
+        try {
+          await existing.show();
+        } catch {
+          // ignore
+        }
+        return;
+      }
+
+      const monitor = await primaryMonitor();
+      const scale = monitor?.scaleFactor ?? 1;
+      const info = await api.getTaskbarInfo();
+
+      const taskbarHeightPx = info ? Math.abs(info.bottom - info.top) : 48;
+      const height = Math.max(24, Math.round(taskbarHeightPx / scale));
+
+      // Start with a sane width; the taskbar window will auto-size to its content.
+      const width = 520;
+
+      // Best-effort initial position: just above the taskbar (common bottom taskbar case).
+      let x: number | undefined;
+      let y: number | undefined;
+      if (info) {
+        const left = info.left / scale;
+        const top = info.top / scale;
+        const right = info.right / scale;
+        const bottom = info.bottom / scale;
+
+        // ABE_BOTTOM=3, ABE_TOP=1, ABE_LEFT=0, ABE_RIGHT=2
+        if (info.edge === 3) {
+          x = Math.round(right - width - 8);
+          y = Math.round(top - height);
+        } else if (info.edge === 1) {
+          x = Math.round(right - width - 8);
+          y = Math.round(bottom);
+        } else if (info.edge === 0) {
+          x = Math.round(right);
+          y = Math.round(bottom - height - 8);
+        } else if (info.edge === 2) {
+          x = Math.round(left - width);
+          y = Math.round(bottom - height - 8);
+        }
+      }
+
+      // Create the window (index.html is used; the app selects UI by window label).
+      // Note: keep it small and non-invasive; users can drag to their preferred spot.
+      new WebviewWindow('taskbar', {
+        url: 'index.html',
+        title: 'PulseCoreLite Taskbar Monitor',
+        width,
+        height,
+        x,
+        y,
+        transparent: true,
+        decorations: false,
+        alwaysOnTop: true,
+        skipTaskbar: true,
+        visible: true,
+        focus: false,
+        resizable: false,
+        maximizable: false,
+        minimizable: false,
+        closable: true
+      });
+    },
+    async closeTaskbarMonitor() {
+      if (!inTauri()) {
+        return;
+      }
+      const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+      const existing = await WebviewWindow.getByLabel('taskbar');
+      if (!existing) {
+        return;
+      }
+      try {
+        await existing.close();
+      } catch {
+        // ignore
+      }
     },
     async exitApp() {
       if (!inTauri()) {
