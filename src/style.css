@@ -504,3 +504,14 @@ body {
   display: block;
   cursor: pointer;
 }
+
+.overlay-config-version {
+  grid-column: 1 / -1;
+  justify-self: end;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}

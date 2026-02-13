@@ -129,6 +129,7 @@
             v-model.number="refreshRate"
             @change="handleRefreshRateChange" />
         </div>
+        <div class="overlay-config-version">v{{ appVersion }}</div>
       </div>
     </Transition>
 
