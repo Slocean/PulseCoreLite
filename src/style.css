@@ -517,6 +517,8 @@ body {
 .overlay-config-hotkey-controls {
   display: inline-flex;
   gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .overlay-config-hotkey-controls .overlay-lang-button:disabled {
@@ -557,4 +559,100 @@ body {
   text-transform: uppercase;
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
+}
+
+/* In-app dialog (replaces native/system confirmation popups). */
+.overlay-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.58);
+  backdrop-filter: blur(6px);
+}
+
+.overlay-dialog {
+  width: min(360px, calc(100vw - 32px));
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.6),
+    0 0 18px rgba(0, 242, 255, 0.12);
+  overflow: hidden;
+}
+
+.overlay-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 10px 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.overlay-dialog-title {
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--cyan);
+  text-shadow:
+    0 0 6px rgba(0, 242, 255, 0.35),
+    0 0 14px rgba(0, 242, 255, 0.18);
+  user-select: none;
+}
+
+.overlay-dialog-close {
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 160ms ease;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.overlay-dialog-close:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.overlay-dialog-close .material-symbols-outlined {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.overlay-dialog-body {
+  padding: 10px 12px 12px;
+}
+
+.overlay-dialog-message {
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.overlay-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.overlay-dialog-enter-active,
+.overlay-dialog-leave-active {
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.overlay-dialog-enter-from,
+.overlay-dialog-leave-to {
+  opacity: 0;
+  transform: translateY(6px);
 }

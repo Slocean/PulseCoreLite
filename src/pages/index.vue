@@ -43,6 +43,16 @@
 
     <OverlayStatusBar :uptimeLabel="uptimeLabel" />
   </section>
+
+  <OverlayDialog
+    v-model:open="factoryResetDialogOpen"
+    :title="t('overlay.factoryReset')"
+    :message="t('overlay.factoryResetConfirm')"
+    :confirm-text="t('overlay.dialogConfirm')"
+    :cancel-text="t('overlay.dialogCancel')"
+    :close-label="t('overlay.dialogClose')"
+    @confirm="resolveFactoryReset(true)"
+    @cancel="resolveFactoryReset(false)" />
 </template>
 
 <script setup lang="ts">
@@ -50,6 +60,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import OverlayConfigPanel from '../components/OverlayConfigPanel.vue';
+import OverlayDialog from '../components/OverlayDialog.vue';
 import OverlayHeader from '../components/OverlayHeader.vue';
 import OverlayMetricsPanel from '../components/OverlayMetricsPanel.vue';
 import OverlayNetworkFooter from '../components/OverlayNetworkFooter.vue';
@@ -60,7 +71,6 @@ import { useOverlayRefreshRate } from '../composables/useOverlayRefreshRate';
 import { useOverlayUptime } from '../composables/useOverlayUptime';
 import { useOverlayWindow } from '../composables/useOverlayWindow';
 import packageJson from '../../package.json';
-import { api, inTauri } from '../services/tauri';
 import { useAppStore } from '../stores/app';
 import { matchesHotkeyEvent } from '../utils/hotkey';
 
@@ -97,6 +107,9 @@ const { overlayRef, startDragging, handleOverlayMouseDown } = useOverlayWindow({
   rememberPosition: computed(() => store.settings.rememberOverlayPosition)
 });
 
+const factoryResetDialogOpen = ref(false);
+let factoryResetDialogResolver: ((value: boolean) => void) | null = null;
+
 const applyBackgroundOpacity = (value: number) => {
   if (typeof document === 'undefined') {
     return;
@@ -129,21 +142,26 @@ function setLanguage(language: 'zh-CN' | 'en-US') {
   store.setLanguage(language);
 }
 
+function resolveFactoryReset(value: boolean) {
+  factoryResetDialogOpen.value = false;
+  const resolve = factoryResetDialogResolver;
+  factoryResetDialogResolver = null;
+  resolve?.(value);
+}
+
 async function confirmFactoryReset(): Promise<boolean> {
-  if (typeof window === 'undefined') {
-    return false;
+  if (typeof window === 'undefined') return false;
+
+  // If a dialog is already open, treat subsequent calls as "not confirmed".
+  if (factoryResetDialogResolver) {
+    factoryResetDialogResolver(false);
+    factoryResetDialogResolver = null;
   }
-  const title = t('overlay.factoryReset');
-  const message = t('overlay.factoryResetConfirm');
-  if (!inTauri()) {
-    // Best-effort fallback for web preview.
-    return window.confirm(message);
-  }
-  try {
-    return await api.confirmFactoryReset(title, message);
-  } catch {
-    return false;
-  }
+
+  factoryResetDialogOpen.value = true;
+  return await new Promise<boolean>(resolve => {
+    factoryResetDialogResolver = resolve;
+  });
 }
 
 async function handleFactoryReset() {

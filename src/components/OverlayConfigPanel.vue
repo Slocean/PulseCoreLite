@@ -109,12 +109,10 @@
           @click="factoryResetHotkey = null">
           {{ t('overlay.hotkeyClear') }}
         </button>
+        <button type="button" class="overlay-config-danger" @click="confirmFactoryReset">
+          {{ t('overlay.factoryReset') }}
+        </button>
       </div>
-    </div>
-    <div class="overlay-config-reset">
-      <button type="button" class="overlay-config-danger" @click="confirmFactoryReset">
-        {{ t('overlay.factoryReset') }}
-      </button>
     </div>
     <div class="overlay-config-version">v{{ appVersion }}</div>
   </div>
