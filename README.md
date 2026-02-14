@@ -27,22 +27,13 @@ PulseCoreLite 是一个基于 Tauri 2 + Vue 3 的桌面性能监控应用，提�
     <div>透明模式</div>
     <img src="design/product_picture/chinese/transparent_mode.png" alt="透明模式" width="260" />
   </div>
-</div>
-
-### 页面截图（英文）
-
-<div style="display:flex;flex-wrap:wrap;gap:12px;">
   <div style="text-align:center;">
-    <div>Main Page</div>
-    <img src="design/product_picture/english/main_page.png" alt="Main Page" width="260" />
+    <div>任务栏监控</div>
+    <img src="design/product_picture/task_page.png" alt="任务栏监控" width="260" />
   </div>
   <div style="text-align:center;">
-    <div>Settings Panel</div>
-    <img src="design/product_picture/english/setting_page.png" alt="Settings Panel" width="260" />
-  </div>
-  <div style="text-align:center;">
-    <div>Transparent Mode</div>
-    <img src="design/product_picture/english/transparent_mode.png" alt="Transparent Mode" width="260" />
+    <div>任务栏设置</div>
+    <img src="design/product_picture/task_setting.png" alt="任务栏设置" width="260" />
   </div>
 </div>
 
@@ -162,23 +153,6 @@ npm run pack:release
 - Goal: continuous, low-overhead telemetry for core hardware and network stats
 - Platform: Windows (autostart, taskbar position, uninstall are Windows API based)
 
-### Screenshots (Chinese)
-
-<div style="display:flex;flex-wrap:wrap;gap:12px;">
-  <div style="text-align:center;">
-    <div>Main Page</div>
-    <img src="design/product_picture/chinese/main_page.png" alt="Main Page" width="260" />
-  </div>
-  <div style="text-align:center;">
-    <div>Settings Panel</div>
-    <img src="design/product_picture/chinese/setting_page.png" alt="Settings Panel" width="260" />
-  </div>
-  <div style="text-align:center;">
-    <div>Transparent Mode</div>
-    <img src="design/product_picture/chinese/transparent_mode.png" alt="Transparent Mode" width="260" />
-  </div>
-</div>
-
 ### Screenshots (English)
 
 <div style="display:flex;flex-wrap:wrap;gap:12px;">
@@ -193,6 +167,14 @@ npm run pack:release
   <div style="text-align:center;">
     <div>Transparent Mode</div>
     <img src="design/product_picture/english/transparent_mode.png" alt="Transparent Mode" width="260" />
+  </div>
+  <div style="text-align:center;">
+    <div>Taskbar Monitor</div>
+    <img src="design/product_picture/task_page.png" alt="Taskbar Monitor" width="260" />
+  </div>
+  <div style="text-align:center;">
+    <div>Taskbar Settings</div>
+    <img src="design/product_picture/task_setting.png" alt="Taskbar Settings" width="260" />
   </div>
 </div>
 
