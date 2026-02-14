@@ -6,6 +6,8 @@
     @mousedown="handleOverlayMouseDown">
     <OverlayHeader
       :show-drag-handle="prefs.showDragHandle"
+      :app-version="appVersion"
+      :app-usage-label="appUsageLabel"
       @startDrag="startDragging"
       @minimize="minimizeOverlay"
       @toggleConfig="showConfig = !showConfig"
@@ -42,7 +44,7 @@
 
     <OverlayNetworkFooter :prefs="prefs" :network="metrics.network" />
 
-    <OverlayStatusBar :uptimeLabel="uptimeLabel" :appUsageLabel="appUsageLabel" />
+    <OverlayStatusBar :uptimeLabel="uptimeLabel" />
   </section>
 
   <OverlayDialog

@@ -98,12 +98,7 @@
     <div class="overlay-config-range">
       <span class="overlay-config-label">{{ t('overlay.backgroundOpacity') }}</span>
       <span class="overlay-config-value">{{ backgroundOpacity }}%</span>
-      <input
-        type="range"
-        min="0"
-        max="100"
-        step="5"
-        v-model.number="backgroundOpacity" />
+      <input type="range" min="0" max="100" step="5" v-model.number="backgroundOpacity" />
     </div>
     <div class="overlay-config-hotkey">
       <span class="overlay-config-label">{{ t('overlay.factoryResetHotkey') }}</span>
@@ -123,7 +118,7 @@
         </button>
       </div>
     </div>
-    <div class="overlay-config-version">v{{ appVersion }}</div>
+    <!-- <div class="overlay-config-version">v{{ appVersion }}</div> -->
   </div>
 </template>
 

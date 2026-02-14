@@ -37,6 +37,10 @@
         <span class="material-symbols-outlined">close</span>
       </button>
     </div>
+    <div class="overlay-meta">
+      <span class="version">v{{ appVersion }}</span>
+      <span class="usage">{{ appUsageLabel }}</span>
+    </div>
   </header>
 </template>
 
@@ -45,6 +49,8 @@ import { useI18n } from 'vue-i18n';
 
 defineProps<{
   showDragHandle: boolean;
+  appVersion: string;
+  appUsageLabel: string;
 }>();
 
 const emit = defineEmits<{
