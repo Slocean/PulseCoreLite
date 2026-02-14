@@ -1,6 +1,6 @@
 [中文文档](#中文文档) | [English Documentation](#english-documentation)
 
-# <img src="src/static/img/image.png" alt="PulseCoreLite" height="28" /> <img src="src/static/img/ice_logo.png" alt="Logo" height="28" />
+# <span style="display:inline-flex;align-items:center;gap:6px;font-family:Inter,Segoe UI,sans-serif;font-size:20px;letter-spacing:0.2em;color:#00f2ff;text-transform:uppercase;font-weight:700;text-shadow:0 0 6px rgba(0,242,255,0.45),0 0 14px rgba(0,242,255,0.25);">PulseCore<span style="margin-left:6px;padding:1px 8px;border-radius:999px;border:1px solid rgba(0,242,255,0.65);font-size:10px;letter-spacing:0.16em;color:#e9feff;box-shadow:0 0 10px rgba(0,242,255,0.3),inset 0 0 8px rgba(0,242,255,0.2);">Lite</span></span> <img src="src/static/img/ice_logo.png" alt="Logo" height="28" />
 
 PulseCoreLite 是一个基于 Tauri 2 + Vue 3 的桌面性能监控应用，提供悬浮窗监控与任务栏监控两种形态，实时展示 CPU、GPU、内存、磁盘与网络等指标，并支持多语言、透明度与刷新率配置、自动启动与托盘行为等系统级能力。
 
