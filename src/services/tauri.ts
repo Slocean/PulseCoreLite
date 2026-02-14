@@ -30,6 +30,8 @@ export const api = {
   setRefreshRate: (rateMs: number) => tauriInvoke<void>("set_refresh_rate", { rateMs }),
   confirmFactoryReset: (title: string, message: string) =>
     tauriInvoke<boolean>("confirm_factory_reset", { title, message }),
+  getInstallationMode: () => tauriInvoke<"installed" | "portable">("get_installation_mode"),
+  uninstallApp: (title: string, message: string) => tauriInvoke<void>("uninstall_app", { title, message }),
   getTaskbarInfo: () => tauriInvoke<TaskbarInfo | null>("get_taskbar_info"),
   getAutoStartEnabled: () => tauriInvoke<boolean>("get_auto_start_enabled"),
   setAutoStartEnabled: (enabled: boolean) => tauriInvoke<boolean>("set_auto_start_enabled", { enabled }),

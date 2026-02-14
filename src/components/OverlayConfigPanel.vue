@@ -122,6 +122,11 @@
         </button>
       </div>
     </div>
+    <div v-if="false && canUninstall" class="overlay-config-uninstall">
+      <button type="button" class="overlay-config-danger" @click="emit('uninstall')">
+        {{ t('overlay.uninstall') }}
+      </button>
+    </div>
     <!-- <div class="overlay-config-version">v{{ appVersion }}</div> -->
   </div>
 </template>
@@ -136,6 +141,7 @@ import { hotkeyFromEvent, hotkeyToString } from '../utils/hotkey';
 defineProps<{
   appVersion: string;
   language: 'zh-CN' | 'en-US';
+  canUninstall: boolean;
 }>();
 
 const prefs = defineModel<OverlayPrefs>('prefs', { required: true });
@@ -151,6 +157,7 @@ const emit = defineEmits<{
   (e: 'setLanguage', value: 'zh-CN' | 'en-US'): void;
   (e: 'refreshRateChange'): void;
   (e: 'factoryReset'): void;
+  (e: 'uninstall'): void;
 }>();
 
 const { t } = useI18n();

@@ -179,6 +179,13 @@
   gap: 8px;
 }
 
+.overlay-config-uninstall {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+
 .overlay-config-hotkey-controls {
   display: inline-flex;
   gap: 5px;

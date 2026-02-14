@@ -233,6 +233,7 @@ export const useAppStore = defineStore('app', {
     snapshot: emptySnapshot(),
     hardwareInfo: readStoredHardwareInfo() ?? emptyHardware(),
     settings: defaultSettings(),
+    installationMode: 'unknown' as 'unknown' | 'installed' | 'portable',
     unlisteners: [] as Array<() => void>,
     trayReady: false
   }),
@@ -258,6 +259,7 @@ export const useAppStore = defineStore('app', {
           void this.ensureTray();
           void this.ensureTaskbarMonitor();
           void this.syncAutoStartEnabled();
+          void this.detectInstallationMode();
         }
         await this.bindEvents();
         void this.refreshHardwareInfo();
@@ -267,10 +269,22 @@ export const useAppStore = defineStore('app', {
           hardware_info: emptyHardware(),
           settings: defaultSettings()
         });
+        this.installationMode = 'portable';
       }
 
       this.bootstrapped = true;
       this.ready = true;
+    },
+    async detectInstallationMode() {
+      if (!inTauri()) {
+        this.installationMode = 'portable';
+        return;
+      }
+      try {
+        this.installationMode = await api.getInstallationMode();
+      } catch {
+        this.installationMode = 'portable';
+      }
     },
     async refreshHardwareInfo() {
       if (!inTauri()) {
@@ -618,6 +632,12 @@ export const useAppStore = defineStore('app', {
         return;
       }
       await api.exitApp();
+    },
+    async uninstallApp(title: string, message: string) {
+      if (!inTauri()) {
+        return;
+      }
+      await api.uninstallApp(title, message);
     },
     dispose() {
       this.unlisteners.forEach(fn => fn());
