@@ -50,6 +50,15 @@
       <input v-model="prefs.showDragHandle" type="checkbox" />
       {{ t('overlay.showDragHandle') }}
     </label>
+
+    <label>
+      <input v-model="autoStartEnabled" type="checkbox" />
+      {{ t('overlay.autoStart') }}
+    </label>
+    <label>
+      <input v-model="rememberOverlayPosition" type="checkbox" />
+      {{ t('overlay.rememberPosition') }}
+    </label>
     <div class="overlay-config-row">
       <label class="overlay-config-inline">
         <input v-model="closeToTray" type="checkbox" />
@@ -63,14 +72,6 @@
         </label>
       </div>
     </div>
-    <label>
-      <input v-model="autoStartEnabled" type="checkbox" />
-      {{ t('overlay.autoStart') }}
-    </label>
-    <label>
-      <input v-model="rememberOverlayPosition" type="checkbox" />
-      {{ t('overlay.rememberPosition') }}
-    </label>
     <div class="overlay-config-language">
       <span class="overlay-config-label">{{ t('overlay.language') }}</span>
       <div class="overlay-lang-buttons">
