@@ -31,5 +31,7 @@ export const api = {
   confirmFactoryReset: (title: string, message: string) =>
     tauriInvoke<boolean>("confirm_factory_reset", { title, message }),
   getTaskbarInfo: () => tauriInvoke<TaskbarInfo | null>("get_taskbar_info"),
+  getAutoStartEnabled: () => tauriInvoke<boolean>("get_auto_start_enabled"),
+  setAutoStartEnabled: (enabled: boolean) => tauriInvoke<boolean>("set_auto_start_enabled", { enabled }),
   exitApp: () => tauriInvoke<void>("exit_app")
 };

@@ -42,6 +42,11 @@
       "icons/64x64.png",
       "icons/128x128.png",
       "icons/128x128@2x.png"
-    ]
+    ],
+    "windows": {
+      "nsis": {
+        "installerIcon": "icons/icon.ico"
+      }
+    }
   }
 }

@@ -55,6 +55,10 @@
       {{ t('overlay.closeToTray') }}
     </label>
     <label>
+      <input v-model="autoStartEnabled" type="checkbox" />
+      {{ t('overlay.autoStart') }}
+    </label>
+    <label>
       <input v-model="rememberOverlayPosition" type="checkbox" />
       {{ t('overlay.rememberPosition') }}
     </label>
@@ -136,6 +140,7 @@ defineProps<{
 
 const prefs = defineModel<OverlayPrefs>('prefs', { required: true });
 const closeToTray = defineModel<boolean>('closeToTray', { required: true });
+const autoStartEnabled = defineModel<boolean>('autoStartEnabled', { required: true });
 const rememberOverlayPosition = defineModel<boolean>('rememberOverlayPosition', { required: true });
 const taskbarMonitorEnabled = defineModel<boolean>('taskbarMonitorEnabled', { required: true });
 const factoryResetHotkey = defineModel<string | null>('factoryResetHotkey', { required: true });

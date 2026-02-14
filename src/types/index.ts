@@ -59,6 +59,7 @@ export interface HardwareInfo {
 export interface AppSettings {
   language: "zh-CN" | "en-US";
   closeToTray: boolean;
+  autoStartEnabled: boolean;
   rememberOverlayPosition: boolean;
   taskbarMonitorEnabled: boolean;
   taskbarAlwaysOnTop: boolean;

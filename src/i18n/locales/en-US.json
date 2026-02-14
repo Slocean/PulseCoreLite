@@ -27,6 +27,7 @@
     "showWarning": "Usage Warning",
     "showDragHandle": "Show Drag Handle",
     "closeToTray": "Close to System Tray",
+    "autoStart": "Launch at Startup",
     "rememberPosition": "Remember  Position",
     "alwaysOnTop": "Always on Top",
     "taskbarMonitor": "Taskbar Monitor",

@@ -39,6 +39,7 @@ function readStoredSettings(): Partial<AppSettings> | null {
     const hasOwn = (key: keyof AppSettings) => Object.prototype.hasOwnProperty.call(parsed, key);
     const hasLanguage = parsed.language === 'zh-CN' || parsed.language === 'en-US';
     const hasCloseToTray = typeof parsed.closeToTray === 'boolean';
+    const hasAutoStartEnabled = hasOwn('autoStartEnabled') && typeof parsed.autoStartEnabled === 'boolean';
     const hasRememberOverlayPosition =
       hasOwn('rememberOverlayPosition') && typeof parsed.rememberOverlayPosition === 'boolean';
     const hasTaskbarMonitorEnabled =
@@ -51,6 +52,7 @@ function readStoredSettings(): Partial<AppSettings> | null {
     if (
       hasLanguage ||
       hasCloseToTray ||
+      hasAutoStartEnabled ||
       hasRememberOverlayPosition ||
       hasTaskbarMonitorEnabled ||
       hasTaskbarAlwaysOnTop ||
@@ -59,6 +61,7 @@ function readStoredSettings(): Partial<AppSettings> | null {
       return {
         ...(hasLanguage ? { language: parsed.language } : {}),
         ...(hasCloseToTray ? { closeToTray: parsed.closeToTray } : {}),
+        ...(hasAutoStartEnabled ? { autoStartEnabled: parsed.autoStartEnabled } : {}),
         ...(hasRememberOverlayPosition ? { rememberOverlayPosition: parsed.rememberOverlayPosition } : {}),
         ...(hasTaskbarMonitorEnabled ? { taskbarMonitorEnabled: parsed.taskbarMonitorEnabled } : {}),
         ...(hasTaskbarAlwaysOnTop ? { taskbarAlwaysOnTop: parsed.taskbarAlwaysOnTop } : {}),
@@ -75,6 +78,7 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
   const fallback: AppSettings = {
     language: 'zh-CN',
     closeToTray: false,
+    autoStartEnabled: false,
     rememberOverlayPosition: true,
     taskbarMonitorEnabled: false,
     taskbarAlwaysOnTop: true,
@@ -85,6 +89,8 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
   const base: AppSettings = {
     language: candidate.language === 'en-US' ? 'en-US' : 'zh-CN',
     closeToTray: typeof candidate.closeToTray === 'boolean' ? candidate.closeToTray : fallback.closeToTray,
+    autoStartEnabled:
+      typeof candidate.autoStartEnabled === 'boolean' ? candidate.autoStartEnabled : fallback.autoStartEnabled,
     rememberOverlayPosition:
       typeof candidate.rememberOverlayPosition === 'boolean'
         ? candidate.rememberOverlayPosition
@@ -94,7 +100,9 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
         ? candidate.taskbarMonitorEnabled
         : fallback.taskbarMonitorEnabled,
     taskbarAlwaysOnTop:
-      typeof candidate.taskbarAlwaysOnTop === 'boolean' ? candidate.taskbarAlwaysOnTop : fallback.taskbarAlwaysOnTop,
+      typeof candidate.taskbarAlwaysOnTop === 'boolean'
+        ? candidate.taskbarAlwaysOnTop
+        : fallback.taskbarAlwaysOnTop,
     factoryResetHotkey:
       candidate.factoryResetHotkey == null || typeof candidate.factoryResetHotkey === 'string'
         ? candidate.factoryResetHotkey
@@ -109,6 +117,7 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
     ...base,
     language: stored.language ?? base.language,
     closeToTray: stored.closeToTray ?? base.closeToTray,
+    autoStartEnabled: stored.autoStartEnabled ?? base.autoStartEnabled,
     rememberOverlayPosition: stored.rememberOverlayPosition ?? base.rememberOverlayPosition,
     taskbarMonitorEnabled: stored.taskbarMonitorEnabled ?? base.taskbarMonitorEnabled,
     taskbarAlwaysOnTop: stored.taskbarAlwaysOnTop ?? base.taskbarAlwaysOnTop,
@@ -248,6 +257,7 @@ export const useAppStore = defineStore('app', {
         if (label === 'main') {
           void this.ensureTray();
           void this.ensureTaskbarMonitor();
+          void this.syncAutoStartEnabled();
         }
         await this.bindEvents();
         void this.refreshHardwareInfo();
@@ -319,6 +329,40 @@ export const useAppStore = defineStore('app', {
       persistSettings(this.settings);
       void broadcastSettingsSync();
     },
+    async setAutoStartEnabled(autoStartEnabled: boolean) {
+      if (this.settings.autoStartEnabled === autoStartEnabled) {
+        return;
+      }
+      const previous = this.settings.autoStartEnabled;
+      this.settings = {
+        ...this.settings,
+        autoStartEnabled
+      };
+      persistSettings(this.settings);
+      void broadcastSettingsSync();
+      if (!inTauri()) {
+        return;
+      }
+      try {
+        await api.setAutoStartEnabled(autoStartEnabled);
+        const confirmed = await api.getAutoStartEnabled();
+        if (confirmed !== this.settings.autoStartEnabled) {
+          this.settings = {
+            ...this.settings,
+            autoStartEnabled: confirmed
+          };
+          persistSettings(this.settings);
+          void broadcastSettingsSync();
+        }
+      } catch {
+        this.settings = {
+          ...this.settings,
+          autoStartEnabled: previous
+        };
+        persistSettings(this.settings);
+        void broadcastSettingsSync();
+      }
+    },
     setRememberOverlayPosition(rememberOverlayPosition: boolean) {
       if (this.settings.rememberOverlayPosition === rememberOverlayPosition) {
         return;
@@ -382,6 +426,33 @@ export const useAppStore = defineStore('app', {
       };
       persistSettings(this.settings);
       void broadcastSettingsSync();
+    },
+    async syncAutoStartEnabled() {
+      if (!inTauri()) {
+        return;
+      }
+      try {
+        const desired = this.settings.autoStartEnabled;
+        const current = await api.getAutoStartEnabled();
+        if (current !== desired) {
+          try {
+            await api.setAutoStartEnabled(desired);
+          } catch {
+            // ignore
+          }
+        }
+        const confirmed = await api.getAutoStartEnabled();
+        if (confirmed !== this.settings.autoStartEnabled) {
+          this.settings = {
+            ...this.settings,
+            autoStartEnabled: confirmed
+          };
+          persistSettings(this.settings);
+          void broadcastSettingsSync();
+        }
+      } catch {
+        return;
+      }
     },
     factoryReset() {
       if (typeof window === 'undefined') {

@@ -18,6 +18,7 @@
         v-if="showConfig"
         v-model:prefs="prefs"
         v-model:closeToTray="closeToTray"
+        v-model:autoStartEnabled="autoStartEnabled"
         v-model:rememberOverlayPosition="rememberOverlayPosition"
         v-model:taskbarMonitorEnabled="taskbarMonitorEnabled"
         v-model:factoryResetHotkey="factoryResetHotkey"
@@ -84,6 +85,10 @@ const showConfig = ref(false);
 const closeToTray = computed({
   get: () => store.settings.closeToTray,
   set: value => store.setCloseToTray(value)
+});
+const autoStartEnabled = computed({
+  get: () => store.settings.autoStartEnabled,
+  set: value => void store.setAutoStartEnabled(value)
 });
 const rememberOverlayPosition = computed({
   get: () => store.settings.rememberOverlayPosition,

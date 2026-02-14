@@ -73,6 +73,8 @@ pub struct AppSettings {
     pub language: String,
     #[serde(rename = "closeToTray")]
     pub close_to_tray: bool,
+    #[serde(rename = "autoStartEnabled")]
+    pub auto_start_enabled: bool,
     #[serde(rename = "rememberOverlayPosition")]
     pub remember_overlay_position: bool,
     #[serde(rename = "taskbarMonitorEnabled")]
@@ -88,6 +90,7 @@ impl Default for AppSettings {
         Self {
             language: "zh-CN".to_string(),
             close_to_tray: false,
+            auto_start_enabled: false,
             remember_overlay_position: true,
             taskbar_monitor_enabled: false,
             taskbar_always_on_top: true,
