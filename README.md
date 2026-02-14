@@ -1,4 +1,4 @@
-[中文文档](#中文文档) | [English Documentation](#english-documentation) | [下载地址](https://github.com/Slocean/PulseCoreLite/releases/tag/1.1.0)
+[中文文档](#中文文档) | [English Documentation](#english-documentation) | [下载地址](https://github.com/Slocean/PulseCoreLite/releases)
 
 # PulseCore Lite v1.2.1 <img src="src/static/img/ice_logo.png" alt="Logo" height="28" />
 
