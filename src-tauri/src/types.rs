@@ -50,6 +50,10 @@ pub struct TelemetrySnapshot {
     pub memory: MemoryMetrics,
     pub disks: Vec<DiskMetrics>,
     pub network: NetworkMetrics,
+    #[serde(rename = "appCpuUsagePct")]
+    pub app_cpu_usage_pct: Option<f64>,
+    #[serde(rename = "appMemoryMb")]
+    pub app_memory_mb: Option<f64>,
     pub power_watts: Option<f64>,
 }
 
@@ -67,12 +71,30 @@ pub struct HardwareInfo {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppSettings {
     pub language: String,
+    #[serde(rename = "closeToTray")]
+    pub close_to_tray: bool,
+    #[serde(rename = "autoStartEnabled")]
+    pub auto_start_enabled: bool,
+    #[serde(rename = "rememberOverlayPosition")]
+    pub remember_overlay_position: bool,
+    #[serde(rename = "taskbarMonitorEnabled")]
+    pub taskbar_monitor_enabled: bool,
+    #[serde(rename = "taskbarAlwaysOnTop")]
+    pub taskbar_always_on_top: bool,
+    #[serde(rename = "factoryResetHotkey")]
+    pub factory_reset_hotkey: Option<String>,
 }
 
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
             language: "zh-CN".to_string(),
+            close_to_tray: false,
+            auto_start_enabled: false,
+            remember_overlay_position: true,
+            taskbar_monitor_enabled: false,
+            taskbar_always_on_top: true,
+            factory_reset_hotkey: None,
         }
     }
 }
@@ -82,4 +104,14 @@ pub struct AppBootstrap {
     pub settings: AppSettings,
     pub hardware_info: HardwareInfo,
     pub latest_snapshot: TelemetrySnapshot,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskbarInfo {
+    /// `ABE_LEFT`=0, `ABE_TOP`=1, `ABE_RIGHT`=2, `ABE_BOTTOM`=3.
+    pub edge: u32,
+    pub left: i32,
+    pub top: i32,
+    pub right: i32,
+    pub bottom: i32,
 }

@@ -41,6 +41,8 @@ export interface TelemetrySnapshot {
   memory: MemoryMetrics;
   disks: DiskMetrics[];
   network: NetworkMetrics;
+  appCpuUsagePct: number | null;
+  appMemoryMb: number | null;
   power_watts: number | null;
 }
 
@@ -56,10 +58,24 @@ export interface HardwareInfo {
 
 export interface AppSettings {
   language: "zh-CN" | "en-US";
+  closeToTray: boolean;
+  autoStartEnabled: boolean;
+  rememberOverlayPosition: boolean;
+  taskbarMonitorEnabled: boolean;
+  taskbarAlwaysOnTop: boolean;
+  factoryResetHotkey: string | null;
 }
 
 export interface AppBootstrap {
   settings: AppSettings;
   hardware_info: HardwareInfo;
   latest_snapshot: TelemetrySnapshot;
+}
+
+export interface TaskbarInfo {
+  edge: number;
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
 }

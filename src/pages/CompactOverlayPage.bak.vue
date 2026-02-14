@@ -7,7 +7,7 @@
       </div>
       <div class="overlay-header-actions">
         <div class="overlay-drag" @mousedown.stop="startDragging">
-          <span class="material-symbols-outlined">drag_indicator</span>
+          <span class="overlay-icon-text">≡</span>
         </div>
         <button
           class="overlay-action"
@@ -15,7 +15,7 @@
           @mousedown.stop
           @click="showConfig = !showConfig"
           :title="t('overlay.configure')">
-          <span class="material-symbols-outlined">tune</span>
+          <span class="overlay-icon-text">⚙</span>
         </button>
         <button
           class="overlay-action overlay-action--danger"
@@ -23,7 +23,7 @@
           @mousedown.stop
           @click="hide"
           :title="t('overlay.close')">
-          <span class="material-symbols-outlined">close</span>
+          <span class="overlay-icon-text">×</span>
         </button>
       </div>
     </header>
@@ -111,7 +111,7 @@
       <div v-if="prefs.showCpu" class="overlay-metric">
         <div class="overlay-metric-top">
           <div class="overlay-metric-label">
-            <span class="material-symbols-outlined overlay-icon overlay-icon--cpu">memory</span>
+            <span class="overlay-icon overlay-icon--cpu">CPU</span>
             <div class="overlay-metric-text">
               <span class="overlay-metric-name">{{ t('overlay.cpu') }}</span>
               <span v-if="prefs.showValues" class="overlay-metric-detail">{{ cpuDetailLabel }}</span>
@@ -133,7 +133,7 @@
       <div v-if="prefs.showGpu" class="overlay-metric">
         <div class="overlay-metric-top">
           <div class="overlay-metric-label">
-            <span class="material-symbols-outlined overlay-icon overlay-icon--gpu">developer_board</span>
+            <span class="overlay-icon overlay-icon--gpu">GPU</span>
             <div class="overlay-metric-text">
               <span class="overlay-metric-name">{{ t('overlay.gpu') }}</span>
               <span v-if="prefs.showValues" class="overlay-metric-detail">{{ gpuDetailLabel }}</span>
@@ -155,7 +155,7 @@
       <div v-if="prefs.showMemory" class="overlay-metric">
         <div class="overlay-metric-top">
           <div class="overlay-metric-label">
-            <span class="material-symbols-outlined overlay-icon overlay-icon--cpu">memory_alt</span>
+            <span class="overlay-icon overlay-icon--cpu">RAM</span>
             <div class="overlay-metric-text">
               <span class="overlay-metric-name">{{ t('overlay.memory') }}</span>
               <span v-if="prefs.showValues" class="overlay-metric-detail">{{ memoryUsageLabel }}</span>
@@ -181,7 +181,7 @@
         <div v-for="disk in disks" :key="disk.name" class="overlay-metric">
           <div class="overlay-metric-top">
             <div class="overlay-metric-label">
-              <span class="material-symbols-outlined overlay-icon overlay-icon--cpu">hard_drive</span>
+              <span class="overlay-icon overlay-icon--cpu">DSK</span>
               <div class="overlay-metric-text">
                 <span class="overlay-metric-name">{{ disk.name }}</span>
                 <div v-if="prefs.showValues">
@@ -215,7 +215,7 @@
     <footer class="overlay-network">
       <div class="overlay-network-item" :class="{ 'overlay-network-item--hidden': !prefs.showUp }">
         <div class="overlay-network-label">
-          <span class="material-symbols-outlined">upload</span>
+          <span class="overlay-icon-text">↑</span>
           <span>{{ t('overlay.up') }}</span>
         </div>
         <div class="overlay-network-value overlay-glow-cyan">
@@ -225,7 +225,7 @@
       </div>
       <div class="overlay-network-item" :class="{ 'overlay-network-item--hidden': !prefs.showLatency }">
         <div class="overlay-network-label">
-          <span class="material-symbols-outlined">network_ping</span>
+          <span class="overlay-icon-text">⏱</span>
           <span>{{ t('overlay.latency') }}</span>
         </div>
         <div class="overlay-network-value overlay-glow-cyan">
@@ -234,7 +234,7 @@
       </div>
       <div class="overlay-network-item" :class="{ 'overlay-network-item--hidden': !prefs.showDown }">
         <div class="overlay-network-label">
-          <span class="material-symbols-outlined">download</span>
+          <span class="overlay-icon-text">↓</span>
           <span>{{ t('overlay.down') }}</span>
         </div>
         <div class="overlay-network-value overlay-glow-cyan">

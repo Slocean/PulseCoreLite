@@ -1,5 +1,5 @@
 import type { UnlistenFn } from "@tauri-apps/api/event";
-import type { AppBootstrap } from "../types";
+import type { AppBootstrap, HardwareInfo, TaskbarInfo } from "../types";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -25,6 +25,13 @@ export function inTauri(): boolean {
 
 export const api = {
   getInitialState: () => tauriInvoke<AppBootstrap>("get_initial_state"),
+  getHardwareInfo: () => tauriInvoke<HardwareInfo>("get_hardware_info"),
   toggleOverlay: (visible: boolean) => tauriInvoke<boolean>("toggle_overlay", { visible }),
-  setRefreshRate: (rateMs: number) => tauriInvoke<void>("set_refresh_rate", { rateMs })
+  setRefreshRate: (rateMs: number) => tauriInvoke<void>("set_refresh_rate", { rateMs }),
+  confirmFactoryReset: (title: string, message: string) =>
+    tauriInvoke<boolean>("confirm_factory_reset", { title, message }),
+  getTaskbarInfo: () => tauriInvoke<TaskbarInfo | null>("get_taskbar_info"),
+  getAutoStartEnabled: () => tauriInvoke<boolean>("get_auto_start_enabled"),
+  setAutoStartEnabled: (enabled: boolean) => tauriInvoke<boolean>("set_auto_start_enabled", { enabled }),
+  exitApp: () => tauriInvoke<void>("exit_app")
 };

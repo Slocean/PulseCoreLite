@@ -1,0 +1,37 @@
+:root {
+  color-scheme: dark;
+  --bg: #0b0e14;
+  --overlay-bg-opacity: 1;
+  --text: #e2e8f0;
+  --cyan: #00f2ff;
+  --pink: #bc13fe;
+  --orange: #ffa500;
+  --red: #ff3b3b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  color: var(--text);
+  background: rgba(11, 14, 20, var(--overlay-bg-opacity, 1));
+  overflow: hidden;
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 500,
+    'GRAD' 0,
+    'opsz' 24;
+}
+
+.app-root {
+  min-height: 100vh;
+}
+

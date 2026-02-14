@@ -175,7 +175,13 @@ fn manufacturer_name() -> Option<String> {
 fn run_powershell_lines(script: &str) -> Option<Vec<String>> {
     #[cfg(target_os = "windows")]
     {
+        use std::os::windows::process::CommandExt;
+
+        // Prevent PowerShell from popping a console window in packaged builds.
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+
         let output = Command::new("powershell.exe")
+            .creation_flags(CREATE_NO_WINDOW)
             .args(["-NoProfile", "-Command", script])
             .output()
             .ok()?;
@@ -222,7 +228,16 @@ fn first_wmic_value(args: &[&str]) -> Option<String> {
 fn run_wmic(args: &[&str]) -> Option<String> {
     #[cfg(target_os = "windows")]
     {
-        let output = Command::new("wmic").args(args).output().ok()?;
+        use std::os::windows::process::CommandExt;
+
+        // Prevent WMIC from popping a console window in packaged builds.
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+        let output = Command::new("wmic")
+            .creation_flags(CREATE_NO_WINDOW)
+            .args(args)
+            .output()
+            .ok()?;
         if !output.status.success() {
             return None;
         }

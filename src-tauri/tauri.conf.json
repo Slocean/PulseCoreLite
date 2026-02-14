@@ -19,11 +19,12 @@
         "height": 260,
         "resizable": false,
         "maximizable": false,
+        "minimizable": true,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,
-        "visible": true,
-        "skipTaskbar": true
+        "visible": false,
+        "skipTaskbar": false
       }
     ],
     "security": {
@@ -33,6 +34,19 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "icon": []
+    "icon": [
+      "icons/icon.ico",
+      "icons/icon.icns",
+      "icons/icon.png",
+      "icons/32x32.png",
+      "icons/64x64.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png"
+    ],
+    "windows": {
+      "nsis": {
+        "installerIcon": "icons/icon.ico"
+      }
+    }
   }
 }
