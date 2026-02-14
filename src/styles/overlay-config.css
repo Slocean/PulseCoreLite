@@ -182,8 +182,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-top: 2px;
+  gap: 5px;
+  /* margin-top: 2px; */
   flex-wrap: nowrap;
 }
 
@@ -207,7 +207,7 @@
 }
 
 .overlay-config-theme-tabs .overlay-lang-button {
-  padding: 3px 5px;
+  padding: 3px 6px;
 }
 
 .overlay-config-action > .overlay-lang-button {
