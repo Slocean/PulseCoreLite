@@ -14,24 +14,24 @@ PulseCoreLite 是一个基于 Tauri 2 + Vue 3 的桌面性能监控应用，提�
 
 ### 页面截图（中文）
 
-<div style="display:flex;flex-wrap:wrap;gap:12px;">
-  <div style="text-align:center;">
+<div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;">
+  <div style="text-align:center;flex:0 0 30%;">
     <div>主页面</div>
     <img src="design/product_picture/chinese/main_page.png" alt="主页面" width="260" />
   </div>
-  <div style="text-align:center;">
+  <div style="text-align:center;flex:0 0 30%;">
     <div>设置面板</div>
     <img src="design/product_picture/chinese/setting_page.png" alt="设置面板" width="260" />
   </div>
-  <div style="text-align:center;">
+  <div style="text-align:center;flex:0 0 30%;">
     <div>透明模式</div>
     <img src="design/product_picture/chinese/transparent_mode.png" alt="透明模式" width="260" />
   </div>
-  <div style="text-align:center;">
+  <div style="text-align:center;flex:0 0 30%;">
     <div>任务栏监控</div>
     <img src="design/product_picture/task_page.png" alt="任务栏监控" width="260" />
   </div>
-  <div style="text-align:center;">
+  <div style="text-align:center;flex:0 0 30%;">
     <div>任务栏设置</div>
     <img src="design/product_picture/task_setting.png" alt="任务栏设置" width="260" />
   </div>
@@ -155,24 +155,24 @@ npm run pack:release
 
 ### Screenshots (English)
 
-<div style="display:flex;flex-wrap:wrap;gap:12px;">
-  <div style="text-align:center;">
+<div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;">
+  <div style="text-align:center;flex:0 0 30%;">
     <div>Main Page</div>
     <img src="design/product_picture/english/main_page.png" alt="Main Page" width="260" />
   </div>
-  <div style="text-align:center;">
+  <div style="text-align:center;flex:0 0 30%;">
     <div>Settings Panel</div>
     <img src="design/product_picture/english/setting_page.png" alt="Settings Panel" width="260" />
   </div>
-  <div style="text-align:center;">
+  <div style="text-align:center;flex:0 0 30%;">
     <div>Transparent Mode</div>
     <img src="design/product_picture/english/transparent_mode.png" alt="Transparent Mode" width="260" />
   </div>
-  <div style="text-align:center;">
+  <div style="text-align:center;flex:0 0 30%;">
     <div>Taskbar Monitor</div>
     <img src="design/product_picture/task_page.png" alt="Taskbar Monitor" width="260" />
   </div>
-  <div style="text-align:center;">
+  <div style="text-align:center;flex:0 0 30%;">
     <div>Taskbar Settings</div>
     <img src="design/product_picture/task_setting.png" alt="Taskbar Settings" width="260" />
   </div>
