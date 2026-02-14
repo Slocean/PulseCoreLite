@@ -502,7 +502,7 @@ function resetBackgroundDialogState() {
   backgroundFileName.value = '';
   backgroundImageSource.value = null;
   backgroundImage.value = null;
-  backgroundBlurPx.value = prefs.backgroundBlurPx;
+  backgroundBlurPx.value = prefs.backgroundImage ? prefs.backgroundBlurPx : 5;
   cropRect.x = 0;
   cropRect.y = 0;
   cropRect.width = 0;
