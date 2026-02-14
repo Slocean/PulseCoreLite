@@ -317,6 +317,13 @@ foreach ($inst in $instances) {
 
 if (-not $bestInst -and $instances.Count -gt 0) { $bestInst = $instances[0] }
 
+# If the "Dedicated Limit" counter is missing (common on some Windows builds/drivers),
+# picking by limit doesn't work (everything is 0). In that case pick the instance with
+# the highest current dedicated usage, so "used VRAM" doesn't get stuck at 0 on dual-GPU systems.
+if ($bestLimit -le 0 -and $usedBy.Count -gt 0) {
+  $bestInst = ($usedBy.GetEnumerator() | Sort-Object -Property Value -Descending | Select-Object -First 1).Key
+}
+
 $luid = $null
 if ($bestInst -and $bestInst -match '(luid_0x[0-9a-fA-F]+)') { $luid = $Matches[1] }
 
@@ -396,9 +403,15 @@ if ($usage -ne $null) {
     let mut memory_total_mb = payload.get("memTotalMb").and_then(|v| v.as_f64());
     let frequency_mhz = payload.get("freqMhz").and_then(|v| v.as_f64());
 
-    if let Some((used_mb, total_mb)) = query_gpu_memory_dxgi_windows() {
-        memory_used_mb = Some(used_mb);
-        memory_total_mb = Some(total_mb);
+    if let Some((dxgi_used_mb, dxgi_total_mb)) = query_gpu_memory_dxgi_windows() {
+        // Use DXGI for total VRAM because WMI/PerfCounter sources are often truncated (~4095MB).
+        memory_total_mb = Some(dxgi_total_mb);
+
+        // Keep PerfCounter "Dedicated Usage" for current usage when available, as it's often
+        // closer to what users expect in the UI. Fall back to DXGI usage if PerfCounter is missing.
+        if memory_used_mb.is_none() {
+            memory_used_mb = Some(dxgi_used_mb);
+        }
     }
 
     // Avoid nonsensical UI (e.g. summing multiple adapters or driver quirks).
