@@ -34,6 +34,7 @@
     "taskbarMonitorOpen": "开启",
     "taskbarMonitorClose": "关闭",
     "backgroundOpacity": "背景透明度",
+    "textTone": "文字明暗",
     "backgroundImage": "主题",
     "backgroundImageButton": "上传图片",
     "backgroundImageTitle": "主题",

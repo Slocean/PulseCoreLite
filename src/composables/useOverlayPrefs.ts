@@ -16,6 +16,7 @@ export interface OverlayPrefs {
   showWarning: boolean;
   showDragHandle: boolean;
   backgroundOpacity: number;
+  textTone: number;
   backgroundImage: string | null;
 }
 
@@ -33,6 +34,7 @@ const fallbackPrefs: OverlayPrefs = {
   showWarning: true,
   showDragHandle: false,
   backgroundOpacity: 100,
+  textTone: 100,
   backgroundImage: null
 };
 
@@ -57,6 +59,7 @@ function loadPrefs(): OverlayPrefs {
       showWarning: parsed.showWarning ?? fallbackPrefs.showWarning,
       showDragHandle: parsed.showDragHandle ?? fallbackPrefs.showDragHandle,
       backgroundOpacity: parsed.backgroundOpacity ?? fallbackPrefs.backgroundOpacity,
+      textTone: parsed.textTone ?? fallbackPrefs.textTone,
       backgroundImage: parsed.backgroundImage ?? fallbackPrefs.backgroundImage
     };
   } catch {
@@ -64,16 +67,57 @@ function loadPrefs(): OverlayPrefs {
   }
 }
 
+let sharedPrefs: OverlayPrefs | null = null;
+let storageListenerAttached = false;
+
+function applyTextTone(value: number) {
+  if (typeof document === 'undefined') {
+    return;
+  }
+  const safeValue = Math.min(100, Math.max(0, value));
+  const channel = Math.round((safeValue / 100) * 255);
+  const color = `rgb(${channel}, ${channel}, ${channel})`;
+  document.documentElement.style.setProperty('--text-tone-color', color);
+  document.documentElement.style.setProperty('--text', color);
+}
+
 export function useOverlayPrefs() {
-  const prefs = reactive<OverlayPrefs>(loadPrefs());
+  if (!sharedPrefs) {
+    sharedPrefs = reactive<OverlayPrefs>(loadPrefs());
 
-  watch(
-    prefs,
-    next => {
-      localStorage.setItem(OVERLAY_PREF_KEY, JSON.stringify(next));
-    },
-    { deep: true }
-  );
+    watch(
+      sharedPrefs,
+      next => {
+        localStorage.setItem(OVERLAY_PREF_KEY, JSON.stringify(next));
+      },
+      { deep: true }
+    );
 
-  return { prefs };
+    watch(
+      () => sharedPrefs!.textTone,
+      value => {
+        applyTextTone(value);
+      },
+      { immediate: true }
+    );
+
+    if (typeof window !== 'undefined' && !storageListenerAttached) {
+      storageListenerAttached = true;
+      window.addEventListener('storage', event => {
+        if (event.key !== OVERLAY_PREF_KEY || !event.newValue) {
+          return;
+        }
+        try {
+          const parsed = JSON.parse(event.newValue) as Partial<OverlayPrefs>;
+          if (typeof parsed.textTone === 'number' && sharedPrefs) {
+            sharedPrefs.textTone = parsed.textTone;
+          }
+        } catch {
+          return;
+        }
+      });
+    }
+  }
+
+  return { prefs: sharedPrefs! };
 }

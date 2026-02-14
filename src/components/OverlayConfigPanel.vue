@@ -104,6 +104,11 @@
       <span class="overlay-config-value">{{ backgroundOpacity }}%</span>
       <input type="range" min="0" max="100" step="5" v-model.number="backgroundOpacity" />
     </div>
+    <div class="overlay-config-range">
+      <span class="overlay-config-label">{{ t('overlay.textTone') }}</span>
+      <span class="overlay-config-value">{{ prefs.textTone }}%</span>
+      <input type="range" min="0" max="100" step="5" v-model.number="prefs.textTone" />
+    </div>
     <div class="overlay-config-item--wide overlay-config-action">
       <span class="overlay-config-label">{{ t('overlay.backgroundImage') }}</span>
       <button type="button" class="overlay-lang-button" @click="emit('openBackgroundDialog')">

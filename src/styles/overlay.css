@@ -7,6 +7,11 @@
   background: transparent;
 }
 
+.overlay-shell,
+.overlay-shell * {
+  color: var(--text-tone-color, #ffffff) !important;
+}
+
 .overlay-widget {
   width: 310px;
   max-width: none;

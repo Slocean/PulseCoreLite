@@ -13,12 +13,14 @@ import { useI18n } from 'vue-i18n';
 
 import CompactOverlayPage from './pages/index.vue';
 import TaskbarMonitorPage from './pages/taskbar.vue';
+import { useOverlayPrefs } from './composables/useOverlayPrefs';
 import { api, inTauri } from './services/tauri';
 import { useAppStore } from './stores/app';
 
 const store = useAppStore();
 const { locale } = useI18n();
 const windowRole = ref<'main' | 'taskbar'>('main');
+useOverlayPrefs();
 
 onMounted(async () => {
   if (inTauri()) {
