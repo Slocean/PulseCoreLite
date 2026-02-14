@@ -180,9 +180,10 @@
 .overlay-theme-chip {
   position: relative;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
+  gap: 4px;
+  padding: 6px 8px;
   border: 1px dashed rgba(255, 255, 255, 0.18);
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.15);
@@ -205,8 +206,8 @@
 }
 
 .overlay-theme-thumb {
-  width: 20px;
-  height: 14px;
+  width: 36px;
+  height: 22px;
   border-radius: 4px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background-size: cover;
@@ -216,10 +217,12 @@
 }
 
 .overlay-theme-name {
-  max-width: 40px;
+  max-width: 48px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: center;
+  line-height: 1.2;
 }
 
 .overlay-corner-delete {

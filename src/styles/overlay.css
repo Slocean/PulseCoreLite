@@ -197,7 +197,13 @@
 .overlay-metric-text {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+}
+
+.overlay-metric-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .overlay-metric-detail {
