@@ -121,9 +121,10 @@
               :key="theme.id"
               class="overlay-theme-chip"
               :class="{ 'overlay-theme-chip--active': isThemeActive(theme) }"
+              :data-name="theme.name"
               @click="selectTheme(theme)"
               @contextmenu.prevent.stop="emit('editTheme', theme.id)">
-              <span class="overlay-theme-name">{{ theme.name }}</span>
+              <!-- <span class="overlay-theme-name">{{ theme.name }}</span> -->
               <span class="overlay-theme-thumb" :style="{ backgroundImage: `url(${theme.image})` }"></span>
               <OverlayCornerDelete :ariaLabel="t('overlay.themeDelete')" @click="emit('deleteTheme', theme.id)" />
             </div>
@@ -188,150 +189,150 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { computed, onUnmounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 
-import OverlayCornerDelete from './OverlayCornerDelete.vue'
-import OverlayDialog from './OverlayDialog.vue'
-import type { OverlayPrefs } from '../composables/useOverlayPrefs'
-import { hotkeyFromEvent, hotkeyToString } from '../utils/hotkey'
+import OverlayCornerDelete from './OverlayCornerDelete.vue';
+import OverlayDialog from './OverlayDialog.vue';
+import type { OverlayPrefs } from '../composables/useOverlayPrefs';
+import { hotkeyFromEvent, hotkeyToString } from '../utils/hotkey';
 
 type OverlayTheme = {
-  id: string
-  name: string
-  image: string
-  blurPx: number
-}
+  id: string;
+  name: string;
+  image: string;
+  blurPx: number;
+};
 
 const props = defineProps<{
-  appVersion: string
-  language: 'zh-CN' | 'en-US'
-  canUninstall: boolean
-  themes: OverlayTheme[]
-}>()
+  appVersion: string;
+  language: 'zh-CN' | 'en-US';
+  canUninstall: boolean;
+  themes: OverlayTheme[];
+}>();
 
-const prefs = defineModel<OverlayPrefs>('prefs', { required: true })
-const closeToTray = defineModel<boolean>('closeToTray', { required: true })
-const autoStartEnabled = defineModel<boolean>('autoStartEnabled', { required: true })
-const rememberOverlayPosition = defineModel<boolean>('rememberOverlayPosition', { required: true })
-const taskbarMonitorEnabled = defineModel<boolean>('taskbarMonitorEnabled', { required: true })
-const factoryResetHotkey = defineModel<string | null>('factoryResetHotkey', { required: true })
-const refreshRate = defineModel<number>('refreshRate', { required: true })
-const backgroundOpacity = defineModel<number>('backgroundOpacity', { required: true })
+const prefs = defineModel<OverlayPrefs>('prefs', { required: true });
+const closeToTray = defineModel<boolean>('closeToTray', { required: true });
+const autoStartEnabled = defineModel<boolean>('autoStartEnabled', { required: true });
+const rememberOverlayPosition = defineModel<boolean>('rememberOverlayPosition', { required: true });
+const taskbarMonitorEnabled = defineModel<boolean>('taskbarMonitorEnabled', { required: true });
+const factoryResetHotkey = defineModel<string | null>('factoryResetHotkey', { required: true });
+const refreshRate = defineModel<number>('refreshRate', { required: true });
+const backgroundOpacity = defineModel<number>('backgroundOpacity', { required: true });
 
 const emit = defineEmits<{
-  (e: 'setLanguage', value: 'zh-CN' | 'en-US'): void
-  (e: 'refreshRateChange'): void
-  (e: 'factoryReset'): void
-  (e: 'uninstall'): void
-  (e: 'openBackgroundDialog'): void
-  (e: 'deleteTheme', value: string): void
-  (e: 'editTheme', value: string): void
-  (e: 'exportConfig'): void
-  (e: 'importConfig', value: File): void
-}>()
+  (e: 'setLanguage', value: 'zh-CN' | 'en-US'): void;
+  (e: 'refreshRateChange'): void;
+  (e: 'factoryReset'): void;
+  (e: 'uninstall'): void;
+  (e: 'openBackgroundDialog'): void;
+  (e: 'deleteTheme', value: string): void;
+  (e: 'editTheme', value: string): void;
+  (e: 'exportConfig'): void;
+  (e: 'importConfig', value: File): void;
+}>();
 
-const { t } = useI18n()
+const { t } = useI18n();
 
-const recordingHotkey = ref(false)
-let hotkeyUnlisten: (() => void) | null = null
-const hotkeyClearDialogOpen = ref(false)
-const importFileInput = ref<HTMLInputElement | null>(null)
+const recordingHotkey = ref(false);
+let hotkeyUnlisten: (() => void) | null = null;
+const hotkeyClearDialogOpen = ref(false);
+const importFileInput = ref<HTMLInputElement | null>(null);
 
-const hotkeyLabel = computed(() => factoryResetHotkey.value ?? t('overlay.hotkeyNotSet'))
-const isDefaultTheme = computed(() => !prefs.value.backgroundImage)
-const themes = computed(() => props.themes)
+const hotkeyLabel = computed(() => factoryResetHotkey.value ?? t('overlay.hotkeyNotSet'));
+const isDefaultTheme = computed(() => !prefs.value.backgroundImage);
+const themes = computed(() => props.themes);
 
 function stopHotkeyCapture() {
   if (hotkeyUnlisten) {
-    hotkeyUnlisten()
-    hotkeyUnlisten = null
+    hotkeyUnlisten();
+    hotkeyUnlisten = null;
   }
-  recordingHotkey.value = false
+  recordingHotkey.value = false;
 }
 
 function beginHotkeyCapture() {
   if (typeof window === 'undefined') {
-    return
+    return;
   }
   if (recordingHotkey.value) {
-    stopHotkeyCapture()
-    return
+    stopHotkeyCapture();
+    return;
   }
 
-  recordingHotkey.value = true
+  recordingHotkey.value = true;
   const handler = (event: KeyboardEvent) => {
-    event.preventDefault()
-    event.stopPropagation()
+    event.preventDefault();
+    event.stopPropagation();
 
     if (!event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey && event.key === 'Escape') {
-      stopHotkeyCapture()
-      return
+      stopHotkeyCapture();
+      return;
     }
 
-    const hotkey = hotkeyFromEvent(event)
+    const hotkey = hotkeyFromEvent(event);
     if (!hotkey) {
-      return
+      return;
     }
-    factoryResetHotkey.value = hotkeyToString(hotkey)
-    stopHotkeyCapture()
-  }
+    factoryResetHotkey.value = hotkeyToString(hotkey);
+    stopHotkeyCapture();
+  };
 
-  window.addEventListener('keydown', handler, true)
-  hotkeyUnlisten = () => window.removeEventListener('keydown', handler, true)
+  window.addEventListener('keydown', handler, true);
+  hotkeyUnlisten = () => window.removeEventListener('keydown', handler, true);
 }
 
 function selectDefaultTheme() {
   if (!prefs.value.backgroundImage && prefs.value.backgroundBlurPx === 0) {
-    return
+    return;
   }
-  prefs.value.backgroundImage = null
-  prefs.value.backgroundBlurPx = 0
+  prefs.value.backgroundImage = null;
+  prefs.value.backgroundBlurPx = 0;
 }
 
 function selectTheme(theme: OverlayTheme) {
   if (prefs.value.backgroundImage === theme.image && prefs.value.backgroundBlurPx === theme.blurPx) {
-    return
+    return;
   }
-  prefs.value.backgroundImage = theme.image
-  prefs.value.backgroundBlurPx = theme.blurPx
+  prefs.value.backgroundImage = theme.image;
+  prefs.value.backgroundBlurPx = theme.blurPx;
 }
 
 function isThemeActive(theme: OverlayTheme) {
-  return prefs.value.backgroundImage === theme.image && prefs.value.backgroundBlurPx === theme.blurPx
+  return prefs.value.backgroundImage === theme.image && prefs.value.backgroundBlurPx === theme.blurPx;
 }
 
 function confirmFactoryReset() {
-  emit('factoryReset')
+  emit('factoryReset');
 }
 
 function requestClearHotkey() {
-  if (factoryResetHotkey.value == null) return
-  hotkeyClearDialogOpen.value = true
+  if (factoryResetHotkey.value == null) return;
+  hotkeyClearDialogOpen.value = true;
 }
 
 function closeClearHotkeyDialog() {
-  hotkeyClearDialogOpen.value = false
+  hotkeyClearDialogOpen.value = false;
 }
 
 function confirmClearHotkey() {
-  factoryResetHotkey.value = null
-  closeClearHotkeyDialog()
+  factoryResetHotkey.value = null;
+  closeClearHotkeyDialog();
 }
 
 function triggerImport() {
-  importFileInput.value?.click()
+  importFileInput.value?.click();
 }
 
 function handleImportChange(event: Event) {
-  const input = event.target as HTMLInputElement | null
-  const file = input?.files?.[0]
-  if (input) input.value = ''
-  if (!file) return
-  emit('importConfig', file)
+  const input = event.target as HTMLInputElement | null;
+  const file = input?.files?.[0];
+  if (input) input.value = '';
+  if (!file) return;
+  emit('importConfig', file);
 }
 
 onUnmounted(() => {
-  stopHotkeyCapture()
-})
+  stopHotkeyCapture();
+});
 </script>

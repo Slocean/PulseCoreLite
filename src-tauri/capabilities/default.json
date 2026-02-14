@@ -16,6 +16,7 @@
     "core:window:allow-get-all-windows",
     "core:window:allow-minimize",
     "core:window:allow-hide",
-    "core:window:allow-show"
+    "core:window:allow-show",
+    "dialog:allow-save"
   ]
 }

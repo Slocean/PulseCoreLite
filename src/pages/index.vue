@@ -102,7 +102,13 @@
         <div v-if="backgroundImageSource" class="overlay-config-range">
           <span class="overlay-config-label">{{ t('overlay.backgroundBlur') }}</span>
           <span class="overlay-config-value">{{ backgroundBlurPx }}px</span>
-          <input type="range" min="0" max="24" step="1" v-model.number="backgroundBlurPx" @input="drawCropCanvas" />
+          <input
+            type="range"
+            min="0"
+            max="24"
+            step="1"
+            v-model.number="backgroundBlurPx"
+            @input="drawCropCanvas" />
         </div>
       </div>
     </template>
@@ -200,7 +206,11 @@
       <button type="button" class="overlay-lang-button" @click="closeEditThemeDialog">
         {{ t('overlay.dialogCancel') }}
       </button>
-      <button type="button" class="overlay-config-primary" :disabled="!canConfirmThemeEdit" @click="confirmEditTheme">
+      <button
+        type="button"
+        class="overlay-config-primary"
+        :disabled="!canConfirmThemeEdit"
+        @click="confirmEditTheme">
         {{ t('overlay.dialogConfirm') }}
       </button>
     </template>
@@ -226,6 +236,17 @@
     :show-actions="false"
     @confirm="closeImportErrorDialog"
     @cancel="closeImportErrorDialog" />
+
+  <OverlayDialog
+    v-model:open="exportSuccessDialogOpen"
+    :title="t('overlay.exportConfig')"
+    :message="t('overlay.exportConfigSuccess')"
+    :confirm-text="t('overlay.dialogConfirm')"
+    :cancel-text="t('overlay.dialogCancel')"
+    :close-label="t('overlay.dialogClose')"
+    :show-actions="false"
+    @confirm="closeExportSuccessDialog"
+    @cancel="closeExportSuccessDialog" />
 </template>
 
 <script setup lang="ts">
@@ -245,6 +266,7 @@ import { useOverlayUptime } from '../composables/useOverlayUptime';
 import { useOverlayWindow } from '../composables/useOverlayWindow';
 import packageJson from '../../package.json';
 import { useAppStore } from '../stores/app';
+import { api, inTauri } from '../services/tauri';
 import { kvGet, kvSet } from '../utils/kv';
 import { matchesHotkeyEvent } from '../utils/hotkey';
 
@@ -354,6 +376,7 @@ const pendingThemeBlurPx = ref(0);
 const themeDeleteDialogOpen = ref(false);
 const themeToDelete = ref<OverlayTheme | null>(null);
 const backgroundBlurPx = ref(0);
+const exportSuccessDialogOpen = ref(false);
 
 const themeEditDialogOpen = ref(false);
 const themeToEdit = ref<OverlayTheme | null>(null);
@@ -977,16 +1000,33 @@ async function exportConfig() {
   };
 
   const json = JSON.stringify(payload, null, 2);
+  const ts = payload.exportedAt.replace(/[:.]/g, '-');
+  const filename = `pulsecorelite-config-${ts}.json`;
+
+  if (inTauri()) {
+    try {
+      const { save } = await import('@tauri-apps/plugin-dialog');
+      const path = await save({
+        defaultPath: filename,
+        filters: [{ name: 'JSON', extensions: ['json'] }]
+      });
+      if (!path) return;
+      await api.saveExportConfig(path, json);
+      exportSuccessDialogOpen.value = true;
+      return;
+    } catch {}
+  }
+
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  const ts = payload.exportedAt.replace(/[:.]/g, '-');
-  a.download = `pulsecorelite-config-${ts}.json`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+  exportSuccessDialogOpen.value = true;
 }
 
 async function handleImportConfig(file: File) {
@@ -1014,6 +1054,10 @@ function cancelImportConfig() {
 function closeImportErrorDialog() {
   importErrorDialogOpen.value = false;
   importErrorMessage.value = '';
+}
+
+function closeExportSuccessDialog() {
+  exportSuccessDialogOpen.value = false;
 }
 
 function sanitizeImportedTaskbarPrefs(input: unknown) {
@@ -1091,11 +1135,14 @@ async function confirmImportConfig() {
       if (typeof settings.closeToTray === 'boolean') store.setCloseToTray(settings.closeToTray);
       if (typeof settings.rememberOverlayPosition === 'boolean')
         store.setRememberOverlayPosition(settings.rememberOverlayPosition);
-      if (typeof settings.taskbarAlwaysOnTop === 'boolean') store.setTaskbarAlwaysOnTop(settings.taskbarAlwaysOnTop);
+      if (typeof settings.taskbarAlwaysOnTop === 'boolean')
+        store.setTaskbarAlwaysOnTop(settings.taskbarAlwaysOnTop);
       if (settings.factoryResetHotkey == null || typeof settings.factoryResetHotkey === 'string')
         store.setFactoryResetHotkey(settings.factoryResetHotkey ?? null);
-      if (typeof settings.taskbarMonitorEnabled === 'boolean') await store.setTaskbarMonitorEnabled(settings.taskbarMonitorEnabled);
-      if (typeof settings.autoStartEnabled === 'boolean') await store.setAutoStartEnabled(settings.autoStartEnabled);
+      if (typeof settings.taskbarMonitorEnabled === 'boolean')
+        await store.setTaskbarMonitorEnabled(settings.taskbarMonitorEnabled);
+      if (typeof settings.autoStartEnabled === 'boolean')
+        await store.setAutoStartEnabled(settings.autoStartEnabled);
     }
 
     // Overlay prefs + themes

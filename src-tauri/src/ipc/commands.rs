@@ -545,6 +545,15 @@ pub async fn set_refresh_rate(state: State<'_, SharedState>, rate_ms: u64) -> Cm
 }
 
 #[tauri::command]
+pub async fn save_export_config(path: String, content: String) -> CmdResult<()> {
+    if path.trim().is_empty() {
+        return Err("path is empty".to_string());
+    }
+    std::fs::write(path, content).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn exit_app(app: AppHandle) -> CmdResult<()> {
     app.exit(0);
     Ok(())

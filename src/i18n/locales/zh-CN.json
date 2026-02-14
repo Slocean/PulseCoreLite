@@ -56,6 +56,7 @@
     "refreshRate": "刷新时间",
     "configTransfer": "配置导入/导出",
     "exportConfig": "导出配置",
+    "exportConfigSuccess": "导出成功",
     "importConfig": "导入配置",
     "importConfigTitle": "导入配置",
     "importConfigConfirm": "确定导入配置吗？当前配置将被覆盖。",

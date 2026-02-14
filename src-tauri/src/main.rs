@@ -16,7 +16,9 @@ fn main() {
         )
         .init();
 
-    let builder = tauri::Builder::default().setup(|app| {
+    let builder = tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .setup(|app| {
         let state = tauri::async_runtime::block_on(AppState::initialize())
             .expect("failed to initialize PulseCoreLite state");
 

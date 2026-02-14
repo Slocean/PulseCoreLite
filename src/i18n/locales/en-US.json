@@ -56,6 +56,7 @@
     "refreshRate": "Refresh Interval",
     "configTransfer": "Import/Export",
     "exportConfig": "Export",
+    "exportConfigSuccess": "Exported successfully.",
     "importConfig": "Import",
     "importConfigTitle": "Import Config",
     "importConfigConfirm": "Import config now? Your current settings will be overwritten.",

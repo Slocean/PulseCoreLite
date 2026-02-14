@@ -45,6 +45,7 @@ pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Bu
         commands::uninstall_app,
         commands::toggle_overlay,
         commands::set_refresh_rate,
+        commands::save_export_config,
         commands::confirm_factory_reset,
         commands::exit_app
     ])
