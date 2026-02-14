@@ -35,6 +35,7 @@
     "taskbarMonitorClose": "Disable",
     "backgroundOpacity": "Background Opacity",
     "backgroundImage": "Theme",
+    "themeDefault": "Default",
     "backgroundImageButton": "Upload Image",
     "backgroundImageTitle": "Theme",
     "backgroundUpload": "Click or drop an image",

@@ -105,7 +105,18 @@
       <input type="range" min="0" max="100" step="5" v-model.number="backgroundOpacity" />
     </div>
     <div class="overlay-config-item--wide overlay-config-action">
-      <span class="overlay-config-label">{{ t('overlay.backgroundImage') }}</span>
+      <div class="overlay-config-theme">
+        <span class="overlay-config-label">{{ t('overlay.backgroundImage') }}</span>
+        <div class="overlay-lang-buttons overlay-config-theme-tabs">
+          <button
+            type="button"
+            class="overlay-lang-button"
+            :class="{ 'overlay-lang-button--active': isDefaultTheme }"
+            @click="selectDefaultTheme">
+            {{ t('overlay.themeDefault') }}
+          </button>
+        </div>
+      </div>
       <button type="button" class="overlay-lang-button" @click="emit('openBackgroundDialog')">
         {{ t('overlay.backgroundImageButton') }}
       </button>
@@ -173,6 +184,7 @@ const recordingHotkey = ref(false);
 let hotkeyUnlisten: (() => void) | null = null;
 
 const hotkeyLabel = computed(() => factoryResetHotkey.value ?? t('overlay.hotkeyNotSet'));
+const isDefaultTheme = computed(() => !prefs.value.backgroundImage);
 
 function stopHotkeyCapture() {
   if (hotkeyUnlisten) {
@@ -211,6 +223,13 @@ function beginHotkeyCapture() {
 
   window.addEventListener('keydown', handler, true);
   hotkeyUnlisten = () => window.removeEventListener('keydown', handler, true);
+}
+
+function selectDefaultTheme() {
+  if (!prefs.value.backgroundImage) {
+    return;
+  }
+  prefs.value.backgroundImage = null;
 }
 
 function confirmFactoryReset() {
