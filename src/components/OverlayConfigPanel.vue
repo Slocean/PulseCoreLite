@@ -99,7 +99,7 @@
         v-model.number="refreshRate"
         @change="emit('refreshRateChange')" />
     </div>
-    <div class="overlay-config-range">
+    <div v-if="!prefs.backgroundImage" class="overlay-config-range">
       <span class="overlay-config-label">{{ t('overlay.backgroundOpacity') }}</span>
       <span class="overlay-config-value">{{ backgroundOpacity }}%</span>
       <input type="range" min="0" max="100" step="5" v-model.number="backgroundOpacity" />
@@ -124,13 +124,7 @@
               @click="selectTheme(theme)">
               <span class="overlay-theme-thumb" :style="{ backgroundImage: `url(${theme.image})` }"></span>
               <span class="overlay-theme-name">{{ theme.name }}</span>
-              <span
-                class="overlay-theme-delete"
-                :aria-label="t('overlay.themeDelete')"
-                role="button"
-                @click.stop="emit('deleteTheme', theme.id)">
-                <span class="material-symbols-outlined">close</span>
-              </span>
+              <OverlayCornerDelete :ariaLabel="t('overlay.themeDelete')" @click="emit('deleteTheme', theme.id)" />
             </div>
           </div>
         </div>
@@ -142,16 +136,15 @@
     <div class="overlay-config-hotkey">
       <span class="overlay-config-label">{{ t('overlay.factoryResetHotkey') }}</span>
       <div class="overlay-config-hotkey-controls">
-        <button type="button" class="overlay-lang-button" @click="beginHotkeyCapture">
-          {{ recordingHotkey ? t('overlay.hotkeyRecording') : hotkeyLabel }}
-        </button>
-        <button
-          type="button"
-          class="overlay-lang-button"
-          :disabled="factoryResetHotkey == null"
-          @click="factoryResetHotkey = null">
-          {{ t('overlay.hotkeyClear') }}
-        </button>
+        <div class="overlay-hotkey-chip">
+          <button type="button" class="overlay-lang-button" @click="beginHotkeyCapture">
+            {{ recordingHotkey ? t('overlay.hotkeyRecording') : hotkeyLabel }}
+          </button>
+          <OverlayCornerDelete
+            v-if="factoryResetHotkey != null && !recordingHotkey"
+            :ariaLabel="t('overlay.hotkeyClear')"
+            @click="requestClearHotkey" />
+        </div>
         <button type="button" class="overlay-config-danger" @click="confirmFactoryReset">
           {{ t('overlay.factoryReset') }}
         </button>
@@ -164,12 +157,24 @@
     </div>
     <!-- <div class="overlay-config-version">v{{ appVersion }}</div> -->
   </div>
+
+  <OverlayDialog
+    v-model:open="hotkeyClearDialogOpen"
+    :title="t('overlay.hotkeyClearTitle')"
+    :message="t('overlay.hotkeyClearMessage')"
+    :confirm-text="t('overlay.dialogConfirm')"
+    :cancel-text="t('overlay.dialogCancel')"
+    :close-label="t('overlay.dialogClose')"
+    @confirm="confirmClearHotkey"
+    @cancel="closeClearHotkeyDialog" />
 </template>
 
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import OverlayCornerDelete from './OverlayCornerDelete.vue';
+import OverlayDialog from './OverlayDialog.vue';
 import type { OverlayPrefs } from '../composables/useOverlayPrefs';
 import { hotkeyFromEvent, hotkeyToString } from '../utils/hotkey';
 
@@ -208,6 +213,7 @@ const { t } = useI18n();
 
 const recordingHotkey = ref(false);
 let hotkeyUnlisten: (() => void) | null = null;
+const hotkeyClearDialogOpen = ref(false);
 
 const hotkeyLabel = computed(() => factoryResetHotkey.value ?? t('overlay.hotkeyNotSet'));
 const isDefaultTheme = computed(() => !prefs.value.backgroundImage);
@@ -272,6 +278,20 @@ function isThemeActive(theme: OverlayTheme) {
 
 function confirmFactoryReset() {
   emit('factoryReset');
+}
+
+function requestClearHotkey() {
+  if (factoryResetHotkey.value == null) return;
+  hotkeyClearDialogOpen.value = true;
+}
+
+function closeClearHotkeyDialog() {
+  hotkeyClearDialogOpen.value = false;
+}
+
+function confirmClearHotkey() {
+  factoryResetHotkey.value = null;
+  closeClearHotkeyDialog();
 }
 
 onUnmounted(() => {

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { api, inTauri, listenEvent } from '../services/tauri';
 import type { AppBootstrap, AppSettings, HardwareInfo, TelemetrySnapshot } from '../types';
+import { kvResetAll } from '../utils/kv';
 
 const SETTINGS_KEY = 'pulsecorelite.settings';
 const HARDWARE_KEY = 'pulsecorelite.hardware_info';
@@ -468,11 +469,12 @@ export const useAppStore = defineStore('app', {
         return;
       }
     },
-    factoryReset() {
+    async factoryReset() {
       if (typeof window === 'undefined') {
         return;
       }
       // Factory reset: clear all persisted local data.
+      await kvResetAll();
       window.localStorage.clear();
       window.location.reload();
     },

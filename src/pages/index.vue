@@ -181,6 +181,7 @@ import { useOverlayUptime } from '../composables/useOverlayUptime';
 import { useOverlayWindow } from '../composables/useOverlayWindow';
 import packageJson from '../../package.json';
 import { useAppStore } from '../stores/app';
+import { kvGet, kvSet } from '../utils/kv';
 import { matchesHotkeyEvent } from '../utils/hotkey';
 
 const store = useAppStore();
@@ -288,7 +289,9 @@ const themeDeleteDialogOpen = ref(false);
 const themeToDelete = ref<OverlayTheme | null>(null);
 
 if (typeof window !== 'undefined') {
-  themes.value = loadThemes();
+  // Sync bootstrap from legacy localStorage to avoid a blank UI while IndexedDB hydrates.
+  themes.value = loadThemesFromLocalStorage();
+  void hydrateThemes();
 }
 
 const applyBackgroundOpacity = (value: number) => {
@@ -380,14 +383,8 @@ async function handleUninstall() {
 
 function openBackgroundDialog() {
   backgroundDialogOpen.value = true;
-  backgroundFileName.value = '';
-  if (prefs.backgroundImage) {
-    backgroundImageSource.value = prefs.backgroundImage;
-    void loadBackgroundImage(prefs.backgroundImage);
-  } else {
-    backgroundImageSource.value = null;
-    backgroundImage.value = null;
-  }
+  // Always start from a clean state; otherwise reopening can show a stale previous image.
+  resetBackgroundDialogState();
   nextTick(() => refreshCropAspect());
 }
 
@@ -395,6 +392,17 @@ function closeBackgroundDialog() {
   backgroundDialogOpen.value = false;
   isDragging.value = false;
   handleCropMouseUp();
+  resetBackgroundDialogState();
+}
+
+function resetBackgroundDialogState() {
+  backgroundFileName.value = '';
+  backgroundImageSource.value = null;
+  backgroundImage.value = null;
+  cropRect.x = 0;
+  cropRect.y = 0;
+  cropRect.width = 0;
+  cropRect.height = 0;
 }
 
 function refreshCropAspect() {
@@ -439,24 +447,25 @@ function handleFileChange(event: Event) {
   }
 }
 
-function loadThemes(): OverlayTheme[] {
+function sanitizeThemes(input: unknown): OverlayTheme[] {
+  if (!Array.isArray(input)) return [];
+  return input
+    .filter(item => item && typeof item === 'object')
+    .map(item => ({
+      id: String((item as any).id),
+      name: String((item as any).name),
+      image: String((item as any).image)
+    }))
+    .filter(item => item.id && item.name && item.image);
+}
+
+function loadThemesFromLocalStorage(): OverlayTheme[] {
   try {
     const raw = localStorage.getItem(THEME_STORAGE_KEY);
     if (!raw) {
       return [];
     }
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-    return parsed
-      .filter(item => item && typeof item === 'object')
-      .map(item => ({
-        id: String(item.id),
-        name: String(item.name),
-        image: String(item.image)
-      }))
-      .filter(item => item.id && item.name && item.image);
+    return sanitizeThemes(JSON.parse(raw));
   } catch {
     return [];
   }
@@ -466,12 +475,30 @@ function persistThemes(next: OverlayTheme[]) {
   if (typeof window === 'undefined') {
     return;
   }
-  localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(next));
+  // Use IndexedDB to avoid localStorage quota issues (themes can include large data URLs).
+  void kvSet(THEME_STORAGE_KEY, next);
 }
 
 function updateThemes(next: OverlayTheme[]) {
   themes.value = next;
   persistThemes(next);
+}
+
+async function hydrateThemes() {
+  const fromKv = await kvGet<unknown>(THEME_STORAGE_KEY);
+  const parsed = sanitizeThemes(fromKv);
+  if (parsed.length) {
+    themes.value = parsed;
+  } else if (themes.value.length) {
+    await kvSet(THEME_STORAGE_KEY, themes.value);
+  }
+
+  // Legacy cleanup: free localStorage quota once migrated to IndexedDB.
+  try {
+    localStorage.removeItem(THEME_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
 }
 
 function requestDeleteTheme(id: string) {
@@ -717,7 +744,27 @@ function getCroppedBackground() {
     return null;
   }
   ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, output.width, output.height);
-  return output.toDataURL('image/png');
+
+  // Keep persisted images small to avoid storage quota/perf issues.
+  const MAX_W = 1400;
+  const MAX_H = 900;
+  const scale = Math.min(1, MAX_W / output.width, MAX_H / output.height);
+
+  let finalCanvas = output;
+  if (scale < 1) {
+    const scaled = document.createElement('canvas');
+    scaled.width = Math.max(1, Math.round(output.width * scale));
+    scaled.height = Math.max(1, Math.round(output.height * scale));
+    const sctx = scaled.getContext('2d');
+    if (sctx) {
+      sctx.imageSmoothingEnabled = true;
+      sctx.imageSmoothingQuality = 'high';
+      sctx.drawImage(output, 0, 0, scaled.width, scaled.height);
+      finalCanvas = scaled;
+    }
+  }
+
+  return finalCanvas.toDataURL('image/jpeg', 0.85);
 }
 
 function applyBackgroundCrop() {
