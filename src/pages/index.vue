@@ -24,11 +24,13 @@
         v-model:factoryResetHotkey="factoryResetHotkey"
         v-model:refreshRate="refreshRate"
         v-model:backgroundOpacity="prefs.backgroundOpacity"
+        :can-uninstall="store.installationMode === 'installed'"
         :app-version="appVersion"
         :language="store.settings.language"
         @setLanguage="setLanguage"
         @refreshRateChange="handleRefreshRateChange"
-        @factoryReset="handleFactoryReset" />
+        @factoryReset="handleFactoryReset"
+        @uninstall="handleUninstall" />
     </Transition>
 
     <OverlayMetricsPanel
@@ -194,6 +196,10 @@ async function handleFactoryReset() {
     return;
   }
   store.factoryReset();
+}
+
+async function handleUninstall() {
+  await store.uninstallApp(t('overlay.uninstallTitle'), t('overlay.uninstallConfirm'));
 }
 
 function shouldIgnoreHotkeyTarget(target: EventTarget | null): boolean {
