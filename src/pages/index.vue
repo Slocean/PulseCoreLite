@@ -28,11 +28,13 @@
         :can-uninstall="store.installationMode === 'installed'"
         :app-version="appVersion"
         :language="store.settings.language"
+        :themes="themes"
         @setLanguage="setLanguage"
         @refreshRateChange="handleRefreshRateChange"
         @factoryReset="handleFactoryReset"
         @uninstall="handleUninstall"
-        @openBackgroundDialog="openBackgroundDialog" />
+        @openBackgroundDialog="openBackgroundDialog"
+        @deleteTheme="requestDeleteTheme" />
     </Transition>
 
     <OverlayMetricsPanel
@@ -107,8 +109,59 @@
         @click="applyBackgroundCrop">
         {{ t('overlay.backgroundApply') }}
       </button>
+      <button
+        type="button"
+        class="overlay-config-primary"
+        :disabled="!canApplyBackground || !canSaveTheme"
+        @click="applyBackgroundAndSave">
+        {{ t('overlay.backgroundApplySave') }}
+      </button>
     </template>
   </OverlayDialog>
+
+  <OverlayDialog
+    v-model:open="themeNameDialogOpen"
+    :title="t('overlay.themeSaveTitle')"
+    :confirm-text="t('overlay.dialogConfirm')"
+    :cancel-text="t('overlay.dialogCancel')"
+    :close-label="t('overlay.dialogClose')"
+    :autofocus-confirm="false"
+    @confirm="confirmSaveTheme"
+    @cancel="closeThemeNameDialog">
+    <template #body>
+      <div class="overlay-dialog-input-wrap">
+        <div class="overlay-dialog-message">{{ t('overlay.themeNameHint') }}</div>
+        <input
+          v-model="themeNameInput"
+          class="overlay-dialog-input"
+          type="text"
+          :placeholder="t('overlay.themeNamePlaceholder')"
+          maxlength="3" />
+      </div>
+    </template>
+    <template #actions>
+      <button type="button" class="overlay-lang-button" @click="closeThemeNameDialog">
+        {{ t('overlay.dialogCancel') }}
+      </button>
+      <button
+        type="button"
+        class="overlay-config-primary"
+        :disabled="!canConfirmThemeName"
+        @click="confirmSaveTheme">
+        {{ t('overlay.dialogConfirm') }}
+      </button>
+    </template>
+  </OverlayDialog>
+
+  <OverlayDialog
+    v-model:open="themeDeleteDialogOpen"
+    :title="t('overlay.themeDeleteTitle')"
+    :message="t('overlay.themeDeleteMessage')"
+    :confirm-text="t('overlay.dialogConfirm')"
+    :cancel-text="t('overlay.dialogCancel')"
+    :close-label="t('overlay.dialogClose')"
+    @confirm="confirmDeleteTheme"
+    @cancel="closeDeleteThemeDialog" />
 </template>
 
 <script setup lang="ts">
@@ -183,6 +236,14 @@ const { overlayRef, startDragging, handleOverlayMouseDown } = useOverlayWindow({
   rememberPosition: computed(() => store.settings.rememberOverlayPosition)
 });
 
+type OverlayTheme = {
+  id: string;
+  name: string;
+  image: string;
+};
+
+const THEME_STORAGE_KEY = 'pulsecorelite.overlay_themes';
+
 const factoryResetDialogOpen = ref(false);
 let factoryResetDialogResolver: ((value: boolean) => void) | null = null;
 const backgroundDialogOpen = ref(false);
@@ -219,6 +280,17 @@ const imageFit = reactive({
   canvasHeight: 0
 });
 
+const themes = ref<OverlayTheme[]>([]);
+const themeNameDialogOpen = ref(false);
+const themeNameInput = ref('');
+const pendingThemeImage = ref<string | null>(null);
+const themeDeleteDialogOpen = ref(false);
+const themeToDelete = ref<OverlayTheme | null>(null);
+
+if (typeof window !== 'undefined') {
+  themes.value = loadThemes();
+}
+
 const applyBackgroundOpacity = (value: number) => {
   if (typeof document === 'undefined') {
     return;
@@ -249,6 +321,11 @@ const overlayBackgroundStyle = computed(() => {
 
 const canApplyBackground = computed(() => {
   return Boolean(backgroundImage.value && cropRect.width > 0 && cropRect.height > 0);
+});
+const canSaveTheme = computed(() => themes.value.length < 3);
+const canConfirmThemeName = computed(() => {
+  const value = themeNameInput.value.trim();
+  return Boolean(value && value.length <= 3 && pendingThemeImage.value);
 });
 
 function handleClose() {
@@ -360,6 +437,80 @@ function handleFileChange(event: Event) {
   if (input) {
     input.value = '';
   }
+}
+
+function loadThemes(): OverlayTheme[] {
+  try {
+    const raw = localStorage.getItem(THEME_STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed
+      .filter(item => item && typeof item === 'object')
+      .map(item => ({
+        id: String(item.id),
+        name: String(item.name),
+        image: String(item.image)
+      }))
+      .filter(item => item.id && item.name && item.image);
+  } catch {
+    return [];
+  }
+}
+
+function persistThemes(next: OverlayTheme[]) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(next));
+}
+
+function updateThemes(next: OverlayTheme[]) {
+  themes.value = next;
+  persistThemes(next);
+}
+
+function requestDeleteTheme(id: string) {
+  const target = themes.value.find(theme => theme.id === id) ?? null;
+  if (!target) {
+    return;
+  }
+  themeToDelete.value = target;
+  themeDeleteDialogOpen.value = true;
+}
+
+function closeDeleteThemeDialog() {
+  themeDeleteDialogOpen.value = false;
+  themeToDelete.value = null;
+}
+
+function confirmDeleteTheme() {
+  const target = themeToDelete.value;
+  if (!target) {
+    closeDeleteThemeDialog();
+    return;
+  }
+  const nextThemes = themes.value.filter(theme => theme.id !== target.id);
+  updateThemes(nextThemes);
+  if (prefs.backgroundImage === target.image) {
+    prefs.backgroundImage = null;
+  }
+  closeDeleteThemeDialog();
+}
+
+function openThemeNameDialog(image: string) {
+  pendingThemeImage.value = image;
+  themeNameInput.value = '';
+  themeNameDialogOpen.value = true;
+}
+
+function closeThemeNameDialog() {
+  themeNameDialogOpen.value = false;
+  pendingThemeImage.value = null;
 }
 
 function handleFile(file: File) {
@@ -549,10 +700,10 @@ function handleCropMouseUp() {
   window.removeEventListener('mouseup', handleCropMouseUp, true);
 }
 
-function applyBackgroundCrop() {
+function getCroppedBackground() {
   const img = backgroundImage.value;
   if (!img) {
-    return;
+    return null;
   }
   const cropX = clamp((cropRect.x - imageFit.offsetX) / imageFit.scale, 0, img.width - 1);
   const cropY = clamp((cropRect.y - imageFit.offsetY) / imageFit.scale, 0, img.height - 1);
@@ -563,11 +714,53 @@ function applyBackgroundCrop() {
   output.height = Math.round(cropHeight);
   const ctx = output.getContext('2d');
   if (!ctx) {
-    return;
+    return null;
   }
   ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, output.width, output.height);
-  prefs.backgroundImage = output.toDataURL('image/png');
+  return output.toDataURL('image/png');
+}
+
+function applyBackgroundCrop() {
+  const dataUrl = getCroppedBackground();
+  if (!dataUrl) {
+    return;
+  }
+  prefs.backgroundImage = dataUrl;
   closeBackgroundDialog();
+}
+
+function applyBackgroundAndSave() {
+  if (!canSaveTheme.value) {
+    return;
+  }
+  const dataUrl = getCroppedBackground();
+  if (!dataUrl) {
+    return;
+  }
+  prefs.backgroundImage = dataUrl;
+  closeBackgroundDialog();
+  openThemeNameDialog(dataUrl);
+}
+
+function confirmSaveTheme() {
+  if (!pendingThemeImage.value) {
+    return;
+  }
+  const name = themeNameInput.value.trim().slice(0, 3);
+  if (!name) {
+    return;
+  }
+  if (!canSaveTheme.value) {
+    closeThemeNameDialog();
+    return;
+  }
+  const theme: OverlayTheme = {
+    id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    name,
+    image: pendingThemeImage.value
+  };
+  updateThemes([...themes.value, theme].slice(0, 3));
+  closeThemeNameDialog();
 }
 
 function shouldIgnoreHotkeyTarget(target: EventTarget | null): boolean {

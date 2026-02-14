@@ -115,6 +115,24 @@
             @click="selectDefaultTheme">
             {{ t('overlay.themeDefault') }}
           </button>
+          <div class="overlay-theme-list">
+            <div
+              v-for="theme in themes"
+              :key="theme.id"
+              class="overlay-theme-chip"
+              :class="{ 'overlay-theme-chip--active': isThemeActive(theme) }"
+              @click="selectTheme(theme)">
+              <span class="overlay-theme-thumb" :style="{ backgroundImage: `url(${theme.image})` }"></span>
+              <span class="overlay-theme-name">{{ theme.name }}</span>
+              <span
+                class="overlay-theme-delete"
+                :aria-label="t('overlay.themeDelete')"
+                role="button"
+                @click.stop="emit('deleteTheme', theme.id)">
+                <span class="material-symbols-outlined">close</span>
+              </span>
+            </div>
+          </div>
         </div>
       </div>
       <button type="button" class="overlay-lang-button" @click="emit('openBackgroundDialog')">
@@ -155,10 +173,17 @@ import { useI18n } from 'vue-i18n';
 import type { OverlayPrefs } from '../composables/useOverlayPrefs';
 import { hotkeyFromEvent, hotkeyToString } from '../utils/hotkey';
 
-defineProps<{
+type OverlayTheme = {
+  id: string;
+  name: string;
+  image: string;
+};
+
+const props = defineProps<{
   appVersion: string;
   language: 'zh-CN' | 'en-US';
   canUninstall: boolean;
+  themes: OverlayTheme[];
 }>();
 
 const prefs = defineModel<OverlayPrefs>('prefs', { required: true });
@@ -176,6 +201,7 @@ const emit = defineEmits<{
   (e: 'factoryReset'): void;
   (e: 'uninstall'): void;
   (e: 'openBackgroundDialog'): void;
+  (e: 'deleteTheme', value: string): void;
 }>();
 
 const { t } = useI18n();
@@ -185,6 +211,7 @@ let hotkeyUnlisten: (() => void) | null = null;
 
 const hotkeyLabel = computed(() => factoryResetHotkey.value ?? t('overlay.hotkeyNotSet'));
 const isDefaultTheme = computed(() => !prefs.value.backgroundImage);
+const themes = computed(() => props.themes);
 
 function stopHotkeyCapture() {
   if (hotkeyUnlisten) {
@@ -230,6 +257,17 @@ function selectDefaultTheme() {
     return;
   }
   prefs.value.backgroundImage = null;
+}
+
+function selectTheme(theme: OverlayTheme) {
+  if (prefs.value.backgroundImage === theme.image) {
+    return;
+  }
+  prefs.value.backgroundImage = theme.image;
+}
+
+function isThemeActive(theme: OverlayTheme) {
+  return prefs.value.backgroundImage === theme.image;
 }
 
 function confirmFactoryReset() {

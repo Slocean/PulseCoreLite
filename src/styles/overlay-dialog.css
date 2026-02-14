@@ -76,6 +76,31 @@
   color: rgba(255, 255, 255, 0.86);
 }
 
+.overlay-dialog-input-wrap {
+  display: grid;
+  gap: 8px;
+}
+
+.overlay-dialog-input {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  outline: none;
+}
+
+.overlay-dialog-input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.overlay-dialog-input:focus {
+  border-color: rgba(0, 242, 255, 0.55);
+  box-shadow: 0 0 8px rgba(0, 242, 255, 0.12);
+}
+
 .overlay-dialog-actions {
   display: flex;
   justify-content: flex-end;
