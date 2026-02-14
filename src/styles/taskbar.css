@@ -24,6 +24,36 @@ html.window-taskbar body {
     0 0 16px rgba(0, 242, 255, 0.12);
 }
 
+.taskbar-bar--two-line {
+  white-space: normal;
+}
+
+.taskbar-rows {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0px;
+}
+
+.taskbar-bar--two-line .taskbar-rows {
+  gap: 1px;
+}
+
+.taskbar-bar--two-line .taskbar-row {
+  gap: 2px;
+}
+
+.taskbar-bar--two-line .taskbar-k {
+  font-size: 9px;
+}
+
+.taskbar-bar--two-line .taskbar-v {
+  font-size: 12px;
+}
+
+.taskbar-bar--two-line .taskbar-extra {
+  font-size: 10px;
+}
+
 .taskbar-row {
   display: inline-flex;
   align-items: baseline;

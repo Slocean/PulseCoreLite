@@ -12,6 +12,7 @@ export interface TaskbarPrefs {
   showDown: boolean;
   showUp: boolean;
   showLatency: boolean;
+  twoLineMode: boolean;
 }
 
 const fallbackPrefs: TaskbarPrefs = {
@@ -23,7 +24,8 @@ const fallbackPrefs: TaskbarPrefs = {
   showMemory: true,
   showDown: true,
   showUp: true,
-  showLatency: false
+  showLatency: false,
+  twoLineMode: false
 };
 
 function loadPrefs(): TaskbarPrefs {
@@ -42,7 +44,8 @@ function loadPrefs(): TaskbarPrefs {
       showMemory: parsed.showMemory ?? fallbackPrefs.showMemory,
       showDown: parsed.showDown ?? fallbackPrefs.showDown,
       showUp: parsed.showUp ?? fallbackPrefs.showUp,
-      showLatency: parsed.showLatency ?? fallbackPrefs.showLatency
+      showLatency: parsed.showLatency ?? fallbackPrefs.showLatency,
+      twoLineMode: parsed.twoLineMode ?? fallbackPrefs.twoLineMode
     };
   } catch {
     return fallbackPrefs;

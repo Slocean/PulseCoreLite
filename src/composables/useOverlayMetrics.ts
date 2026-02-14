@@ -24,10 +24,10 @@ export function useOverlayMetrics(prefs: OverlayPrefs) {
     const freq = snapshot.value.cpu.frequency_mhz;
     const maxFreq = store.hardwareInfo.cpu_max_freq_mhz;
 
-    if (freq && maxFreq) {
-      parts.push(`${(freq / 1000).toFixed(1)}/${(maxFreq / 1000).toFixed(1)}GHz`);
-    } else if (freq) {
-      parts.push(`${(freq / 1000).toFixed(1)}GHz`);
+    if (typeof freq === 'number' && typeof maxFreq === 'number') {
+      parts.push(formatCpuFreqPair(freq, maxFreq));
+    } else if (typeof freq === 'number') {
+      parts.push(formatCpuFreq(freq));
     }
 
     if (snapshot.value.cpu.temperature_c) {
@@ -155,6 +155,17 @@ export function useOverlayMetrics(prefs: OverlayPrefs) {
 
 function formatGpuFreq(value: number) {
   return `${(value / 1000).toFixed(2)} GHz`;
+}
+
+function formatCpuFreq(valueMhz: number) {
+  if (valueMhz >= 1000) return `${(valueMhz / 1000).toFixed(1)}GHz`;
+  return `${valueMhz.toFixed(0)}MHz`;
+}
+
+function formatCpuFreqPair(freqMhz: number, maxMhz: number) {
+  const useGhz = Math.max(freqMhz, maxMhz) >= 1000;
+  if (useGhz) return `${(freqMhz / 1000).toFixed(1)}/${(maxMhz / 1000).toFixed(1)}GHz`;
+  return `${freqMhz.toFixed(0)}/${maxMhz.toFixed(0)}MHz`;
 }
 
 function normalizeHardwareModel(value: string) {

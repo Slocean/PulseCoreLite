@@ -19,6 +19,8 @@ export interface OverlayPrefs {
   showDragHandle: boolean;
   backgroundOpacity: number;
   backgroundImage: string | null;
+  // Gaussian blur strength for the background image (in CSS px).
+  backgroundBlurPx: number;
 }
 
 const fallbackPrefs: OverlayPrefs = {
@@ -35,7 +37,8 @@ const fallbackPrefs: OverlayPrefs = {
   showWarning: true,
   showDragHandle: false,
   backgroundOpacity: 100,
-  backgroundImage: null
+  backgroundImage: null,
+  backgroundBlurPx: 0
 };
 
 function sanitizePrefs(input: Partial<OverlayPrefs> | null | undefined): OverlayPrefs {
@@ -54,7 +57,11 @@ function sanitizePrefs(input: Partial<OverlayPrefs> | null | undefined): Overlay
     showWarning: parsed.showWarning ?? fallbackPrefs.showWarning,
     showDragHandle: parsed.showDragHandle ?? fallbackPrefs.showDragHandle,
     backgroundOpacity: parsed.backgroundOpacity ?? fallbackPrefs.backgroundOpacity,
-    backgroundImage: parsed.backgroundImage ?? fallbackPrefs.backgroundImage
+    backgroundImage: parsed.backgroundImage ?? fallbackPrefs.backgroundImage,
+    backgroundBlurPx:
+      typeof parsed.backgroundBlurPx === 'number' && Number.isFinite(parsed.backgroundBlurPx)
+        ? Math.max(0, Math.min(40, Math.round(parsed.backgroundBlurPx)))
+        : fallbackPrefs.backgroundBlurPx
   };
 }
 

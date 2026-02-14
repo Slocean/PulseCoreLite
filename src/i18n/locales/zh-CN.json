@@ -42,6 +42,7 @@
     "backgroundUploadHint": "支持 JPG / PNG / WebP",
     "backgroundCrop": "裁剪范围",
     "backgroundCropHint": "拖动选框调整裁剪区域",
+    "backgroundBlur": "模糊度",
     "backgroundApply": "应用背景",
     "backgroundApplySave": "应用并保存",
     "themeSaveTitle": "保存主题",
@@ -75,6 +76,7 @@
     "cpuFreq": "CPU 频率",
     "gpuTemp": "GPU 温度",
     "openMainWindow": "显示主窗口",
+    "taskbarTwoLine": "两行模式",
     "closeTaskbarMonitor": "关闭任务栏监测"
   }
 }

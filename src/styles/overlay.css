@@ -16,6 +16,20 @@
   background: transparent;
 }
 
+.overlay-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  transform-origin: center;
+  will-change: filter, transform;
+}
+
+.overlay-widget > :not(.overlay-bg) {
+  position: relative;
+  z-index: 1;
+}
+
 .overlay-widget--cyber::before,
 .overlay-widget--cyber::after {
   display: none;

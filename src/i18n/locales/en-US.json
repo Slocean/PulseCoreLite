@@ -42,6 +42,7 @@
     "backgroundUploadHint": "Supports JPG / PNG / WebP",
     "backgroundCrop": "Crop Area",
     "backgroundCropHint": "Drag the frame to crop",
+    "backgroundBlur": "Blur",
     "backgroundApply": "Apply Background",
     "backgroundApplySave": "Apply & Save",
     "themeSaveTitle": "Save Theme",
@@ -75,6 +76,7 @@
     "cpuFreq": "CPU Frequency",
     "gpuTemp": "GPU Temperature",
     "openMainWindow": "Show Main Window",
+    "taskbarTwoLine": "Two-line mode",
     "closeTaskbarMonitor": "Disable Taskbar Monitor"
   }
 }

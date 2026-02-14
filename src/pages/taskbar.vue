@@ -2,19 +2,22 @@
   <section
     ref="barRef"
     class="taskbar-bar"
+    :class="{ 'taskbar-bar--two-line': prefs.twoLineMode }"
     role="presentation"
     @mousedown="handleMouseDown"
     @dblclick.prevent.stop="showMainWindow"
     @contextmenu.prevent.stop="openContextMenu">
-    <div class="taskbar-row">
-      <template v-for="(seg, idx) in segments" :key="seg.id">
-        <span v-if="idx > 0" class="taskbar-sep">|</span>
-        <span class="taskbar-seg">
-          <span class="taskbar-k">{{ seg.label }}</span>
-          <span class="taskbar-v" :class="seg.valueClass">{{ seg.value }}</span>
-          <span v-if="seg.extra" class="taskbar-extra">{{ seg.extra }}</span>
-        </span>
-      </template>
+    <div class="taskbar-rows">
+      <div v-for="(row, rowIdx) in segmentRows" :key="rowIdx" class="taskbar-row">
+        <template v-for="(seg, idx) in row" :key="seg.id">
+          <span v-if="idx > 0" class="taskbar-sep">|</span>
+          <span class="taskbar-seg">
+            <span class="taskbar-k">{{ seg.label }}</span>
+            <span class="taskbar-v" :class="seg.valueClass">{{ seg.value }}</span>
+            <span v-if="seg.extra" class="taskbar-extra">{{ seg.extra }}</span>
+          </span>
+        </template>
+      </div>
     </div>
   </section>
 </template>
@@ -42,12 +45,13 @@ const cpuPct = computed(() => `${snapshot.value.cpu.usage_pct.toFixed(0)}%`);
 const cpuFreq = computed(() => {
   const freq = snapshot.value.cpu.frequency_mhz;
   if (!freq) return null;
-  return `${(freq / 1000).toFixed(1)}G`;
+  if (freq >= 1000) return `${(freq / 1000).toFixed(1)}GHz`;
+  return `${freq.toFixed(0)}MHz`;
 });
 const cpuTemp = computed(() => {
   const temp = snapshot.value.cpu.temperature_c;
   if (temp == null) return null;
-  return `${temp.toFixed(0)}C`;
+  return `${temp.toFixed(0)}°C`;
 });
 
 const gpuPct = computed(() => {
@@ -57,14 +61,14 @@ const gpuPct = computed(() => {
 const gpuTemp = computed(() => {
   const temp = snapshot.value.gpu.temperature_c;
   if (temp == null) return null;
-  return `${temp.toFixed(0)}C`;
+  return `${temp.toFixed(0)}°C`;
 });
 
 const memPct = computed(() => `${snapshot.value.memory.usage_pct.toFixed(0)}%`);
 const memUsage = computed(() => {
   const used = snapshot.value.memory.used_mb / 1024;
   const total = snapshot.value.memory.total_mb / 1024;
-  return `${used.toFixed(1)}/${total.toFixed(0)}G`;
+  return `${used.toFixed(1)}/${total.toFixed(0)}GB`;
 });
 
 const down = computed(() => (snapshot.value.network.download_bytes_per_sec / 1024 / 1024).toFixed(1));
@@ -152,6 +156,15 @@ const segments = computed(() => {
   return parts;
 });
 
+const segmentRows = computed(() => {
+  const list = segments.value;
+  if (!prefs.twoLineMode) return [list];
+  const mid = Math.ceil(list.length / 2);
+  const row1 = list.slice(0, mid);
+  const row2 = list.slice(mid);
+  return row2.length ? [row1, row2] : [row1];
+});
+
 async function showMainWindow() {
   await store.toggleOverlay(true);
 }
@@ -191,6 +204,12 @@ async function openContextMenu(event: MouseEvent) {
       text: t('overlay.rememberPosition'),
       checked: rememberPosition.value,
       action: () => store.setRememberOverlayPosition(!rememberPosition.value)
+    }),
+    await PredefinedMenuItem.new({ item: 'Separator' }),
+    await CheckMenuItem.new({
+      text: t('overlay.taskbarTwoLine'),
+      checked: prefs.twoLineMode,
+      action: () => (prefs.twoLineMode = !prefs.twoLineMode)
     }),
     await PredefinedMenuItem.new({ item: 'Separator' }),
     await CheckMenuItem.new({

@@ -2,9 +2,9 @@
   <section
     ref="overlayRef"
     class="overlay-widget overlay-widget--cyber"
-    :style="overlayBackgroundStyle"
     @dblclick.prevent.stop
     @mousedown="handleOverlayMouseDown">
+    <div v-if="prefs.backgroundImage" class="overlay-bg" :style="overlayBackgroundStyle" aria-hidden="true"></div>
     <OverlayHeader
       :show-drag-handle="prefs.showDragHandle"
       :app-version="appVersion"
@@ -95,6 +95,11 @@
           <div class="overlay-crop-title">{{ t('overlay.backgroundCrop') }}</div>
           <canvas ref="cropCanvas" class="overlay-crop-canvas" @mousedown="handleCropMouseDown"></canvas>
           <div class="overlay-crop-tip">{{ t('overlay.backgroundCropHint') }}</div>
+        </div>
+        <div v-if="backgroundImageSource" class="overlay-config-range">
+          <span class="overlay-config-label">{{ t('overlay.backgroundBlur') }}</span>
+          <span class="overlay-config-value">{{ backgroundBlurPx }}px</span>
+          <input type="range" min="0" max="24" step="1" v-model.number="backgroundBlurPx" @input="drawCropCanvas" />
         </div>
       </div>
     </template>
@@ -241,6 +246,7 @@ type OverlayTheme = {
   id: string;
   name: string;
   image: string;
+  blurPx: number;
 };
 
 const THEME_STORAGE_KEY = 'pulsecorelite.overlay_themes';
@@ -285,8 +291,10 @@ const themes = ref<OverlayTheme[]>([]);
 const themeNameDialogOpen = ref(false);
 const themeNameInput = ref('');
 const pendingThemeImage = ref<string | null>(null);
+const pendingThemeBlurPx = ref(0);
 const themeDeleteDialogOpen = ref(false);
 const themeToDelete = ref<OverlayTheme | null>(null);
+const backgroundBlurPx = ref(0);
 
 if (typeof window !== 'undefined') {
   // Sync bootstrap from legacy localStorage to avoid a blank UI while IndexedDB hydrates.
@@ -318,7 +326,10 @@ const overlayBackgroundStyle = computed(() => {
     backgroundImage: `url(${prefs.backgroundImage})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat'
+    backgroundRepeat: 'no-repeat',
+    // Blur applies to the background layer only, not the overlay content.
+    filter: `blur(${prefs.backgroundBlurPx}px)`,
+    transform: `scale(${prefs.backgroundBlurPx > 0 ? 1.05 : 1})`
   };
 });
 
@@ -399,6 +410,7 @@ function resetBackgroundDialogState() {
   backgroundFileName.value = '';
   backgroundImageSource.value = null;
   backgroundImage.value = null;
+  backgroundBlurPx.value = prefs.backgroundBlurPx;
   cropRect.x = 0;
   cropRect.y = 0;
   cropRect.width = 0;
@@ -454,7 +466,11 @@ function sanitizeThemes(input: unknown): OverlayTheme[] {
     .map(item => ({
       id: String((item as any).id),
       name: String((item as any).name),
-      image: String((item as any).image)
+      image: String((item as any).image),
+      blurPx:
+        typeof (item as any).blurPx === 'number' && Number.isFinite((item as any).blurPx)
+          ? Math.max(0, Math.min(40, Math.round((item as any).blurPx)))
+          : 0
     }))
     .filter(item => item.id && item.name && item.image);
 }
@@ -525,12 +541,14 @@ function confirmDeleteTheme() {
   updateThemes(nextThemes);
   if (prefs.backgroundImage === target.image) {
     prefs.backgroundImage = null;
+    prefs.backgroundBlurPx = 0;
   }
   closeDeleteThemeDialog();
 }
 
 function openThemeNameDialog(image: string) {
   pendingThemeImage.value = image;
+  pendingThemeBlurPx.value = backgroundBlurPx.value;
   themeNameInput.value = '';
   themeNameDialogOpen.value = true;
 }
@@ -538,6 +556,7 @@ function openThemeNameDialog(image: string) {
 function closeThemeNameDialog() {
   themeNameDialogOpen.value = false;
   pendingThemeImage.value = null;
+  pendingThemeBlurPx.value = 0;
 }
 
 function handleFile(file: File) {
@@ -618,7 +637,12 @@ function drawCropCanvas() {
     return;
   }
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Preview blur in the crop UI; the theme persists the blur value separately.
+  ctx.filter = backgroundBlurPx.value > 0 ? `blur(${backgroundBlurPx.value}px)` : 'none';
   ctx.drawImage(img, imageFit.offsetX, imageFit.offsetY, imageFit.drawWidth, imageFit.drawHeight);
+  ctx.filter = 'none';
+
   ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.globalCompositeOperation = 'destination-out';
@@ -773,6 +797,7 @@ function applyBackgroundCrop() {
     return;
   }
   prefs.backgroundImage = dataUrl;
+  prefs.backgroundBlurPx = backgroundBlurPx.value;
   closeBackgroundDialog();
 }
 
@@ -785,6 +810,7 @@ function applyBackgroundAndSave() {
     return;
   }
   prefs.backgroundImage = dataUrl;
+  prefs.backgroundBlurPx = backgroundBlurPx.value;
   closeBackgroundDialog();
   openThemeNameDialog(dataUrl);
 }
@@ -804,7 +830,8 @@ function confirmSaveTheme() {
   const theme: OverlayTheme = {
     id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     name,
-    image: pendingThemeImage.value
+    image: pendingThemeImage.value,
+    blurPx: pendingThemeBlurPx.value
   };
   updateThemes([...themes.value, theme].slice(0, 3));
   closeThemeNameDialog();

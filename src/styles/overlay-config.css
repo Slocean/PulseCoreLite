@@ -157,24 +157,41 @@
   justify-content: space-between;
   gap: 10px;
   margin-top: 2px;
+  flex-wrap: nowrap;
 }
 
 .overlay-config-theme {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: nowrap;
 }
 
 .overlay-config-theme-tabs {
   margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.overlay-config-theme-tabs .overlay-lang-button {
+  padding: 3px 8px;
+}
+
+.overlay-config-action > .overlay-lang-button {
+  padding: 3px 8px;
 }
 
 .overlay-theme-list {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .overlay-theme-chip {

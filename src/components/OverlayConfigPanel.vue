@@ -182,6 +182,7 @@ type OverlayTheme = {
   id: string
   name: string
   image: string
+  blurPx: number
 }
 
 const props = defineProps<{
@@ -259,21 +260,23 @@ function beginHotkeyCapture() {
 }
 
 function selectDefaultTheme() {
-  if (!prefs.value.backgroundImage) {
+  if (!prefs.value.backgroundImage && prefs.value.backgroundBlurPx === 0) {
     return
   }
   prefs.value.backgroundImage = null
+  prefs.value.backgroundBlurPx = 0
 }
 
 function selectTheme(theme: OverlayTheme) {
-  if (prefs.value.backgroundImage === theme.image) {
+  if (prefs.value.backgroundImage === theme.image && prefs.value.backgroundBlurPx === theme.blurPx) {
     return
   }
   prefs.value.backgroundImage = theme.image
+  prefs.value.backgroundBlurPx = theme.blurPx
 }
 
 function isThemeActive(theme: OverlayTheme) {
-  return prefs.value.backgroundImage === theme.image
+  return prefs.value.backgroundImage === theme.image && prefs.value.backgroundBlurPx === theme.blurPx
 }
 
 function confirmFactoryReset() {

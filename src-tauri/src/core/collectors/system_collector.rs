@@ -11,6 +11,91 @@ use crate::types::{
 };
 
 #[cfg(target_os = "windows")]
+struct WindowsCpuFrequencyQuery {
+    query: windows::Win32::System::Performance::PDH_HQUERY,
+    counter: windows::Win32::System::Performance::PDH_HCOUNTER,
+}
+
+#[cfg(target_os = "windows")]
+unsafe impl Send for WindowsCpuFrequencyQuery {}
+
+#[cfg(target_os = "windows")]
+impl WindowsCpuFrequencyQuery {
+    fn new() -> Option<Self> {
+        use windows::core::{s, PCSTR};
+        use windows::Win32::Foundation::ERROR_SUCCESS;
+        use windows::Win32::System::Performance::{PdhAddEnglishCounterA, PdhCloseQuery, PdhCollectQueryData, PdhOpenQueryA};
+
+        unsafe {
+            let mut query = windows::Win32::System::Performance::PDH_HQUERY::default();
+            if PdhOpenQueryA(PCSTR::null(), 0, &mut query) != ERROR_SUCCESS.0 {
+                return None;
+            }
+
+            let mut counter = windows::Win32::System::Performance::PDH_HCOUNTER::default();
+            if PdhAddEnglishCounterA(
+                query,
+                s!("\\Processor Information(_Total)\\Processor Frequency"),
+                0,
+                &mut counter,
+            ) != ERROR_SUCCESS.0
+            {
+                let _ = PdhCloseQuery(query);
+                return None;
+            }
+
+            // Prime the query so the first read is more likely to return valid data.
+            let _ = PdhCollectQueryData(query);
+
+            Some(Self { query, counter })
+        }
+    }
+
+    fn sample_mhz(&mut self) -> Option<u64> {
+        use std::mem::MaybeUninit;
+        use windows::Win32::Foundation::ERROR_SUCCESS;
+        use windows::Win32::System::Performance::{PdhCollectQueryData, PdhGetFormattedCounterValue, PDH_FMT_COUNTERVALUE, PDH_FMT_DOUBLE};
+
+        unsafe {
+            if PdhCollectQueryData(self.query) != ERROR_SUCCESS.0 {
+                return None;
+            }
+
+            let mut display_value = MaybeUninit::<PDH_FMT_COUNTERVALUE>::uninit();
+            if PdhGetFormattedCounterValue(
+                self.counter,
+                PDH_FMT_DOUBLE,
+                None,
+                display_value.as_mut_ptr(),
+            ) != ERROR_SUCCESS.0
+            {
+                return None;
+            }
+
+            let display_value = display_value.assume_init();
+            let mhz = display_value.Anonymous.doubleValue;
+            if mhz.is_finite() && mhz > 0.0 {
+                Some(mhz.round() as u64)
+            } else {
+                None
+            }
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
+impl Drop for WindowsCpuFrequencyQuery {
+    fn drop(&mut self) {
+        use windows::Win32::System::Performance::{PdhCloseQuery, PdhRemoveCounter};
+
+        unsafe {
+            let _ = PdhRemoveCounter(self.counter);
+            let _ = PdhCloseQuery(self.query);
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
 fn query_gpu_memory_dxgi_windows() -> Option<(f64, f64)> {
     // Perf counters/WMI can be missing or report 4GB-ish truncated values (common for >4GB VRAM).
     // DXGI exposes dedicated video memory as a 64-bit value and works across vendors.
@@ -107,6 +192,8 @@ pub struct SystemCollector {
     last_gpu_poll: Instant,
     warmup_done: bool,
     current_pid: Pid,
+    #[cfg(target_os = "windows")]
+    cpu_frequency_query: Option<WindowsCpuFrequencyQuery>,
 }
 
 impl SystemCollector {
@@ -139,6 +226,8 @@ impl SystemCollector {
             last_gpu_poll: Instant::now(),
             warmup_done: false,
             current_pid,
+            #[cfg(target_os = "windows")]
+            cpu_frequency_query: WindowsCpuFrequencyQuery::new(),
         }
     }
 
@@ -156,11 +245,23 @@ impl SystemCollector {
         }
 
         let cpu_usage = self.system.global_cpu_usage() as f64;
-        let frequency = if self.system.cpus().is_empty() {
-            None
-        } else {
-            let total: u64 = self.system.cpus().iter().map(|cpu| cpu.frequency()).sum();
-            Some(total / self.system.cpus().len() as u64)
+        let frequency = {
+            #[cfg(target_os = "windows")]
+            let from_pdh = self
+                .cpu_frequency_query
+                .as_mut()
+                .and_then(|query| query.sample_mhz());
+            #[cfg(not(target_os = "windows"))]
+            let from_pdh: Option<u64> = None;
+
+            from_pdh.or_else(|| {
+                if self.system.cpus().is_empty() {
+                    None
+                } else {
+                    let total: u64 = self.system.cpus().iter().map(|cpu| cpu.frequency()).sum();
+                    Some(total / self.system.cpus().len() as u64)
+                }
+            })
         };
 
         // Attempt to find CPU temperature
