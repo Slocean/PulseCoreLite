@@ -300,8 +300,9 @@
 
 .overlay-corner-delete {
   position: absolute;
-  top: -6px;
-  right: -6px;
+  top: 50%;
+  left: -6px;
+  transform: translateY(-50%);
   width: 16px;
   height: 16px;
   padding: 0;
