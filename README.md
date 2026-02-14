@@ -14,11 +14,28 @@ PulseCoreLite 是一个基于 Tauri 2 + Vue 3 的桌面性能监控应用，提�
 
 ### 页面截图（中文）
 
-| 主页面 | 设置面板 | 透明模式 |
-| --- | --- | --- |
-| <img src="design/product_picture/chinese/main_page.png" alt="主页面" width="260" /> | <img src="design/product_picture/chinese/setting_page.png" alt="设置面板" width="260" /> | <img src="design/product_picture/chinese/transparent_mode.png" alt="透明模式" width="260" /> |
-| 任务栏监控 | 任务栏设置 |  |
-| <img src="design/product_picture/task_page.png" alt="任务栏监控" width="260" /> | <img src="design/product_picture/task_setting.png" alt="任务栏设置" width="260" /> |  |
+<table style="border:none;border-collapse:collapse;">
+  <tr>
+    <th style="border:none;">主页面</th>
+    <th style="border:none;">设置面板</th>
+    <th style="border:none;">透明模式</th>
+  </tr>
+  <tr>
+    <td style="border:none;"><img src="design/product_picture/chinese/main_page.png" alt="主页面" width="260" /></td>
+    <td style="border:none;"><img src="design/product_picture/chinese/setting_page.png" alt="设置面板" width="260" /></td>
+    <td style="border:none;"><img src="design/product_picture/chinese/transparent_mode.png" alt="透明模式" width="260" /></td>
+  </tr>
+  <tr>
+    <th style="border:none;">任务栏监控</th>
+    <th style="border:none;">任务栏设置</th>
+    <th style="border:none;"></th>
+  </tr>
+  <tr>
+    <td style="border:none;"><img src="design/product_picture/task_page.png" alt="任务栏监控" width="260" /></td>
+    <td style="border:none;"><img src="design/product_picture/task_setting.png" alt="任务栏设置" width="260" /></td>
+    <td style="border:none;"></td>
+  </tr>
+</table>
 
 ### 功能点
 
@@ -138,11 +155,28 @@ npm run pack:release
 
 ### Screenshots (English)
 
-| Main Page | Settings Panel | Transparent Mode |
-| --- | --- | --- |
-| <img src="design/product_picture/english/main_page.png" alt="Main Page" width="260" /> | <img src="design/product_picture/english/setting_page.png" alt="Settings Panel" width="260" /> | <img src="design/product_picture/english/transparent_mode.png" alt="Transparent Mode" width="260" /> |
-| Taskbar Monitor | Taskbar Settings |  |
-| <img src="design/product_picture/task_page.png" alt="Taskbar Monitor" width="260" /> | <img src="design/product_picture/task_setting.png" alt="Taskbar Settings" width="260" /> |  |
+<table style="border:none;border-collapse:collapse;">
+  <tr>
+    <th style="border:none;">Main Page</th>
+    <th style="border:none;">Settings Panel</th>
+    <th style="border:none;">Transparent Mode</th>
+  </tr>
+  <tr>
+    <td style="border:none;"><img src="design/product_picture/english/main_page.png" alt="Main Page" width="260" /></td>
+    <td style="border:none;"><img src="design/product_picture/english/setting_page.png" alt="Settings Panel" width="260" /></td>
+    <td style="border:none;"><img src="design/product_picture/english/transparent_mode.png" alt="Transparent Mode" width="260" /></td>
+  </tr>
+  <tr>
+    <th style="border:none;">Taskbar Monitor</th>
+    <th style="border:none;">Taskbar Settings</th>
+    <th style="border:none;"></th>
+  </tr>
+  <tr>
+    <td style="border:none;"><img src="design/product_picture/task_page.png" alt="Taskbar Monitor" width="260" /></td>
+    <td style="border:none;"><img src="design/product_picture/task_setting.png" alt="Taskbar Settings" width="260" /></td>
+    <td style="border:none;"></td>
+  </tr>
+</table>
 
 ### Features
 
