@@ -52,6 +52,26 @@
   gap: 12px;
 }
 
+.overlay-config-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.overlay-config-inline {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.overlay-config-taskbar--compact {
+  gap: 8px;
+}
+
 .overlay-config-label {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.86);
@@ -136,6 +156,13 @@
 .overlay-lang-button:hover {
   border-color: rgba(255, 255, 255, 0.32);
   color: rgba(255, 255, 255, 0.85);
+}
+
+.overlay-lang-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.35);
 }
 
 .overlay-lang-button--active {
@@ -252,8 +279,8 @@
 }
 
 .overlay-theme-thumb {
-  width: 36px;
-  height: 22px;
+  width: 24px;
+  height: 15px;
   border-radius: 4px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background-size: cover;
@@ -291,6 +318,33 @@
   transition: all 160ms ease;
 }
 
+.overlay-corner-edit {
+  position: absolute;
+  top: 50%;
+  right: -6px;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  background: rgba(0, 0, 0, 0.72);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.overlay-corner-edit .material-symbols-outlined {
+  font-size: 12px;
+  line-height: 1;
+  color: rgba(147, 197, 253, 0.95);
+}
+
 .overlay-corner-delete .material-symbols-outlined {
   font-size: 12px;
   line-height: 1;
@@ -298,6 +352,12 @@
 }
 
 .overlay-theme-chip:hover .overlay-corner-delete {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.overlay-theme-chip:hover .overlay-corner-edit {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;

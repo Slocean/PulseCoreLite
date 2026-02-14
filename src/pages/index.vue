@@ -949,7 +949,22 @@ function applyBackgroundAndSave() {
   prefs.backgroundImage = dataUrl;
   prefs.backgroundBlurPx = backgroundBlurPx.value;
   closeBackgroundDialog();
-  openThemeNameDialog(dataUrl);
+  // openThemeNameDialog(dataUrl);
+  const name = `主题${themes.value.length + 1}`;
+  saveThemeWithName(name, dataUrl, backgroundBlurPx.value);
+}
+
+function saveThemeWithName(name: string, image: string, blurPx: number) {
+  if (!canSaveTheme.value) {
+    return;
+  }
+  const theme: OverlayTheme = {
+    id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    name,
+    image,
+    blurPx
+  };
+  updateThemes([...themes.value, theme].slice(0, 3));
 }
 
 function confirmSaveTheme() {
@@ -960,17 +975,7 @@ function confirmSaveTheme() {
   if (!name) {
     return;
   }
-  if (!canSaveTheme.value) {
-    closeThemeNameDialog();
-    return;
-  }
-  const theme: OverlayTheme = {
-    id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    name,
-    image: pendingThemeImage.value,
-    blurPx: pendingThemeBlurPx.value
-  };
-  updateThemes([...themes.value, theme].slice(0, 3));
+  saveThemeWithName(name, pendingThemeImage.value, pendingThemeBlurPx.value);
   closeThemeNameDialog();
 }
 

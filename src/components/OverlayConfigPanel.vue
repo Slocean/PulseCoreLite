@@ -50,10 +50,19 @@
       <input v-model="prefs.showDragHandle" type="checkbox" />
       {{ t('overlay.showDragHandle') }}
     </label>
-    <label>
-      <input v-model="closeToTray" type="checkbox" />
-      {{ t('overlay.closeToTray') }}
-    </label>
+    <div class="overlay-config-row">
+      <label class="overlay-config-inline">
+        <input v-model="closeToTray" type="checkbox" />
+        {{ t('overlay.closeToTray') }}
+      </label>
+      <div class="overlay-config-taskbar overlay-config-taskbar--compact">
+        <span class="overlay-config-label">{{ t('overlay.taskbarMonitor') }}</span>
+        <label class="overlay-switch" :aria-label="t('overlay.taskbarMonitor')">
+          <input v-model="taskbarMonitorEnabled" type="checkbox" role="switch" />
+          <span class="overlay-switch-track" aria-hidden="true"></span>
+        </label>
+      </div>
+    </div>
     <label>
       <input v-model="autoStartEnabled" type="checkbox" />
       {{ t('overlay.autoStart') }}
@@ -62,13 +71,6 @@
       <input v-model="rememberOverlayPosition" type="checkbox" />
       {{ t('overlay.rememberPosition') }}
     </label>
-    <div class="overlay-config-taskbar">
-      <span class="overlay-config-label">{{ t('overlay.taskbarMonitor') }}</span>
-      <label class="overlay-switch" :aria-label="t('overlay.taskbarMonitor')">
-        <input v-model="taskbarMonitorEnabled" type="checkbox" role="switch" />
-        <span class="overlay-switch-track" aria-hidden="true"></span>
-      </label>
-    </div>
     <div class="overlay-config-language">
       <span class="overlay-config-label">{{ t('overlay.language') }}</span>
       <div class="overlay-lang-buttons">
@@ -122,16 +124,28 @@
               class="overlay-theme-chip"
               :class="{ 'overlay-theme-chip--active': isThemeActive(theme) }"
               :data-name="theme.name"
-              @click="selectTheme(theme)"
-              @contextmenu.prevent.stop="emit('editTheme', theme.id)">
+              @click="selectTheme(theme)">
+              <!-- @contextmenu.prevent.stop="emit('editTheme', theme.id)" -->
               <!-- <span class="overlay-theme-name">{{ theme.name }}</span> -->
               <span class="overlay-theme-thumb" :style="{ backgroundImage: `url(${theme.image})` }"></span>
               <OverlayCornerDelete :ariaLabel="t('overlay.themeDelete')" @click="emit('deleteTheme', theme.id)" />
+              <button
+                type="button"
+                class="overlay-corner-edit"
+                :aria-label="t('overlay.themeEditTitle')"
+                @click.stop="emit('editTheme', theme.id)"
+                @contextmenu.prevent.stop>
+                <span class="material-symbols-outlined">edit</span>
+              </button>
             </div>
           </div>
         </div>
       </div>
-      <button type="button" class="overlay-lang-button" @click="emit('openBackgroundDialog')">
+      <button
+        type="button"
+        class="overlay-lang-button"
+        :disabled="!canAddTheme"
+        @click="emit('openBackgroundDialog')">
         {{ t('overlay.backgroundImageButton') }}
       </button>
     </div>
@@ -301,6 +315,8 @@ function selectTheme(theme: OverlayTheme) {
 function isThemeActive(theme: OverlayTheme) {
   return prefs.value.backgroundImage === theme.image && prefs.value.backgroundBlurPx === theme.blurPx;
 }
+
+const canAddTheme = computed(() => props.themes.length < 3);
 
 function confirmFactoryReset() {
   emit('factoryReset');
