@@ -190,7 +190,7 @@
 .overlay-config-theme {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   flex: 1 1 auto;
   min-width: 0;
   flex-wrap: nowrap;
@@ -207,7 +207,7 @@
 }
 
 .overlay-config-theme-tabs .overlay-lang-button {
-  padding: 3px 8px;
+  padding: 3px 5px;
 }
 
 .overlay-config-action > .overlay-lang-button {
