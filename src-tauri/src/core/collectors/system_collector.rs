@@ -10,6 +10,91 @@ use crate::types::{
     CpuMetrics, DiskMetrics, GpuMetrics, MemoryMetrics, NetworkMetrics, TelemetrySnapshot,
 };
 
+#[cfg(target_os = "windows")]
+fn query_gpu_memory_dxgi_windows() -> Option<(f64, f64)> {
+    // Perf counters/WMI can be missing or report 4GB-ish truncated values (common for >4GB VRAM).
+    // DXGI exposes dedicated video memory as a 64-bit value and works across vendors.
+    use windows::core::Interface;
+    use windows::Win32::Foundation::{RPC_E_CHANGED_MODE, S_FALSE, S_OK};
+    use windows::Win32::Graphics::Dxgi::{
+        CreateDXGIFactory1, IDXGIAdapter1, IDXGIAdapter3, IDXGIFactory1, DXGI_ADAPTER_DESC1,
+        DXGI_ADAPTER_FLAG_SOFTWARE, DXGI_ERROR_NOT_FOUND, DXGI_MEMORY_SEGMENT_GROUP_LOCAL,
+        DXGI_QUERY_VIDEO_MEMORY_INFO,
+    };
+    use windows::Win32::System::Com::{CoInitializeEx, CoUninitialize, COINIT_MULTITHREADED};
+
+    unsafe {
+        let mut should_uninit = false;
+        let hr = CoInitializeEx(None, COINIT_MULTITHREADED);
+        if hr == S_OK || hr == S_FALSE {
+            should_uninit = true;
+        } else if hr != RPC_E_CHANGED_MODE {
+            // If COM is already initialized with a different threading model,
+            // we can still use DXGI on the current thread (RPC_E_CHANGED_MODE).
+            return None;
+        }
+
+        let result = (|| -> Option<(f64, f64)> {
+            let factory: IDXGIFactory1 = CreateDXGIFactory1().ok()?;
+
+            let mut best_adapter: Option<(IDXGIAdapter1, DXGI_ADAPTER_DESC1)> = None;
+            let mut idx: u32 = 0;
+            loop {
+                match factory.EnumAdapters1(idx) {
+                    Ok(adapter) => {
+                        idx += 1;
+                        let desc = adapter.GetDesc1().ok()?;
+                        // Skip software adapters.
+                        if (desc.Flags & (DXGI_ADAPTER_FLAG_SOFTWARE.0 as u32)) != 0 {
+                            continue;
+                        }
+
+                        let dedicated = desc.DedicatedVideoMemory as u64;
+                        if dedicated == 0 {
+                            continue;
+                        }
+
+                        match &best_adapter {
+                            Some((_a, best_desc)) => {
+                                if (best_desc.DedicatedVideoMemory as u64) < dedicated {
+                                    best_adapter = Some((adapter, desc));
+                                }
+                            }
+                            None => best_adapter = Some((adapter, desc)),
+                        }
+                    }
+                    Err(e) if e.code() == DXGI_ERROR_NOT_FOUND => break,
+                    Err(_) => break,
+                }
+            }
+
+            let (adapter, desc) = best_adapter?;
+            let total_mb = (desc.DedicatedVideoMemory as f64) / (1024.0 * 1024.0);
+
+            // Query current local (dedicated) memory usage.
+            let adapter3: IDXGIAdapter3 = adapter.cast().ok()?;
+            let mut info = DXGI_QUERY_VIDEO_MEMORY_INFO::default();
+            adapter3
+                .QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &mut info)
+                .ok()?;
+            let used_mb = (info.CurrentUsage as f64) / (1024.0 * 1024.0);
+
+            if total_mb.is_finite() && total_mb > 0.0 && used_mb.is_finite() && used_mb >= 0.0 {
+                Some((used_mb.min(total_mb), total_mb))
+            } else {
+                None
+            }
+        })();
+
+        // Only uninitialize if we successfully initialized COM on this thread.
+        if should_uninit {
+            CoUninitialize();
+        }
+
+        result
+    }
+}
+
 pub struct SystemCollector {
     system: System,
     networks: Networks,
@@ -200,47 +285,83 @@ $memUsedMb = $null
 $memTotalMb = $null
 $freqMhz = $null
 
+$usedBy = @{}
+$limitBy = @{}
+$bestInst = $null
+$bestLimit = -1
+
+$adapterUsage = Get-Counter '\GPU Adapter Memory(*)\Dedicated Usage' -ErrorAction SilentlyContinue
+if ($adapterUsage) {
+  foreach ($s in $adapterUsage.CounterSamples) {
+    $usedBy[$s.InstanceName] = [double]$s.CookedValue
+  }
+}
+
+$adapterLimit = Get-Counter '\GPU Adapter Memory(*)\Dedicated Limit' -ErrorAction SilentlyContinue
+if ($adapterLimit) {
+  foreach ($s in $adapterLimit.CounterSamples) {
+    $limitBy[$s.InstanceName] = [double]$s.CookedValue
+  }
+}
+
+$instances = @()
+$instances += $usedBy.Keys
+$instances += $limitBy.Keys
+$instances = $instances | Sort-Object -Unique
+
+foreach ($inst in $instances) {
+  $limit = 0
+  if ($limitBy.ContainsKey($inst)) { $limit = $limitBy[$inst] }
+  if ($limit -gt $bestLimit) { $bestLimit = $limit; $bestInst = $inst }
+}
+
+if (-not $bestInst -and $instances.Count -gt 0) { $bestInst = $instances[0] }
+
+$luid = $null
+if ($bestInst -and $bestInst -match '(luid_0x[0-9a-fA-F]+)') { $luid = $Matches[1] }
+
+if ($bestInst) {
+  if ($usedBy.ContainsKey($bestInst)) {
+    $memUsedMb = $usedBy[$bestInst] / 1MB
+  }
+  if ($limitBy.ContainsKey($bestInst) -and $limitBy[$bestInst] -gt 0) {
+    $memTotalMb = $limitBy[$bestInst] / 1MB
+  }
+}
+
+if ($memTotalMb -eq $null) {
+  $videoController = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | Sort-Object -Property AdapterRAM -Descending | Select-Object -First 1
+  if ($videoController -and $videoController.AdapterRAM -gt 0) {
+    $memTotalMb = $videoController.AdapterRAM / 1MB
+  }
+}
+
 $engine = Get-Counter '\GPU Engine(*)\Utilization Percentage' -ErrorAction SilentlyContinue
 if ($engine) {
-  $samples = $engine.CounterSamples |
+  $engineSamples = $engine.CounterSamples
+  if ($luid) {
+    $engineSamples = $engineSamples | Where-Object { $_.Path -like "*$luid*" }
+  }
+  $samples = $engineSamples |
     Where-Object { $_.Path -like '*engtype_3D*' -or $_.Path -like '*engtype_Compute*' } |
     ForEach-Object { [double]$_.CookedValue }
   if ($samples.Count -eq 0) {
-    $samples = $engine.CounterSamples | ForEach-Object { [double]$_.CookedValue }
+    $samples = $engineSamples | ForEach-Object { [double]$_.CookedValue }
   }
   if ($samples.Count -gt 0) {
-    $usage = ($samples | Measure-Object -Sum).Sum
+    $usage = ($samples | Measure-Object -Maximum).Maximum
   }
 }
 
 $freqCounter = Get-Counter '\GPU Engine(*)\Frequency' -ErrorAction SilentlyContinue
 if ($freqCounter) {
-  $freqSamples = $freqCounter.CounterSamples | ForEach-Object { [double]$_.CookedValue }
-  if ($freqSamples.Count -gt 0) {
-    $freqMhz = ($freqSamples | Measure-Object -Average).Average
+  $freqSamples = $freqCounter.CounterSamples
+  if ($luid) {
+    $freqSamples = $freqSamples | Where-Object { $_.Path -like "*$luid*" }
   }
-}
-
-$adapterMemory = Get-Counter '\GPU Adapter Memory(*)\Dedicated Usage' -ErrorAction SilentlyContinue
-if ($adapterMemory) {
-  $totalBytes = ($adapterMemory.CounterSamples | ForEach-Object { [double]$_.CookedValue } | Measure-Object -Sum).Sum
-  if ($totalBytes -gt 0) {
-    $memUsedMb = $totalBytes / 1MB
-  }
-}
-
-$videoController = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | Sort-Object -Property AdapterRAM -Descending | Select-Object -First 1
-if ($videoController -and $videoController.AdapterRAM -gt 0) {
-  $memTotalMb = $videoController.AdapterRAM / 1MB
-}
-
-if ($memTotalMb -eq $null) {
-  $adapterMemoryLimit = Get-Counter '\GPU Adapter Memory(*)\Dedicated Limit' -ErrorAction SilentlyContinue
-  if ($adapterMemoryLimit) {
-    $limitBytes = ($adapterMemoryLimit.CounterSamples | ForEach-Object { [double]$_.CookedValue } | Measure-Object -Maximum).Maximum
-    if ($limitBytes -gt 0) {
-      $memTotalMb = $limitBytes / 1MB
-    }
+  $values = $freqSamples | ForEach-Object { [double]$_.CookedValue } | Where-Object { $_ -gt 0 }
+  if ($values.Count -gt 0) {
+    $freqMhz = ($values | Measure-Object -Maximum).Maximum
   }
 }
 
@@ -271,9 +392,21 @@ if ($usage -ne $null) {
 
     let payload: serde_json::Value = serde_json::from_str(&raw).ok()?;
     let usage_pct = payload.get("usage").and_then(|v| v.as_f64());
-    let memory_used_mb = payload.get("memUsedMb").and_then(|v| v.as_f64());
-    let memory_total_mb = payload.get("memTotalMb").and_then(|v| v.as_f64());
+    let mut memory_used_mb = payload.get("memUsedMb").and_then(|v| v.as_f64());
+    let mut memory_total_mb = payload.get("memTotalMb").and_then(|v| v.as_f64());
     let frequency_mhz = payload.get("freqMhz").and_then(|v| v.as_f64());
+
+    if let Some((used_mb, total_mb)) = query_gpu_memory_dxgi_windows() {
+        memory_used_mb = Some(used_mb);
+        memory_total_mb = Some(total_mb);
+    }
+
+    // Avoid nonsensical UI (e.g. summing multiple adapters or driver quirks).
+    if let (Some(used), Some(total)) = (memory_used_mb, memory_total_mb) {
+        if total > 0.0 && used > total {
+            memory_used_mb = Some(total);
+        }
+    }
 
     Some(GpuMetrics {
         usage_pct,
