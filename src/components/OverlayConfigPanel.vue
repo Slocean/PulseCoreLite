@@ -122,7 +122,7 @@
         </button>
       </div>
     </div>
-    <div v-if="false || canUninstall" class="overlay-config-uninstall">
+    <div v-if="false && canUninstall" class="overlay-config-uninstall">
       <button type="button" class="overlay-config-danger" @click="emit('uninstall')">
         {{ t('overlay.uninstall') }}
       </button>
