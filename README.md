@@ -1,6 +1,6 @@
 [中文文档](#中文文档) | [English Documentation](#english-documentation)
 
-# <span style="display:inline-flex;align-items:center;gap:6px;font-family:Inter,Segoe UI,sans-serif;font-size:20px;letter-spacing:0.2em;color:#00f2ff;text-transform:uppercase;font-weight:700;text-shadow:0 0 6px rgba(0,242,255,0.45),0 0 14px rgba(0,242,255,0.25);">PulseCore<span style="margin-left:6px;padding:1px 8px;border-radius:999px;border:1px solid rgba(0,242,255,0.65);font-size:10px;letter-spacing:0.16em;color:#bc13fe;box-shadow:0 0 10px rgba(188,19,254,0.3),inset 0 0 8px rgba(188,19,254,0.2);">Lite</span></span> <img src="src/static/img/ice_logo.png" alt="Logo" height="28" />
+# <span style="display:inline-flex;align-items:center;gap:6px;font-family:Inter,Segoe UI,sans-serif;font-size:20px;letter-spacing:0.2em;color:#00f2ff;text-transform:uppercase;font-weight:700;text-shadow:0 0 6px rgba(0,242,255,0.45),0 0 14px rgba(0,242,255,0.25);">PulseCore<span style="margin-left:6px;padding:1px 8px;border-radius:999px;border:1px solid rgba(0,242,255,0.65);font-size:10px;letter-spacing:0.16em;color:#3b82f6;box-shadow:0 0 10px rgba(59,130,246,0.3),inset 0 0 8px rgba(59,130,246,0.2);">Lite</span></span> <img src="src/static/img/ice_logo.png" alt="Logo" height="28" />
 
 PulseCoreLite 是一个基于 Tauri 2 + Vue 3 的桌面性能监控应用，提供悬浮窗监控与任务栏监控两种形态，实时展示 CPU、GPU、内存、磁盘与网络等指标，并支持多语言、透明度与刷新率配置、自动启动与托盘行为等系统级能力。
 
@@ -14,47 +14,53 @@ PulseCoreLite 是一个基于 Tauri 2 + Vue 3 的桌面性能监控应用，提�
 
 ### 页面截图（中文）
 
-#### 主页面
-
-![主页面](design/product_picture/chinese/main_page.png)
-
-#### 设置面板
-
-![设置面板](design/product_picture/chinese/setting_page.png)
-
-#### 透明模式
-
-![透明模式](design/product_picture/chinese/transparent_mode.png)
-
-#### 任务栏监控
-
-![任务栏监控](design/product_picture/task_page.png)
-
-#### 任务栏设置
-
-![任务栏设置](design/product_picture/task_setting.png)
+<div style="display:flex;flex-wrap:wrap;gap:12px;">
+  <div style="text-align:center;">
+    <img src="design/product_picture/chinese/main_page.png" alt="主页面" width="260" />
+    <div>主页面</div>
+  </div>
+  <div style="text-align:center;">
+    <img src="design/product_picture/chinese/setting_page.png" alt="设置面板" width="260" />
+    <div>设置面板</div>
+  </div>
+  <div style="text-align:center;">
+    <img src="design/product_picture/chinese/transparent_mode.png" alt="透明模式" width="260" />
+    <div>透明模式</div>
+  </div>
+  <div style="text-align:center;">
+    <img src="design/product_picture/task_page.png" alt="任务栏监控" width="260" />
+    <div>任务栏监控</div>
+  </div>
+  <div style="text-align:center;">
+    <img src="design/product_picture/task_setting.png" alt="任务栏设置" width="260" />
+    <div>任务栏设置</div>
+  </div>
+</div>
 
 ### 页面截图（英文）
 
-#### Main Page
-
-![Main Page](design/product_picture/english/main_page.png)
-
-#### Settings Panel
-
-![Settings Panel](design/product_picture/english/setting_page.png)
-
-#### Transparent Mode
-
-![Transparent Mode](design/product_picture/english/transparent_mode.png)
-
-#### Taskbar Monitor
-
-![Taskbar Monitor](design/product_picture/task_page.png)
-
-#### Taskbar Settings
-
-![Taskbar Settings](design/product_picture/task_setting.png)
+<div style="display:flex;flex-wrap:wrap;gap:12px;">
+  <div style="text-align:center;">
+    <img src="design/product_picture/english/main_page.png" alt="Main Page" width="260" />
+    <div>Main Page</div>
+  </div>
+  <div style="text-align:center;">
+    <img src="design/product_picture/english/setting_page.png" alt="Settings Panel" width="260" />
+    <div>Settings Panel</div>
+  </div>
+  <div style="text-align:center;">
+    <img src="design/product_picture/english/transparent_mode.png" alt="Transparent Mode" width="260" />
+    <div>Transparent Mode</div>
+  </div>
+  <div style="text-align:center;">
+    <img src="design/product_picture/task_page.png" alt="Taskbar Monitor" width="260" />
+    <div>Taskbar Monitor</div>
+  </div>
+  <div style="text-align:center;">
+    <img src="design/product_picture/task_setting.png" alt="Taskbar Settings" width="260" />
+    <div>Taskbar Settings</div>
+  </div>
+</div>
 
 ### 功能点
 
@@ -174,47 +180,53 @@ npm run pack:release
 
 ### Screenshots (Chinese)
 
-#### Main Page
-
-![Main Page](design/product_picture/chinese/main_page.png)
-
-#### Settings Panel
-
-![Settings Panel](design/product_picture/chinese/setting_page.png)
-
-#### Transparent Mode
-
-![Transparent Mode](design/product_picture/chinese/transparent_mode.png)
-
-#### Taskbar Monitor
-
-![Taskbar Monitor](design/product_picture/task_page.png)
-
-#### Taskbar Settings
-
-![Taskbar Settings](design/product_picture/task_setting.png)
+<div style="display:flex;flex-wrap:wrap;gap:12px;">
+  <div style="text-align:center;">
+    <img src="design/product_picture/chinese/main_page.png" alt="Main Page" width="260" />
+    <div>Main Page</div>
+  </div>
+  <div style="text-align:center;">
+    <img src="design/product_picture/chinese/setting_page.png" alt="Settings Panel" width="260" />
+    <div>Settings Panel</div>
+  </div>
+  <div style="text-align:center;">
+    <img src="design/product_picture/chinese/transparent_mode.png" alt="Transparent Mode" width="260" />
+    <div>Transparent Mode</div>
+  </div>
+  <div style="text-align:center;">
+    <img src="design/product_picture/task_page.png" alt="Taskbar Monitor" width="260" />
+    <div>Taskbar Monitor</div>
+  </div>
+  <div style="text-align:center;">
+    <img src="design/product_picture/task_setting.png" alt="Taskbar Settings" width="260" />
+    <div>Taskbar Settings</div>
+  </div>
+</div>
 
 ### Screenshots (English)
 
-#### Main Page
-
-![Main Page](design/product_picture/english/main_page.png)
-
-#### Settings Panel
-
-![Settings Panel](design/product_picture/english/setting_page.png)
-
-#### Transparent Mode
-
-![Transparent Mode](design/product_picture/english/transparent_mode.png)
-
-#### Taskbar Monitor
-
-![Taskbar Monitor](design/product_picture/task_page.png)
-
-#### Taskbar Settings
-
-![Taskbar Settings](design/product_picture/task_setting.png)
+<div style="display:flex;flex-wrap:wrap;gap:12px;">
+  <div style="text-align:center;">
+    <img src="design/product_picture/english/main_page.png" alt="Main Page" width="260" />
+    <div>Main Page</div>
+  </div>
+  <div style="text-align:center;">
+    <img src="design/product_picture/english/setting_page.png" alt="Settings Panel" width="260" />
+    <div>Settings Panel</div>
+  </div>
+  <div style="text-align:center;">
+    <img src="design/product_picture/english/transparent_mode.png" alt="Transparent Mode" width="260" />
+    <div>Transparent Mode</div>
+  </div>
+  <div style="text-align:center;">
+    <img src="design/product_picture/task_page.png" alt="Taskbar Monitor" width="260" />
+    <div>Taskbar Monitor</div>
+  </div>
+  <div style="text-align:center;">
+    <img src="design/product_picture/task_setting.png" alt="Taskbar Settings" width="260" />
+    <div>Taskbar Settings</div>
+  </div>
+</div>
 
 ### Features
 
