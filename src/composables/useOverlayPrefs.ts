@@ -16,6 +16,7 @@ export interface OverlayPrefs {
   showWarning: boolean;
   showDragHandle: boolean;
   backgroundOpacity: number;
+  backgroundImage: string | null;
 }
 
 const fallbackPrefs: OverlayPrefs = {
@@ -31,7 +32,8 @@ const fallbackPrefs: OverlayPrefs = {
   showHardwareInfo: false,
   showWarning: true,
   showDragHandle: false,
-  backgroundOpacity: 100
+  backgroundOpacity: 100,
+  backgroundImage: null
 };
 
 function loadPrefs(): OverlayPrefs {
@@ -54,7 +56,8 @@ function loadPrefs(): OverlayPrefs {
       showHardwareInfo: parsed.showHardwareInfo ?? fallbackPrefs.showHardwareInfo,
       showWarning: parsed.showWarning ?? fallbackPrefs.showWarning,
       showDragHandle: parsed.showDragHandle ?? fallbackPrefs.showDragHandle,
-      backgroundOpacity: parsed.backgroundOpacity ?? fallbackPrefs.backgroundOpacity
+      backgroundOpacity: parsed.backgroundOpacity ?? fallbackPrefs.backgroundOpacity,
+      backgroundImage: parsed.backgroundImage ?? fallbackPrefs.backgroundImage
     };
   } catch {
     return fallbackPrefs;

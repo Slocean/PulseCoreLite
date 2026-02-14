@@ -104,6 +104,12 @@
       <span class="overlay-config-value">{{ backgroundOpacity }}%</span>
       <input type="range" min="0" max="100" step="5" v-model.number="backgroundOpacity" />
     </div>
+    <div class="overlay-config-item--wide overlay-config-action">
+      <span class="overlay-config-label">{{ t('overlay.backgroundImage') }}</span>
+      <button type="button" class="overlay-lang-button" @click="emit('openBackgroundDialog')">
+        {{ t('overlay.backgroundImageButton') }}
+      </button>
+    </div>
     <div class="overlay-config-hotkey">
       <span class="overlay-config-label">{{ t('overlay.factoryResetHotkey') }}</span>
       <div class="overlay-config-hotkey-controls">
@@ -158,6 +164,7 @@ const emit = defineEmits<{
   (e: 'refreshRateChange'): void;
   (e: 'factoryReset'): void;
   (e: 'uninstall'): void;
+  (e: 'openBackgroundDialog'): void;
 }>();
 
 const { t } = useI18n();

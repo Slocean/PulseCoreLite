@@ -1,36 +1,32 @@
 <template>
   <Teleport to="body">
     <Transition name="overlay-dialog">
-      <div
-        v-if="open"
-        class="overlay-dialog-backdrop"
-        role="presentation"
-        @mousedown.self="handleCancel">
+      <div v-if="open" class="overlay-dialog-backdrop" role="presentation" @mousedown.self="handleCancel">
         <div class="overlay-dialog" role="dialog" aria-modal="true" @mousedown.stop>
           <div class="overlay-dialog-header">
             <div class="overlay-dialog-title">{{ title }}</div>
-            <button
-              type="button"
-              class="overlay-dialog-close"
-              :aria-label="closeLabel"
-              @click="handleCancel">
+            <button type="button" class="overlay-dialog-close" :aria-label="closeLabel" @click="handleCancel">
               <span class="material-symbols-outlined">close</span>
             </button>
           </div>
           <div class="overlay-dialog-body">
-            <div class="overlay-dialog-message">{{ message }}</div>
+            <slot name="body">
+              <div v-if="message" class="overlay-dialog-message">{{ message }}</div>
+            </slot>
           </div>
-          <div class="overlay-dialog-actions">
-            <button type="button" class="overlay-lang-button" @click="handleCancel">
-              {{ cancelText }}
-            </button>
-            <button
-              type="button"
-              class="overlay-config-danger"
-              :autofocus="autofocusConfirm"
-              @click="handleConfirm">
-              {{ confirmText }}
-            </button>
+          <div v-if="showActions" class="overlay-dialog-actions">
+            <slot name="actions">
+              <button type="button" class="overlay-lang-button" @click="handleCancel">
+                {{ cancelText }}
+              </button>
+              <button
+                type="button"
+                class="overlay-config-danger"
+                :autofocus="autofocusConfirm"
+                @click="handleConfirm">
+                {{ confirmText }}
+              </button>
+            </slot>
           </div>
         </div>
       </div>
@@ -46,17 +42,21 @@ const open = defineModel<boolean>('open', { required: true });
 withDefaults(
   defineProps<{
     title: string;
-    message: string;
-    confirmText: string;
-    cancelText: string;
+    message?: string;
+    confirmText?: string;
+    cancelText?: string;
     closeLabel?: string;
     closeOnEsc?: boolean;
     autofocusConfirm?: boolean;
+    showActions?: boolean;
   }>(),
   {
     closeLabel: 'Close',
     closeOnEsc: true,
-    autofocusConfirm: true
+    autofocusConfirm: true,
+    showActions: true,
+    confirmText: 'Confirm',
+    cancelText: 'Cancel'
   }
 );
 
@@ -107,4 +107,3 @@ onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown, true);
 });
 </script>
-
