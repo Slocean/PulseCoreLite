@@ -1,5 +1,10 @@
 <template>
-  <button type="button" class="overlay-corner-delete" :aria-label="ariaLabel" @click.stop="emit('click')">
+  <button
+    type="button"
+    class="overlay-corner-delete"
+    :aria-label="ariaLabel"
+    @click.stop="emit('click')"
+    @contextmenu.prevent.stop>
     <span class="material-symbols-outlined">close</span>
   </button>
 </template>
@@ -13,4 +18,3 @@ const emit = defineEmits<{
   (e: 'click'): void;
 }>();
 </script>
-

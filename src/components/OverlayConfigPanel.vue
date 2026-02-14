@@ -121,7 +121,8 @@
               :key="theme.id"
               class="overlay-theme-chip"
               :class="{ 'overlay-theme-chip--active': isThemeActive(theme) }"
-              @click="selectTheme(theme)">
+              @click="selectTheme(theme)"
+              @contextmenu.prevent.stop="emit('editTheme', theme.id)">
               <span class="overlay-theme-name">{{ theme.name }}</span>
               <span class="overlay-theme-thumb" :style="{ backgroundImage: `url(${theme.image})` }"></span>
               <OverlayCornerDelete :ariaLabel="t('overlay.themeDelete')" @click="emit('deleteTheme', theme.id)" />
@@ -132,6 +133,23 @@
       <button type="button" class="overlay-lang-button" @click="emit('openBackgroundDialog')">
         {{ t('overlay.backgroundImageButton') }}
       </button>
+    </div>
+    <div class="overlay-config-language">
+      <span class="overlay-config-label">{{ t('overlay.configTransfer') }}</span>
+      <div class="overlay-lang-buttons">
+        <button type="button" class="overlay-lang-button" @click="emit('exportConfig')">
+          {{ t('overlay.exportConfig') }}
+        </button>
+        <button type="button" class="overlay-lang-button" @click="triggerImport">
+          {{ t('overlay.importConfig') }}
+        </button>
+      </div>
+      <input
+        ref="importFileInput"
+        class="overlay-upload-input"
+        type="file"
+        accept="application/json"
+        @change="handleImportChange" />
     </div>
     <div class="overlay-config-hotkey">
       <span class="overlay-config-label">{{ t('overlay.factoryResetHotkey') }}</span>
@@ -208,6 +226,9 @@ const emit = defineEmits<{
   (e: 'uninstall'): void
   (e: 'openBackgroundDialog'): void
   (e: 'deleteTheme', value: string): void
+  (e: 'editTheme', value: string): void
+  (e: 'exportConfig'): void
+  (e: 'importConfig', value: File): void
 }>()
 
 const { t } = useI18n()
@@ -215,6 +236,7 @@ const { t } = useI18n()
 const recordingHotkey = ref(false)
 let hotkeyUnlisten: (() => void) | null = null
 const hotkeyClearDialogOpen = ref(false)
+const importFileInput = ref<HTMLInputElement | null>(null)
 
 const hotkeyLabel = computed(() => factoryResetHotkey.value ?? t('overlay.hotkeyNotSet'))
 const isDefaultTheme = computed(() => !prefs.value.backgroundImage)
@@ -295,6 +317,18 @@ function closeClearHotkeyDialog() {
 function confirmClearHotkey() {
   factoryResetHotkey.value = null
   closeClearHotkeyDialog()
+}
+
+function triggerImport() {
+  importFileInput.value?.click()
+}
+
+function handleImportChange(event: Event) {
+  const input = event.target as HTMLInputElement | null
+  const file = input?.files?.[0]
+  if (input) input.value = ''
+  if (!file) return
+  emit('importConfig', file)
 }
 
 onUnmounted(() => {

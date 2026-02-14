@@ -7,17 +7,28 @@
     @mousedown="handleMouseDown"
     @dblclick.prevent.stop="showMainWindow"
     @contextmenu.prevent.stop="openContextMenu">
-    <div class="taskbar-rows">
-      <div v-for="(row, rowIdx) in segmentRows" :key="rowIdx" class="taskbar-row">
-        <template v-for="(seg, idx) in row" :key="seg.id">
-          <span v-if="idx > 0" class="taskbar-sep">|</span>
-          <span class="taskbar-seg">
-            <span class="taskbar-k">{{ seg.label }}</span>
-            <span class="taskbar-v" :class="seg.valueClass">{{ seg.value }}</span>
-            <span v-if="seg.extra" class="taskbar-extra">{{ seg.extra }}</span>
-          </span>
+    <div v-if="prefs.twoLineMode" class="taskbar-grid" :style="{ '--taskbar-cols': String(twoLineCols) }">
+      <div
+        v-for="(seg, idx) in twoLineCells"
+        :key="seg?.id ?? `empty_${idx}`"
+        class="taskbar-cell"
+        :class="{ 'taskbar-cell--empty': !seg }">
+        <template v-if="seg">
+          <span class="taskbar-k">{{ seg.label }}</span>
+          <span class="taskbar-v" :class="seg.valueClass">{{ seg.value }}</span>
+          <span v-if="seg.extra" class="taskbar-extra">{{ seg.extra }}</span>
         </template>
       </div>
+    </div>
+    <div v-else class="taskbar-row">
+      <template v-for="(seg, idx) in segments" :key="seg.id">
+        <span v-if="idx > 0" class="taskbar-sep">|</span>
+        <span class="taskbar-seg">
+          <span class="taskbar-k">{{ seg.label }}</span>
+          <span class="taskbar-v" :class="seg.valueClass">{{ seg.value }}</span>
+          <span v-if="seg.extra" class="taskbar-extra">{{ seg.extra }}</span>
+        </span>
+      </template>
     </div>
   </section>
 </template>
@@ -93,8 +104,10 @@ function usageClass(value: number, base: 'cyan' | 'pink') {
   return base === 'cyan' ? 'overlay-glow-cyan' : 'overlay-glow-pink';
 }
 
-const segments = computed(() => {
-  const parts: Array<{ id: string; label: string; value: string; extra?: string; valueClass?: string }> = [];
+type Segment = { id: string; label: string; value: string; extra?: string; valueClass?: string };
+
+const segments = computed<Segment[]>(() => {
+  const parts: Segment[] = [];
 
   if (prefs.showCpu) {
     const extras: string[] = [];
@@ -131,7 +144,7 @@ const segments = computed(() => {
     });
   }
 
-  if (appCpuPct.value || appMem.value) {
+  if (prefs.showApp && (appCpuPct.value || appMem.value)) {
     parts.push({
       id: 'app',
       label: 'APP',
@@ -156,13 +169,15 @@ const segments = computed(() => {
   return parts;
 });
 
-const segmentRows = computed(() => {
+const twoLineCols = computed(() => Math.max(1, Math.ceil(segments.value.length / 2)));
+const twoLineCells = computed(() => {
+  const cols = twoLineCols.value;
   const list = segments.value;
-  if (!prefs.twoLineMode) return [list];
-  const mid = Math.ceil(list.length / 2);
-  const row1 = list.slice(0, mid);
-  const row2 = list.slice(mid);
-  return row2.length ? [row1, row2] : [row1];
+  const cells: Array<Segment | null> = Array.from({ length: cols * 2 }, () => null);
+  for (let i = 0; i < Math.min(list.length, cells.length); i++) {
+    cells[i] = list[i];
+  }
+  return cells;
 });
 
 async function showMainWindow() {
@@ -245,6 +260,11 @@ async function openContextMenu(event: MouseEvent) {
       text: t('overlay.memory'),
       checked: prefs.showMemory,
       action: () => (prefs.showMemory = !prefs.showMemory)
+    }),
+    await CheckMenuItem.new({
+      text: t('overlay.app'),
+      checked: prefs.showApp,
+      action: () => (prefs.showApp = !prefs.showApp)
     }),
     await PredefinedMenuItem.new({ item: 'Separator' }),
     await CheckMenuItem.new({

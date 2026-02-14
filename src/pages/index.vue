@@ -34,7 +34,10 @@
         @factoryReset="handleFactoryReset"
         @uninstall="handleUninstall"
         @openBackgroundDialog="openBackgroundDialog"
-        @deleteTheme="requestDeleteTheme" />
+        @deleteTheme="requestDeleteTheme"
+        @editTheme="requestEditTheme"
+        @exportConfig="exportConfig"
+        @importConfig="handleImportConfig" />
     </Transition>
 
     <OverlayMetricsPanel
@@ -167,6 +170,62 @@
     :close-label="t('overlay.dialogClose')"
     @confirm="confirmDeleteTheme"
     @cancel="closeDeleteThemeDialog" />
+
+  <OverlayDialog
+    v-model:open="themeEditDialogOpen"
+    :title="t('overlay.themeEditTitle')"
+    :confirm-text="t('overlay.dialogConfirm')"
+    :cancel-text="t('overlay.dialogCancel')"
+    :close-label="t('overlay.dialogClose')"
+    :autofocus-confirm="false"
+    @confirm="confirmEditTheme"
+    @cancel="closeEditThemeDialog">
+    <template #body>
+      <div class="overlay-dialog-input-wrap">
+        <div class="overlay-dialog-message">{{ t('overlay.themeEditHint') }}</div>
+        <input
+          v-model="themeEditNameInput"
+          class="overlay-dialog-input"
+          type="text"
+          :placeholder="t('overlay.themeNamePlaceholder')"
+          maxlength="3" />
+        <div class="overlay-config-range" style="margin-top: 10px">
+          <span class="overlay-config-label">{{ t('overlay.backgroundBlur') }}</span>
+          <span class="overlay-config-value">{{ themeEditBlurPx }}px</span>
+          <input type="range" min="0" max="24" step="1" v-model.number="themeEditBlurPx" />
+        </div>
+      </div>
+    </template>
+    <template #actions>
+      <button type="button" class="overlay-lang-button" @click="closeEditThemeDialog">
+        {{ t('overlay.dialogCancel') }}
+      </button>
+      <button type="button" class="overlay-config-primary" :disabled="!canConfirmThemeEdit" @click="confirmEditTheme">
+        {{ t('overlay.dialogConfirm') }}
+      </button>
+    </template>
+  </OverlayDialog>
+
+  <OverlayDialog
+    v-model:open="importConfirmDialogOpen"
+    :title="t('overlay.importConfigTitle')"
+    :message="t('overlay.importConfigConfirm')"
+    :confirm-text="t('overlay.dialogConfirm')"
+    :cancel-text="t('overlay.dialogCancel')"
+    :close-label="t('overlay.dialogClose')"
+    @confirm="confirmImportConfig"
+    @cancel="cancelImportConfig" />
+
+  <OverlayDialog
+    v-model:open="importErrorDialogOpen"
+    :title="t('overlay.importConfigTitle')"
+    :message="importErrorMessage"
+    :confirm-text="t('overlay.dialogConfirm')"
+    :cancel-text="t('overlay.dialogCancel')"
+    :close-label="t('overlay.dialogClose')"
+    :show-actions="false"
+    @confirm="closeImportErrorDialog"
+    @cancel="closeImportErrorDialog" />
 </template>
 
 <script setup lang="ts">
@@ -295,6 +354,16 @@ const pendingThemeBlurPx = ref(0);
 const themeDeleteDialogOpen = ref(false);
 const themeToDelete = ref<OverlayTheme | null>(null);
 const backgroundBlurPx = ref(0);
+
+const themeEditDialogOpen = ref(false);
+const themeToEdit = ref<OverlayTheme | null>(null);
+const themeEditNameInput = ref('');
+const themeEditBlurPx = ref(0);
+
+const importConfirmDialogOpen = ref(false);
+const pendingImportConfig = ref<any | null>(null);
+const importErrorDialogOpen = ref(false);
+const importErrorMessage = ref('');
 
 if (typeof window !== 'undefined') {
   // Sync bootstrap from legacy localStorage to avoid a blank UI while IndexedDB hydrates.
@@ -544,6 +613,51 @@ function confirmDeleteTheme() {
     prefs.backgroundBlurPx = 0;
   }
   closeDeleteThemeDialog();
+}
+
+const canConfirmThemeEdit = computed(() => {
+  const target = themeToEdit.value;
+  if (!target) return false;
+  const name = themeEditNameInput.value.trim();
+  if (!name || name.length > 3) return false;
+  return Number.isFinite(themeEditBlurPx.value) && themeEditBlurPx.value >= 0 && themeEditBlurPx.value <= 24;
+});
+
+function requestEditTheme(id: string) {
+  const target = themes.value.find(theme => theme.id === id) ?? null;
+  if (!target) return;
+  themeToEdit.value = target;
+  themeEditNameInput.value = target.name;
+  themeEditBlurPx.value = Math.max(0, Math.min(24, Math.round(target.blurPx ?? 0)));
+  themeEditDialogOpen.value = true;
+}
+
+function closeEditThemeDialog() {
+  themeEditDialogOpen.value = false;
+  themeToEdit.value = null;
+  themeEditNameInput.value = '';
+  themeEditBlurPx.value = 0;
+}
+
+function confirmEditTheme() {
+  const target = themeToEdit.value;
+  if (!target || !canConfirmThemeEdit.value) {
+    closeEditThemeDialog();
+    return;
+  }
+  const nextName = themeEditNameInput.value.trim().slice(0, 3);
+  const nextBlur = Math.max(0, Math.min(24, Math.round(themeEditBlurPx.value)));
+  const nextThemes = themes.value.map(theme =>
+    theme.id === target.id ? { ...theme, name: nextName, blurPx: nextBlur } : theme
+  );
+  updateThemes(nextThemes);
+
+  // If this theme is active, apply the new blur immediately.
+  if (prefs.backgroundImage === target.image) {
+    prefs.backgroundBlurPx = nextBlur;
+  }
+
+  closeEditThemeDialog();
 }
 
 function openThemeNameDialog(image: string) {
@@ -835,6 +949,193 @@ function confirmSaveTheme() {
   };
   updateThemes([...themes.value, theme].slice(0, 3));
   closeThemeNameDialog();
+}
+
+function safeJsonParse<T>(raw: string | null): T | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
+async function exportConfig() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+  const payload = {
+    schema: 'pulsecorelite.config',
+    schemaVersion: 1,
+    exportedAt: new Date().toISOString(),
+    settings: store.settings,
+    refreshRateMs: refreshRate.value,
+    overlayPrefs: JSON.parse(JSON.stringify(prefs)),
+    overlayThemes: themes.value,
+    taskbarPrefs: safeJsonParse<unknown>(localStorage.getItem('pulsecorelite.taskbar_prefs')),
+    overlayPosition: safeJsonParse<unknown>(localStorage.getItem('pulsecorelite.overlay_pos')),
+    taskbarPosition: safeJsonParse<unknown>(localStorage.getItem('pulsecorelite.taskbar_pos'))
+  };
+
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const ts = payload.exportedAt.replace(/[:.]/g, '-');
+  a.download = `pulsecorelite-config-${ts}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function handleImportConfig(file: File) {
+  if (typeof window === 'undefined') return;
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    if (!parsed || typeof parsed !== 'object') {
+      throw new Error('invalid');
+    }
+    pendingImportConfig.value = parsed;
+    importConfirmDialogOpen.value = true;
+  } catch {
+    pendingImportConfig.value = null;
+    importErrorMessage.value = t('overlay.importConfigInvalid');
+    importErrorDialogOpen.value = true;
+  }
+}
+
+function cancelImportConfig() {
+  importConfirmDialogOpen.value = false;
+  pendingImportConfig.value = null;
+}
+
+function closeImportErrorDialog() {
+  importErrorDialogOpen.value = false;
+  importErrorMessage.value = '';
+}
+
+function sanitizeImportedTaskbarPrefs(input: unknown) {
+  const parsed = input && typeof input === 'object' ? (input as any) : {};
+  const bool = (key: string) => typeof parsed[key] === 'boolean';
+  return {
+    showCpu: bool('showCpu') ? parsed.showCpu : true,
+    showCpuFreq: bool('showCpuFreq') ? parsed.showCpuFreq : true,
+    showCpuTemp: bool('showCpuTemp') ? parsed.showCpuTemp : true,
+    showGpu: bool('showGpu') ? parsed.showGpu : true,
+    showGpuTemp: bool('showGpuTemp') ? parsed.showGpuTemp : true,
+    showMemory: bool('showMemory') ? parsed.showMemory : true,
+    showApp: bool('showApp') ? parsed.showApp : true,
+    showDown: bool('showDown') ? parsed.showDown : true,
+    showUp: bool('showUp') ? parsed.showUp : true,
+    showLatency: bool('showLatency') ? parsed.showLatency : false,
+    twoLineMode: bool('twoLineMode') ? parsed.twoLineMode : false
+  };
+}
+
+function applyImportedOverlayPrefs(input: unknown) {
+  const parsed = input && typeof input === 'object' ? (input as any) : {};
+  const boolKeys: Array<keyof typeof prefs> = [
+    'showCpu',
+    'showGpu',
+    'showMemory',
+    'showDisk',
+    'showDown',
+    'showUp',
+    'showLatency',
+    'showValues',
+    'showPercent',
+    'showHardwareInfo',
+    'showWarning',
+    'showDragHandle'
+  ];
+  for (const key of boolKeys) {
+    if (typeof parsed[key] === 'boolean') (prefs as any)[key] = parsed[key];
+  }
+  if (typeof parsed.backgroundOpacity === 'number' && Number.isFinite(parsed.backgroundOpacity)) {
+    prefs.backgroundOpacity = Math.max(0, Math.min(100, Math.round(parsed.backgroundOpacity)));
+  }
+  if (parsed.backgroundImage === null || typeof parsed.backgroundImage === 'string') {
+    prefs.backgroundImage = parsed.backgroundImage;
+  }
+  if (typeof parsed.backgroundBlurPx === 'number' && Number.isFinite(parsed.backgroundBlurPx)) {
+    prefs.backgroundBlurPx = Math.max(0, Math.min(40, Math.round(parsed.backgroundBlurPx)));
+  }
+}
+
+function isPositionLike(input: unknown): input is { x: number; y: number } {
+  return (
+    Boolean(input) &&
+    typeof input === 'object' &&
+    typeof (input as any).x === 'number' &&
+    typeof (input as any).y === 'number' &&
+    Number.isFinite((input as any).x) &&
+    Number.isFinite((input as any).y)
+  );
+}
+
+async function confirmImportConfig() {
+  const raw = pendingImportConfig.value;
+  importConfirmDialogOpen.value = false;
+  pendingImportConfig.value = null;
+  if (!raw || typeof window === 'undefined') return;
+
+  try {
+    const candidate = raw as any;
+
+    // Settings
+    const settings = candidate.settings && typeof candidate.settings === 'object' ? candidate.settings : null;
+    if (settings) {
+      if (settings.language === 'zh-CN' || settings.language === 'en-US') store.setLanguage(settings.language);
+      if (typeof settings.closeToTray === 'boolean') store.setCloseToTray(settings.closeToTray);
+      if (typeof settings.rememberOverlayPosition === 'boolean')
+        store.setRememberOverlayPosition(settings.rememberOverlayPosition);
+      if (typeof settings.taskbarAlwaysOnTop === 'boolean') store.setTaskbarAlwaysOnTop(settings.taskbarAlwaysOnTop);
+      if (settings.factoryResetHotkey == null || typeof settings.factoryResetHotkey === 'string')
+        store.setFactoryResetHotkey(settings.factoryResetHotkey ?? null);
+      if (typeof settings.taskbarMonitorEnabled === 'boolean') await store.setTaskbarMonitorEnabled(settings.taskbarMonitorEnabled);
+      if (typeof settings.autoStartEnabled === 'boolean') await store.setAutoStartEnabled(settings.autoStartEnabled);
+    }
+
+    // Overlay prefs + themes
+    applyImportedOverlayPrefs(candidate.overlayPrefs);
+    const importedThemes = sanitizeThemes(candidate.overlayThemes ?? candidate.themes);
+    if (importedThemes.length || Array.isArray(candidate.overlayThemes) || Array.isArray(candidate.themes)) {
+      updateThemes(importedThemes.slice(0, 3));
+    }
+
+    // Refresh rate
+    if (typeof candidate.refreshRateMs === 'number' && Number.isFinite(candidate.refreshRateMs)) {
+      const nextRate = Math.max(100, Math.min(2000, Math.round(candidate.refreshRateMs)));
+      refreshRate.value = nextRate;
+      store.setRefreshRate(nextRate);
+      localStorage.setItem('pulsecorelite.refresh_rate', String(nextRate));
+    }
+
+    // Taskbar prefs (localStorage)
+    if (candidate.taskbarPrefs) {
+      const next = sanitizeImportedTaskbarPrefs(candidate.taskbarPrefs);
+      localStorage.setItem('pulsecorelite.taskbar_prefs', JSON.stringify(next));
+    }
+
+    // Positions (localStorage)
+    if (isPositionLike(candidate.overlayPosition)) {
+      localStorage.setItem('pulsecorelite.overlay_pos', JSON.stringify(candidate.overlayPosition));
+    }
+    if (isPositionLike(candidate.taskbarPosition)) {
+      localStorage.setItem('pulsecorelite.taskbar_pos', JSON.stringify(candidate.taskbarPosition));
+    }
+
+    // Force taskbar window to pick up taskbar prefs (it only reads localStorage on mount).
+    if (store.settings.taskbarMonitorEnabled) {
+      await store.setTaskbarMonitorEnabled(false);
+      await store.setTaskbarMonitorEnabled(true);
+    }
+  } catch {
+    importErrorMessage.value = t('overlay.importConfigInvalid');
+    importErrorDialogOpen.value = true;
+  }
 }
 
 function shouldIgnoreHotkeyTarget(target: EventTarget | null): boolean {

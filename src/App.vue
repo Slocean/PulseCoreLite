@@ -19,6 +19,7 @@ import { useAppStore } from './stores/app';
 const store = useAppStore();
 const { locale } = useI18n();
 const windowRole = ref<'main' | 'taskbar'>('main');
+let contextMenuHandler: ((event: MouseEvent) => void) | null = null;
 
 onMounted(async () => {
   if (inTauri()) {
@@ -33,6 +34,13 @@ onMounted(async () => {
     }
   }
 
+  // Disable the browser's default context menu in the main window.
+  // (Taskbar window uses a custom Tauri context menu.)
+  if (typeof window !== 'undefined' && windowRole.value === 'main') {
+    contextMenuHandler = event => event.preventDefault();
+    window.addEventListener('contextmenu', contextMenuHandler, true);
+  }
+
   await store.bootstrap();
   locale.value = store.settings.language;
   if (inTauri() && windowRole.value === 'main') {
@@ -44,6 +52,10 @@ onMounted(async () => {
 onUnmounted(() => {
   if (typeof document !== 'undefined') {
     document.documentElement.classList.remove('window-taskbar');
+  }
+  if (typeof window !== 'undefined' && contextMenuHandler) {
+    window.removeEventListener('contextmenu', contextMenuHandler, true);
+    contextMenuHandler = null;
   }
   store.dispose();
 });

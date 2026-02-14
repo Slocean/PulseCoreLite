@@ -163,9 +163,14 @@ function formatCpuFreq(valueMhz: number) {
 }
 
 function formatCpuFreqPair(freqMhz: number, maxMhz: number) {
+  // If the "current" reading is effectively equal to max, don't show a redundant pair.
+  // Some platforms only report max frequency here, which would otherwise render like "3.2/3.2".
+  if (Math.abs(freqMhz - maxMhz) < 1) {
+    return formatCpuFreq(freqMhz);
+  }
   const useGhz = Math.max(freqMhz, maxMhz) >= 1000;
-  if (useGhz) return `${(freqMhz / 1000).toFixed(1)}/${(maxMhz / 1000).toFixed(1)}GHz`;
-  return `${freqMhz.toFixed(0)}/${maxMhz.toFixed(0)}MHz`;
+  if (useGhz) return `${(freqMhz / 1000).toFixed(1)}GHz/${(maxMhz / 1000).toFixed(1)}GHz`;
+  return `${freqMhz.toFixed(0)}MHz/${maxMhz.toFixed(0)}MHz`;
 }
 
 function normalizeHardwareModel(value: string) {

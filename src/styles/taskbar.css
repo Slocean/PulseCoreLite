@@ -28,20 +28,6 @@ html.window-taskbar body {
   white-space: normal;
 }
 
-.taskbar-rows {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 0px;
-}
-
-.taskbar-bar--two-line .taskbar-rows {
-  gap: 1px;
-}
-
-.taskbar-bar--two-line .taskbar-row {
-  gap: 2px;
-}
-
 .taskbar-bar--two-line .taskbar-k {
   font-size: 9px;
 }
@@ -52,6 +38,27 @@ html.window-taskbar body {
 
 .taskbar-bar--two-line .taskbar-extra {
   font-size: 10px;
+}
+
+.taskbar-grid {
+  display: grid;
+  grid-template-rows: repeat(2, auto);
+  grid-template-columns: repeat(var(--taskbar-cols, 1), max-content);
+  column-gap: 12px;
+  row-gap: 1px;
+  align-items: baseline;
+}
+
+.taskbar-cell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.taskbar-cell--empty {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .taskbar-row {

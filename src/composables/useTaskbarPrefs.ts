@@ -9,6 +9,7 @@ export interface TaskbarPrefs {
   showGpu: boolean;
   showGpuTemp: boolean;
   showMemory: boolean;
+  showApp: boolean;
   showDown: boolean;
   showUp: boolean;
   showLatency: boolean;
@@ -22,6 +23,7 @@ const fallbackPrefs: TaskbarPrefs = {
   showGpu: true,
   showGpuTemp: true,
   showMemory: true,
+  showApp: true,
   showDown: true,
   showUp: true,
   showLatency: false,
@@ -42,6 +44,7 @@ function loadPrefs(): TaskbarPrefs {
       showGpu: parsed.showGpu ?? fallbackPrefs.showGpu,
       showGpuTemp: parsed.showGpuTemp ?? fallbackPrefs.showGpuTemp,
       showMemory: parsed.showMemory ?? fallbackPrefs.showMemory,
+      showApp: parsed.showApp ?? fallbackPrefs.showApp,
       showDown: parsed.showDown ?? fallbackPrefs.showDown,
       showUp: parsed.showUp ?? fallbackPrefs.showUp,
       showLatency: parsed.showLatency ?? fallbackPrefs.showLatency,
