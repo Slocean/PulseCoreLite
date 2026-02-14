@@ -279,6 +279,11 @@ impl SystemCollector {
 
 #[cfg(target_os = "windows")]
 fn query_gpu_metrics_windows() -> Option<GpuMetrics> {
+    use std::os::windows::process::CommandExt;
+
+    // Prevent PowerShell from popping a console window in packaged builds.
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+
     let script = r#"
 $usage = $null
 $memUsedMb = $null
@@ -382,9 +387,10 @@ if ($usage -ne $null) {
   memTotalMb = $memTotalMb
   freqMhz = $freqMhz
 } | ConvertTo-Json -Compress
-"#;
+    "#;
 
     let output = Command::new("powershell.exe")
+        .creation_flags(CREATE_NO_WINDOW)
         .args(["-NoProfile", "-Command", script])
         .output()
         .ok()?;
