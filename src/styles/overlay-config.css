@@ -235,6 +235,28 @@
   cursor: not-allowed;
 }
 
+.overlay-config-primary {
+  border: 1px dashed rgba(59, 130, 246, 0.6);
+  background: rgba(59, 130, 246, 0.12);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: #93c5fd;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.overlay-config-primary:hover {
+  border-color: rgba(59, 130, 246, 0.85);
+  color: #dbeafe;
+}
+
+.overlay-config-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .overlay-background-body {
   display: grid;
   gap: 10px;

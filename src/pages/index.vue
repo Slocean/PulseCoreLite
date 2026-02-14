@@ -102,7 +102,7 @@
       </button>
       <button
         type="button"
-        class="overlay-config-danger"
+        class="overlay-config-primary"
         :disabled="!canApplyBackground"
         @click="applyBackgroundCrop">
         {{ t('overlay.backgroundApply') }}
