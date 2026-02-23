@@ -365,30 +365,30 @@ async function openContextMenu(event: MouseEvent) {
         checked: prefs.showCpu,
         action: () => (prefs.showCpu = !prefs.showCpu)
       }),
-      await CheckMenuItem.new({
-        text: t('overlay.cpuFreq'),
-        checked: prefs.showCpuFreq,
-        enabled: prefs.showCpu,
-        action: () => (prefs.showCpuFreq = !prefs.showCpuFreq)
-      }),
-      await CheckMenuItem.new({
-        text: t('overlay.cpuTemp'),
-        checked: prefs.showCpuTemp,
-        enabled: prefs.showCpu,
-        action: () => (prefs.showCpuTemp = !prefs.showCpuTemp)
-      }),
+      // await CheckMenuItem.new({
+      //   text: t('overlay.cpuFreq'),
+      //   checked: prefs.showCpuFreq,
+      //   enabled: prefs.showCpu,
+      //   action: () => (prefs.showCpuFreq = !prefs.showCpuFreq)
+      // }),
+      // await CheckMenuItem.new({
+      //   text: t('overlay.cpuTemp'),
+      //   checked: prefs.showCpuTemp,
+      //   enabled: prefs.showCpu,
+      //   action: () => (prefs.showCpuTemp = !prefs.showCpuTemp)
+      // }),
       await PredefinedMenuItem.new({ item: 'Separator' }),
       await CheckMenuItem.new({
         text: t('overlay.gpu'),
         checked: prefs.showGpu,
         action: () => (prefs.showGpu = !prefs.showGpu)
       }),
-      await CheckMenuItem.new({
-        text: t('overlay.gpuTemp'),
-        checked: prefs.showGpuTemp,
-        enabled: prefs.showGpu,
-        action: () => (prefs.showGpuTemp = !prefs.showGpuTemp)
-      }),
+      // await CheckMenuItem.new({
+      //   text: t('overlay.gpuTemp'),
+      //   checked: prefs.showGpuTemp,
+      //   enabled: prefs.showGpu,
+      //   action: () => (prefs.showGpuTemp = !prefs.showGpuTemp)
+      // }),
       await CheckMenuItem.new({
         text: t('overlay.memory'),
         checked: prefs.showMemory,
@@ -410,11 +410,11 @@ async function openContextMenu(event: MouseEvent) {
         checked: prefs.showUp,
         action: () => (prefs.showUp = !prefs.showUp)
       }),
-      await CheckMenuItem.new({
-        text: t('overlay.latency'),
-        checked: prefs.showLatency,
-        action: () => (prefs.showLatency = !prefs.showLatency)
-      }),
+      // await CheckMenuItem.new({
+      //   text: t('overlay.latency'),
+      //   checked: prefs.showLatency,
+      //   action: () => (prefs.showLatency = !prefs.showLatency)
+      // }),
       await PredefinedMenuItem.new({ item: 'Separator' }),
       await MenuItem.new({
         text: t('overlay.closeTaskbarMonitor'),
