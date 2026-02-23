@@ -44,6 +44,21 @@
   gap: 12px;
 }
 
+.overlay-config-effect {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.overlay-config-effect-buttons {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.overlay-config-effect-buttons .overlay-lang-button {
+  text-transform: none;
+  letter-spacing: 0.05em;
+}
+
 .overlay-config-taskbar {
   grid-column: 1 / -1;
   display: flex;

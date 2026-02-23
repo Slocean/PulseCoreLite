@@ -209,7 +209,8 @@ import { useI18n } from 'vue-i18n';
 
 import OverlayCornerDelete from './OverlayCornerDelete.vue';
 import OverlayDialog from './OverlayDialog.vue';
-import type { OverlayPrefs } from '../composables/useOverlayPrefs';
+import type { OverlayBackgroundEffect, OverlayPrefs } from '../composables/useOverlayPrefs';
+import { DEFAULT_BACKGROUND_EFFECT, DEFAULT_BACKGROUND_GLASS_STRENGTH } from '../composables/useOverlayPrefs';
 import { hotkeyFromEvent, hotkeyToString } from '../utils/hotkey';
 
 type OverlayTheme = {
@@ -217,6 +218,8 @@ type OverlayTheme = {
   name: string;
   image: string;
   blurPx: number;
+  effect: OverlayBackgroundEffect;
+  glassStrength: number;
 };
 
 const props = defineProps<{
@@ -298,23 +301,42 @@ function beginHotkeyCapture() {
 }
 
 function selectDefaultTheme() {
-  if (!prefs.value.backgroundImage && prefs.value.backgroundBlurPx === 0) {
+  if (
+    !prefs.value.backgroundImage &&
+    prefs.value.backgroundBlurPx === 0 &&
+    prefs.value.backgroundEffect === DEFAULT_BACKGROUND_EFFECT &&
+    prefs.value.backgroundGlassStrength === DEFAULT_BACKGROUND_GLASS_STRENGTH
+  ) {
     return;
   }
   prefs.value.backgroundImage = null;
   prefs.value.backgroundBlurPx = 0;
+  prefs.value.backgroundEffect = DEFAULT_BACKGROUND_EFFECT;
+  prefs.value.backgroundGlassStrength = DEFAULT_BACKGROUND_GLASS_STRENGTH;
 }
 
 function selectTheme(theme: OverlayTheme) {
-  if (prefs.value.backgroundImage === theme.image && prefs.value.backgroundBlurPx === theme.blurPx) {
+  if (
+    prefs.value.backgroundImage === theme.image &&
+    prefs.value.backgroundBlurPx === theme.blurPx &&
+    prefs.value.backgroundEffect === theme.effect &&
+    prefs.value.backgroundGlassStrength === theme.glassStrength
+  ) {
     return;
   }
   prefs.value.backgroundImage = theme.image;
   prefs.value.backgroundBlurPx = theme.blurPx;
+  prefs.value.backgroundEffect = theme.effect;
+  prefs.value.backgroundGlassStrength = theme.glassStrength;
 }
 
 function isThemeActive(theme: OverlayTheme) {
-  return prefs.value.backgroundImage === theme.image && prefs.value.backgroundBlurPx === theme.blurPx;
+  return (
+    prefs.value.backgroundImage === theme.image &&
+    prefs.value.backgroundBlurPx === theme.blurPx &&
+    prefs.value.backgroundEffect === theme.effect &&
+    prefs.value.backgroundGlassStrength === theme.glassStrength
+  );
 }
 
 const canAddTheme = computed(() => props.themes.length < 3);

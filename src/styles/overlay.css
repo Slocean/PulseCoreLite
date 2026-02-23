@@ -25,9 +25,16 @@
   will-change: filter, transform;
 }
 
+.overlay-bg--liquid-highlight {
+  z-index: 1;
+  transform: none !important;
+  filter: none !important;
+  mix-blend-mode: screen;
+}
+
 .overlay-widget > :not(.overlay-bg) {
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .overlay-widget--cyber::before,

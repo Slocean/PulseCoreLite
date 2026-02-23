@@ -5,6 +5,11 @@
     @dblclick.prevent.stop
     @mousedown="handleOverlayMouseDown">
     <div v-if="prefs.backgroundImage" class="overlay-bg" :style="overlayBackgroundStyle" aria-hidden="true"></div>
+    <div
+      v-if="showLiquidGlassHighlight"
+      class="overlay-bg overlay-bg--liquid-highlight"
+      :style="overlayLiquidGlassHighlightStyle"
+      aria-hidden="true"></div>
     <OverlayHeader
       :show-drag-handle="prefs.showDragHandle"
       :app-version="appVersion"
@@ -99,8 +104,29 @@
           <canvas ref="cropCanvas" class="overlay-crop-canvas" @mousedown="handleCropMouseDown"></canvas>
           <div class="overlay-crop-tip">{{ t('overlay.backgroundCropHint') }}</div>
         </div>
+        <div v-if="backgroundImageSource" class="overlay-config-language overlay-config-effect">
+          <span class="overlay-config-label">{{ t('overlay.backgroundEffect') }}</span>
+          <div class="overlay-lang-buttons overlay-config-effect-buttons">
+            <button
+              type="button"
+              class="overlay-lang-button"
+              :class="{ 'overlay-lang-button--active': backgroundEffect === 'gaussian' }"
+              @click="setBackgroundEffect('gaussian')">
+              {{ t('overlay.effectGaussian') }}
+            </button>
+            <button
+              type="button"
+              class="overlay-lang-button"
+              :class="{ 'overlay-lang-button--active': backgroundEffect === 'liquidGlass' }"
+              @click="setBackgroundEffect('liquidGlass')">
+              {{ t('overlay.effectLiquidGlass') }}
+            </button>
+          </div>
+        </div>
         <div v-if="backgroundImageSource" class="overlay-config-range">
-          <span class="overlay-config-label">{{ t('overlay.backgroundBlur') }}</span>
+          <span class="overlay-config-label">{{
+            backgroundEffect === 'gaussian' ? t('overlay.backgroundBlur') : t('overlay.backgroundGlassBlur')
+          }}</span>
           <span class="overlay-config-value">{{ backgroundBlurPx }}px</span>
           <input
             type="range"
@@ -108,6 +134,17 @@
             max="24"
             step="1"
             v-model.number="backgroundBlurPx"
+            @input="drawCropCanvas" />
+        </div>
+        <div v-if="backgroundImageSource && backgroundEffect === 'liquidGlass'" class="overlay-config-range">
+          <span class="overlay-config-label">{{ t('overlay.backgroundGlassStrength') }}</span>
+          <span class="overlay-config-value">{{ backgroundGlassStrength }}%</span>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="5"
+            v-model.number="backgroundGlassStrength"
             @input="drawCropCanvas" />
         </div>
       </div>
@@ -195,10 +232,36 @@
           type="text"
           :placeholder="t('overlay.themeNamePlaceholder')"
           maxlength="3" />
+        <div class="overlay-config-language overlay-config-effect" style="margin-top: 10px">
+          <span class="overlay-config-label">{{ t('overlay.backgroundEffect') }}</span>
+          <div class="overlay-lang-buttons overlay-config-effect-buttons">
+            <button
+              type="button"
+              class="overlay-lang-button"
+              :class="{ 'overlay-lang-button--active': themeEditEffect === 'gaussian' }"
+              @click="themeEditEffect = 'gaussian'">
+              {{ t('overlay.effectGaussian') }}
+            </button>
+            <button
+              type="button"
+              class="overlay-lang-button"
+              :class="{ 'overlay-lang-button--active': themeEditEffect === 'liquidGlass' }"
+              @click="themeEditEffect = 'liquidGlass'">
+              {{ t('overlay.effectLiquidGlass') }}
+            </button>
+          </div>
+        </div>
         <div class="overlay-config-range" style="margin-top: 10px">
-          <span class="overlay-config-label">{{ t('overlay.backgroundBlur') }}</span>
+          <span class="overlay-config-label">{{
+            themeEditEffect === 'gaussian' ? t('overlay.backgroundBlur') : t('overlay.backgroundGlassBlur')
+          }}</span>
           <span class="overlay-config-value">{{ themeEditBlurPx }}px</span>
           <input type="range" min="0" max="24" step="1" v-model.number="themeEditBlurPx" />
+        </div>
+        <div v-if="themeEditEffect === 'liquidGlass'" class="overlay-config-range">
+          <span class="overlay-config-label">{{ t('overlay.backgroundGlassStrength') }}</span>
+          <span class="overlay-config-value">{{ themeEditGlassStrength }}%</span>
+          <input type="range" min="0" max="100" step="5" v-model.number="themeEditGlassStrength" />
         </div>
       </div>
     </template>
@@ -260,7 +323,12 @@ import OverlayMetricsPanel from '../components/OverlayMetricsPanel.vue';
 import OverlayNetworkFooter from '../components/OverlayNetworkFooter.vue';
 import OverlayStatusBar from '../components/OverlayStatusBar.vue';
 import { useOverlayMetrics } from '../composables/useOverlayMetrics';
-import { useOverlayPrefs } from '../composables/useOverlayPrefs';
+import {
+  DEFAULT_BACKGROUND_EFFECT,
+  DEFAULT_BACKGROUND_GLASS_STRENGTH,
+  useOverlayPrefs,
+  type OverlayBackgroundEffect
+} from '../composables/useOverlayPrefs';
 import { useOverlayRefreshRate } from '../composables/useOverlayRefreshRate';
 import { useOverlayUptime } from '../composables/useOverlayUptime';
 import { useOverlayWindow } from '../composables/useOverlayWindow';
@@ -328,6 +396,8 @@ type OverlayTheme = {
   name: string;
   image: string;
   blurPx: number;
+  effect: OverlayBackgroundEffect;
+  glassStrength: number;
 };
 
 const THEME_STORAGE_KEY = 'pulsecorelite.overlay_themes';
@@ -373,15 +443,21 @@ const themeNameDialogOpen = ref(false);
 const themeNameInput = ref('');
 const pendingThemeImage = ref<string | null>(null);
 const pendingThemeBlurPx = ref(0);
+const pendingThemeEffect = ref<OverlayBackgroundEffect>(DEFAULT_BACKGROUND_EFFECT);
+const pendingThemeGlassStrength = ref(DEFAULT_BACKGROUND_GLASS_STRENGTH);
 const themeDeleteDialogOpen = ref(false);
 const themeToDelete = ref<OverlayTheme | null>(null);
 const backgroundBlurPx = ref(0);
+const backgroundEffect = ref<OverlayBackgroundEffect>(DEFAULT_BACKGROUND_EFFECT);
+const backgroundGlassStrength = ref(DEFAULT_BACKGROUND_GLASS_STRENGTH);
 const exportSuccessDialogOpen = ref(false);
 
 const themeEditDialogOpen = ref(false);
 const themeToEdit = ref<OverlayTheme | null>(null);
 const themeEditNameInput = ref('');
 const themeEditBlurPx = ref(0);
+const themeEditEffect = ref<OverlayBackgroundEffect>(DEFAULT_BACKGROUND_EFFECT);
+const themeEditGlassStrength = ref(DEFAULT_BACKGROUND_GLASS_STRENGTH);
 
 const importConfirmDialogOpen = ref(false);
 const pendingImportConfig = ref<any | null>(null);
@@ -410,18 +486,70 @@ watch(
   { immediate: true }
 );
 
+function clampBlurPx(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.min(40, Math.round(value))) : 0;
+}
+
+function clampGlassStrength(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.max(0, Math.min(100, Math.round(value)))
+    : DEFAULT_BACKGROUND_GLASS_STRENGTH;
+}
+
+function normalizeBackgroundEffect(value: unknown): OverlayBackgroundEffect {
+  return value === 'liquidGlass' ? 'liquidGlass' : DEFAULT_BACKGROUND_EFFECT;
+}
+
+function getBackgroundFilter(effect: OverlayBackgroundEffect, blurPx: number, glassStrength: number) {
+  const safeBlur = clampBlurPx(blurPx);
+  if (effect === 'liquidGlass') {
+    const safeStrength = clampGlassStrength(glassStrength);
+    const minBlur = Math.max(2, safeBlur);
+    const saturation = (1.25 + safeStrength / 140).toFixed(2);
+    const contrast = (1.05 + safeStrength / 420).toFixed(2);
+    const brightness = (1.01 + safeStrength / 900).toFixed(2);
+    return `blur(${minBlur}px) saturate(${saturation}) contrast(${contrast}) brightness(${brightness})`;
+  }
+  return safeBlur > 0 ? `blur(${safeBlur}px)` : 'none';
+}
+
+function getBackgroundScale(effect: OverlayBackgroundEffect, blurPx: number, glassStrength: number) {
+  if (effect === 'liquidGlass') {
+    const safeStrength = clampGlassStrength(glassStrength);
+    return (1.06 + safeStrength / 1000).toFixed(3);
+  }
+  return (clampBlurPx(blurPx) > 0 ? 1.05 : 1).toString();
+}
+
 const overlayBackgroundStyle = computed(() => {
   if (!prefs.backgroundImage) {
     return {};
   }
+  const effect = normalizeBackgroundEffect(prefs.backgroundEffect);
+  const blurPx = clampBlurPx(prefs.backgroundBlurPx);
+  const glassStrength = clampGlassStrength(prefs.backgroundGlassStrength);
   return {
     backgroundImage: `url(${prefs.backgroundImage})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
-    // Blur applies to the background layer only, not the overlay content.
-    filter: `blur(${prefs.backgroundBlurPx}px)`,
-    transform: `scale(${prefs.backgroundBlurPx > 0 ? 1.05 : 1})`
+    // Effect applies only to the background layer, not overlay content.
+    filter: getBackgroundFilter(effect, blurPx, glassStrength),
+    transform: `scale(${getBackgroundScale(effect, blurPx, glassStrength)})`
+  };
+});
+
+const showLiquidGlassHighlight = computed(() => {
+  return Boolean(prefs.backgroundImage && normalizeBackgroundEffect(prefs.backgroundEffect) === 'liquidGlass');
+});
+
+const overlayLiquidGlassHighlightStyle = computed(() => {
+  const safeStrength = clampGlassStrength(prefs.backgroundGlassStrength);
+  const opacity = (0.08 + safeStrength / 600).toFixed(3);
+  return {
+    opacity,
+    background:
+      'radial-gradient(circle at 20% -10%, rgba(255,255,255,0.55), rgba(255,255,255,0) 45%), linear-gradient(165deg, rgba(255,255,255,0.2), rgba(120,180,255,0.08) 38%, rgba(0,0,0,0) 75%)'
   };
 });
 
@@ -502,11 +630,25 @@ function resetBackgroundDialogState() {
   backgroundFileName.value = '';
   backgroundImageSource.value = null;
   backgroundImage.value = null;
-  backgroundBlurPx.value = prefs.backgroundImage ? prefs.backgroundBlurPx : 5;
+  backgroundEffect.value = prefs.backgroundImage
+    ? normalizeBackgroundEffect(prefs.backgroundEffect)
+    : DEFAULT_BACKGROUND_EFFECT;
+  backgroundGlassStrength.value = prefs.backgroundImage
+    ? clampGlassStrength(prefs.backgroundGlassStrength)
+    : DEFAULT_BACKGROUND_GLASS_STRENGTH;
+  backgroundBlurPx.value = prefs.backgroundImage ? clampBlurPx(prefs.backgroundBlurPx) : 5;
   cropRect.x = 0;
   cropRect.y = 0;
   cropRect.width = 0;
   cropRect.height = 0;
+}
+
+function setBackgroundEffect(effect: OverlayBackgroundEffect) {
+  backgroundEffect.value = effect;
+  if (effect === 'liquidGlass' && backgroundBlurPx.value < 2) {
+    backgroundBlurPx.value = 2;
+  }
+  drawCropCanvas();
 }
 
 function refreshCropAspect() {
@@ -559,10 +701,9 @@ function sanitizeThemes(input: unknown): OverlayTheme[] {
       id: String((item as any).id),
       name: String((item as any).name),
       image: String((item as any).image),
-      blurPx:
-        typeof (item as any).blurPx === 'number' && Number.isFinite((item as any).blurPx)
-          ? Math.max(0, Math.min(40, Math.round((item as any).blurPx)))
-          : 0
+      blurPx: clampBlurPx((item as any).blurPx),
+      effect: normalizeBackgroundEffect((item as any).effect),
+      glassStrength: clampGlassStrength((item as any).glassStrength)
     }))
     .filter(item => item.id && item.name && item.image);
 }
@@ -623,17 +764,29 @@ function closeDeleteThemeDialog() {
   themeToDelete.value = null;
 }
 
+function isThemeApplied(theme: OverlayTheme) {
+  return (
+    prefs.backgroundImage === theme.image &&
+    clampBlurPx(prefs.backgroundBlurPx) === clampBlurPx(theme.blurPx) &&
+    normalizeBackgroundEffect(prefs.backgroundEffect) === normalizeBackgroundEffect(theme.effect) &&
+    clampGlassStrength(prefs.backgroundGlassStrength) === clampGlassStrength(theme.glassStrength)
+  );
+}
+
 function confirmDeleteTheme() {
   const target = themeToDelete.value;
   if (!target) {
     closeDeleteThemeDialog();
     return;
   }
+  const wasApplied = isThemeApplied(target);
   const nextThemes = themes.value.filter(theme => theme.id !== target.id);
   updateThemes(nextThemes);
-  if (prefs.backgroundImage === target.image) {
+  if (wasApplied) {
     prefs.backgroundImage = null;
     prefs.backgroundBlurPx = 0;
+    prefs.backgroundEffect = DEFAULT_BACKGROUND_EFFECT;
+    prefs.backgroundGlassStrength = DEFAULT_BACKGROUND_GLASS_STRENGTH;
   }
   closeDeleteThemeDialog();
 }
@@ -643,7 +796,14 @@ const canConfirmThemeEdit = computed(() => {
   if (!target) return false;
   const name = themeEditNameInput.value.trim();
   if (!name || name.length > 3) return false;
-  return Number.isFinite(themeEditBlurPx.value) && themeEditBlurPx.value >= 0 && themeEditBlurPx.value <= 24;
+  if (!Number.isFinite(themeEditBlurPx.value) || themeEditBlurPx.value < 0 || themeEditBlurPx.value > 24) {
+    return false;
+  }
+  return (
+    Number.isFinite(themeEditGlassStrength.value) &&
+    themeEditGlassStrength.value >= 0 &&
+    themeEditGlassStrength.value <= 100
+  );
 });
 
 function requestEditTheme(id: string) {
@@ -652,6 +812,8 @@ function requestEditTheme(id: string) {
   themeToEdit.value = target;
   themeEditNameInput.value = target.name;
   themeEditBlurPx.value = Math.max(0, Math.min(24, Math.round(target.blurPx ?? 0)));
+  themeEditEffect.value = normalizeBackgroundEffect(target.effect);
+  themeEditGlassStrength.value = clampGlassStrength(target.glassStrength);
   themeEditDialogOpen.value = true;
 }
 
@@ -660,6 +822,8 @@ function closeEditThemeDialog() {
   themeToEdit.value = null;
   themeEditNameInput.value = '';
   themeEditBlurPx.value = 0;
+  themeEditEffect.value = DEFAULT_BACKGROUND_EFFECT;
+  themeEditGlassStrength.value = DEFAULT_BACKGROUND_GLASS_STRENGTH;
 }
 
 function confirmEditTheme() {
@@ -668,16 +832,23 @@ function confirmEditTheme() {
     closeEditThemeDialog();
     return;
   }
+  const wasApplied = isThemeApplied(target);
   const nextName = themeEditNameInput.value.trim().slice(0, 3);
   const nextBlur = Math.max(0, Math.min(24, Math.round(themeEditBlurPx.value)));
+  const nextEffect = normalizeBackgroundEffect(themeEditEffect.value);
+  const nextGlassStrength = clampGlassStrength(themeEditGlassStrength.value);
   const nextThemes = themes.value.map(theme =>
-    theme.id === target.id ? { ...theme, name: nextName, blurPx: nextBlur } : theme
+    theme.id === target.id
+      ? { ...theme, name: nextName, blurPx: nextBlur, effect: nextEffect, glassStrength: nextGlassStrength }
+      : theme
   );
   updateThemes(nextThemes);
 
-  // If this theme is active, apply the new blur immediately.
-  if (prefs.backgroundImage === target.image) {
+  // If this theme is active, apply updated effect settings immediately.
+  if (wasApplied) {
     prefs.backgroundBlurPx = nextBlur;
+    prefs.backgroundEffect = nextEffect;
+    prefs.backgroundGlassStrength = nextGlassStrength;
   }
 
   closeEditThemeDialog();
@@ -686,6 +857,8 @@ function confirmEditTheme() {
 function openThemeNameDialog(image: string) {
   pendingThemeImage.value = image;
   pendingThemeBlurPx.value = backgroundBlurPx.value;
+  pendingThemeEffect.value = backgroundEffect.value;
+  pendingThemeGlassStrength.value = backgroundGlassStrength.value;
   themeNameInput.value = '';
   themeNameDialogOpen.value = true;
 }
@@ -694,6 +867,8 @@ function closeThemeNameDialog() {
   themeNameDialogOpen.value = false;
   pendingThemeImage.value = null;
   pendingThemeBlurPx.value = 0;
+  pendingThemeEffect.value = DEFAULT_BACKGROUND_EFFECT;
+  pendingThemeGlassStrength.value = DEFAULT_BACKGROUND_GLASS_STRENGTH;
 }
 
 function handleFile(file: File) {
@@ -775,10 +950,27 @@ function drawCropCanvas() {
   }
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Preview blur in the crop UI; the theme persists the blur value separately.
-  ctx.filter = backgroundBlurPx.value > 0 ? `blur(${backgroundBlurPx.value}px)` : 'none';
+  const effect = normalizeBackgroundEffect(backgroundEffect.value);
+  const blurPx = Math.max(0, Math.min(24, Math.round(backgroundBlurPx.value)));
+  const glassStrength = clampGlassStrength(backgroundGlassStrength.value);
+  // Preview selected effect in the crop UI; the theme persists these values separately.
+  ctx.filter = getBackgroundFilter(effect, blurPx, glassStrength);
   ctx.drawImage(img, imageFit.offsetX, imageFit.offsetY, imageFit.drawWidth, imageFit.drawHeight);
   ctx.filter = 'none';
+  if (effect === 'liquidGlass') {
+    const gloss = 0.08 + glassStrength / 650;
+    const gradient = ctx.createLinearGradient(
+      imageFit.offsetX,
+      imageFit.offsetY,
+      imageFit.offsetX,
+      imageFit.offsetY + imageFit.drawHeight
+    );
+    gradient.addColorStop(0, `rgba(255, 255, 255, ${Math.min(0.22, gloss + 0.05).toFixed(3)})`);
+    gradient.addColorStop(0.5, 'rgba(200, 230, 255, 0.06)');
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(imageFit.offsetX, imageFit.offsetY, imageFit.drawWidth, imageFit.drawHeight);
+  }
 
   ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -934,7 +1126,9 @@ function applyBackgroundCrop() {
     return;
   }
   prefs.backgroundImage = dataUrl;
-  prefs.backgroundBlurPx = backgroundBlurPx.value;
+  prefs.backgroundBlurPx = clampBlurPx(backgroundBlurPx.value);
+  prefs.backgroundEffect = normalizeBackgroundEffect(backgroundEffect.value);
+  prefs.backgroundGlassStrength = clampGlassStrength(backgroundGlassStrength.value);
   closeBackgroundDialog();
 }
 
@@ -947,14 +1141,22 @@ function applyBackgroundAndSave() {
     return;
   }
   prefs.backgroundImage = dataUrl;
-  prefs.backgroundBlurPx = backgroundBlurPx.value;
+  prefs.backgroundBlurPx = clampBlurPx(backgroundBlurPx.value);
+  prefs.backgroundEffect = normalizeBackgroundEffect(backgroundEffect.value);
+  prefs.backgroundGlassStrength = clampGlassStrength(backgroundGlassStrength.value);
   closeBackgroundDialog();
   // openThemeNameDialog(dataUrl);
   const name = `主题${themes.value.length + 1}`;
-  saveThemeWithName(name, dataUrl, backgroundBlurPx.value);
+  saveThemeWithName(name, dataUrl, backgroundBlurPx.value, backgroundEffect.value, backgroundGlassStrength.value);
 }
 
-function saveThemeWithName(name: string, image: string, blurPx: number) {
+function saveThemeWithName(
+  name: string,
+  image: string,
+  blurPx: number,
+  effect: OverlayBackgroundEffect,
+  glassStrength: number
+) {
   if (!canSaveTheme.value) {
     return;
   }
@@ -962,7 +1164,9 @@ function saveThemeWithName(name: string, image: string, blurPx: number) {
     id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     name,
     image,
-    blurPx
+    blurPx: clampBlurPx(blurPx),
+    effect: normalizeBackgroundEffect(effect),
+    glassStrength: clampGlassStrength(glassStrength)
   };
   updateThemes([...themes.value, theme].slice(0, 3));
 }
@@ -975,7 +1179,13 @@ function confirmSaveTheme() {
   if (!name) {
     return;
   }
-  saveThemeWithName(name, pendingThemeImage.value, pendingThemeBlurPx.value);
+  saveThemeWithName(
+    name,
+    pendingThemeImage.value,
+    pendingThemeBlurPx.value,
+    pendingThemeEffect.value,
+    pendingThemeGlassStrength.value
+  );
   closeThemeNameDialog();
 }
 
@@ -1109,7 +1319,13 @@ function applyImportedOverlayPrefs(input: unknown) {
     prefs.backgroundImage = parsed.backgroundImage;
   }
   if (typeof parsed.backgroundBlurPx === 'number' && Number.isFinite(parsed.backgroundBlurPx)) {
-    prefs.backgroundBlurPx = Math.max(0, Math.min(40, Math.round(parsed.backgroundBlurPx)));
+    prefs.backgroundBlurPx = clampBlurPx(parsed.backgroundBlurPx);
+  }
+  if (parsed.backgroundEffect === 'gaussian' || parsed.backgroundEffect === 'liquidGlass') {
+    prefs.backgroundEffect = normalizeBackgroundEffect(parsed.backgroundEffect);
+  }
+  if (typeof parsed.backgroundGlassStrength === 'number' && Number.isFinite(parsed.backgroundGlassStrength)) {
+    prefs.backgroundGlassStrength = clampGlassStrength(parsed.backgroundGlassStrength);
   }
 }
 

@@ -4,6 +4,11 @@ import { kvGet, kvSet } from '../utils/kv';
 
 const OVERLAY_PREF_KEY = 'pulsecorelite.overlay_prefs';
 
+export type OverlayBackgroundEffect = 'gaussian' | 'liquidGlass';
+
+export const DEFAULT_BACKGROUND_EFFECT: OverlayBackgroundEffect = 'gaussian';
+export const DEFAULT_BACKGROUND_GLASS_STRENGTH = 55;
+
 export interface OverlayPrefs {
   showCpu: boolean;
   showGpu: boolean;
@@ -19,8 +24,12 @@ export interface OverlayPrefs {
   showDragHandle: boolean;
   backgroundOpacity: number;
   backgroundImage: string | null;
-  // Gaussian blur strength for the background image (in CSS px).
+  // Blur strength for background image effects (in CSS px).
   backgroundBlurPx: number;
+  // Effect mode for custom backgrounds/themes.
+  backgroundEffect: OverlayBackgroundEffect;
+  // Additional liquid-glass intensity (0-100).
+  backgroundGlassStrength: number;
 }
 
 const fallbackPrefs: OverlayPrefs = {
@@ -38,8 +47,14 @@ const fallbackPrefs: OverlayPrefs = {
   showDragHandle: false,
   backgroundOpacity: 100,
   backgroundImage: null,
-  backgroundBlurPx: 0
+  backgroundBlurPx: 0,
+  backgroundEffect: DEFAULT_BACKGROUND_EFFECT,
+  backgroundGlassStrength: DEFAULT_BACKGROUND_GLASS_STRENGTH
 };
+
+function sanitizeBackgroundEffect(value: unknown): OverlayBackgroundEffect {
+  return value === 'liquidGlass' ? 'liquidGlass' : DEFAULT_BACKGROUND_EFFECT;
+}
 
 function sanitizePrefs(input: Partial<OverlayPrefs> | null | undefined): OverlayPrefs {
   const parsed = input ?? {};
@@ -61,7 +76,12 @@ function sanitizePrefs(input: Partial<OverlayPrefs> | null | undefined): Overlay
     backgroundBlurPx:
       typeof parsed.backgroundBlurPx === 'number' && Number.isFinite(parsed.backgroundBlurPx)
         ? Math.max(0, Math.min(40, Math.round(parsed.backgroundBlurPx)))
-        : fallbackPrefs.backgroundBlurPx
+        : fallbackPrefs.backgroundBlurPx,
+    backgroundEffect: sanitizeBackgroundEffect(parsed.backgroundEffect),
+    backgroundGlassStrength:
+      typeof parsed.backgroundGlassStrength === 'number' && Number.isFinite(parsed.backgroundGlassStrength)
+        ? Math.max(0, Math.min(100, Math.round(parsed.backgroundGlassStrength)))
+        : fallbackPrefs.backgroundGlassStrength
   };
 }
 
