@@ -6,7 +6,7 @@
     role="presentation"
     @mousedown="handleMouseDown"
     @dblclick.prevent.stop="showMainWindow"
-    @contextmenu.prevent.stop="openContextMenu">
+    @contextmenu.prevent.stop="handleContextMenu">
     <div v-if="prefs.twoLineMode" class="taskbar-grid" :style="{ '--taskbar-cols': String(twoLineCols) }">
       <div
         v-for="(seg, idx) in twoLineCells"
@@ -14,7 +14,10 @@
         class="taskbar-cell"
         :class="{ 'taskbar-cell--empty': !seg }">
         <template v-if="seg">
-          <span class="taskbar-k">{{ seg.label }}</span>
+          <span class="taskbar-k" :class="{ 'taskbar-k--icon': seg.labelIcon }">
+            <span v-if="seg.labelIcon" class="material-symbols-outlined taskbar-icon">{{ seg.labelIcon }}</span>
+            <span v-else>{{ seg.label }}</span>
+          </span>
           <span class="taskbar-v" :class="seg.valueClass" :style="fixedTextWidth(seg.valueWidthCh)">
             {{ seg.value }}
           </span>
@@ -28,7 +31,10 @@
       <template v-for="(seg, idx) in segments" :key="seg.id">
         <span v-if="idx > 0" class="taskbar-sep">|</span>
         <span class="taskbar-seg">
-          <span class="taskbar-k">{{ seg.label }}</span>
+          <span class="taskbar-k" :class="{ 'taskbar-k--icon': seg.labelIcon }">
+            <span v-if="seg.labelIcon" class="material-symbols-outlined taskbar-icon">{{ seg.labelIcon }}</span>
+            <span v-else>{{ seg.label }}</span>
+          </span>
           <span class="taskbar-v" :class="seg.valueClass" :style="fixedTextWidth(seg.valueWidthCh)">
             {{ seg.value }}
           </span>
@@ -39,16 +45,26 @@
       </template>
     </div>
   </section>
+  <TaskbarContextMenu
+    ref="contextMenuRef"
+    :always-on-top="alwaysOnTop"
+    :remember-position="rememberPosition"
+    :prefs="prefs"
+    :show-main-window="showMainWindow"
+    :apply-taskbar-topmost="applyTaskbarTopmost"
+    :pause-topmost-guard="pauseTopmostGuard"
+    :resume-topmost-guard="resumeTopmostGuard" />
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { useTaskbarPrefs } from '../composables/useTaskbarPrefs';
 import { useTaskbarWindow } from '../composables/useTaskbarWindow';
 import { api, inTauri } from '../services/tauri';
 import { useAppStore } from '../stores/app';
+import TaskbarContextMenu from '../components/TaskbarContextMenu.vue';
 
 const store = useAppStore();
 const { t } = useI18n();
@@ -57,6 +73,7 @@ const { prefs } = useTaskbarPrefs();
 const rememberPosition = computed(() => store.settings.rememberOverlayPosition);
 const alwaysOnTop = computed(() => store.settings.taskbarAlwaysOnTop);
 const { barRef, handleMouseDown, scheduleResize } = useTaskbarWindow({ rememberPosition });
+const contextMenuRef = ref<{ open: (event: MouseEvent) => void } | null>(null);
 
 const snapshot = computed(() => store.snapshot);
 
@@ -112,7 +129,14 @@ function usageClass(value: number, base: 'cyan' | 'pink') {
   return base === 'cyan' ? 'overlay-glow-cyan' : 'overlay-glow-pink';
 }
 
-type Segment = { id: string; label: string; value: string; extra?: string; valueClass?: string };
+type Segment = {
+  id: string;
+  label: string;
+  labelIcon?: string;
+  value: string;
+  extra?: string;
+  valueClass?: string;
+};
 type SegmentWidthPreset = { valueWidthCh: number; extraWidthCh?: number };
 
 const SEGMENT_WIDTH_PRESETS: Record<string, SegmentWidthPreset> = {
@@ -197,11 +221,27 @@ const segments = computed<SizedSegment[]>(() => {
   }
 
   if (prefs.showDown) {
-    parts.push(createSegment({ id: 'down', label: 'D', value: down.value, extra: 'MB/s' }));
+    parts.push(
+      createSegment({
+        id: 'down',
+        label: t('overlay.down'),
+        labelIcon: 'arrow_downward',
+        value: down.value,
+        extra: 'MB/s'
+      })
+    );
   }
 
   if (prefs.showUp) {
-    parts.push(createSegment({ id: 'up', label: 'U', value: up.value, extra: 'MB/s' }));
+    parts.push(
+      createSegment({
+        id: 'up',
+        label: t('overlay.up'),
+        labelIcon: 'arrow_upward',
+        value: up.value,
+        extra: 'MB/s'
+      })
+    );
   }
 
   if (prefs.showLatency) {
@@ -224,6 +264,10 @@ const twoLineCells = computed(() => {
 
 async function showMainWindow() {
   await store.toggleOverlay(true);
+}
+
+function handleContextMenu(event: MouseEvent) {
+  contextMenuRef.value?.open(event);
 }
 
 async function applyTaskbarTopmost(enabled: boolean) {
@@ -316,125 +360,6 @@ function stopTopmostGuard() {
   if (unlistenFocusChanged) {
     unlistenFocusChanged();
     unlistenFocusChanged = null;
-  }
-}
-
-async function openContextMenu(event: MouseEvent) {
-  if (!inTauri()) {
-    return;
-  }
-
-  pauseTopmostGuard();
-  try {
-    const [{ Menu, CheckMenuItem, MenuItem, PredefinedMenuItem }, { LogicalPosition }, { getCurrentWindow }] =
-      await Promise.all([
-        import('@tauri-apps/api/menu'),
-        import('@tauri-apps/api/dpi'),
-        import('@tauri-apps/api/window')
-      ]);
-
-    const items = [
-      await MenuItem.new({
-        text: t('overlay.openMainWindow'),
-        action: () => void showMainWindow()
-      }),
-      await PredefinedMenuItem.new({ item: 'Separator' }),
-      await CheckMenuItem.new({
-        text: t('overlay.alwaysOnTop'),
-        checked: alwaysOnTop.value,
-        action: async () => {
-          const next = !alwaysOnTop.value;
-          store.setTaskbarAlwaysOnTop(next);
-          await applyTaskbarTopmost(next);
-        }
-      }),
-      await CheckMenuItem.new({
-        text: t('overlay.rememberPosition'),
-        checked: rememberPosition.value,
-        action: () => store.setRememberOverlayPosition(!rememberPosition.value)
-      }),
-      await PredefinedMenuItem.new({ item: 'Separator' }),
-      await CheckMenuItem.new({
-        text: t('overlay.taskbarTwoLine'),
-        checked: prefs.twoLineMode,
-        action: () => (prefs.twoLineMode = !prefs.twoLineMode)
-      }),
-      await PredefinedMenuItem.new({ item: 'Separator' }),
-      await CheckMenuItem.new({
-        text: t('overlay.cpu'),
-        checked: prefs.showCpu,
-        action: () => (prefs.showCpu = !prefs.showCpu)
-      }),
-      // await CheckMenuItem.new({
-      //   text: t('overlay.cpuFreq'),
-      //   checked: prefs.showCpuFreq,
-      //   enabled: prefs.showCpu,
-      //   action: () => (prefs.showCpuFreq = !prefs.showCpuFreq)
-      // }),
-      // await CheckMenuItem.new({
-      //   text: t('overlay.cpuTemp'),
-      //   checked: prefs.showCpuTemp,
-      //   enabled: prefs.showCpu,
-      //   action: () => (prefs.showCpuTemp = !prefs.showCpuTemp)
-      // }),
-      await PredefinedMenuItem.new({ item: 'Separator' }),
-      await CheckMenuItem.new({
-        text: t('overlay.gpu'),
-        checked: prefs.showGpu,
-        action: () => (prefs.showGpu = !prefs.showGpu)
-      }),
-      // await CheckMenuItem.new({
-      //   text: t('overlay.gpuTemp'),
-      //   checked: prefs.showGpuTemp,
-      //   enabled: prefs.showGpu,
-      //   action: () => (prefs.showGpuTemp = !prefs.showGpuTemp)
-      // }),
-      await CheckMenuItem.new({
-        text: t('overlay.memory'),
-        checked: prefs.showMemory,
-        action: () => (prefs.showMemory = !prefs.showMemory)
-      }),
-      await CheckMenuItem.new({
-        text: t('overlay.app'),
-        checked: prefs.showApp,
-        action: () => (prefs.showApp = !prefs.showApp)
-      }),
-      await PredefinedMenuItem.new({ item: 'Separator' }),
-      await CheckMenuItem.new({
-        text: t('overlay.down'),
-        checked: prefs.showDown,
-        action: () => (prefs.showDown = !prefs.showDown)
-      }),
-      await CheckMenuItem.new({
-        text: t('overlay.up'),
-        checked: prefs.showUp,
-        action: () => (prefs.showUp = !prefs.showUp)
-      }),
-      // await CheckMenuItem.new({
-      //   text: t('overlay.latency'),
-      //   checked: prefs.showLatency,
-      //   action: () => (prefs.showLatency = !prefs.showLatency)
-      // }),
-      await PredefinedMenuItem.new({ item: 'Separator' }),
-      await MenuItem.new({
-        text: t('overlay.closeTaskbarMonitor'),
-        action: async () => {
-          await store.setTaskbarMonitorEnabled(false);
-          try {
-            await getCurrentWindow().close();
-          } catch {
-            // ignore
-          }
-        }
-      })
-    ];
-
-    const menu = await Menu.new({ items });
-    await menu.popup(new LogicalPosition(event.clientX, event.clientY), getCurrentWindow());
-  } finally {
-    window.setTimeout(() => {
-      resumeTopmostGuard();
-    }, 100);
   }
 }
 

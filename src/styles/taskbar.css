@@ -86,6 +86,22 @@ html.window-taskbar body {
   text-transform: uppercase;
 }
 
+.taskbar-k--icon {
+  letter-spacing: 0;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.taskbar-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.taskbar-bar--two-line .taskbar-icon {
+  font-size: 11px;
+}
+
 .taskbar-v {
   font-family:
     'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
