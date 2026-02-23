@@ -597,4 +597,45 @@ pub fn get_taskbar_info() -> CmdResult<Option<crate::types::TaskbarInfo>> {
     }
 }
 
+#[tauri::command]
+pub fn set_window_system_topmost(app: AppHandle, label: String, topmost: bool) -> CmdResult<()> {
+    let win = app
+        .get_webview_window(&label)
+        .ok_or_else(|| format!("window not found: {label}"))?;
+
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::Foundation::{GetLastError, HWND};
+        use windows_sys::Win32::UI::WindowsAndMessaging::{
+            SetWindowPos, HWND_NOTOPMOST, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW,
+        };
+
+        let hwnd = win.hwnd().map_err(|e| e.to_string())?;
+        let flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW;
+        let hwnd_value = hwnd.0 as HWND;
+        if topmost {
+            // Two-step promote keeps the window at the front of the TOPMOST band.
+            let _ = unsafe { SetWindowPos(hwnd_value, HWND_NOTOPMOST, 0, 0, 0, 0, flags) };
+            let ok = unsafe { SetWindowPos(hwnd_value, HWND_TOPMOST, 0, 0, 0, 0, flags) };
+            if ok == 0 {
+                let code = unsafe { GetLastError() };
+                return Err(format!("set window z-order failed: {code}"));
+            }
+        } else {
+            let ok = unsafe { SetWindowPos(hwnd_value, HWND_NOTOPMOST, 0, 0, 0, 0, flags) };
+            if ok == 0 {
+                let code = unsafe { GetLastError() };
+                return Err(format!("set window z-order failed: {code}"));
+            }
+        }
+        return Ok(());
+    }
+
+    #[cfg(not(windows))]
+    {
+        win.set_always_on_top(topmost).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+}
+
 

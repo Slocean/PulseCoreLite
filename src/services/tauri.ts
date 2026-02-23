@@ -33,6 +33,8 @@ export const api = {
   getInstallationMode: () => tauriInvoke<"installed" | "portable">("get_installation_mode"),
   uninstallApp: (title: string, message: string) => tauriInvoke<void>("uninstall_app", { title, message }),
   getTaskbarInfo: () => tauriInvoke<TaskbarInfo | null>("get_taskbar_info"),
+  setWindowSystemTopmost: (label: string, topmost: boolean) =>
+    tauriInvoke<void>("set_window_system_topmost", { label, topmost }),
   getAutoStartEnabled: () => tauriInvoke<boolean>("get_auto_start_enabled"),
   setAutoStartEnabled: (enabled: boolean) => tauriInvoke<boolean>("set_auto_start_enabled", { enabled }),
   saveExportConfig: (path: string, content: string) => tauriInvoke<void>("save_export_config", { path, content }),

@@ -39,6 +39,7 @@ pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Bu
         commands::get_initial_state,
         commands::get_hardware_info,
         commands::get_taskbar_info,
+        commands::set_window_system_topmost,
         commands::get_auto_start_enabled,
         commands::set_auto_start_enabled,
         commands::get_installation_mode,

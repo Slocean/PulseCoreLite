@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue';
+import { computed, onMounted, onUnmounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { useTaskbarPrefs } from '../composables/useTaskbarPrefs';
@@ -184,6 +184,81 @@ async function showMainWindow() {
   await store.toggleOverlay(true);
 }
 
+async function applyTaskbarTopmost(enabled: boolean) {
+  if (!inTauri()) {
+    return;
+  }
+  try {
+    await api.setWindowSystemTopmost('taskbar', enabled);
+  } catch {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      await getCurrentWindow().setAlwaysOnTop(enabled);
+    } catch {
+      // ignore
+    }
+  }
+}
+
+let topmostRepairTimer: number | null = null;
+let topmostHeartbeatTimer: number | null = null;
+let unlistenFocusChanged: (() => void) | null = null;
+
+function clearTopmostRepairTimer() {
+  if (topmostRepairTimer != null) {
+    window.clearTimeout(topmostRepairTimer);
+    topmostRepairTimer = null;
+  }
+}
+
+function scheduleTopmostRepair(delayMs = 0) {
+  if (!inTauri() || !alwaysOnTop.value) {
+    return;
+  }
+  clearTopmostRepairTimer();
+  topmostRepairTimer = window.setTimeout(() => {
+    topmostRepairTimer = null;
+    void applyTaskbarTopmost(true);
+  }, delayMs);
+}
+
+async function startTopmostGuard() {
+  if (!inTauri()) {
+    return;
+  }
+  scheduleTopmostRepair(0);
+  if (topmostHeartbeatTimer == null) {
+    // Keep the monitor on the front of the TOPMOST band.
+    topmostHeartbeatTimer = window.setInterval(() => {
+      scheduleTopmostRepair(0);
+    }, 1500);
+  }
+  if (!unlistenFocusChanged) {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      unlistenFocusChanged = await getCurrentWindow().onFocusChanged(({ payload: focused }) => {
+        if (!focused) {
+          scheduleTopmostRepair(60);
+        }
+      });
+    } catch {
+      // ignore
+    }
+  }
+}
+
+function stopTopmostGuard() {
+  clearTopmostRepairTimer();
+  if (topmostHeartbeatTimer != null) {
+    window.clearInterval(topmostHeartbeatTimer);
+    topmostHeartbeatTimer = null;
+  }
+  if (unlistenFocusChanged) {
+    unlistenFocusChanged();
+    unlistenFocusChanged = null;
+  }
+}
+
 async function openContextMenu(event: MouseEvent) {
   if (!inTauri()) {
     return;
@@ -208,11 +283,7 @@ async function openContextMenu(event: MouseEvent) {
       action: async () => {
         const next = !alwaysOnTop.value;
         store.setTaskbarAlwaysOnTop(next);
-        try {
-          await getCurrentWindow().setAlwaysOnTop(next);
-        } catch {
-          // ignore
-        }
+        await applyTaskbarTopmost(next);
       }
     }),
     await CheckMenuItem.new({
@@ -322,18 +393,20 @@ onMounted(() => {
   void syncTaskbarHeightVar();
 });
 
+onUnmounted(() => {
+  stopTopmostGuard();
+});
+
 watch(
   alwaysOnTop,
   enabled => {
     if (!inTauri()) return;
-    void (async () => {
-      try {
-        const { getCurrentWindow } = await import('@tauri-apps/api/window');
-        await getCurrentWindow().setAlwaysOnTop(enabled);
-      } catch {
-        // ignore
-      }
-    })();
+    void applyTaskbarTopmost(enabled);
+    if (enabled) {
+      void startTopmostGuard();
+    } else {
+      stopTopmostGuard();
+    }
   },
   { immediate: true }
 );
