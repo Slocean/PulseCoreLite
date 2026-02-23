@@ -8,7 +8,7 @@ html.window-taskbar body {
 }
 
 .taskbar-bar {
-  height: var(--taskbar-height, 48px);
+  height: max(24px, calc(var(--taskbar-height, 48px) - 4px));
   padding: 0 10px;
   display: inline-flex;
   align-items: center;
@@ -45,7 +45,7 @@ html.window-taskbar body {
   grid-template-rows: repeat(2, auto);
   grid-template-columns: repeat(var(--taskbar-cols, 1), max-content);
   column-gap: 12px;
-  row-gap: 1px;
+  row-gap: 4px;
   align-items: baseline;
 }
 
@@ -89,6 +89,8 @@ html.window-taskbar body {
 .taskbar-v {
   font-family:
     'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  display: inline-block;
+  text-align: right;
   font-size: 13px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -99,6 +101,7 @@ html.window-taskbar body {
 .taskbar-extra {
   font-family:
     'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  display: inline-block;
   font-size: 11px;
   letter-spacing: 0.06em;
   color: rgba(255, 255, 255, 0.8);

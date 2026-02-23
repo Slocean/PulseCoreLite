@@ -15,8 +15,12 @@
         :class="{ 'taskbar-cell--empty': !seg }">
         <template v-if="seg">
           <span class="taskbar-k">{{ seg.label }}</span>
-          <span class="taskbar-v" :class="seg.valueClass">{{ seg.value }}</span>
-          <span v-if="seg.extra" class="taskbar-extra">{{ seg.extra }}</span>
+          <span class="taskbar-v" :class="seg.valueClass" :style="fixedTextWidth(seg.valueWidthCh)">
+            {{ seg.value }}
+          </span>
+          <span v-if="seg.extra" class="taskbar-extra" :style="fixedTextWidth(seg.extraWidthCh)">
+            {{ seg.extra }}
+          </span>
         </template>
       </div>
     </div>
@@ -25,8 +29,12 @@
         <span v-if="idx > 0" class="taskbar-sep">|</span>
         <span class="taskbar-seg">
           <span class="taskbar-k">{{ seg.label }}</span>
-          <span class="taskbar-v" :class="seg.valueClass">{{ seg.value }}</span>
-          <span v-if="seg.extra" class="taskbar-extra">{{ seg.extra }}</span>
+          <span class="taskbar-v" :class="seg.valueClass" :style="fixedTextWidth(seg.valueWidthCh)">
+            {{ seg.value }}
+          </span>
+          <span v-if="seg.extra" class="taskbar-extra" :style="fixedTextWidth(seg.extraWidthCh)">
+            {{ seg.extra }}
+          </span>
         </span>
       </template>
     </div>
@@ -105,65 +113,99 @@ function usageClass(value: number, base: 'cyan' | 'pink') {
 }
 
 type Segment = { id: string; label: string; value: string; extra?: string; valueClass?: string };
+type SegmentWidthPreset = { valueWidthCh: number; extraWidthCh?: number };
 
-const segments = computed<Segment[]>(() => {
-  const parts: Segment[] = [];
+const SEGMENT_WIDTH_PRESETS: Record<string, SegmentWidthPreset> = {
+  cpu: { valueWidthCh: 4, extraWidthCh: 5 },
+  gpu: { valueWidthCh: 4, extraWidthCh: 5 },
+  ram: { valueWidthCh: 4 },
+  app: { valueWidthCh: 4, extraWidthCh: 8 },
+  down: { valueWidthCh: 6, extraWidthCh: 4 },
+  up: { valueWidthCh: 6, extraWidthCh: 4 },
+  lat: { valueWidthCh: 6 }
+};
+
+type SizedSegment = Segment & SegmentWidthPreset;
+
+function createSegment(segment: Segment): SizedSegment {
+  const preset = SEGMENT_WIDTH_PRESETS[segment.id] ?? { valueWidthCh: 4 };
+  return {
+    ...segment,
+    ...preset
+  };
+}
+
+function fixedTextWidth(widthCh?: number) {
+  if (!widthCh) return undefined;
+  return { width: `${widthCh}ch` };
+}
+
+const segments = computed<SizedSegment[]>(() => {
+  const parts: SizedSegment[] = [];
 
   if (prefs.showCpu) {
     const extras: string[] = [];
     if (prefs.showCpuFreq && cpuFreq.value) extras.push(cpuFreq.value);
     if (prefs.showCpuTemp && cpuTemp.value) extras.push(cpuTemp.value);
-    parts.push({
-      id: 'cpu',
-      label: 'CPU',
-      value: cpuPct.value,
-      extra: extras.length > 0 ? extras.join(' ') : undefined,
-      valueClass: usageClass(snapshot.value.cpu.usage_pct, 'cyan')
-    });
+    parts.push(
+      createSegment({
+        id: 'cpu',
+        label: 'CPU',
+        value: cpuPct.value,
+        extra: extras.length > 0 ? extras.join(' ') : undefined,
+        valueClass: usageClass(snapshot.value.cpu.usage_pct, 'cyan')
+      })
+    );
   }
 
   if (prefs.showGpu) {
     const value = gpuPct.value ?? t('common.na');
     const extras: string[] = [];
     if (prefs.showGpuTemp && gpuTemp.value) extras.push(gpuTemp.value);
-    parts.push({
-      id: 'gpu',
-      label: 'GPU',
-      value,
-      extra: extras.length > 0 ? extras.join(' ') : undefined,
-      valueClass: snapshot.value.gpu.usage_pct == null ? '' : usageClass(snapshot.value.gpu.usage_pct, 'pink')
-    });
+    parts.push(
+      createSegment({
+        id: 'gpu',
+        label: 'GPU',
+        value,
+        extra: extras.length > 0 ? extras.join(' ') : undefined,
+        valueClass: snapshot.value.gpu.usage_pct == null ? '' : usageClass(snapshot.value.gpu.usage_pct, 'pink')
+      })
+    );
   }
 
   if (prefs.showMemory) {
-    parts.push({
-      id: 'ram',
-      label: 'RAM',
-      value: memPct.value
-      // extra: memUsage.value
-    });
+    parts.push(
+      createSegment({
+        id: 'ram',
+        label: 'RAM',
+        value: memPct.value
+        // extra: memUsage.value
+      })
+    );
   }
 
   if (prefs.showApp && (appCpuPct.value || appMem.value)) {
-    parts.push({
-      id: 'app',
-      label: 'APP',
-      value: appCpuPct.value ?? t('common.na'),
-      extra: appMem.value ?? undefined,
-      valueClass: 'overlay-glow-cyan'
-    });
+    parts.push(
+      createSegment({
+        id: 'app',
+        label: 'APP',
+        value: appCpuPct.value ?? t('common.na'),
+        extra: appMem.value ?? undefined,
+        valueClass: 'overlay-glow-cyan'
+      })
+    );
   }
 
   if (prefs.showDown) {
-    parts.push({ id: 'down', label: 'D', value: down.value, extra: 'MB/s' });
+    parts.push(createSegment({ id: 'down', label: 'D', value: down.value, extra: 'MB/s' }));
   }
 
   if (prefs.showUp) {
-    parts.push({ id: 'up', label: 'U', value: up.value, extra: 'MB/s' });
+    parts.push(createSegment({ id: 'up', label: 'U', value: up.value, extra: 'MB/s' }));
   }
 
   if (prefs.showLatency) {
-    parts.push({ id: 'lat', label: 'L', value: latency.value ?? t('common.na') });
+    parts.push(createSegment({ id: 'lat', label: 'L', value: latency.value ?? t('common.na') }));
   }
 
   return parts;
@@ -173,7 +215,7 @@ const twoLineCols = computed(() => Math.max(1, Math.ceil(segments.value.length /
 const twoLineCells = computed(() => {
   const cols = twoLineCols.value;
   const list = segments.value;
-  const cells: Array<Segment | null> = Array.from({ length: cols * 2 }, () => null);
+  const cells: Array<SizedSegment | null> = Array.from({ length: cols * 2 }, () => null);
   for (let i = 0; i < Math.min(list.length, cells.length); i++) {
     cells[i] = list[i];
   }
