@@ -16,6 +16,7 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
   let windowApiPromise: Promise<typeof import('@tauri-apps/api/window')> | undefined;
   let moveUnlisten: (() => void) | undefined;
   let moveFrame: number | undefined;
+  let correctingVerticalBounds = false;
   let lastPosition: { x: number; y: number } | null = null;
   let rememberInit = false;
 
@@ -65,6 +66,47 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
     return width * height;
   };
 
+  const pickBestMonitorRect = (
+    position: { x: number; y: number },
+    windowSize: { width: number; height: number },
+    monitorRects: Rect[]
+  ): Rect => {
+    const windowRect: Rect = {
+      left: position.x,
+      top: position.y,
+      right: position.x + windowSize.width,
+      bottom: position.y + windowSize.height
+    };
+
+    const bestVisible = monitorRects
+      .map((rect, index) => ({ index, area: intersectionArea(windowRect, rect) }))
+      .sort((a, b) => b.area - a.area)[0];
+
+    const hasEnoughVisibleArea = bestVisible.area >= Math.min(windowSize.width * windowSize.height * 0.2, 320 * 80);
+    if (hasEnoughVisibleArea) {
+      return monitorRects[bestVisible.index];
+    }
+
+    const centerX = position.x + windowSize.width / 2;
+    const centerY = position.y + windowSize.height / 2;
+    return monitorRects
+      .map(rect => {
+        const monitorCenterX = (rect.left + rect.right) / 2;
+        const monitorCenterY = (rect.top + rect.bottom) / 2;
+        const distance = (monitorCenterX - centerX) ** 2 + (monitorCenterY - centerY) ** 2;
+        return { rect, distance };
+      })
+      .sort((a, b) => a.distance - b.distance)[0].rect;
+  };
+
+  const clampYToMonitor = (y: number, windowHeight: number, monitor: Rect) => {
+    const monitorHeight = monitor.bottom - monitor.top;
+    if (windowHeight >= monitorHeight) {
+      return Math.round(monitor.top);
+    }
+    return Math.round(clamp(y, monitor.top, monitor.bottom - windowHeight));
+  };
+
   const clampPositionToMonitor = (
     position: { x: number; y: number },
     windowSize: { width: number; height: number },
@@ -96,34 +138,34 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
     if (monitors.length === 0) return saved;
 
     const windowSize = await getCurrentWindow().outerSize();
-    const savedRect: Rect = {
-      left: saved.x,
-      top: saved.y,
-      right: saved.x + windowSize.width,
-      bottom: saved.y + windowSize.height
-    };
-
     const monitorRects = monitors.map(toMonitorRect);
-    const bestVisible = monitorRects
-      .map((rect, index) => ({ index, area: intersectionArea(savedRect, rect) }))
-      .sort((a, b) => b.area - a.area)[0];
-
-    const hasEnoughVisibleArea = bestVisible.area >= Math.min(windowSize.width * windowSize.height * 0.2, 320 * 80);
-
-    const chosenMonitor = hasEnoughVisibleArea
-      ? monitorRects[bestVisible.index]
-      : monitorRects
-          .map(rect => {
-            const centerX = (rect.left + rect.right) / 2;
-            const centerY = (rect.top + rect.bottom) / 2;
-            const savedCenterX = saved.x + windowSize.width / 2;
-            const savedCenterY = saved.y + windowSize.height / 2;
-            const distance = (centerX - savedCenterX) ** 2 + (centerY - savedCenterY) ** 2;
-            return { rect, distance };
-          })
-          .sort((a, b) => a.distance - b.distance)[0].rect;
+    const chosenMonitor = pickBestMonitorRect(saved, windowSize, monitorRects);
 
     return clampPositionToMonitor(saved, windowSize, chosenMonitor);
+  };
+
+  const clampWindowToVerticalBounds = async () => {
+    if (!inTauri()) return null;
+    const { availableMonitors, getCurrentWindow, PhysicalPosition } = await getWindowApi();
+    const win = getCurrentWindow();
+    const [pos, size, monitors] = await Promise.all([win.outerPosition(), win.outerSize(), availableMonitors()]);
+    if (monitors.length === 0) {
+      return { x: pos.x, y: pos.y };
+    }
+
+    const monitor = pickBestMonitorRect({ x: pos.x, y: pos.y }, size, monitors.map(toMonitorRect));
+    const nextY = clampYToMonitor(pos.y, size.height, monitor);
+    if (nextY === pos.y) {
+      return { x: pos.x, y: pos.y };
+    }
+
+    correctingVerticalBounds = true;
+    try {
+      await win.setPosition(new PhysicalPosition(pos.x, nextY));
+    } finally {
+      correctingVerticalBounds = false;
+    }
+    return { x: pos.x, y: nextY };
   };
 
   const applyWindowSize = async (width: number, height: number) => {
@@ -134,6 +176,10 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
     lastSize = { width: nextWidth, height: nextHeight };
     const { getCurrentWindow, LogicalSize } = await getWindowApi();
     await getCurrentWindow().setSize(new LogicalSize(nextWidth, nextHeight));
+    const corrected = await clampWindowToVerticalBounds();
+    if (corrected && rememberPosition.value) {
+      savePosition(corrected);
+    }
   };
 
   const restorePosition = async () => {
@@ -149,9 +195,9 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
     if (moveFrame != null) return;
     moveFrame = window.requestAnimationFrame(async () => {
       moveFrame = undefined;
-      const { getCurrentWindow } = await getWindowApi();
-      const pos = await getCurrentWindow().outerPosition();
-      savePosition({ x: pos.x, y: pos.y });
+      const corrected = await clampWindowToVerticalBounds();
+      if (!corrected || !rememberPosition.value) return;
+      savePosition(corrected);
     });
   };
 
@@ -215,7 +261,7 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
     void getWindowApi()
       .then(({ getCurrentWindow }) =>
         getCurrentWindow().onMoved(() => {
-          if (!rememberPosition.value) return;
+          if (correctingVerticalBounds) return;
           schedulePositionSave();
         })
       )
