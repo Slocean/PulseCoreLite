@@ -124,9 +124,9 @@
           </div>
         </div>
         <div v-if="backgroundImageSource" class="overlay-config-range">
-          <span class="overlay-config-label">{{
-            backgroundEffect === 'gaussian' ? t('overlay.backgroundBlur') : t('overlay.backgroundGlassBlur')
-          }}</span>
+          <span class="overlay-config-label">
+            {{ backgroundEffect === 'gaussian' ? t('overlay.backgroundBlur') : t('overlay.backgroundGlassBlur') }}
+          </span>
           <span class="overlay-config-value">{{ backgroundBlurPx }}px</span>
           <input
             type="range"
@@ -225,8 +225,9 @@
     @cancel="closeEditThemeDialog">
     <template #body>
       <div class="overlay-dialog-input-wrap">
-        <div class="overlay-dialog-message">{{ t('overlay.themeEditHint') }}</div>
+        <!-- <div class="overlay-dialog-message">{{ t('overlay.themeEditHint') }}</div> -->
         <input
+          v-if="false"
           v-model="themeEditNameInput"
           class="overlay-dialog-input"
           type="text"
@@ -252,9 +253,9 @@
           </div>
         </div>
         <div class="overlay-config-range" style="margin-top: 10px">
-          <span class="overlay-config-label">{{
-            themeEditEffect === 'gaussian' ? t('overlay.backgroundBlur') : t('overlay.backgroundGlassBlur')
-          }}</span>
+          <span class="overlay-config-label">
+            {{ themeEditEffect === 'gaussian' ? t('overlay.backgroundBlur') : t('overlay.backgroundGlassBlur') }}
+          </span>
           <span class="overlay-config-value">{{ themeEditBlurPx }}px</span>
           <input type="range" min="0" max="24" step="1" v-model.number="themeEditBlurPx" />
         </div>
