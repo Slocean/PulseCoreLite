@@ -245,6 +245,24 @@ async function applyTaskbarTopmost(enabled: boolean) {
 let topmostRepairTimer: number | null = null;
 let topmostHeartbeatTimer: number | null = null;
 let unlistenFocusChanged: (() => void) | null = null;
+let topmostGuardPauseDepth = 0;
+
+function isTopmostGuardPaused() {
+  return topmostGuardPauseDepth > 0;
+}
+
+function pauseTopmostGuard() {
+  topmostGuardPauseDepth += 1;
+  stopTopmostGuard();
+}
+
+function resumeTopmostGuard() {
+  if (topmostGuardPauseDepth === 0) return;
+  topmostGuardPauseDepth -= 1;
+  if (topmostGuardPauseDepth === 0 && alwaysOnTop.value) {
+    void startTopmostGuard();
+  }
+}
 
 function clearTopmostRepairTimer() {
   if (topmostRepairTimer != null) {
@@ -254,7 +272,7 @@ function clearTopmostRepairTimer() {
 }
 
 function scheduleTopmostRepair(delayMs = 0) {
-  if (!inTauri() || !alwaysOnTop.value) {
+  if (!inTauri() || !alwaysOnTop.value || isTopmostGuardPaused()) {
     return;
   }
   clearTopmostRepairTimer();
@@ -265,7 +283,7 @@ function scheduleTopmostRepair(delayMs = 0) {
 }
 
 async function startTopmostGuard() {
-  if (!inTauri()) {
+  if (!inTauri() || isTopmostGuardPaused()) {
     return;
   }
   scheduleTopmostRepair(0);
@@ -306,111 +324,118 @@ async function openContextMenu(event: MouseEvent) {
     return;
   }
 
-  const [{ Menu, CheckMenuItem, MenuItem, PredefinedMenuItem }, { LogicalPosition }, { getCurrentWindow }] =
-    await Promise.all([
-      import('@tauri-apps/api/menu'),
-      import('@tauri-apps/api/dpi'),
-      import('@tauri-apps/api/window')
-    ]);
+  pauseTopmostGuard();
+  try {
+    const [{ Menu, CheckMenuItem, MenuItem, PredefinedMenuItem }, { LogicalPosition }, { getCurrentWindow }] =
+      await Promise.all([
+        import('@tauri-apps/api/menu'),
+        import('@tauri-apps/api/dpi'),
+        import('@tauri-apps/api/window')
+      ]);
 
-  const items = [
-    await MenuItem.new({
-      text: t('overlay.openMainWindow'),
-      action: () => void showMainWindow()
-    }),
-    await PredefinedMenuItem.new({ item: 'Separator' }),
-    await CheckMenuItem.new({
-      text: t('overlay.alwaysOnTop'),
-      checked: alwaysOnTop.value,
-      action: async () => {
-        const next = !alwaysOnTop.value;
-        store.setTaskbarAlwaysOnTop(next);
-        await applyTaskbarTopmost(next);
-      }
-    }),
-    await CheckMenuItem.new({
-      text: t('overlay.rememberPosition'),
-      checked: rememberPosition.value,
-      action: () => store.setRememberOverlayPosition(!rememberPosition.value)
-    }),
-    await PredefinedMenuItem.new({ item: 'Separator' }),
-    await CheckMenuItem.new({
-      text: t('overlay.taskbarTwoLine'),
-      checked: prefs.twoLineMode,
-      action: () => (prefs.twoLineMode = !prefs.twoLineMode)
-    }),
-    await PredefinedMenuItem.new({ item: 'Separator' }),
-    await CheckMenuItem.new({
-      text: t('overlay.cpu'),
-      checked: prefs.showCpu,
-      action: () => (prefs.showCpu = !prefs.showCpu)
-    }),
-    await CheckMenuItem.new({
-      text: t('overlay.cpuFreq'),
-      checked: prefs.showCpuFreq,
-      enabled: prefs.showCpu,
-      action: () => (prefs.showCpuFreq = !prefs.showCpuFreq)
-    }),
-    await CheckMenuItem.new({
-      text: t('overlay.cpuTemp'),
-      checked: prefs.showCpuTemp,
-      enabled: prefs.showCpu,
-      action: () => (prefs.showCpuTemp = !prefs.showCpuTemp)
-    }),
-    await PredefinedMenuItem.new({ item: 'Separator' }),
-    await CheckMenuItem.new({
-      text: t('overlay.gpu'),
-      checked: prefs.showGpu,
-      action: () => (prefs.showGpu = !prefs.showGpu)
-    }),
-    await CheckMenuItem.new({
-      text: t('overlay.gpuTemp'),
-      checked: prefs.showGpuTemp,
-      enabled: prefs.showGpu,
-      action: () => (prefs.showGpuTemp = !prefs.showGpuTemp)
-    }),
-    await CheckMenuItem.new({
-      text: t('overlay.memory'),
-      checked: prefs.showMemory,
-      action: () => (prefs.showMemory = !prefs.showMemory)
-    }),
-    await CheckMenuItem.new({
-      text: t('overlay.app'),
-      checked: prefs.showApp,
-      action: () => (prefs.showApp = !prefs.showApp)
-    }),
-    await PredefinedMenuItem.new({ item: 'Separator' }),
-    await CheckMenuItem.new({
-      text: t('overlay.down'),
-      checked: prefs.showDown,
-      action: () => (prefs.showDown = !prefs.showDown)
-    }),
-    await CheckMenuItem.new({
-      text: t('overlay.up'),
-      checked: prefs.showUp,
-      action: () => (prefs.showUp = !prefs.showUp)
-    }),
-    await CheckMenuItem.new({
-      text: t('overlay.latency'),
-      checked: prefs.showLatency,
-      action: () => (prefs.showLatency = !prefs.showLatency)
-    }),
-    await PredefinedMenuItem.new({ item: 'Separator' }),
-    await MenuItem.new({
-      text: t('overlay.closeTaskbarMonitor'),
-      action: async () => {
-        await store.setTaskbarMonitorEnabled(false);
-        try {
-          await getCurrentWindow().close();
-        } catch {
-          // ignore
+    const items = [
+      await MenuItem.new({
+        text: t('overlay.openMainWindow'),
+        action: () => void showMainWindow()
+      }),
+      await PredefinedMenuItem.new({ item: 'Separator' }),
+      await CheckMenuItem.new({
+        text: t('overlay.alwaysOnTop'),
+        checked: alwaysOnTop.value,
+        action: async () => {
+          const next = !alwaysOnTop.value;
+          store.setTaskbarAlwaysOnTop(next);
+          await applyTaskbarTopmost(next);
         }
-      }
-    })
-  ];
+      }),
+      await CheckMenuItem.new({
+        text: t('overlay.rememberPosition'),
+        checked: rememberPosition.value,
+        action: () => store.setRememberOverlayPosition(!rememberPosition.value)
+      }),
+      await PredefinedMenuItem.new({ item: 'Separator' }),
+      await CheckMenuItem.new({
+        text: t('overlay.taskbarTwoLine'),
+        checked: prefs.twoLineMode,
+        action: () => (prefs.twoLineMode = !prefs.twoLineMode)
+      }),
+      await PredefinedMenuItem.new({ item: 'Separator' }),
+      await CheckMenuItem.new({
+        text: t('overlay.cpu'),
+        checked: prefs.showCpu,
+        action: () => (prefs.showCpu = !prefs.showCpu)
+      }),
+      await CheckMenuItem.new({
+        text: t('overlay.cpuFreq'),
+        checked: prefs.showCpuFreq,
+        enabled: prefs.showCpu,
+        action: () => (prefs.showCpuFreq = !prefs.showCpuFreq)
+      }),
+      await CheckMenuItem.new({
+        text: t('overlay.cpuTemp'),
+        checked: prefs.showCpuTemp,
+        enabled: prefs.showCpu,
+        action: () => (prefs.showCpuTemp = !prefs.showCpuTemp)
+      }),
+      await PredefinedMenuItem.new({ item: 'Separator' }),
+      await CheckMenuItem.new({
+        text: t('overlay.gpu'),
+        checked: prefs.showGpu,
+        action: () => (prefs.showGpu = !prefs.showGpu)
+      }),
+      await CheckMenuItem.new({
+        text: t('overlay.gpuTemp'),
+        checked: prefs.showGpuTemp,
+        enabled: prefs.showGpu,
+        action: () => (prefs.showGpuTemp = !prefs.showGpuTemp)
+      }),
+      await CheckMenuItem.new({
+        text: t('overlay.memory'),
+        checked: prefs.showMemory,
+        action: () => (prefs.showMemory = !prefs.showMemory)
+      }),
+      await CheckMenuItem.new({
+        text: t('overlay.app'),
+        checked: prefs.showApp,
+        action: () => (prefs.showApp = !prefs.showApp)
+      }),
+      await PredefinedMenuItem.new({ item: 'Separator' }),
+      await CheckMenuItem.new({
+        text: t('overlay.down'),
+        checked: prefs.showDown,
+        action: () => (prefs.showDown = !prefs.showDown)
+      }),
+      await CheckMenuItem.new({
+        text: t('overlay.up'),
+        checked: prefs.showUp,
+        action: () => (prefs.showUp = !prefs.showUp)
+      }),
+      await CheckMenuItem.new({
+        text: t('overlay.latency'),
+        checked: prefs.showLatency,
+        action: () => (prefs.showLatency = !prefs.showLatency)
+      }),
+      await PredefinedMenuItem.new({ item: 'Separator' }),
+      await MenuItem.new({
+        text: t('overlay.closeTaskbarMonitor'),
+        action: async () => {
+          await store.setTaskbarMonitorEnabled(false);
+          try {
+            await getCurrentWindow().close();
+          } catch {
+            // ignore
+          }
+        }
+      })
+    ];
 
-  const menu = await Menu.new({ items });
-  await menu.popup(new LogicalPosition(event.clientX, event.clientY), getCurrentWindow());
+    const menu = await Menu.new({ items });
+    await menu.popup(new LogicalPosition(event.clientX, event.clientY), getCurrentWindow());
+  } finally {
+    window.setTimeout(() => {
+      resumeTopmostGuard();
+    }, 100);
+  }
 }
 
 async function syncTaskbarHeightVar() {
