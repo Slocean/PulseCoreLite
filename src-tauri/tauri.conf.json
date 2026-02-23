@@ -1,11 +1,11 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "PulseCore",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "identifier": "com.pulsecore.app",
   "build": {
-    "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build",
+    "beforeDevCommand": "npm run sync:tauri-version && npm run dev",
+    "beforeBuildCommand": "npm run sync:tauri-version && npm run build",
     "devUrl": "http://localhost:5173",
     "frontendDist": "../dist"
   },
@@ -33,7 +33,10 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "msi"],
+    "targets": [
+      "nsis",
+      "msi"
+    ],
     "icon": [
       "icons/icon.ico",
       "icons/icon.icns",
