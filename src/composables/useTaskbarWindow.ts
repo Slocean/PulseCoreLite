@@ -50,6 +50,7 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
   };
 
   type Rect = { left: number; top: number; right: number; bottom: number };
+  type VerticalFrameInsets = { top: number; bottom: number };
   const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
   const toMonitorRect = (monitor: { position: { x: number; y: number }; size: { width: number; height: number } }): Rect => ({
@@ -64,6 +65,12 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
     const height = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
     if (width <= 0 || height <= 0) return 0;
     return width * height;
+  };
+
+  const getVerticalFrameInsets = (outerHeight: number, innerHeight: number): VerticalFrameInsets => {
+    const frame = Math.max(0, outerHeight - innerHeight);
+    const top = Math.floor(frame / 2);
+    return { top, bottom: frame - top };
   };
 
   const pickBestMonitorRect = (
@@ -99,18 +106,27 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
       .sort((a, b) => a.distance - b.distance)[0].rect;
   };
 
-  const clampYToMonitor = (y: number, windowHeight: number, monitor: Rect) => {
+  const clampYToMonitor = (
+    y: number,
+    windowOuterHeight: number,
+    monitor: Rect,
+    frameInsets: VerticalFrameInsets = { top: 0, bottom: 0 }
+  ) => {
     const monitorHeight = monitor.bottom - monitor.top;
-    if (windowHeight >= monitorHeight) {
-      return Math.round(monitor.top);
+    const visibleHeight = Math.max(1, windowOuterHeight - frameInsets.top - frameInsets.bottom);
+    const minY = monitor.top - frameInsets.top;
+    const maxY = monitor.bottom - windowOuterHeight + frameInsets.bottom;
+    if (visibleHeight >= monitorHeight) {
+      return Math.round(minY);
     }
-    return Math.round(clamp(y, monitor.top, monitor.bottom - windowHeight));
+    return Math.round(clamp(y, minY, maxY));
   };
 
   const clampPositionToMonitor = (
     position: { x: number; y: number },
     windowSize: { width: number; height: number },
-    monitor: Rect
+    monitor: Rect,
+    frameInsets: VerticalFrameInsets = { top: 0, bottom: 0 }
   ) => {
     // Keep a small visible margin so users can always drag the bar back.
     const visibleMarginX = 120;
@@ -128,7 +144,15 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
 
     return {
       x: Math.round(clampAxis(position.x, windowSize.width, monitor.left, monitorWidth, visibleMarginX)),
-      y: Math.round(clampAxis(position.y, windowSize.height, monitor.top, monitorHeight, visibleMarginY))
+      y: Math.round(
+        clampAxis(
+          position.y,
+          windowSize.height,
+          monitor.top - frameInsets.top,
+          monitorHeight + frameInsets.top + frameInsets.bottom,
+          visibleMarginY
+        )
+      )
     };
   };
 
@@ -137,24 +161,32 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
     const monitors = await availableMonitors();
     if (monitors.length === 0) return saved;
 
-    const windowSize = await getCurrentWindow().outerSize();
+    const win = getCurrentWindow();
+    const [windowSize, innerSize] = await Promise.all([win.outerSize(), win.innerSize()]);
     const monitorRects = monitors.map(toMonitorRect);
     const chosenMonitor = pickBestMonitorRect(saved, windowSize, monitorRects);
+    const frameInsets = getVerticalFrameInsets(windowSize.height, innerSize.height);
 
-    return clampPositionToMonitor(saved, windowSize, chosenMonitor);
+    return clampPositionToMonitor(saved, windowSize, chosenMonitor, frameInsets);
   };
 
   const clampWindowToVerticalBounds = async () => {
     if (!inTauri()) return null;
     const { availableMonitors, getCurrentWindow, PhysicalPosition } = await getWindowApi();
     const win = getCurrentWindow();
-    const [pos, size, monitors] = await Promise.all([win.outerPosition(), win.outerSize(), availableMonitors()]);
+    const [pos, outerSize, innerSize, monitors] = await Promise.all([
+      win.outerPosition(),
+      win.outerSize(),
+      win.innerSize(),
+      availableMonitors()
+    ]);
     if (monitors.length === 0) {
       return { x: pos.x, y: pos.y };
     }
 
-    const monitor = pickBestMonitorRect({ x: pos.x, y: pos.y }, size, monitors.map(toMonitorRect));
-    const nextY = clampYToMonitor(pos.y, size.height, monitor);
+    const monitor = pickBestMonitorRect({ x: pos.x, y: pos.y }, outerSize, monitors.map(toMonitorRect));
+    const frameInsets = getVerticalFrameInsets(outerSize.height, innerSize.height);
+    const nextY = clampYToMonitor(pos.y, outerSize.height, monitor, frameInsets);
     if (nextY === pos.y) {
       return { x: pos.x, y: pos.y };
     }

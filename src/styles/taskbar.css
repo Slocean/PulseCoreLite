@@ -13,7 +13,7 @@ html.window-taskbar body {
   display: inline-flex;
   align-items: center;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  /* border: 1px solid rgba(255, 255, 255, 0.12); */
   background: rgba(0, 0, 0, 0.28);
   backdrop-filter: blur(10px);
   user-select: none;
@@ -107,4 +107,3 @@ html.window-taskbar body {
   font-feature-settings: 'tnum';
   line-height: 1;
 }
-
