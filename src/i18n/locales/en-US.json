@@ -29,6 +29,7 @@
     "closeToTray": "Exit to System Tray",
     "autoStart": "Launch on Startup",
     "rememberPosition": "Remember Position",
+    "mainWindowAlwaysOnTop": "Main Window Always on Top",
     "alwaysOnTop": "Always on Top",
     "taskbarMonitor": "Taskbar Monitor",
     "taskbarMonitorOpen": "Enable",

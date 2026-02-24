@@ -77,6 +77,8 @@ pub struct AppSettings {
     pub auto_start_enabled: bool,
     #[serde(rename = "rememberOverlayPosition")]
     pub remember_overlay_position: bool,
+    #[serde(rename = "overlayAlwaysOnTop")]
+    pub overlay_always_on_top: bool,
     #[serde(rename = "taskbarMonitorEnabled")]
     pub taskbar_monitor_enabled: bool,
     #[serde(rename = "taskbarAlwaysOnTop")]
@@ -92,6 +94,7 @@ impl Default for AppSettings {
             close_to_tray: false,
             auto_start_enabled: false,
             remember_overlay_position: true,
+            overlay_always_on_top: true,
             taskbar_monitor_enabled: false,
             taskbar_always_on_top: true,
             factory_reset_hotkey: None,

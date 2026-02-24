@@ -43,6 +43,7 @@ function readStoredSettings(): Partial<AppSettings> | null {
     const hasAutoStartEnabled = hasOwn('autoStartEnabled') && typeof parsed.autoStartEnabled === 'boolean';
     const hasRememberOverlayPosition =
       hasOwn('rememberOverlayPosition') && typeof parsed.rememberOverlayPosition === 'boolean';
+    const hasOverlayAlwaysOnTop = hasOwn('overlayAlwaysOnTop') && typeof parsed.overlayAlwaysOnTop === 'boolean';
     const hasTaskbarMonitorEnabled =
       hasOwn('taskbarMonitorEnabled') && typeof parsed.taskbarMonitorEnabled === 'boolean';
     const hasTaskbarAlwaysOnTop = hasOwn('taskbarAlwaysOnTop') && typeof parsed.taskbarAlwaysOnTop === 'boolean';
@@ -55,6 +56,7 @@ function readStoredSettings(): Partial<AppSettings> | null {
       hasCloseToTray ||
       hasAutoStartEnabled ||
       hasRememberOverlayPosition ||
+      hasOverlayAlwaysOnTop ||
       hasTaskbarMonitorEnabled ||
       hasTaskbarAlwaysOnTop ||
       hasFactoryResetHotkey
@@ -64,6 +66,7 @@ function readStoredSettings(): Partial<AppSettings> | null {
         ...(hasCloseToTray ? { closeToTray: parsed.closeToTray } : {}),
         ...(hasAutoStartEnabled ? { autoStartEnabled: parsed.autoStartEnabled } : {}),
         ...(hasRememberOverlayPosition ? { rememberOverlayPosition: parsed.rememberOverlayPosition } : {}),
+        ...(hasOverlayAlwaysOnTop ? { overlayAlwaysOnTop: parsed.overlayAlwaysOnTop } : {}),
         ...(hasTaskbarMonitorEnabled ? { taskbarMonitorEnabled: parsed.taskbarMonitorEnabled } : {}),
         ...(hasTaskbarAlwaysOnTop ? { taskbarAlwaysOnTop: parsed.taskbarAlwaysOnTop } : {}),
         ...(hasFactoryResetHotkey ? { factoryResetHotkey: parsed.factoryResetHotkey ?? null } : {})
@@ -81,6 +84,7 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
     closeToTray: false,
     autoStartEnabled: false,
     rememberOverlayPosition: true,
+    overlayAlwaysOnTop: true,
     taskbarMonitorEnabled: false,
     taskbarAlwaysOnTop: true,
     factoryResetHotkey: null
@@ -96,6 +100,8 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
       typeof candidate.rememberOverlayPosition === 'boolean'
         ? candidate.rememberOverlayPosition
         : fallback.rememberOverlayPosition,
+    overlayAlwaysOnTop:
+      typeof candidate.overlayAlwaysOnTop === 'boolean' ? candidate.overlayAlwaysOnTop : fallback.overlayAlwaysOnTop,
     taskbarMonitorEnabled:
       typeof candidate.taskbarMonitorEnabled === 'boolean'
         ? candidate.taskbarMonitorEnabled
@@ -120,6 +126,7 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
     closeToTray: stored.closeToTray ?? base.closeToTray,
     autoStartEnabled: stored.autoStartEnabled ?? base.autoStartEnabled,
     rememberOverlayPosition: stored.rememberOverlayPosition ?? base.rememberOverlayPosition,
+    overlayAlwaysOnTop: stored.overlayAlwaysOnTop ?? base.overlayAlwaysOnTop,
     taskbarMonitorEnabled: stored.taskbarMonitorEnabled ?? base.taskbarMonitorEnabled,
     taskbarAlwaysOnTop: stored.taskbarAlwaysOnTop ?? base.taskbarAlwaysOnTop,
     factoryResetHotkey: stored.factoryResetHotkey ?? base.factoryResetHotkey
@@ -389,6 +396,17 @@ export const useAppStore = defineStore('app', {
       if (!rememberOverlayPosition && typeof window !== 'undefined') {
         window.localStorage.removeItem(OVERLAY_POS_KEY);
       }
+      persistSettings(this.settings);
+      void broadcastSettingsSync();
+    },
+    setOverlayAlwaysOnTop(overlayAlwaysOnTop: boolean) {
+      if (this.settings.overlayAlwaysOnTop === overlayAlwaysOnTop) {
+        return;
+      }
+      this.settings = {
+        ...this.settings,
+        overlayAlwaysOnTop
+      };
       persistSettings(this.settings);
       void broadcastSettingsSync();
     },

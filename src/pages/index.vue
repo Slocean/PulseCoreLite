@@ -26,6 +26,7 @@
         v-model:closeToTray="closeToTray"
         v-model:autoStartEnabled="autoStartEnabled"
         v-model:rememberOverlayPosition="rememberOverlayPosition"
+        v-model:overlayAlwaysOnTop="overlayAlwaysOnTop"
         v-model:taskbarMonitorEnabled="taskbarMonitorEnabled"
         v-model:factoryResetHotkey="factoryResetHotkey"
         v-model:refreshRate="refreshRate"
@@ -355,6 +356,10 @@ const rememberOverlayPosition = computed({
   get: () => store.settings.rememberOverlayPosition,
   set: value => store.setRememberOverlayPosition(value)
 });
+const overlayAlwaysOnTop = computed({
+  get: () => store.settings.overlayAlwaysOnTop,
+  set: value => store.setOverlayAlwaysOnTop(value)
+});
 const taskbarMonitorEnabled = computed({
   get: () => store.settings.taskbarMonitorEnabled,
   set: value => void store.setTaskbarMonitorEnabled(value)
@@ -479,10 +484,33 @@ const applyBackgroundOpacity = (value: number) => {
   document.documentElement.style.setProperty('--overlay-bg-opacity', String(safeValue / 100));
 };
 
+async function applyOverlayTopmost(enabled: boolean) {
+  if (!inTauri()) {
+    return;
+  }
+  try {
+    await api.setWindowSystemTopmost('main', enabled);
+  } catch {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      await getCurrentWindow().setAlwaysOnTop(enabled);
+    } catch {}
+  }
+}
+
 watch(
   () => prefs.backgroundOpacity,
   value => {
     applyBackgroundOpacity(value);
+  },
+  { immediate: true }
+);
+
+watch(
+  overlayAlwaysOnTop,
+  enabled => {
+    if (!inTauri()) return;
+    void applyOverlayTopmost(enabled);
   },
   { immediate: true }
 );
@@ -1357,6 +1385,7 @@ async function confirmImportConfig() {
       if (typeof settings.closeToTray === 'boolean') store.setCloseToTray(settings.closeToTray);
       if (typeof settings.rememberOverlayPosition === 'boolean')
         store.setRememberOverlayPosition(settings.rememberOverlayPosition);
+      if (typeof settings.overlayAlwaysOnTop === 'boolean') store.setOverlayAlwaysOnTop(settings.overlayAlwaysOnTop);
       if (typeof settings.taskbarAlwaysOnTop === 'boolean')
         store.setTaskbarAlwaysOnTop(settings.taskbarAlwaysOnTop);
       if (settings.factoryResetHotkey == null || typeof settings.factoryResetHotkey === 'string')

@@ -57,10 +57,11 @@ export interface HardwareInfo {
 }
 
 export interface AppSettings {
-  language: "zh-CN" | "en-US";
+  language: 'zh-CN' | 'en-US';
   closeToTray: boolean;
   autoStartEnabled: boolean;
   rememberOverlayPosition: boolean;
+  overlayAlwaysOnTop: boolean;
   taskbarMonitorEnabled: boolean;
   taskbarAlwaysOnTop: boolean;
   factoryResetHotkey: string | null;

@@ -29,6 +29,7 @@
     "closeToTray": "退出到托盘",
     "autoStart": "开机自启",
     "rememberPosition": "记住位置",
+    "mainWindowAlwaysOnTop": "总是置顶",
     "alwaysOnTop": "总是置顶",
     "taskbarMonitor": "任务栏监测",
     "taskbarMonitorOpen": "开启",
