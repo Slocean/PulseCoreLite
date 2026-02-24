@@ -25,4 +25,4 @@
     - add feature 3
     - add feature 4
 
-# 6.同步更新README.md文件
+# 6.同步更新README.md文件：包括版本号、更新内容、技术详情

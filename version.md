@@ -1,3 +1,11 @@
+## v1.4.4
+
+- 更新应用版本号至 1.4.4 并改进发布打包脚本
+- 为版本生成步骤添加编号并更新同步说明
+
+- Bump app version to 1.4.4 and improve release packaging script
+- Add numbering and sync notes for version generation steps
+
 ## v1.4.3
 
 - 更新版本更新说明文档格式与内容
