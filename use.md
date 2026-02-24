@@ -9,7 +9,7 @@
     ## 1. 中文：
     ## 2. 英文：
 
-# 生成到version.md文件中 例如：
+# 5.生成到version.md文件中 例如：
 
 ## v1.0.0
 
@@ -24,3 +24,5 @@
     - 新增功能4
     - add feature 3
     - add feature 4
+
+# 6.同步更新README.md文件
