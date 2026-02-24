@@ -15,8 +15,12 @@
 
     - 新增功能1
     - 新增功能2
+    - add feature 1
+    - add feature 2
 
 ## v1.0.1
 
     - 新增功能3
     - 新增功能4
+    - add feature 3
+    - add feature 4
