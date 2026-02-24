@@ -6,6 +6,12 @@ Place the WebView2 offline installer binary in this directory before running:
 npm run pack:release
 ```
 
+`pack:release` uses this file for:
+
+- `*_setup-full.exe`
+- `*_setup-full.msi`
+- `*_portable-full.zip`
+
 Expected file names (any one is enough):
 
 - `install_webview2.exe` (recommended)

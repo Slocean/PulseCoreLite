@@ -1,7 +1,7 @@
 {
   "name": "pulsecorelite",
   "private": true,
-  "version": "1.4.3",
+  "version": "1.4.4",
   "type": "module",
   "scripts": {
     "sync:tauri-version": "node -e \"const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); const path='src-tauri/tauri.conf.json'; const conf=JSON.parse(fs.readFileSync(path,'utf8')); if (conf.version!==pkg.version){ conf.version=pkg.version; fs.writeFileSync(path, JSON.stringify(conf,null,2)); }\"",

@@ -1,7 +1,3 @@
-param(
-  [switch]$SkipBuild
-)
-
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
@@ -29,7 +25,7 @@ function Resolve-WebViewInstallerPath {
   }
 
   throw @"
-WebView2 offline installer is required for portable-full output.
+WebView2 offline installer is required for full installers and portable-full output.
 Put it at:
   build-assets\webview2\install_webview2.exe
 or set:
@@ -40,72 +36,153 @@ https://developer.microsoft.com/microsoft-edge/webview2/
 "@
 }
 
-Write-Host "[pack-release] Reading project version..."
+function Build-WithWebViewMode {
+  param(
+    [Parameter(Mandatory = $true)][string]$ModeType,
+    [Parameter(Mandatory = $true)][bool]$Silent
+  )
+
+  $overridePath = [System.IO.Path]::ChangeExtension([System.IO.Path]::GetTempFileName(), ".json")
+  $override = @{
+    bundle = @{
+      windows = @{
+        webviewInstallMode = @{
+          type = $ModeType
+          silent = $Silent
+        }
+      }
+    }
+  }
+
+  try {
+    $override | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $overridePath -Encoding ASCII
+    & npm run tauri:build -- --config $overridePath
+    if ($LASTEXITCODE -ne 0) {
+      throw "tauri build failed for webview mode '$ModeType' with exit code $LASTEXITCODE"
+    }
+  }
+  finally {
+    if (Test-Path -LiteralPath $overridePath) {
+      Remove-Item -LiteralPath $overridePath -Force
+    }
+  }
+}
+
+function Get-LatestBundleArtifact {
+  param(
+    [Parameter(Mandatory = $true)][string]$Directory,
+    [Parameter(Mandatory = $true)][string]$PreferredPattern,
+    [Parameter(Mandatory = $true)][string]$FallbackPattern
+  )
+
+  $match = Get-ChildItem -Path (Join-Path $Directory $PreferredPattern) -ErrorAction SilentlyContinue |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 1
+  if ($match) {
+    return $match
+  }
+
+  return Get-ChildItem -Path (Join-Path $Directory $FallbackPattern) -ErrorAction SilentlyContinue |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 1
+}
+
+function Collect-BuildOutputs {
+  param(
+    [Parameter(Mandatory = $true)][string]$Version,
+    [Parameter(Mandatory = $true)][string]$ExeName
+  )
+
+  $nsisDir = Join-Path $projectRoot "src-tauri\target\release\bundle\nsis"
+  $msiDir = Join-Path $projectRoot "src-tauri\target\release\bundle\msi"
+  $portableExe = Join-Path $projectRoot ("src-tauri\target\release\" + $ExeName)
+
+  $nsis = Get-LatestBundleArtifact -Directory $nsisDir -PreferredPattern "*_${Version}_*-setup.exe" -FallbackPattern "*-setup.exe"
+  $msi = Get-LatestBundleArtifact -Directory $msiDir -PreferredPattern "*_${Version}_*.msi" -FallbackPattern "*.msi"
+
+  if (-not $nsis) { throw "NSIS installer not found after build." }
+  if (-not $msi) { throw "MSI installer not found after build." }
+  if (-not (Test-Path -LiteralPath $portableExe -PathType Leaf)) {
+    throw "Portable executable not found: $portableExe"
+  }
+
+  return @{
+    Nsis = $nsis
+    Msi = $msi
+    PortableExe = $portableExe
+  }
+}
+
+Write-Host "[pack-release] Reading project metadata..."
 $packageJsonPath = Join-Path $projectRoot "package.json"
 $packageJson = Get-Content -LiteralPath $packageJsonPath -Raw | ConvertFrom-Json
 $version = $packageJson.version
+$exeName = "$($packageJson.name).exe"
 $date = Get-Date -Format "yyyyMMdd"
 $base = "PulseCoreLite_v${version}_${date}"
 $releaseDir = Join-Path $projectRoot "release"
-
 New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
+$webviewInstaller = Resolve-WebViewInstallerPath
 
-if (-not $SkipBuild) {
-  Write-Host "[pack-release] Building Tauri bundles..."
-  & npm run tauri:build
-  if ($LASTEXITCODE -ne 0) {
-    throw "npm run tauri:build failed with exit code $LASTEXITCODE"
+# Clean stale outputs for this version/date naming set so release folder stays unambiguous.
+$staleNames = @(
+  "${base}_setup-lite.exe",
+  "${base}_setup-lite.msi",
+  "${base}_portable-lite.exe",
+  "${base}_setup-full.exe",
+  "${base}_setup-full.msi",
+  "${base}_portable-full.zip",
+  "${base}_setup.exe",
+  "${base}_setup.msi",
+  "${base}_portable.exe"
+)
+foreach ($name in $staleNames) {
+  $path = Join-Path $releaseDir $name
+  if (Test-Path -LiteralPath $path) {
+    Remove-Item -LiteralPath $path -Force
   }
 }
-else {
-  Write-Host "[pack-release] SkipBuild enabled; using existing artifacts."
-}
 
-Write-Host "[pack-release] Collecting build artifacts..."
-$nsisDir = Join-Path $projectRoot "src-tauri\target\release\bundle\nsis"
-$msiDir = Join-Path $projectRoot "src-tauri\target\release\bundle\msi"
-$nsis = Get-ChildItem -Path (Join-Path $nsisDir "*_${version}_*-setup.exe") -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-$msi = Get-ChildItem -Path (Join-Path $msiDir "*_${version}_*.msi") -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+Write-Host "[pack-release] Building standard (no bundled WebView2) installers..."
+Build-WithWebViewMode -ModeType "downloadBootstrapper" -Silent $true
+$liteOutputs = Collect-BuildOutputs -Version $version -ExeName $exeName
 
-if (-not $nsis) {
-  $nsis = Get-ChildItem -Path (Join-Path $nsisDir "*-setup.exe") -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-}
-if (-not $msi) {
-  $msi = Get-ChildItem -Path (Join-Path $msiDir "*.msi") -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-}
-$portableExe = Join-Path $projectRoot "src-tauri\target\release\pulsecorelite.exe"
-
-if (-not $nsis) { throw "NSIS installer not found." }
-if (-not $msi) { throw "MSI installer not found." }
-if (-not (Test-Path -LiteralPath $portableExe -PathType Leaf)) { throw "Portable executable not found: $portableExe" }
-
-$setupExeOut = Join-Path $releaseDir "${base}_setup.exe"
-$setupMsiOut = Join-Path $releaseDir "${base}_setup.msi"
+$setupLiteExeOut = Join-Path $releaseDir "${base}_setup-lite.exe"
+$setupLiteMsiOut = Join-Path $releaseDir "${base}_setup-lite.msi"
 $portableLiteOut = Join-Path $releaseDir "${base}_portable-lite.exe"
 
-Copy-Item -LiteralPath $nsis.FullName -Destination $setupExeOut -Force
-Copy-Item -LiteralPath $msi.FullName -Destination $setupMsiOut -Force
-Copy-Item -LiteralPath $portableExe -Destination $portableLiteOut -Force
+Copy-Item -LiteralPath $liteOutputs.Nsis.FullName -Destination $setupLiteExeOut -Force
+Copy-Item -LiteralPath $liteOutputs.Msi.FullName -Destination $setupLiteMsiOut -Force
+Copy-Item -LiteralPath $liteOutputs.PortableExe -Destination $portableLiteOut -Force
 
-Write-Host "[pack-release] Preparing portable-full package..."
-$webviewInstaller = Resolve-WebViewInstallerPath
-$portableFullDir = Join-Path $releaseDir "${base}_portable-full"
+Write-Host "[pack-release] Building full (bundled offline WebView2) installers..."
+Build-WithWebViewMode -ModeType "offlineInstaller" -Silent $true
+$fullOutputs = Collect-BuildOutputs -Version $version -ExeName $exeName
+
+$setupFullExeOut = Join-Path $releaseDir "${base}_setup-full.exe"
+$setupFullMsiOut = Join-Path $releaseDir "${base}_setup-full.msi"
 $portableFullZip = Join-Path $releaseDir "${base}_portable-full.zip"
-$portableExeName = "pulsecorelite.exe"
+$portableFullDir = Join-Path $releaseDir "${base}_portable-full"
+
+Copy-Item -LiteralPath $fullOutputs.Nsis.FullName -Destination $setupFullExeOut -Force
+Copy-Item -LiteralPath $fullOutputs.Msi.FullName -Destination $setupFullMsiOut -Force
 
 if (Test-Path -LiteralPath $portableFullDir) {
   Remove-Item -LiteralPath $portableFullDir -Recurse -Force
 }
+if (Test-Path -LiteralPath $portableFullZip) {
+  Remove-Item -LiteralPath $portableFullZip -Force
+}
 New-Item -ItemType Directory -Path $portableFullDir -Force | Out-Null
 
-Copy-Item -LiteralPath $portableExe -Destination (Join-Path $portableFullDir $portableExeName) -Force
+Copy-Item -LiteralPath $fullOutputs.PortableExe -Destination (Join-Path $portableFullDir $exeName) -Force
 Copy-Item -LiteralPath $webviewInstaller -Destination (Join-Path $portableFullDir "install_webview2.exe") -Force
 
 $launcherPath = Join-Path $portableFullDir "Start_PulseCoreLite.bat"
 $launcherContent = @"
 @echo off
 setlocal
-set "APP_EXE=$portableExeName"
+set "APP_EXE=$exeName"
 set "WV2_SETUP=install_webview2.exe"
 
 reg query "HKLM\SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" /v pv >nul 2>&1
@@ -141,7 +218,7 @@ PulseCoreLite Portable Full
 ===========================
 
 What is included:
-- pulsecorelite.exe (portable app)
+- $exeName (portable app)
 - install_webview2.exe (WebView2 offline installer)
 - Start_PulseCoreLite.bat (recommended launcher)
 
@@ -151,19 +228,18 @@ How to run:
 3) The app starts automatically.
 
 Manual fallback:
-- Run install_webview2.exe manually, then run pulsecorelite.exe
+- Run install_webview2.exe manually, then run $exeName
 "@
 Set-Content -LiteralPath $readmePath -Value $readmeContent -Encoding ASCII
 
-if (Test-Path -LiteralPath $portableFullZip) {
-  Remove-Item -LiteralPath $portableFullZip -Force
-}
 Compress-Archive -Path $portableFullDir -DestinationPath $portableFullZip -Force
 Remove-Item -LiteralPath $portableFullDir -Recurse -Force
 
 Write-Host ""
-Write-Host "[pack-release] Done. Generated 4 release artifacts:"
-Write-Host " - $setupExeOut"
-Write-Host " - $setupMsiOut"
+Write-Host "[pack-release] Done. Generated 6 release artifacts:"
+Write-Host " - $setupLiteExeOut"
+Write-Host " - $setupLiteMsiOut"
 Write-Host " - $portableLiteOut"
+Write-Host " - $setupFullExeOut"
+Write-Host " - $setupFullMsiOut"
 Write-Host " - $portableFullZip"
