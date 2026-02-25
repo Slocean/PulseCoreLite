@@ -49,6 +49,8 @@ html.window-toolkit body {
   overflow: hidden;
   text-overflow: ellipsis;
   letter-spacing: 0.16em;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .toolkit-tabs {
@@ -69,7 +71,7 @@ html.window-toolkit body {
   border-radius: 8px;
   min-height: 32px;
   padding: 4px 6px;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.66);
@@ -103,7 +105,7 @@ html.window-toolkit body {
 
 .toolkit-section-title {
   margin: 0;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   color: rgba(255, 255, 255, 0.9);
   text-transform: uppercase;
@@ -121,7 +123,7 @@ html.window-toolkit body {
 .toolkit-field {
   display: grid;
   gap: 6px;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.04em;
   color: rgba(255, 255, 255, 0.82);
 }
@@ -130,13 +132,13 @@ html.window-toolkit body {
 .toolkit-field select {
   appearance: none;
   width: 100%;
-  min-height: 28px;
+  min-height: 30px;
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.24));
   color: rgba(255, 255, 255, 0.92);
-  padding: 4px 6px;
-  font-size: 11px;
+  padding: 5px 6px;
+  font-size: 12px;
   outline: none;
   transition: all 160ms ease;
   -webkit-app-region: no-drag;
@@ -172,7 +174,7 @@ html.window-toolkit body {
   padding-right: 28px;
   font-family: 'Consolas', 'Monaco', monospace;
   letter-spacing: -0.05em;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .toolkit-field input[type='datetime-local']::-webkit-calendar-picker-indicator {
@@ -202,7 +204,7 @@ html.window-toolkit body {
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.03);
   padding: 8px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.4;
   color: rgba(255, 255, 255, 0.9);
   word-break: break-word;
@@ -221,7 +223,7 @@ html.window-toolkit body {
 .toolkit-card .overlay-config-danger {
   min-height: 32px;
   padding: 6px 10px;
-  font-size: 11px;
+  font-size: 12px;
   -webkit-app-region: no-drag;
 }
 
