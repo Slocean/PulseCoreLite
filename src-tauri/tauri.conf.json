@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "npm run sync:tauri-version && npm run dev",
     "beforeBuildCommand": "npm run sync:tauri-version && npm run build",
-    "devUrl": "http://localhost:5173",
+    "devUrl": "http://localhost:9000",
     "frontendDist": "../dist"
   },
   "app": {
@@ -33,10 +33,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": [
-      "nsis",
-      "msi"
-    ],
+    "targets": ["nsis", "msi"],
     "icon": [
       "icons/icon.ico",
       "icons/icon.icns",
