@@ -35,6 +35,7 @@
         :app-version="appVersion"
         :language="store.settings.language"
         :themes="themes"
+        :toolkit-state="toolkitState"
         @setLanguage="setLanguage"
         @refreshRateChange="handleRefreshRateChange"
         @factoryReset="handleFactoryReset"
@@ -44,7 +45,7 @@
         @editTheme="requestEditTheme"
         @exportConfig="exportConfig"
         @importConfig="handleImportConfig"
-        @openToolkit="openToolkitWindow" />
+        @openToolkit="toggleToolkitWindow" />
     </Transition>
 
     <OverlayMetricsPanel
@@ -316,7 +317,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import OverlayConfigPanel from '../components/OverlayConfigPanel.vue';
@@ -342,6 +343,7 @@ const store = useAppStore();
 const { t } = useI18n();
 const appVersion = packageJson.version;
 const showConfig = ref(false);
+const toolkitState = ref<'closed' | 'open' | 'hidden'>('closed');
 const closeToTray = computed({
   get: () => store.settings.closeToTray,
   set: value => store.setCloseToTray(value)
@@ -471,6 +473,59 @@ const {
 
 const { openToolkitWindow } = useToolkitLauncher();
 
+async function refreshToolkitState() {
+  if (!inTauri()) {
+    toolkitState.value = 'closed';
+    return;
+  }
+  try {
+    const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+    const existing = await WebviewWindow.getByLabel('toolkit');
+    if (!existing) {
+      toolkitState.value = 'closed';
+      return;
+    }
+    let visible = true;
+    try {
+      visible = await existing.isVisible();
+    } catch {}
+    toolkitState.value = visible ? 'open' : 'hidden';
+  } catch {
+    toolkitState.value = 'closed';
+  }
+}
+
+async function toggleToolkitWindow() {
+  if (!inTauri()) {
+    return;
+  }
+  try {
+    const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+    const existing = await WebviewWindow.getByLabel('toolkit');
+    if (existing) {
+      let visible = true;
+      try {
+        visible = await existing.isVisible();
+      } catch {}
+      if (visible) {
+        try {
+          await existing.close();
+        } catch {}
+        toolkitState.value = 'closed';
+        return;
+      }
+      try {
+        await existing.show();
+        await existing.setFocus();
+      } catch {}
+      toolkitState.value = 'open';
+      return;
+    }
+  } catch {}
+  await openToolkitWindow();
+  await refreshToolkitState();
+}
+
 async function applyOverlayTopmost(enabled: boolean) {
   if (!inTauri()) {
     return;
@@ -493,6 +548,19 @@ watch(
   },
   { immediate: true }
 );
+
+watch(
+  showConfig,
+  value => {
+    if (!value) return;
+    void refreshToolkitState();
+  },
+  { immediate: true }
+);
+
+onMounted(() => {
+  void refreshToolkitState();
+});
 
 function handleClose() {
   if (store.settings.closeToTray) {

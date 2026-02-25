@@ -175,7 +175,7 @@
       <span class="overlay-config-label">{{ t('overlay.toolkit') }}</span>
       <div class="overlay-lang-buttons">
         <button type="button" class="overlay-lang-button" @click="emit('openToolkit')">
-          {{ t('overlay.openToolkit') }}
+          {{ toolkitActionLabel }}
         </button>
       </div>
     </div>
@@ -239,6 +239,7 @@ const props = defineProps<{
   language: 'zh-CN' | 'en-US';
   canUninstall: boolean;
   themes: OverlayTheme[];
+  toolkitState: 'closed' | 'open' | 'hidden';
 }>();
 
 const prefs = defineModel<OverlayPrefs>('prefs', { required: true });
@@ -274,6 +275,7 @@ const importFileInput = ref<HTMLInputElement | null>(null);
 const hotkeyLabel = computed(() => factoryResetHotkey.value ?? t('overlay.hotkeyNotSet'));
 const isDefaultTheme = computed(() => !prefs.value.backgroundImage);
 const themes = computed(() => props.themes);
+const toolkitActionLabel = computed(() => (props.toolkitState === 'open' ? t('overlay.closeToolkit') : t('overlay.showToolkit')));
 
 function stopHotkeyCapture() {
   if (hotkeyUnlisten) {

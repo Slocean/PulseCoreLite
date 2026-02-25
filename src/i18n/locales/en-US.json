@@ -95,7 +95,9 @@
     "taskbarTwoLine": "Two-line mode",
     "closeTaskbarMonitor": "Disable Taskbar Monitor",
     "toolkit": "Toolkit",
-    "openToolkit": "Open Toolkit"
+    "openToolkit": "Open Toolkit",
+    "closeToolkit": "Close Toolkit",
+    "showToolkit": "Show Toolkit"
   },
   "toolkit": {
     "title": "Toolkit",

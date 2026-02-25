@@ -95,7 +95,9 @@
     "taskbarTwoLine": "两行模式",
     "closeTaskbarMonitor": "关闭任务栏监测",
     "toolkit": "工具箱",
-    "openToolkit": "打开工具箱"
+    "openToolkit": "打开工具箱",
+    "closeToolkit": "关闭工具箱",
+    "showToolkit": "展示工具箱"
   },
   "toolkit": {
     "title": "工具箱",
