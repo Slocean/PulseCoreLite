@@ -25,7 +25,9 @@ impl WindowsCpuFrequencyQuery {
     fn new() -> Option<Self> {
         use windows::core::{s, PCSTR};
         use windows::Win32::Foundation::ERROR_SUCCESS;
-        use windows::Win32::System::Performance::{PdhAddEnglishCounterA, PdhCloseQuery, PdhCollectQueryData, PdhOpenQueryA};
+        use windows::Win32::System::Performance::{
+            PdhAddEnglishCounterA, PdhCloseQuery, PdhCollectQueryData, PdhOpenQueryA,
+        };
 
         unsafe {
             let mut query = windows::Win32::System::Performance::PDH_HQUERY::default();
@@ -55,7 +57,9 @@ impl WindowsCpuFrequencyQuery {
     fn sample_mhz(&mut self) -> Option<u64> {
         use std::mem::MaybeUninit;
         use windows::Win32::Foundation::ERROR_SUCCESS;
-        use windows::Win32::System::Performance::{PdhCollectQueryData, PdhGetFormattedCounterValue, PDH_FMT_COUNTERVALUE, PDH_FMT_DOUBLE};
+        use windows::Win32::System::Performance::{
+            PdhCollectQueryData, PdhGetFormattedCounterValue, PDH_FMT_COUNTERVALUE, PDH_FMT_DOUBLE,
+        };
 
         unsafe {
             if PdhCollectQueryData(self.query) != ERROR_SUCCESS.0 {
@@ -183,6 +187,7 @@ fn query_gpu_memory_dxgi_windows() -> Option<(f64, f64)> {
 
 pub struct SystemCollector {
     system: System,
+    app_usage_system: System,
     networks: Networks,
     disks: Disks,
     components: Components,
@@ -193,6 +198,8 @@ pub struct SystemCollector {
     last_gpu_poll: Instant,
     warmup_done: bool,
     current_pid: Pid,
+    app_usage_cache: (Option<f64>, Option<f64>),
+    last_app_usage_poll: Instant,
     #[cfg(target_os = "windows")]
     cpu_frequency_query: Option<WindowsCpuFrequencyQuery>,
 }
@@ -200,6 +207,7 @@ pub struct SystemCollector {
 impl SystemCollector {
     pub fn new() -> Self {
         let system = System::new_all();
+        let app_usage_system = System::new();
         let current_pid = Pid::from_u32(std::process::id());
 
         let mut networks = Networks::new_with_refreshed_list();
@@ -211,6 +219,7 @@ impl SystemCollector {
 
         Self {
             system,
+            app_usage_system,
             networks,
             disks,
             components,
@@ -227,6 +236,8 @@ impl SystemCollector {
             last_gpu_poll: Instant::now(),
             warmup_done: false,
             current_pid,
+            app_usage_cache: (None, None),
+            last_app_usage_poll: Instant::now(),
             #[cfg(target_os = "windows")]
             cpu_frequency_query: WindowsCpuFrequencyQuery::new(),
         }
@@ -236,7 +247,7 @@ impl SystemCollector {
         self.system.refresh_cpu_usage();
         self.system.refresh_memory();
         self.system
-            .refresh_processes(ProcessesToUpdate::All, true);
+            .refresh_processes(ProcessesToUpdate::Some(&[self.current_pid]), true);
         self.networks.refresh(true);
         self.disks.refresh(true);
         if self.warmup_done {
@@ -298,7 +309,11 @@ impl SystemCollector {
             let total = disk.total_space() as f64 / (1024.0 * 1024.0 * 1024.0);
             let avail = disk.available_space() as f64 / (1024.0 * 1024.0 * 1024.0);
             let used = (total - avail).max(0.0);
-            let usage_pct = if total > 0.0 { used / total * 100.0 } else { 0.0 };
+            let usage_pct = if total > 0.0 {
+                used / total * 100.0
+            } else {
+                0.0
+            };
 
             // usage() returns DiskUsage which contains deltas since last refresh
             let usage = disk.usage();
@@ -326,7 +341,7 @@ impl SystemCollector {
         self.prev_tick = Instant::now();
 
         let gpu_metrics = self.refresh_gpu_metrics();
-        let (app_cpu_usage_pct, app_memory_mb) = self.collect_app_usage_metrics();
+        let (app_cpu_usage_pct, app_memory_mb) = self.sample_app_usage_metrics();
 
         TelemetrySnapshot {
             timestamp: Utc::now(),
@@ -353,39 +368,37 @@ impl SystemCollector {
         }
     }
 
-    fn collect_app_usage_metrics(&self) -> (Option<f64>, Option<f64>) {
-        if self.system.process(self.current_pid).is_none() {
+    fn sample_app_usage_metrics(&mut self) -> (Option<f64>, Option<f64>) {
+        const APP_USAGE_REFRESH_INTERVAL: Duration = Duration::from_millis(1200);
+
+        if self.app_usage_cache.0.is_none()
+            || self.app_usage_cache.1.is_none()
+            || self.last_app_usage_poll.elapsed() >= APP_USAGE_REFRESH_INTERVAL
+        {
+            self.app_usage_cache = self.collect_app_usage_metrics();
+            self.last_app_usage_poll = Instant::now();
+        }
+
+        self.app_usage_cache
+    }
+
+    fn collect_app_usage_metrics(&mut self) -> (Option<f64>, Option<f64>) {
+        let process_tree = self.collect_process_tree_pids();
+        if process_tree.is_empty() {
             return (None, None);
         }
 
-        let mut children_by_parent: HashMap<Pid, Vec<Pid>> = HashMap::new();
-        for (&pid, process) in self.system.processes() {
-            if let Some(parent_pid) = process.parent() {
-                children_by_parent
-                    .entry(parent_pid)
-                    .or_default()
-                    .push(pid);
-            }
-        }
+        self.app_usage_system
+            .refresh_processes(ProcessesToUpdate::Some(&process_tree), true);
 
         let logical_cpu_count = self.system.cpus().len().max(1) as f64;
-        let mut process_stack = vec![self.current_pid];
-        let mut visited: HashSet<Pid> = HashSet::new();
         let mut cpu_usage_sum = 0.0_f64;
         let mut memory_bytes_sum = 0_u64;
 
-        while let Some(pid) = process_stack.pop() {
-            if !visited.insert(pid) {
-                continue;
-            }
-
-            if let Some(process) = self.system.process(pid) {
+        for pid in process_tree {
+            if let Some(process) = self.app_usage_system.process(pid) {
                 cpu_usage_sum += process.cpu_usage() as f64;
                 memory_bytes_sum = memory_bytes_sum.saturating_add(process.memory());
-            }
-
-            if let Some(children) = children_by_parent.get(&pid) {
-                process_stack.extend(children.iter().copied());
             }
         }
 
@@ -394,6 +407,16 @@ impl SystemCollector {
         let memory_mb = memory_bytes_sum as f64 / (1024.0 * 1024.0);
 
         (Some(cpu_usage_pct), Some(memory_mb))
+    }
+
+    #[cfg(target_os = "windows")]
+    fn collect_process_tree_pids(&self) -> Vec<Pid> {
+        collect_process_tree_pids_windows(self.current_pid.as_u32())
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    fn collect_process_tree_pids(&self) -> Vec<Pid> {
+        vec![self.current_pid]
     }
 
     fn network_totals(networks: &Networks) -> (u64, u64) {
@@ -421,11 +444,66 @@ impl SystemCollector {
 }
 
 #[cfg(target_os = "windows")]
+fn collect_process_tree_pids_windows(root_pid: u32) -> Vec<Pid> {
+    use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
+    use windows_sys::Win32::System::Diagnostics::ToolHelp::{
+        CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W,
+        TH32CS_SNAPPROCESS,
+    };
+
+    let snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
+    if snapshot == INVALID_HANDLE_VALUE {
+        return vec![Pid::from_u32(root_pid)];
+    }
+
+    let mut children_by_parent: HashMap<u32, Vec<u32>> = HashMap::new();
+    unsafe {
+        let mut entry: PROCESSENTRY32W = std::mem::zeroed();
+        entry.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
+
+        if Process32FirstW(snapshot, &mut entry) != 0 {
+            loop {
+                children_by_parent
+                    .entry(entry.th32ParentProcessID)
+                    .or_default()
+                    .push(entry.th32ProcessID);
+
+                if Process32NextW(snapshot, &mut entry) == 0 {
+                    break;
+                }
+            }
+        }
+
+        let _ = CloseHandle(snapshot);
+    }
+
+    let mut process_stack = vec![root_pid];
+    let mut visited = HashSet::new();
+    let mut process_tree = Vec::new();
+
+    while let Some(pid) = process_stack.pop() {
+        if !visited.insert(pid) {
+            continue;
+        }
+
+        process_tree.push(Pid::from_u32(pid));
+        if let Some(children) = children_by_parent.get(&pid) {
+            process_stack.extend(children.iter().copied());
+        }
+    }
+
+    process_tree
+}
+
+#[cfg(target_os = "windows")]
 fn query_gpu_metrics_windows() -> Option<GpuMetrics> {
+    use std::io::Read;
     use std::os::windows::process::CommandExt;
+    use std::process::Stdio;
 
     // Prevent PowerShell from popping a console window in packaged builds.
     const CREATE_NO_WINDOW: u32 = 0x08000000;
+    const POWERSHELL_TIMEOUT: Duration = Duration::from_millis(1200);
 
     let script = r#"
 $usage = $null
@@ -532,16 +610,46 @@ if ($usage -ne $null) {
 } | ConvertTo-Json -Compress
     "#;
 
-    let output = Command::new("powershell.exe")
+    let mut child = Command::new("powershell.exe")
         .creation_flags(CREATE_NO_WINDOW)
-        .args(["-NoProfile", "-Command", script])
-        .output()
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            script,
+        ])
+        .spawn()
         .ok()?;
-    if !output.status.success() {
+
+    let started = Instant::now();
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) => {
+                if started.elapsed() >= POWERSHELL_TIMEOUT {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return None;
+                }
+                std::thread::sleep(Duration::from_millis(20));
+            }
+            Err(_) => return None,
+        }
+    };
+
+    if !status.success() {
         return None;
     }
 
-    let raw = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    let mut stdout = child.stdout.take()?;
+    let mut bytes = Vec::new();
+    stdout.read_to_end(&mut bytes).ok()?;
+
+    let raw = String::from_utf8_lossy(&bytes).trim().to_string();
     if raw.is_empty() {
         return None;
     }

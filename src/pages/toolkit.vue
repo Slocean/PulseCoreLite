@@ -249,8 +249,6 @@ async function updateWindowHeight() {
   } catch {}
 }
 
-void refreshPlan();
-
 async function refreshPlan() {
   if (!inTauri()) {
     plan.value = null;

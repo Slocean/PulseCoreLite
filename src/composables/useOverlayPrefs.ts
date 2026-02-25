@@ -92,14 +92,30 @@ async function broadcastPrefsSync() {
     return;
   }
   try {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window');
+    const [{ getCurrentWindow }, { WebviewWindow }] = await Promise.all([
+      import('@tauri-apps/api/window'),
+      import('@tauri-apps/api/webviewWindow')
+    ]);
     const win = getCurrentWindow();
     const currentLabel = win.label;
     const targets: string[] = [];
     if (currentLabel !== 'main') targets.push('main');
     if (currentLabel !== 'toolkit') targets.push('toolkit');
     if (targets.length === 0) return;
-    await Promise.allSettled(targets.map(target => win.emitTo(target, PREFS_SYNC_EVENT, null)));
+    const existingTargets = await Promise.all(
+      targets.map(async target => {
+        try {
+          return (await WebviewWindow.getByLabel(target)) ? target : null;
+        } catch {
+          return null;
+        }
+      })
+    );
+    await Promise.allSettled(
+      existingTargets
+        .filter((target): target is string => target != null)
+        .map(target => win.emitTo(target, PREFS_SYNC_EVENT, null))
+    );
   } catch {
     // ignore
   }

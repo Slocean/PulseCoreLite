@@ -7,31 +7,63 @@ use crate::{ipc::commands, state::SharedState};
 pub fn start_telemetry_loop(app: AppHandle, state: SharedState) {
     tauri::async_runtime::spawn(async move {
         loop {
-            let snapshot = match tokio::time::timeout(Duration::from_secs(3), state.collect_snapshot()).await {
+            let visible_labels = visible_consumer_labels(&app);
+            let has_visible_consumer = !visible_labels.is_empty();
+            let snapshot = match tokio::time::timeout(
+                Duration::from_secs(3),
+                state.collect_snapshot(),
+            )
+            .await
+            {
                 Ok(data) => data,
                 Err(_) => state.latest_snapshot.read().await.clone(),
             };
 
             state.record_snapshot(snapshot.clone()).await;
 
-            if let Err(e) = app.emit("telemetry://snapshot", snapshot.clone()) {
-                tracing::warn!("failed to emit telemetry snapshot: {e}");
+            if has_visible_consumer {
+                for label in &visible_labels {
+                    if let Err(e) = app.emit_to(*label, "telemetry://snapshot", snapshot.clone()) {
+                        tracing::warn!("failed to emit telemetry snapshot to {label}: {e}");
+                    }
+                }
             }
 
-            if let Some(win) = app.get_webview_window("main") {
-                let title = format!(
-                    "PulseCore · CPU {:.0}% · RAM {:.0}% · Down {:.1} MB/s",
-                    snapshot.cpu.usage_pct,
-                    snapshot.memory.usage_pct,
-                    snapshot.network.download_bytes_per_sec / 1024.0 / 1024.0
-                );
-                let _ = win.set_title(&title);
+            if visible_labels.iter().any(|label| *label == "main") {
+                if let Some(win) = app.get_webview_window("main") {
+                    let title = format!(
+                        "PulseCore | CPU {:.0}% | RAM {:.0}% | Down {:.1} MB/s",
+                        snapshot.cpu.usage_pct,
+                        snapshot.memory.usage_pct,
+                        snapshot.network.download_bytes_per_sec / 1024.0 / 1024.0
+                    );
+                    let _ = win.set_title(&title);
+                }
             }
 
-            let rate = state.refresh_rate_ms.load(std::sync::atomic::Ordering::Relaxed);
-            tokio::time::sleep(Duration::from_millis(rate)).await;
+            let base_rate = state
+                .refresh_rate_ms
+                .load(std::sync::atomic::Ordering::Relaxed);
+            let sleep_ms = if has_visible_consumer {
+                base_rate
+            } else {
+                base_rate.max(2500)
+            };
+            tokio::time::sleep(Duration::from_millis(sleep_ms)).await;
         }
     });
+}
+
+fn visible_consumer_labels(app: &AppHandle) -> Vec<&'static str> {
+    let mut labels = Vec::with_capacity(3);
+    for label in ["main", "taskbar", "toolkit"] {
+        if let Some(win) = app.get_webview_window(label) {
+            if win.is_visible().unwrap_or(false) {
+                labels.push(label);
+            }
+        }
+    }
+    labels
 }
 
 pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {

@@ -161,13 +161,26 @@ async function broadcastSettingsSync() {
     return;
   }
   try {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window');
-    const win = getCurrentWindow();
-    await Promise.allSettled([
-      win.emitTo('main', 'pulsecorelite://settings-sync', null),
-      win.emitTo('taskbar', 'pulsecorelite://settings-sync', null),
-      win.emitTo('toolkit', 'pulsecorelite://settings-sync', null)
+    const [{ getCurrentWindow }, { WebviewWindow }] = await Promise.all([
+      import('@tauri-apps/api/window'),
+      import('@tauri-apps/api/webviewWindow')
     ]);
+    const win = getCurrentWindow();
+    const labels = ['main', 'taskbar', 'toolkit'];
+    const existingLabels = await Promise.all(
+      labels.map(async label => {
+        try {
+          return (await WebviewWindow.getByLabel(label)) ? label : null;
+        } catch {
+          return null;
+        }
+      })
+    );
+    await Promise.allSettled(
+      existingLabels
+        .filter((label): label is string => label != null)
+        .map(label => win.emitTo(label, 'pulsecorelite://settings-sync', null))
+    );
   } catch {
     // ignore
   }
@@ -540,6 +553,7 @@ export const useAppStore = defineStore('app', {
         return;
       }
       await this.ensureTray();
+      await this.closeToolkitWindow();
       await this.toggleOverlay(false);
     },
     async minimizeOverlay() {
@@ -639,6 +653,21 @@ export const useAppStore = defineStore('app', {
       }
       const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
       const existing = await WebviewWindow.getByLabel('taskbar');
+      if (!existing) {
+        return;
+      }
+      try {
+        await existing.close();
+      } catch {
+        // ignore
+      }
+    },
+    async closeToolkitWindow() {
+      if (!inTauri()) {
+        return;
+      }
+      const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+      const existing = await WebviewWindow.getByLabel('toolkit');
       if (!existing) {
         return;
       }
