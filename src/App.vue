@@ -1,8 +1,9 @@
 <template>
   <div class="app-root">
     <div class="overlay-shell" :class="{ 'overlay-shell--taskbar': windowRole === 'taskbar' }">
-      <CompactOverlayPage v-if="windowRole !== 'taskbar'" />
-      <TaskbarMonitorPage v-else />
+      <TaskbarMonitorPage v-if="windowRole === 'taskbar'" />
+      <ToolkitPage v-else-if="windowRole === 'toolkit'" />
+      <CompactOverlayPage v-else />
     </div>
   </div>
 </template>
@@ -13,21 +14,28 @@ import { useI18n } from 'vue-i18n';
 
 import CompactOverlayPage from './pages/index.vue';
 import TaskbarMonitorPage from './pages/taskbar.vue';
+import ToolkitPage from './pages/toolkit.vue';
 import { api, inTauri } from './services/tauri';
 import { useAppStore } from './stores/app';
 
 const store = useAppStore();
 const { locale } = useI18n();
-const windowRole = ref<'main' | 'taskbar'>('main');
+const windowRole = ref<'main' | 'taskbar' | 'toolkit'>('main');
 let contextMenuHandler: ((event: MouseEvent) => void) | null = null;
 
 onMounted(async () => {
   if (inTauri()) {
     try {
       const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      windowRole.value = getCurrentWindow().label === 'taskbar' ? 'taskbar' : 'main';
+      const label = getCurrentWindow().label;
+      if (label === 'taskbar' || label === 'toolkit') {
+        windowRole.value = label;
+      } else {
+        windowRole.value = 'main';
+      }
       if (typeof document !== 'undefined') {
         document.documentElement.classList.toggle('window-taskbar', windowRole.value === 'taskbar');
+        document.documentElement.classList.toggle('window-toolkit', windowRole.value === 'toolkit');
       }
     } catch {
       // ignore
@@ -52,6 +60,7 @@ onMounted(async () => {
 onUnmounted(() => {
   if (typeof document !== 'undefined') {
     document.documentElement.classList.remove('window-taskbar');
+    document.documentElement.classList.remove('window-toolkit');
   }
   if (typeof window !== 'undefined' && contextMenuHandler) {
     window.removeEventListener('contextmenu', contextMenuHandler, true);

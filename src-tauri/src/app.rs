@@ -48,6 +48,9 @@ pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Bu
         commands::set_refresh_rate,
         commands::save_export_config,
         commands::confirm_factory_reset,
+        commands::get_shutdown_plan,
+        commands::schedule_shutdown,
+        commands::cancel_shutdown_schedule,
         commands::exit_app
     ])
 }

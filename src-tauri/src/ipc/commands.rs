@@ -1,13 +1,46 @@
+use chrono::Utc;
 use tauri::{AppHandle, Manager, State};
+use std::{fs, path::PathBuf};
 #[cfg(windows)]
 use std::process::Command;
 
-use crate::{core::device_info, state::SharedState, types::AppBootstrap};
+use crate::{
+    core::device_info,
+    state::SharedState,
+    types::{AppBootstrap, ScheduleShutdownRequest, ShutdownPlan},
+};
 
 type CmdResult<T> = Result<T, String>;
 
 const AUTOSTART_KEY: &str = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 const AUTOSTART_VALUE: &str = "PulseCoreLite";
+const SHUTDOWN_TASK_NAME: &str = "PulseCoreLite_Shutdown";
+const SHUTDOWN_PLAN_FILE: &str = "shutdown-plan.json";
+
+fn shutdown_plan_path(app: &AppHandle) -> CmdResult<PathBuf> {
+    let mut dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    dir.push(SHUTDOWN_PLAN_FILE);
+    Ok(dir)
+}
+
+fn write_shutdown_plan(app: &AppHandle, plan: &ShutdownPlan) -> CmdResult<()> {
+    let path = shutdown_plan_path(app)?;
+    let json = serde_json::to_string_pretty(plan).map_err(|e| e.to_string())?;
+    fs::write(path, json).map_err(|e| e.to_string())
+}
+
+fn clear_shutdown_plan_file(app: &AppHandle) {
+    if let Ok(path) = shutdown_plan_path(app) {
+        let _ = fs::remove_file(path);
+    }
+}
+
+fn read_shutdown_plan(app: &AppHandle) -> Option<ShutdownPlan> {
+    let path = shutdown_plan_path(app).ok()?;
+    let text = fs::read_to_string(path).ok()?;
+    serde_json::from_str::<ShutdownPlan>(&text).ok()
+}
 
 #[cfg(windows)]
 const UNINSTALL_ROOT_KEY: &str = "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall";
@@ -470,6 +503,226 @@ fn spawn_data_cleanup_cmd(app: &AppHandle) -> CmdResult<()> {
         .map_err(|e| format!("failed to schedule data cleanup: {e}"))?;
 
     Ok(())
+}
+
+#[cfg(windows)]
+fn parse_hhmm(value: &str) -> CmdResult<String> {
+    let parts: Vec<&str> = value.trim().split(':').collect();
+    if parts.len() != 2 {
+        return Err("time must be in HH:mm format".to_string());
+    }
+    let hour: u8 = parts[0]
+        .parse::<u8>()
+        .map_err(|_| "invalid hour in time".to_string())?;
+    let minute: u8 = parts[1]
+        .parse::<u8>()
+        .map_err(|_| "invalid minute in time".to_string())?;
+    if hour > 23 || minute > 59 {
+        return Err("time out of range".to_string());
+    }
+    Ok(format!("{hour:02}:{minute:02}"))
+}
+
+#[cfg(windows)]
+fn weekday_to_schtasks(value: u8) -> CmdResult<&'static str> {
+    match value {
+        1 => Ok("MON"),
+        2 => Ok("TUE"),
+        3 => Ok("WED"),
+        4 => Ok("THU"),
+        5 => Ok("FRI"),
+        6 => Ok("SAT"),
+        7 => Ok("SUN"),
+        _ => Err("weekday must be between 1 and 7".to_string()),
+    }
+}
+
+#[cfg(windows)]
+fn clear_existing_shutdown_schedule() {
+    let _ = Command::new("shutdown").args(["/a"]).status();
+    let _ = Command::new("schtasks")
+        .args(["/Delete", "/TN", SHUTDOWN_TASK_NAME, "/F"])
+        .status();
+}
+
+#[cfg(windows)]
+fn schedule_shutdown_after(seconds: u64) -> CmdResult<()> {
+    const SHUTDOWN_MAX_SECONDS: u64 = 315_360_000;
+    if seconds > SHUTDOWN_MAX_SECONDS {
+        return Err(format!(
+            "countdown is too large (max {SHUTDOWN_MAX_SECONDS} seconds)"
+        ));
+    }
+    let seconds_str = seconds.to_string();
+    let status = Command::new("shutdown")
+        .args(["/s", "/f", "/t", &seconds_str])
+        .status()
+        .map_err(|e| format!("failed to schedule shutdown: {e}"))?;
+    if !status.success() {
+        return Err("shutdown command failed".to_string());
+    }
+    Ok(())
+}
+
+#[cfg(windows)]
+fn schedule_repeat_shutdown(mode: &str, time: &str, weekday: Option<u8>, day_of_month: Option<u8>) -> CmdResult<()> {
+    let normalized_time = parse_hhmm(time)?;
+    let mut cmd = Command::new("schtasks");
+    cmd.args([
+        "/Create",
+        "/F",
+        "/TN",
+        SHUTDOWN_TASK_NAME,
+        "/TR",
+        "shutdown.exe /s /f /t 0",
+    ]);
+
+    match mode {
+        "daily" => {
+            cmd.args(["/SC", "DAILY"]);
+        }
+        "weekly" => {
+            let value = weekday.ok_or_else(|| "weekday is required for weekly repeat".to_string())?;
+            let day = weekday_to_schtasks(value)?;
+            cmd.args(["/SC", "WEEKLY", "/D", day]);
+        }
+        "monthly" => {
+            let value = day_of_month.ok_or_else(|| "dayOfMonth is required for monthly repeat".to_string())?;
+            if !(1..=31).contains(&value) {
+                return Err("dayOfMonth must be between 1 and 31".to_string());
+            }
+            let day = value.to_string();
+            cmd.args(["/SC", "MONTHLY", "/D", &day]);
+        }
+        _ => return Err("invalid repeat mode".to_string()),
+    }
+
+    cmd.args(["/ST", &normalized_time]);
+    let status = cmd
+        .status()
+        .map_err(|e| format!("failed to create scheduled task: {e}"))?;
+    if !status.success() {
+        return Err("schtasks create command failed".to_string());
+    }
+    Ok(())
+}
+
+fn normalize_shutdown_plan(mut plan: ShutdownPlan) -> Option<ShutdownPlan> {
+    // One-off plans become stale after their deadline and should not be shown forever.
+    if (plan.mode == "countdown" || plan.mode == "once") && plan.execute_at.is_some() {
+        if let Some(execute_at) = plan.execute_at {
+            if execute_at <= Utc::now() {
+                return None;
+            }
+            plan.execute_at = Some(execute_at);
+        }
+    }
+    Some(plan)
+}
+
+#[tauri::command]
+pub async fn get_shutdown_plan(app: AppHandle) -> CmdResult<Option<ShutdownPlan>> {
+    let plan = read_shutdown_plan(&app).and_then(normalize_shutdown_plan);
+    if plan.is_none() {
+        clear_shutdown_plan_file(&app);
+    }
+    Ok(plan)
+}
+
+#[tauri::command]
+pub async fn cancel_shutdown_schedule(app: AppHandle) -> CmdResult<()> {
+    #[cfg(windows)]
+    {
+        clear_existing_shutdown_schedule();
+        clear_shutdown_plan_file(&app);
+        return Ok(());
+    }
+
+    #[cfg(not(windows))]
+    {
+        let _ = app;
+        Err("shutdown scheduling is not supported on this platform.".to_string())
+    }
+}
+
+#[tauri::command]
+pub async fn schedule_shutdown(app: AppHandle, request: ScheduleShutdownRequest) -> CmdResult<ShutdownPlan> {
+    #[cfg(windows)]
+    {
+        let now = Utc::now();
+        let mode = request.mode.trim().to_lowercase();
+        let plan = match mode.as_str() {
+            "countdown" => {
+                let seconds = request
+                    .delay_seconds
+                    .ok_or_else(|| "delaySeconds is required for countdown mode".to_string())?;
+                if seconds == 0 {
+                    return Err("countdown must be greater than 0 seconds".to_string());
+                }
+                clear_existing_shutdown_schedule();
+                schedule_shutdown_after(seconds)?;
+                ShutdownPlan {
+                    mode,
+                    created_at: now,
+                    execute_at: Some(now + chrono::Duration::seconds(seconds as i64)),
+                    countdown_seconds: Some(seconds),
+                    time: None,
+                    weekday: None,
+                    day_of_month: None,
+                }
+            }
+            "once" => {
+                let execute_at = request
+                    .execute_at
+                    .ok_or_else(|| "executeAt is required for once mode".to_string())?;
+                if execute_at <= now {
+                    return Err("executeAt must be in the future".to_string());
+                }
+                let seconds = (execute_at - now).num_seconds() as u64;
+                clear_existing_shutdown_schedule();
+                schedule_shutdown_after(seconds.max(1))?;
+                ShutdownPlan {
+                    mode,
+                    created_at: now,
+                    execute_at: Some(execute_at),
+                    countdown_seconds: Some(seconds.max(1)),
+                    time: None,
+                    weekday: None,
+                    day_of_month: None,
+                }
+            }
+            "daily" | "weekly" | "monthly" => {
+                let time = request
+                    .time
+                    .as_deref()
+                    .ok_or_else(|| "time is required for repeat mode".to_string())?;
+                let normalized_time = parse_hhmm(time)?;
+                clear_existing_shutdown_schedule();
+                schedule_repeat_shutdown(&mode, &normalized_time, request.weekday, request.day_of_month)?;
+                ShutdownPlan {
+                    mode,
+                    created_at: now,
+                    execute_at: None,
+                    countdown_seconds: None,
+                    time: Some(normalized_time),
+                    weekday: request.weekday,
+                    day_of_month: request.day_of_month,
+                }
+            }
+            _ => {
+                return Err("unsupported schedule mode".to_string());
+            }
+        };
+
+        write_shutdown_plan(&app, &plan)?;
+        return Ok(plan);
+    }
+
+    #[cfg(not(windows))]
+    {
+        let _ = (app, request);
+        Err("shutdown scheduling is not supported on this platform.".to_string())
+    }
 }
 
 #[tauri::command]

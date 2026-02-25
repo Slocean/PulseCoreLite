@@ -118,3 +118,34 @@ pub struct TaskbarInfo {
     pub right: i32,
     pub bottom: i32,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ShutdownPlan {
+    /// countdown | once | daily | weekly | monthly
+    pub mode: String,
+    pub created_at: DateTime<Utc>,
+    pub execute_at: Option<DateTime<Utc>>,
+    pub countdown_seconds: Option<u64>,
+    /// HH:mm format for repeat plans.
+    pub time: Option<String>,
+    /// 1=Monday ... 7=Sunday
+    pub weekday: Option<u8>,
+    /// 1..31
+    pub day_of_month: Option<u8>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScheduleShutdownRequest {
+    /// countdown | once | daily | weekly | monthly
+    pub mode: String,
+    pub delay_seconds: Option<u64>,
+    pub execute_at: Option<DateTime<Utc>>,
+    /// HH:mm format for repeat plans.
+    pub time: Option<String>,
+    /// 1=Monday ... 7=Sunday
+    pub weekday: Option<u8>,
+    /// 1..31
+    pub day_of_month: Option<u8>,
+}

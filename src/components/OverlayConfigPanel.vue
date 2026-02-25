@@ -171,6 +171,14 @@
         accept="application/json"
         @change="handleImportChange" />
     </div>
+    <div class="overlay-config-language">
+      <span class="overlay-config-label">{{ t('overlay.toolkit') }}</span>
+      <div class="overlay-lang-buttons">
+        <button type="button" class="overlay-lang-button" @click="emit('openToolkit')">
+          {{ t('overlay.openToolkit') }}
+        </button>
+      </div>
+    </div>
     <div class="overlay-config-hotkey">
       <span class="overlay-config-label">{{ t('overlay.factoryResetHotkey') }}</span>
       <div class="overlay-config-hotkey-controls">
@@ -253,6 +261,7 @@ const emit = defineEmits<{
   (e: 'editTheme', value: string): void;
   (e: 'exportConfig'): void;
   (e: 'importConfig', value: File): void;
+  (e: 'openToolkit'): void;
 }>();
 
 const { t } = useI18n();

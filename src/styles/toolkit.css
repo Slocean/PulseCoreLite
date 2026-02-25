@@ -1,0 +1,238 @@
+html.window-toolkit,
+html.window-toolkit body,
+.window-toolkit .app-root,
+.window-toolkit .overlay-shell {
+  height: 100%;
+}
+
+html.window-toolkit body {
+  background: rgba(11, 14, 20, var(--overlay-bg-opacity, 1));
+  overflow-y: auto;
+}
+
+.window-toolkit .overlay-shell {
+  display: block;
+  width: 100%;
+}
+
+.toolkit-page {
+  width: 100%;
+  min-height: 100%;
+  max-width: none;
+  padding: 18px;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.toolkit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+
+.toolkit-drag-region {
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+  flex: 1 1 auto;
+  min-width: 0;
+  user-select: none;
+  cursor: move;
+  -webkit-app-region: drag;
+}
+
+.toolkit-drag-region .title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.16em;
+}
+
+.toolkit-tabs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+  -webkit-app-region: no-drag;
+}
+
+.toolkit-tab {
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  background: transparent;
+  border-radius: 8px;
+  min-height: 36px;
+  padding: 6px 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.66);
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.toolkit-tab:hover {
+  border-color: rgba(255, 255, 255, 0.34);
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.toolkit-tab--active {
+  border-color: rgba(0, 242, 255, 0.7);
+  background: rgba(0, 242, 255, 0.12);
+  color: rgba(0, 242, 255, 0.96);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 242, 255, 0.12),
+    0 0 12px rgba(0, 242, 255, 0.12);
+}
+
+.toolkit-card {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.24);
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.toolkit-section-title {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: uppercase;
+}
+
+.toolkit-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.toolkit-grid--3 {
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+}
+
+.toolkit-field {
+  display: grid;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.toolkit-field input,
+.toolkit-field select {
+  appearance: none;
+  width: 100%;
+  min-height: 38px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.24));
+  color: rgba(255, 255, 255, 0.92);
+  padding: 7px 10px;
+  font-size: 12px;
+  outline: none;
+  transition: all 160ms ease;
+  -webkit-app-region: no-drag;
+}
+
+.toolkit-field input:focus,
+.toolkit-field select:focus {
+  border-color: rgba(0, 242, 255, 0.58);
+  box-shadow: 0 0 0 2px rgba(0, 242, 255, 0.16);
+}
+
+.toolkit-field select {
+  padding-right: 36px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(0, 242, 255, 0.85) 50%),
+    linear-gradient(135deg, rgba(0, 242, 255, 0.85) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) calc(50% - 2px),
+    calc(100% - 11px) calc(50% - 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.toolkit-field select option {
+  background: #111824;
+  color: #e8edf6;
+}
+
+.toolkit-field input[type='datetime-local'] {
+  color-scheme: dark;
+  padding-right: 36px;
+}
+
+.toolkit-field input[type='datetime-local']::-webkit-calendar-picker-indicator {
+  opacity: 0.75;
+  cursor: pointer;
+  filter: invert(86%) sepia(14%) saturate(739%) hue-rotate(144deg) brightness(102%) contrast(101%);
+}
+
+.toolkit-field input[type='number']::-webkit-inner-spin-button,
+.toolkit-field input[type='number']::-webkit-outer-spin-button {
+  opacity: 0.6;
+}
+
+.toolkit-plan {
+  margin: 0;
+  min-height: 44px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+  word-break: break-word;
+}
+
+.toolkit-plan--muted {
+  color: rgba(255, 255, 255, 0.56);
+}
+
+.toolkit-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.toolkit-card .overlay-config-primary,
+.toolkit-card .overlay-config-danger {
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 12px;
+  -webkit-app-region: no-drag;
+}
+
+.toolkit-card .overlay-config-primary {
+  width: 100%;
+}
+
+.toolkit-status,
+.toolkit-error {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.toolkit-status {
+  color: rgba(0, 242, 255, 0.92);
+  padding: 0 4px;
+}
+
+.toolkit-error {
+  color: #ff9a9a;
+  padding: 0 4px;
+}
+
+.toolkit-header .overlay-header-actions,
+.toolkit-header .overlay-action {
+  -webkit-app-region: no-drag;
+}

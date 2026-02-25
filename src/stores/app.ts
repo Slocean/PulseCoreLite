@@ -165,7 +165,8 @@ async function broadcastSettingsSync() {
     const win = getCurrentWindow();
     await Promise.allSettled([
       win.emitTo('main', 'pulsecorelite://settings-sync', null),
-      win.emitTo('taskbar', 'pulsecorelite://settings-sync', null)
+      win.emitTo('taskbar', 'pulsecorelite://settings-sync', null),
+      win.emitTo('toolkit', 'pulsecorelite://settings-sync', null)
     ]);
   } catch {
     // ignore

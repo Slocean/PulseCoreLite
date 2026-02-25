@@ -1,5 +1,11 @@
 import type { UnlistenFn } from "@tauri-apps/api/event";
-import type { AppBootstrap, HardwareInfo, TaskbarInfo } from "../types";
+import type {
+  AppBootstrap,
+  HardwareInfo,
+  ScheduleShutdownRequest,
+  ShutdownPlan,
+  TaskbarInfo
+} from "../types";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -38,5 +44,9 @@ export const api = {
   getAutoStartEnabled: () => tauriInvoke<boolean>("get_auto_start_enabled"),
   setAutoStartEnabled: (enabled: boolean) => tauriInvoke<boolean>("set_auto_start_enabled", { enabled }),
   saveExportConfig: (path: string, content: string) => tauriInvoke<void>("save_export_config", { path, content }),
+  getShutdownPlan: () => tauriInvoke<ShutdownPlan | null>("get_shutdown_plan"),
+  scheduleShutdown: (request: ScheduleShutdownRequest) =>
+    tauriInvoke<ShutdownPlan>("schedule_shutdown", { request }),
+  cancelShutdownSchedule: () => tauriInvoke<void>("cancel_shutdown_schedule"),
   exitApp: () => tauriInvoke<void>("exit_app")
 };
