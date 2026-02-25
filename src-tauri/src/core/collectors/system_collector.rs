@@ -1,4 +1,5 @@
 use std::{
+    collections::{HashMap, HashSet},
     process::Command,
     time::{Duration, Instant},
 };
@@ -235,7 +236,7 @@ impl SystemCollector {
         self.system.refresh_cpu_usage();
         self.system.refresh_memory();
         self.system
-            .refresh_processes(ProcessesToUpdate::Some(&[self.current_pid]), true);
+            .refresh_processes(ProcessesToUpdate::All, true);
         self.networks.refresh(true);
         self.disks.refresh(true);
         if self.warmup_done {
@@ -325,9 +326,7 @@ impl SystemCollector {
         self.prev_tick = Instant::now();
 
         let gpu_metrics = self.refresh_gpu_metrics();
-        let process = self.system.process(self.current_pid);
-        let app_cpu_usage_pct = process.map(|p| p.cpu_usage() as f64);
-        let app_memory_mb = process.map(|p| p.memory() as f64 / (1024.0 * 1024.0));
+        let (app_cpu_usage_pct, app_memory_mb) = self.collect_app_usage_metrics();
 
         TelemetrySnapshot {
             timestamp: Utc::now(),
@@ -352,6 +351,49 @@ impl SystemCollector {
             app_memory_mb,
             power_watts: None,
         }
+    }
+
+    fn collect_app_usage_metrics(&self) -> (Option<f64>, Option<f64>) {
+        if self.system.process(self.current_pid).is_none() {
+            return (None, None);
+        }
+
+        let mut children_by_parent: HashMap<Pid, Vec<Pid>> = HashMap::new();
+        for (&pid, process) in self.system.processes() {
+            if let Some(parent_pid) = process.parent() {
+                children_by_parent
+                    .entry(parent_pid)
+                    .or_default()
+                    .push(pid);
+            }
+        }
+
+        let logical_cpu_count = self.system.cpus().len().max(1) as f64;
+        let mut process_stack = vec![self.current_pid];
+        let mut visited: HashSet<Pid> = HashSet::new();
+        let mut cpu_usage_sum = 0.0_f64;
+        let mut memory_bytes_sum = 0_u64;
+
+        while let Some(pid) = process_stack.pop() {
+            if !visited.insert(pid) {
+                continue;
+            }
+
+            if let Some(process) = self.system.process(pid) {
+                cpu_usage_sum += process.cpu_usage() as f64;
+                memory_bytes_sum = memory_bytes_sum.saturating_add(process.memory());
+            }
+
+            if let Some(children) = children_by_parent.get(&pid) {
+                process_stack.extend(children.iter().copied());
+            }
+        }
+
+        // sysinfo process CPU can reach core_count * 100; normalize to Task Manager's 0..100%.
+        let cpu_usage_pct = (cpu_usage_sum / logical_cpu_count).clamp(0.0, 100.0);
+        let memory_mb = memory_bytes_sum as f64 / (1024.0 * 1024.0);
+
+        (Some(cpu_usage_pct), Some(memory_mb))
     }
 
     fn network_totals(networks: &Networks) -> (u64, u64) {
