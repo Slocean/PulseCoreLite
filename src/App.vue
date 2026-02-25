@@ -1,9 +1,9 @@
 <template>
   <div class="app-root">
     <div class="overlay-shell" :class="{ 'overlay-shell--taskbar': windowRole === 'taskbar' }">
-      <TaskbarMonitorPage v-if="windowRole === 'taskbar'" />
-      <ToolkitPage v-else-if="windowRole === 'toolkit'" />
-      <CompactOverlayPage v-else />
+      <TaskbarMonitorPage v-if="windowRoleResolved && windowRole === 'taskbar'" />
+      <ToolkitPage v-else-if="windowRoleResolved && windowRole === 'toolkit'" />
+      <CompactOverlayPage v-else-if="windowRoleResolved" />
     </div>
   </div>
 </template>
@@ -21,10 +21,11 @@ import { useAppStore } from './stores/app';
 const store = useAppStore();
 const { locale } = useI18n();
 const windowRole = ref<'main' | 'taskbar' | 'toolkit'>('main');
+const windowRoleResolved = ref(!inTauri());
 let contextMenuHandler: ((event: MouseEvent) => void) | null = null;
 
 onMounted(async () => {
-  if (inTauri()) {
+  if (!windowRoleResolved.value && inTauri()) {
     try {
       const { getCurrentWindow } = await import('@tauri-apps/api/window');
       const label = getCurrentWindow().label;
@@ -33,13 +34,15 @@ onMounted(async () => {
       } else {
         windowRole.value = 'main';
       }
-      if (typeof document !== 'undefined') {
-        document.documentElement.classList.toggle('window-taskbar', windowRole.value === 'taskbar');
-        document.documentElement.classList.toggle('window-toolkit', windowRole.value === 'toolkit');
-      }
     } catch {
-      // ignore
+      windowRole.value = 'main';
     }
+    windowRoleResolved.value = true;
+  }
+
+  if (typeof document !== 'undefined') {
+    document.documentElement.classList.toggle('window-taskbar', windowRole.value === 'taskbar');
+    document.documentElement.classList.toggle('window-toolkit', windowRole.value === 'toolkit');
   }
 
   // Disable the browser's default context menu in the main window.

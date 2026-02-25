@@ -13,8 +13,12 @@ export function useToolkitLauncher() {
       const existing = await WebviewWindow.getByLabel('toolkit');
       if (existing) {
         const size = new LogicalSize(TOOLKIT_WIDTH, TOOLKIT_HEIGHT);
-        await existing.setMinSize(size);
         await existing.setSize(size);
+        try {
+          await existing.setMinSize(size);
+        } catch {
+          // Fallback: setSize still works even if min-size permission is unavailable.
+        }
         await existing.show();
         await existing.setFocus();
         return;
@@ -22,10 +26,10 @@ export function useToolkitLauncher() {
       new WebviewWindow('toolkit', {
         url: 'index.html',
         title: 'PulseCoreLite Toolkit',
-        width: TOOLKIT_WIDTH,
-        height: TOOLKIT_HEIGHT,
-        minWidth: TOOLKIT_WIDTH,
-        minHeight: TOOLKIT_HEIGHT,
+        // width: TOOLKIT_WIDTH,
+        // height: TOOLKIT_HEIGHT,
+        // minWidth: TOOLKIT_WIDTH,
+        // minHeight: TOOLKIT_HEIGHT,
         center: true,
         visible: true,
         focus: true,
