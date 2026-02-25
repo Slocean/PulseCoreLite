@@ -5,8 +5,8 @@ export function useToolkitLauncher() {
     if (!inTauri()) {
       return;
     }
-    const TOOLKIT_WIDTH = 980;
-    const TOOLKIT_HEIGHT = 820;
+    const TOOLKIT_WIDTH = 260;
+    const TOOLKIT_HEIGHT = 600;
     try {
       const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
       const { LogicalSize } = await import('@tauri-apps/api/dpi');
@@ -26,10 +26,10 @@ export function useToolkitLauncher() {
       new WebviewWindow('toolkit', {
         url: 'index.html',
         title: 'PulseCoreLite Toolkit',
-        // width: TOOLKIT_WIDTH,
-        // height: TOOLKIT_HEIGHT,
-        // minWidth: TOOLKIT_WIDTH,
-        // minHeight: TOOLKIT_HEIGHT,
+        width: TOOLKIT_WIDTH,
+        height: TOOLKIT_HEIGHT,
+        minWidth: TOOLKIT_WIDTH,
+        minHeight: TOOLKIT_HEIGHT,
         center: true,
         visible: true,
         focus: true,

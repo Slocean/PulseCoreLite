@@ -19,17 +19,17 @@ html.window-toolkit body {
   width: 100%;
   min-height: 100%;
   max-width: none;
-  padding: 18px;
+  padding: 10px;
   display: grid;
   align-content: start;
-  gap: 14px;
+  gap: 8px;
 }
 
 .toolkit-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 6px;
   margin-bottom: 2px;
 }
 
@@ -67,8 +67,8 @@ html.window-toolkit body {
   border: 1px dashed rgba(255, 255, 255, 0.18);
   background: transparent;
   border-radius: 8px;
-  min-height: 36px;
-  padding: 6px 8px;
+  min-height: 32px;
+  padding: 4px 6px;
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -95,15 +95,15 @@ html.window-toolkit body {
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(0, 0, 0, 0.24);
-  padding: 14px;
+  padding: 8px;
   display: grid;
-  gap: 12px;
+  gap: 6px;
   align-content: start;
 }
 
 .toolkit-section-title {
   margin: 0;
-  font-size: 12px;
+  font-size: 11px;
   letter-spacing: 0.08em;
   color: rgba(255, 255, 255, 0.9);
   text-transform: uppercase;
@@ -111,11 +111,11 @@ html.window-toolkit body {
 
 .toolkit-grid {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
 .toolkit-grid--3 {
-  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  grid-template-columns: repeat(3, minmax(56px, 1fr));
 }
 
 .toolkit-field {
@@ -130,13 +130,13 @@ html.window-toolkit body {
 .toolkit-field select {
   appearance: none;
   width: 100%;
-  min-height: 38px;
-  border-radius: 8px;
+  min-height: 28px;
+  border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.24));
   color: rgba(255, 255, 255, 0.92);
-  padding: 7px 10px;
-  font-size: 12px;
+  padding: 4px 6px;
+  font-size: 11px;
   outline: none;
   transition: all 160ms ease;
   -webkit-app-region: no-drag;
@@ -149,14 +149,16 @@ html.window-toolkit body {
 }
 
 .toolkit-field select {
-  padding-right: 36px;
+  padding-right: 32px;
   background-image:
     linear-gradient(45deg, transparent 50%, rgba(0, 242, 255, 0.85) 50%),
     linear-gradient(135deg, rgba(0, 242, 255, 0.85) 50%, transparent 50%);
   background-position:
-    calc(100% - 16px) calc(50% - 2px),
-    calc(100% - 11px) calc(50% - 2px);
-  background-size: 5px 5px, 5px 5px;
+    calc(100% - 14px) calc(50% - 2px),
+    calc(100% - 9px) calc(50% - 2px);
+  background-size:
+    5px 5px,
+    5px 5px;
   background-repeat: no-repeat;
 }
 
@@ -167,13 +169,21 @@ html.window-toolkit body {
 
 .toolkit-field input[type='datetime-local'] {
   color-scheme: dark;
-  padding-right: 36px;
+  padding-right: 28px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  letter-spacing: -0.05em;
+  font-size: 10px;
 }
 
 .toolkit-field input[type='datetime-local']::-webkit-calendar-picker-indicator {
-  opacity: 0.75;
+  opacity: 0.8;
   cursor: pointer;
   filter: invert(86%) sepia(14%) saturate(739%) hue-rotate(144deg) brightness(102%) contrast(101%);
+  transition: opacity 160ms ease;
+}
+
+.toolkit-field input[type='datetime-local']::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 .toolkit-field input[type='number']::-webkit-inner-spin-button,
@@ -183,13 +193,13 @@ html.window-toolkit body {
 
 .toolkit-plan {
   margin: 0;
-  min-height: 44px;
+  min-height: 36px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.03);
-  padding: 10px;
-  font-size: 12px;
-  line-height: 1.5;
+  padding: 8px;
+  font-size: 11px;
+  line-height: 1.4;
   color: rgba(255, 255, 255, 0.9);
   word-break: break-word;
 }
@@ -205,9 +215,9 @@ html.window-toolkit body {
 
 .toolkit-card .overlay-config-primary,
 .toolkit-card .overlay-config-danger {
-  min-height: 38px;
-  padding: 8px 12px;
-  font-size: 12px;
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 11px;
   -webkit-app-region: no-drag;
 }
 
