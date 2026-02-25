@@ -1,3 +1,23 @@
+## v1.5.5
+
+- 升级版本至 1.5.5 并同步 Tauri 配置
+- 新增工具箱窗口状态管理与拖拽能力
+- 数字输入支持鼠标滚轮，优化透明窗口与日期选择器交互
+- 新增系统工具、恢复出厂设置与配置导入导出
+- 新增定时关机工具
+- 修复 toolkit 权限导致的窗口创建错误与 WebKit 数字输入显示问题
+- 调整工具包尺寸与字体，提升紧凑布局适配
+- 开发体验改进：自动检测/切换开发端口，默认改为 9000
+
+- Bump version to 1.5.5 and sync Tauri config
+- Add toolkit window state management and drag support
+- Enable mouse wheel for number inputs; improve transparent window and date picker UX
+- Add system tools, factory reset, and config import/export
+- Add scheduled shutdown tool
+- Fix toolkit window creation permission error and WebKit number input rendering
+- Adjust toolkit size and typography for compact layout
+- Dev experience: auto-detect/switch dev port; default to 9000
+
 ## v1.4.4
 
 - 更新应用版本号至 1.4.4 并改进发布打包脚本

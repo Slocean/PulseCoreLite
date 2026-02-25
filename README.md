@@ -1,6 +1,6 @@
 [中文文档](#中文文档) | [English Documentation](#english-documentation) | [下载地址](https://github.com/Slocean/PulseCoreLite/releases)
 
-# PulseCore Lite v1.4.4 <img src="src/static/img/ice_logo.png" alt="Logo" height="28" />
+# PulseCore Lite v1.5.5 <img src="src/static/img/ice_logo.png" alt="Logo" height="28" />
 
 PulseCoreLite 是一个基于 Tauri 2 + Vue 3 的桌面性能监控应用，提供悬浮窗监控与任务栏监控两种形态，实时展示 CPU、GPU、内存、磁盘与网络等指标，并支持多语言、透明度与刷新率配置、自动启动与托盘行为等系统级能力。
 
@@ -11,6 +11,14 @@ PulseCoreLite 是一个基于 Tauri 2 + Vue 3 的桌面性能监控应用，提�
 - 形态：悬浮窗（主窗口）+ 任务栏监控条（独立窗口）
 - 目的：在最小占用前提下，持续提供硬件与网络实时指标
 - 平台：Windows（自动启动、任务栏位置、卸载能力基于 Windows API）
+
+### 版本更新 v1.5.5
+
+- 升级版本至 1.5.5 并同步 Tauri 配置
+- 工具箱窗口：新增状态管理、拖拽、透明窗口与紧凑布局
+- 工具箱能力：新增系统工具、恢复出厂设置、配置导入导出与定时关机
+- 交互与样式：数字输入支持滚轮，优化日期选择器与字体表现
+- 稳定性与开发体验：修复窗口权限问题，自动检测/切换开发端口
 
 ### 页面截图（中文）
 
@@ -45,6 +53,7 @@ PulseCoreLite 是一个基于 Tauri 2 + Vue 3 的桌面性能监控应用，提�
 - 预警表现：高负载下的高亮色阶提示
 - 交互能力：拖拽移动、双击交互、透明度可调
 - 任务栏监控条：可常驻置顶、可右键快速切换显示项
+- 工具箱：定时关机与系统工具能力
 - 系统能力：自动启动、退出到托盘、记住窗口位置
 - 语言支持：中文/英文切换
 - 数据刷新：采样刷新率可配置
@@ -120,7 +129,8 @@ npm run pack:release
 - 指标采集：sysinfo + Windows PowerShell/PerfCounter + DXGI
 - 数据流：Rust 采样 → Tauri 事件 → 前端 Pinia 更新 → UI 渲染
 - 刷新控制：前端设置刷新率，后端循环按 rate 采样
-- 多窗口：主窗口 label=main，任务栏窗口 label=taskbar
+- 多窗口：主窗口 label=main，任务栏窗口 label=taskbar，工具箱窗口 label=toolkit
+- 开发端口：默认 9000（自动检测切换）
 - 本地存储：
   - pulsecorelite.settings：系统级设置
   - pulsecorelite.overlay_prefs：悬浮窗显示偏好
@@ -152,6 +162,14 @@ npm run pack:release
 - Form factors: floating overlay (main window) + taskbar monitor bar (separate window)
 - Goal: continuous, low-overhead telemetry for core hardware and network stats
 - Platform: Windows (autostart, taskbar position, uninstall are Windows API based)
+
+### Release Notes v1.5.5
+
+- Bump version to 1.5.5 and sync Tauri config
+- Toolkit window: state management, drag support, transparency, compact layout
+- Toolkit features: system tools, factory reset, config import/export, scheduled shutdown
+- UX polish: mouse wheel for number inputs, date picker and typography refinements
+- Stability and dev experience: permission fix and auto dev port switching
 
 ### Screenshots (English)
 
@@ -186,6 +204,7 @@ npm run pack:release
 - Usage warning: color tiers for high utilization
 - Interactions: drag, double-click, adjustable background opacity
 - Taskbar monitor bar: always-on-top support and quick toggles
+- Toolkit: scheduled shutdown and system utilities
 - System options: autostart, close-to-tray, remember window position
 - Localization: Chinese and English UI
 - Refresh control: configurable sampling rate
@@ -261,7 +280,8 @@ npm run pack:release
 - Telemetry: sysinfo + PowerShell/PerfCounter + DXGI (Windows)
 - Data flow: Rust sampling → Tauri events → Pinia store → UI render
 - Refresh control: front-end sets refresh rate, backend loop respects it
-- Window roles: main overlay (label=main), taskbar bar (label=taskbar)
+- Window roles: main overlay (label=main), taskbar bar (label=taskbar), toolkit window (label=toolkit)
+- Dev port: default 9000 with auto-detection and fallback
 - Local storage keys:
   - pulsecorelite.settings
   - pulsecorelite.overlay_prefs
