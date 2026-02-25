@@ -176,14 +176,18 @@ html.window-toolkit body {
 }
 
 .toolkit-field input[type='datetime-local']::-webkit-calendar-picker-indicator {
-  opacity: 0.8;
+  opacity: 1;
   cursor: pointer;
   filter: invert(86%) sepia(14%) saturate(739%) hue-rotate(144deg) brightness(102%) contrast(101%);
-  transition: opacity 160ms ease;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  padding: 2px;
+  transition: all 160ms ease;
 }
 
 .toolkit-field input[type='datetime-local']::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
+  background-color: rgba(0, 242, 255, 0.2);
+  filter: invert(86%) sepia(14%) saturate(739%) hue-rotate(144deg) brightness(120%) contrast(101%);
 }
 
 .toolkit-field input[type='number']::-webkit-inner-spin-button,

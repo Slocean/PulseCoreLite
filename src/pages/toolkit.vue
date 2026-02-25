@@ -106,7 +106,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { api, inTauri } from '../services/tauri';
@@ -204,12 +204,32 @@ watch(
   { immediate: true }
 );
 
+watch([repeatMode, plan, statusMessage, errorMessage], () => {
+  nextTick(updateWindowHeight);
+});
+
 watch(appointmentAt, value => {
   const date = parseDatetimeLocal(value);
   if (!date) return;
   weeklyDay.value = dayToWeekday(date);
   monthlyDay.value = date.getDate();
 });
+
+onMounted(() => {
+  void refreshPlan();
+  setTimeout(updateWindowHeight, 100);
+});
+
+async function updateWindowHeight() {
+  if (!inTauri()) return;
+  try {
+    const { getCurrentWindow } = await import('@tauri-apps/api/window');
+    const { LogicalSize } = await import('@tauri-apps/api/dpi');
+    const height = document.body.scrollHeight + 4;
+    await getCurrentWindow().setSize(new LogicalSize(260, height));
+  } catch {
+  }
+}
 
 void refreshPlan();
 
