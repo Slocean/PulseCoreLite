@@ -180,16 +180,16 @@ html.window-toolkit body {
 .toolkit-field input[type='datetime-local']::-webkit-calendar-picker-indicator {
   opacity: 1;
   cursor: pointer;
-  filter: invert(86%) sepia(14%) saturate(739%) hue-rotate(144deg) brightness(102%) contrast(101%);
-  background-color: rgba(255, 255, 255, 0.08);
+  filter: invert(100%) brightness(100%);
+  background-color: rgba(255, 255, 255, 0.12);
   border-radius: 4px;
   padding: 2px;
   transition: all 160ms ease;
 }
 
 .toolkit-field input[type='datetime-local']::-webkit-calendar-picker-indicator:hover {
-  background-color: rgba(0, 242, 255, 0.2);
-  filter: invert(86%) sepia(14%) saturate(739%) hue-rotate(144deg) brightness(120%) contrast(101%);
+  background-color: rgba(255, 255, 255, 0.24);
+  filter: invert(100%) brightness(130%);
 }
 
 .toolkit-field input[type='number']::-webkit-inner-spin-button,

@@ -98,7 +98,7 @@
     "openToolkit": "Open Toolkit"
   },
   "toolkit": {
-    "title": "Toolkit - Scheduled Shutdown",
+    "title": "Toolkit",
     "tabs": "Toolkit tabs",
     "tabShutdown": "Shutdown",
     "tabCountdown": "Countdown",

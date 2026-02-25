@@ -98,7 +98,7 @@
     "openToolkit": "打开工具箱"
   },
   "toolkit": {
-    "title": "工具箱 - 定时关机",
+    "title": "工具箱",
     "tabs": "工具箱标签页",
     "tabShutdown": "定时关机",
     "tabCountdown": "倒计时",

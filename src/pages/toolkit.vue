@@ -1,5 +1,5 @@
 <template>
-  <section class="overlay-widget overlay-widget--cyber toolkit-page">
+  <section class="overlay-widget overlay-widget--cyber toolkit-page" @mousedown="handleToolkitMouseDown">
     <div v-if="prefs.backgroundImage" class="overlay-bg" :style="overlayBackgroundStyle" aria-hidden="true"></div>
     <div
       v-if="showLiquidGlassHighlight"
@@ -12,6 +12,9 @@
         <h1 class="title">{{ t('toolkit.title') }}</h1>
       </div>
       <div class="overlay-header-actions">
+        <div class="overlay-drag" @mousedown.stop="startDragging" :aria-label="t('overlay.showDragHandle')">
+          <span class="material-symbols-outlined">drag_handle</span>
+        </div>
         <button
           type="button"
           class="overlay-action overlay-action--primary"
@@ -227,8 +230,7 @@ async function updateWindowHeight() {
     const { LogicalSize } = await import('@tauri-apps/api/dpi');
     const height = document.body.scrollHeight + 4;
     await getCurrentWindow().setSize(new LogicalSize(260, height));
-  } catch {
-  }
+  } catch {}
 }
 
 void refreshPlan();
@@ -352,6 +354,25 @@ async function minimizeToolkitWindow() {
   } catch {
     // ignore
   }
+}
+
+async function startDragging() {
+  if (!inTauri()) return;
+  try {
+    const { getCurrentWindow } = await import('@tauri-apps/api/window');
+    await getCurrentWindow().startDragging();
+  } catch {
+    // ignore
+  }
+}
+
+function handleToolkitMouseDown(event: MouseEvent) {
+  const target = event.target as HTMLElement | null;
+  if (!target) return;
+  if (target.closest('.overlay-header-actions')) return;
+  if (target.closest('.toolkit-tabs, .toolkit-card')) return;
+  if (target.closest('button, input, select, textarea, label, .overlay-config')) return;
+  void startDragging();
 }
 
 function nextQuarterHourLocal() {
