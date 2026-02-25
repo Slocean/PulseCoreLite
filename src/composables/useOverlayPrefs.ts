@@ -1,8 +1,10 @@
-import { onMounted, reactive, watch } from 'vue';
+import { onMounted, onUnmounted, reactive, watch } from 'vue';
 
+import { inTauri, listenEvent } from '../services/tauri';
 import { kvGet, kvSet } from '../utils/kv';
 
 const OVERLAY_PREF_KEY = 'pulsecorelite.overlay_prefs';
+const PREFS_SYNC_EVENT = 'pulsecorelite://prefs-sync';
 
 export type OverlayBackgroundEffect = 'gaussian' | 'liquidGlass';
 
@@ -85,6 +87,24 @@ function sanitizePrefs(input: Partial<OverlayPrefs> | null | undefined): Overlay
   };
 }
 
+async function broadcastPrefsSync() {
+  if (!inTauri()) {
+    return;
+  }
+  try {
+    const { getCurrentWindow } = await import('@tauri-apps/api/window');
+    const win = getCurrentWindow();
+    const currentLabel = win.label;
+    const targets: string[] = [];
+    if (currentLabel !== 'main') targets.push('main');
+    if (currentLabel !== 'toolkit') targets.push('toolkit');
+    if (targets.length === 0) return;
+    await Promise.allSettled(targets.map(target => win.emitTo(target, PREFS_SYNC_EVENT, null)));
+  } catch {
+    // ignore
+  }
+}
+
 function loadPrefsFromLocalStorage(): OverlayPrefs {
   try {
     const raw = localStorage.getItem(OVERLAY_PREF_KEY);
@@ -101,15 +121,18 @@ function loadPrefsFromLocalStorage(): OverlayPrefs {
 export function useOverlayPrefs() {
   const prefs = reactive<OverlayPrefs>(loadPrefsFromLocalStorage());
   let readyToPersist = false;
+  let isSyncing = false; // Prevent sync event loops
+  let unlistenSync: (() => void) | null = null;
 
   watch(
     prefs,
     next => {
-      if (!readyToPersist) return;
+      if (!readyToPersist || isSyncing) return;
 
       // Avoid IndexedDB structured-clone issues with Vue proxies by persisting a JSON snapshot.
       const snapshot = JSON.parse(JSON.stringify(next)) as OverlayPrefs;
       void kvSet(OVERLAY_PREF_KEY, snapshot);
+      void broadcastPrefsSync();
     },
     { deep: true }
   );
@@ -130,7 +153,55 @@ export function useOverlayPrefs() {
       // ignore
     }
 
+    // Listen for prefs sync events from other windows
+    if (inTauri()) {
+      unlistenSync = await listenEvent<null>(PREFS_SYNC_EVENT, async () => {
+        if (isSyncing) return;
+        isSyncing = true;
+        try {
+          const synced = await kvGet<Partial<OverlayPrefs>>(OVERLAY_PREF_KEY);
+          if (synced && typeof synced === 'object') {
+            const sanitized = sanitizePrefs(synced);
+            // Only update values that are different to avoid unnecessary reactivity triggers
+            const keys: (keyof OverlayPrefs)[] = [
+              'backgroundOpacity',
+              'backgroundImage',
+              'backgroundBlurPx',
+              'backgroundEffect',
+              'backgroundGlassStrength',
+              'showCpu',
+              'showGpu',
+              'showMemory',
+              'showDisk',
+              'showDown',
+              'showUp',
+              'showLatency',
+              'showValues',
+              'showPercent',
+              'showHardwareInfo',
+              'showWarning',
+              'showDragHandle'
+            ];
+            for (const key of keys) {
+              if (prefs[key] !== sanitized[key]) {
+                (prefs as any)[key] = sanitized[key];
+              }
+            }
+          }
+        } finally {
+          isSyncing = false;
+        }
+      });
+    }
+
     readyToPersist = true;
+  });
+
+  onUnmounted(() => {
+    if (unlistenSync) {
+      unlistenSync();
+      unlistenSync = null;
+    }
   });
 
   return { prefs };

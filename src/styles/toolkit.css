@@ -23,6 +23,7 @@ html.window-toolkit body {
   display: grid;
   align-content: start;
   gap: 8px;
+  background: rgba(11, 14, 20, var(--overlay-bg-opacity, 1));
 }
 
 .toolkit-header {
