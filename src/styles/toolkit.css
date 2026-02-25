@@ -6,7 +6,7 @@ html.window-toolkit body,
 }
 
 html.window-toolkit body {
-  background: rgba(11, 14, 20, var(--overlay-bg-opacity, 1));
+  background: transparent;
   overflow-y: auto;
 }
 
@@ -42,6 +42,7 @@ html.window-toolkit body {
   user-select: none;
   cursor: move;
   -webkit-app-region: drag;
+  background: transparent;
 }
 
 .toolkit-drag-region .title {
@@ -51,6 +52,7 @@ html.window-toolkit body {
   letter-spacing: 0.16em;
   font-size: 13px;
   font-weight: 700;
+  background: transparent;
 }
 
 .toolkit-tabs {
@@ -175,21 +177,11 @@ html.window-toolkit body {
   font-family: 'Consolas', 'Monaco', monospace;
   letter-spacing: -0.05em;
   font-size: 11px;
+  position: relative;
 }
 
 .toolkit-field input[type='datetime-local']::-webkit-calendar-picker-indicator {
-  opacity: 1;
-  cursor: pointer;
-  filter: invert(100%) brightness(100%);
-  background-color: rgba(255, 255, 255, 0.12);
-  border-radius: 4px;
-  padding: 2px;
-  transition: all 160ms ease;
-}
-
-.toolkit-field input[type='datetime-local']::-webkit-calendar-picker-indicator:hover {
-  background-color: rgba(255, 255, 255, 0.24);
-  filter: invert(100%) brightness(130%);
+  display: none;
 }
 
 .toolkit-field input[type='number']::-webkit-inner-spin-button,

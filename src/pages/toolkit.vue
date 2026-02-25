@@ -64,7 +64,7 @@
       <div class="toolkit-grid">
         <label class="toolkit-field">
           <span>{{ t('toolkit.datetime') }}</span>
-          <input v-model="appointmentAt" type="datetime-local" />
+          <input v-model="appointmentAt" type="datetime-local" @click="openDatetimePicker" />
         </label>
         <label class="toolkit-field">
           <span>{{ t('toolkit.repeat') }}</span>
@@ -228,7 +228,8 @@ async function updateWindowHeight() {
   try {
     const { getCurrentWindow } = await import('@tauri-apps/api/window');
     const { LogicalSize } = await import('@tauri-apps/api/dpi');
-    const height = document.body.scrollHeight + 4;
+    const content = document.querySelector('.toolkit-page');
+    const height = (content ? content.scrollHeight : document.body.scrollHeight) + 4;
     await getCurrentWindow().setSize(new LogicalSize(260, height));
   } catch {}
 }
@@ -363,6 +364,14 @@ async function startDragging() {
     await getCurrentWindow().startDragging();
   } catch {
     // ignore
+  }
+}
+
+function openDatetimePicker(event: MouseEvent) {
+  const target = event.currentTarget as HTMLInputElement | null;
+  if (!target) return;
+  if (typeof (target as any).showPicker === 'function') {
+    (target as any).showPicker();
   }
 }
 

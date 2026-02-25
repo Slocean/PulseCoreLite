@@ -24,6 +24,7 @@ export function useToolkitLauncher() {
         center: true,
         visible: true,
         focus: true,
+        transparent: true,
         decorations: false,
         resizable: false,
         maximizable: false,
