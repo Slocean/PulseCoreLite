@@ -186,7 +186,8 @@ html.window-toolkit body {
 
 .toolkit-field input[type='number']::-webkit-inner-spin-button,
 .toolkit-field input[type='number']::-webkit-outer-spin-button {
-  opacity: 0.6;
+  opacity: 0.8;
+  background: transparent;
 }
 
 .toolkit-plan {

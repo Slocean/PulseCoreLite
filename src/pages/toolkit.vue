@@ -43,15 +43,30 @@
       <div class="toolkit-grid toolkit-grid--3">
         <label class="toolkit-field">
           <span>{{ t('toolkit.hours') }}</span>
-          <input v-model.number="countdownHours" type="number" min="0" max="999" />
+          <input
+            v-model.number="countdownHours"
+            type="number"
+            min="0"
+            max="999"
+            @wheel="onNumberWheel($event, 'hours', 0, 999)" />
         </label>
         <label class="toolkit-field">
           <span>{{ t('toolkit.minutes') }}</span>
-          <input v-model.number="countdownMinutes" type="number" min="0" max="59" />
+          <input
+            v-model.number="countdownMinutes"
+            type="number"
+            min="0"
+            max="59"
+            @wheel="onNumberWheel($event, 'minutes', 0, 59)" />
         </label>
         <label class="toolkit-field">
           <span>{{ t('toolkit.seconds') }}</span>
-          <input v-model.number="countdownSeconds" type="number" min="0" max="59" />
+          <input
+            v-model.number="countdownSeconds"
+            type="number"
+            min="0"
+            max="59"
+            @wheel="onNumberWheel($event, 'seconds', 0, 59)" />
         </label>
       </div>
       <button type="button" class="overlay-config-primary" @click="scheduleCountdown">
@@ -62,10 +77,10 @@
     <div class="toolkit-card">
       <h2 class="toolkit-section-title">{{ t('toolkit.datetimeTitle') }}</h2>
       <div class="toolkit-grid">
-        <label class="toolkit-field">
-          <span>{{ t('toolkit.datetime') }}</span>
+        <div class="toolkit-field">
+          <span class="toolkit-field-label">{{ t('toolkit.datetime') }}</span>
           <input v-model="appointmentAt" type="datetime-local" @click="openDatetimePicker" />
-        </label>
+        </div>
         <label class="toolkit-field">
           <span>{{ t('toolkit.repeat') }}</span>
           <select v-model="repeatMode">
@@ -373,6 +388,19 @@ function openDatetimePicker(event: MouseEvent) {
   if (typeof (target as any).showPicker === 'function') {
     (target as any).showPicker();
   }
+}
+
+function onNumberWheel(event: WheelEvent, field: 'hours' | 'minutes' | 'seconds', min: number, max: number) {
+  const el = event.currentTarget as HTMLInputElement | null;
+  if (!el || document.activeElement !== el) {
+    return;
+  }
+  event.preventDefault();
+  const model = field === 'hours' ? countdownHours : field === 'minutes' ? countdownMinutes : countdownSeconds;
+  const dir = event.deltaY > 0 ? -1 : 1;
+  const current = sanitizeNonNegative(model.value);
+  const next = Math.max(min, Math.min(max, current + dir));
+  model.value = next;
 }
 
 function handleToolkitMouseDown(event: MouseEvent) {
