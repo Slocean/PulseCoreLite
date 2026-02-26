@@ -1,6 +1,6 @@
 [中文文档](#中文文档) | [English Documentation](#english-documentation) | [下载地址](https://github.com/Slocean/PulseCoreLite/releases)
 
-# PulseCore Lite v1.5.5 <img src="src/static/img/ice_logo.png" alt="Logo" height="28" />
+# PulseCore Lite v1.5.7 <img src="src/static/img/ice_logo.png" alt="Logo" height="28" />
 
 PulseCoreLite 是一个基于 Tauri 2 + Vue 3 的桌面性能监控应用，提供悬浮窗监控与任务栏监控两种形态，实时展示 CPU、GPU、内存、磁盘与网络等指标，并支持多语言、透明度与刷新率配置、自动启动与托盘行为等系统级能力。
 
@@ -12,13 +12,15 @@ PulseCoreLite 是一个基于 Tauri 2 + Vue 3 的桌面性能监控应用，提�
 - 目的：在最小占用前提下，持续提供硬件与网络实时指标
 - 平台：Windows（自动启动、任务栏位置、卸载能力基于 Windows API）
 
-### 版本更新 v1.5.5
+### 版本更新 v1.5.7
 
-- 升级版本至 1.5.5 并同步 Tauri 配置
-- 工具箱窗口：新增状态管理、拖拽、透明窗口与紧凑布局
-- 工具箱能力：新增系统工具、恢复出厂设置、配置导入导出与定时关机
-- 交互与样式：数字输入支持滚轮，优化日期选择器与字体表现
-- 稳定性与开发体验：修复窗口权限问题，自动检测/切换开发端口
+- 修复多窗口同步与资源使用率计算问题
+- 工具箱窗口初始化与关闭逻辑优化，关闭悬浮窗时同步关闭工具箱
+- 跨窗口同步前校验目标窗口是否存在，避免无效事件
+- 遥测采集与发送优化：仅向可见窗口推送，无可见窗口时降低轮询频率
+- 应用 CPU/内存统计升级：采集应用及其子进程并按逻辑核心归一化
+- 优化 GPU 查询超时处理，避免 PowerShell 阻塞
+- 升级版本号至 1.5.7 并补充必要的 Windows API 特性
 
 ### 页面截图（中文）
 
@@ -127,6 +129,7 @@ npm run pack:release
 - 桌面框架：Tauri 2
 - 后端语言：Rust
 - 指标采集：sysinfo + Windows PowerShell/PerfCounter + DXGI
+- 进程采样：Windows 进程树聚合应用及子进程 CPU/内存
 - 数据流：Rust 采样 → Tauri 事件 → 前端 Pinia 更新 → UI 渲染
 - 刷新控制：前端设置刷新率，后端循环按 rate 采样
 - 多窗口：主窗口 label=main，任务栏窗口 label=taskbar，工具箱窗口 label=toolkit
@@ -163,13 +166,15 @@ npm run pack:release
 - Goal: continuous, low-overhead telemetry for core hardware and network stats
 - Platform: Windows (autostart, taskbar position, uninstall are Windows API based)
 
-### Release Notes v1.5.5
+### Release Notes v1.5.7
 
-- Bump version to 1.5.5 and sync Tauri config
-- Toolkit window: state management, drag support, transparency, compact layout
-- Toolkit features: system tools, factory reset, config import/export, scheduled shutdown
-- UX polish: mouse wheel for number inputs, date picker and typography refinements
-- Stability and dev experience: permission fix and auto dev port switching
+- Fix multi-window sync and resource usage computation
+- Harden toolkit window init/close behavior and close it with the overlay
+- Validate target window existence before cross-window sync
+- Telemetry optimizations: push only to visible windows and throttle when none visible
+- App CPU/memory stats now aggregate process tree and normalize by logical cores
+- Improve GPU query timeout handling to avoid PowerShell blocking
+- Bump version to 1.5.7 and add required Windows API features
 
 ### Screenshots (English)
 
@@ -278,6 +283,7 @@ npm run pack:release
 - Desktop: Tauri 2
 - Backend: Rust
 - Telemetry: sysinfo + PowerShell/PerfCounter + DXGI (Windows)
+- Process sampling: Windows process tree aggregation for app + child CPU/memory
 - Data flow: Rust sampling → Tauri events → Pinia store → UI render
 - Refresh control: front-end sets refresh rate, backend loop respects it
 - Window roles: main overlay (label=main), taskbar bar (label=taskbar), toolkit window (label=toolkit)

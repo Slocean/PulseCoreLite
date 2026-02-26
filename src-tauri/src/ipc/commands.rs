@@ -1,8 +1,8 @@
 use chrono::Utc;
-use tauri::{AppHandle, Manager, State};
-use std::{fs, path::PathBuf};
 #[cfg(windows)]
 use std::process::Command;
+use std::{fs, path::PathBuf};
+use tauri::{AppHandle, Manager, State};
 
 use crate::{
     core::device_info,
@@ -48,7 +48,10 @@ const UNINSTALL_ROOT_KEY: &str = "Software\\Microsoft\\Windows\\CurrentVersion\\
 #[cfg(windows)]
 fn to_wide(value: &str) -> Vec<u16> {
     use std::{ffi::OsStr, os::windows::ffi::OsStrExt};
-    OsStr::new(value).encode_wide().chain(std::iter::once(0)).collect()
+    OsStr::new(value)
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect()
 }
 
 #[cfg(windows)]
@@ -154,7 +157,10 @@ pub fn confirm_factory_reset(title: String, message: String) -> CmdResult<bool> 
             MessageBoxW, IDYES, MB_ICONWARNING, MB_SETFOREGROUND, MB_TOPMOST, MB_YESNO,
         };
 
-        let title_w: Vec<u16> = OsStr::new(&title).encode_wide().chain(std::iter::once(0)).collect();
+        let title_w: Vec<u16> = OsStr::new(&title)
+            .encode_wide()
+            .chain(std::iter::once(0))
+            .collect();
         let message_w: Vec<u16> = OsStr::new(&message)
             .encode_wide()
             .chain(std::iter::once(0))
@@ -252,7 +258,11 @@ fn reg_query_string_value(
 
     let end = buf.iter().position(|c| *c == 0).unwrap_or(buf.len());
     let text = String::from_utf16_lossy(&buf[..end]).trim().to_string();
-    if text.is_empty() { None } else { Some(text) }
+    if text.is_empty() {
+        None
+    } else {
+        Some(text)
+    }
 }
 
 #[cfg(windows)]
@@ -303,8 +313,8 @@ fn normalize_registry_path(value: &str) -> String {
 #[cfg(windows)]
 fn find_uninstall_string() -> Option<String> {
     use windows_sys::Win32::System::Registry::{
-        RegCloseKey, RegOpenKeyExW, HKEY, HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_READ, KEY_WOW64_32KEY,
-        KEY_WOW64_64KEY,
+        RegCloseKey, RegOpenKeyExW, HKEY, HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_READ,
+        KEY_WOW64_32KEY, KEY_WOW64_64KEY,
     };
 
     let exe = std::env::current_exe().ok()?;
@@ -322,7 +332,15 @@ fn find_uninstall_string() -> Option<String> {
         for view in views {
             let mut uninstall_root: HKEY = std::ptr::null_mut();
             let root_path = to_wide(UNINSTALL_ROOT_KEY);
-            let status = unsafe { RegOpenKeyExW(root, root_path.as_ptr(), 0, KEY_READ | view, &mut uninstall_root) };
+            let status = unsafe {
+                RegOpenKeyExW(
+                    root,
+                    root_path.as_ptr(),
+                    0,
+                    KEY_READ | view,
+                    &mut uninstall_root,
+                )
+            };
             if status != 0 || uninstall_root.is_null() {
                 continue;
             }
@@ -331,7 +349,15 @@ fn find_uninstall_string() -> Option<String> {
             for sub in subkeys {
                 let mut entry_key: HKEY = std::ptr::null_mut();
                 let entry_path = to_wide(&format!("{UNINSTALL_ROOT_KEY}\\{sub}"));
-                let status = unsafe { RegOpenKeyExW(root, entry_path.as_ptr(), 0, KEY_READ | view, &mut entry_key) };
+                let status = unsafe {
+                    RegOpenKeyExW(
+                        root,
+                        entry_path.as_ptr(),
+                        0,
+                        KEY_READ | view,
+                        &mut entry_key,
+                    )
+                };
                 if status != 0 || entry_key.is_null() {
                     continue;
                 }
@@ -342,22 +368,26 @@ fn find_uninstall_string() -> Option<String> {
                     continue;
                 }
 
-                let display_icon = reg_query_string_value(entry_key, "DisplayIcon").map(|s| normalize_registry_path(&s));
-                let install_location =
-                    reg_query_string_value(entry_key, "InstallLocation").map(|s| normalize_registry_path(&s));
+                let display_icon = reg_query_string_value(entry_key, "DisplayIcon")
+                    .map(|s| normalize_registry_path(&s));
+                let install_location = reg_query_string_value(entry_key, "InstallLocation")
+                    .map(|s| normalize_registry_path(&s));
                 let display_name = reg_query_string_value(entry_key, "DisplayName");
 
                 let mut matches = false;
                 if let Some(icon) = &display_icon {
                     if icon.eq_ignore_ascii_case(&exe_str) {
                         matches = true;
-                    } else if !exe_dir_lower.is_empty() && icon.to_lowercase().starts_with(&exe_dir_lower) {
+                    } else if !exe_dir_lower.is_empty()
+                        && icon.to_lowercase().starts_with(&exe_dir_lower)
+                    {
                         matches = true;
                     }
                 }
                 if !matches {
                     if let Some(loc) = &install_location {
-                        let loc_lower = loc.to_lowercase().trim_end_matches('\\').to_string() + "\\";
+                        let loc_lower =
+                            loc.to_lowercase().trim_end_matches('\\').to_string() + "\\";
                         if !loc_lower.trim().is_empty() && exe_lower.starts_with(&loc_lower) {
                             matches = true;
                         }
@@ -367,7 +397,9 @@ fn find_uninstall_string() -> Option<String> {
                     if let Some(name) = &display_name {
                         // Fallback: match by known branding, but only if the uninstall entry looks plausible.
                         let n = name.to_lowercase();
-                        if (n.contains("pulsecore") || n.contains("pulse core")) && uninstall.as_ref().is_some() {
+                        if (n.contains("pulsecore") || n.contains("pulse core"))
+                            && uninstall.as_ref().is_some()
+                        {
                             matches = true;
                         }
                     }
@@ -399,7 +431,10 @@ fn confirm_yes_no_system(title: &str, message: &str) -> CmdResult<bool> {
     };
 
     use std::{ffi::OsStr, os::windows::ffi::OsStrExt};
-    let title_w: Vec<u16> = OsStr::new(title).encode_wide().chain(std::iter::once(0)).collect();
+    let title_w: Vec<u16> = OsStr::new(title)
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
     let message_w: Vec<u16> = OsStr::new(message)
         .encode_wide()
         .chain(std::iter::once(0))
@@ -449,7 +484,9 @@ fn spawn_uninstaller_cmd(uninstall: &str) -> CmdResult<()> {
     const CREATE_NO_WINDOW: u32 = 0x08000000;
 
     let parts = split_uninstall_command(uninstall);
-    let (exe, args) = parts.split_first().ok_or_else(|| "uninstall command is empty".to_string())?;
+    let (exe, args) = parts
+        .split_first()
+        .ok_or_else(|| "uninstall command is empty".to_string())?;
     Command::new(exe)
         .args(args)
         .creation_flags(CREATE_NO_WINDOW)
@@ -565,7 +602,12 @@ fn schedule_shutdown_after(seconds: u64) -> CmdResult<()> {
 }
 
 #[cfg(windows)]
-fn schedule_repeat_shutdown(mode: &str, time: &str, weekday: Option<u8>, day_of_month: Option<u8>) -> CmdResult<()> {
+fn schedule_repeat_shutdown(
+    mode: &str,
+    time: &str,
+    weekday: Option<u8>,
+    day_of_month: Option<u8>,
+) -> CmdResult<()> {
     let normalized_time = parse_hhmm(time)?;
     let mut cmd = Command::new("schtasks");
     cmd.args([
@@ -582,12 +624,14 @@ fn schedule_repeat_shutdown(mode: &str, time: &str, weekday: Option<u8>, day_of_
             cmd.args(["/SC", "DAILY"]);
         }
         "weekly" => {
-            let value = weekday.ok_or_else(|| "weekday is required for weekly repeat".to_string())?;
+            let value =
+                weekday.ok_or_else(|| "weekday is required for weekly repeat".to_string())?;
             let day = weekday_to_schtasks(value)?;
             cmd.args(["/SC", "WEEKLY", "/D", day]);
         }
         "monthly" => {
-            let value = day_of_month.ok_or_else(|| "dayOfMonth is required for monthly repeat".to_string())?;
+            let value = day_of_month
+                .ok_or_else(|| "dayOfMonth is required for monthly repeat".to_string())?;
             if !(1..=31).contains(&value) {
                 return Err("dayOfMonth must be between 1 and 31".to_string());
             }
@@ -646,7 +690,10 @@ pub async fn cancel_shutdown_schedule(app: AppHandle) -> CmdResult<()> {
 }
 
 #[tauri::command]
-pub async fn schedule_shutdown(app: AppHandle, request: ScheduleShutdownRequest) -> CmdResult<ShutdownPlan> {
+pub async fn schedule_shutdown(
+    app: AppHandle,
+    request: ScheduleShutdownRequest,
+) -> CmdResult<ShutdownPlan> {
     #[cfg(windows)]
     {
         let now = Utc::now();
@@ -698,7 +745,12 @@ pub async fn schedule_shutdown(app: AppHandle, request: ScheduleShutdownRequest)
                     .ok_or_else(|| "time is required for repeat mode".to_string())?;
                 let normalized_time = parse_hhmm(time)?;
                 clear_existing_shutdown_schedule();
-                schedule_repeat_shutdown(&mode, &normalized_time, request.weekday, request.day_of_month)?;
+                schedule_repeat_shutdown(
+                    &mode,
+                    &normalized_time,
+                    request.weekday,
+                    request.day_of_month,
+                )?;
                 ShutdownPlan {
                     mode,
                     created_at: now,
@@ -746,7 +798,8 @@ pub async fn uninstall_app(app: AppHandle, title: String, message: String) -> Cm
     #[cfg(windows)]
     {
         // Only supported for installed builds (portable shouldn't show the button).
-        let uninstall = find_uninstall_string().ok_or_else(|| "uninstall is not available".to_string())?;
+        let uninstall =
+            find_uninstall_string().ok_or_else(|| "uninstall is not available".to_string())?;
 
         let confirmed = confirm_yes_no_system(&title, &message)?;
         if !confirmed {
@@ -813,7 +866,9 @@ pub async fn exit_app(app: AppHandle) -> CmdResult<()> {
 }
 
 #[tauri::command]
-pub async fn get_hardware_info(state: State<'_, SharedState>) -> CmdResult<crate::types::HardwareInfo> {
+pub async fn get_hardware_info(
+    state: State<'_, SharedState>,
+) -> CmdResult<crate::types::HardwareInfo> {
     let info = device_info::collect_hardware_info();
     let mut lock = state.hardware_info.write().await;
     *lock = info.clone();
@@ -824,7 +879,7 @@ pub async fn get_hardware_info(state: State<'_, SharedState>) -> CmdResult<crate
 pub fn get_taskbar_info() -> CmdResult<Option<crate::types::TaskbarInfo>> {
     #[cfg(windows)]
     {
-        use windows_sys::Win32::UI::Shell::{APPBARDATA, SHAppBarMessage, ABM_GETTASKBARPOS};
+        use windows_sys::Win32::UI::Shell::{SHAppBarMessage, ABM_GETTASKBARPOS, APPBARDATA};
 
         let mut data: APPBARDATA = unsafe { std::mem::zeroed() };
         data.cbSize = std::mem::size_of::<APPBARDATA>() as u32;
@@ -860,7 +915,8 @@ pub fn set_window_system_topmost(app: AppHandle, label: String, topmost: bool) -
     {
         use windows_sys::Win32::Foundation::{GetLastError, HWND};
         use windows_sys::Win32::UI::WindowsAndMessaging::{
-            SetWindowPos, HWND_NOTOPMOST, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW,
+            SetWindowPos, HWND_NOTOPMOST, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE,
+            SWP_SHOWWINDOW,
         };
 
         let hwnd = win.hwnd().map_err(|e| e.to_string())?;
@@ -890,5 +946,3 @@ pub fn set_window_system_topmost(app: AppHandle, label: String, topmost: bool) -
         Ok(())
     }
 }
-
-

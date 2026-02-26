@@ -497,13 +497,10 @@ fn collect_process_tree_pids_windows(root_pid: u32) -> Vec<Pid> {
 
 #[cfg(target_os = "windows")]
 fn query_gpu_metrics_windows() -> Option<GpuMetrics> {
-    use std::io::Read;
     use std::os::windows::process::CommandExt;
-    use std::process::Stdio;
 
     // Prevent PowerShell from popping a console window in packaged builds.
     const CREATE_NO_WINDOW: u32 = 0x08000000;
-    const POWERSHELL_TIMEOUT: Duration = Duration::from_millis(1200);
 
     let script = r#"
 $usage = $null
@@ -610,46 +607,16 @@ if ($usage -ne $null) {
 } | ConvertTo-Json -Compress
     "#;
 
-    let mut child = Command::new("powershell.exe")
+    let output = Command::new("powershell.exe")
         .creation_flags(CREATE_NO_WINDOW)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .args([
-            "-NoProfile",
-            "-NonInteractive",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-Command",
-            script,
-        ])
-        .spawn()
+        .args(["-NoProfile", "-Command", script])
+        .output()
         .ok()?;
-
-    let started = Instant::now();
-    let status = loop {
-        match child.try_wait() {
-            Ok(Some(status)) => break status,
-            Ok(None) => {
-                if started.elapsed() >= POWERSHELL_TIMEOUT {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    return None;
-                }
-                std::thread::sleep(Duration::from_millis(20));
-            }
-            Err(_) => return None,
-        }
-    };
-
-    if !status.success() {
+    if !output.status.success() {
         return None;
     }
 
-    let mut stdout = child.stdout.take()?;
-    let mut bytes = Vec::new();
-    stdout.read_to_end(&mut bytes).ok()?;
-
-    let raw = String::from_utf8_lossy(&bytes).trim().to_string();
+    let raw = String::from_utf8_lossy(&output.stdout).trim().to_string();
     if raw.is_empty() {
         return None;
     }

@@ -1,3 +1,21 @@
+## v1.5.7
+
+- 修复多窗口同步与资源使用率计算问题
+- 优化工具箱窗口初始化与关闭逻辑，关闭悬浮窗时同步关闭工具箱
+- 跨窗口同步前校验目标窗口是否存在，避免无效事件
+- 遥测采集与发送优化：仅向可见窗口推送，无可见窗口时降低轮询频率
+- 应用 CPU/内存统计升级：采集应用及其子进程并按逻辑核心归一化
+- 优化 GPU 查询超时处理，避免 PowerShell 阻塞
+- 升级版本号至 1.5.7 并补充必要的 Windows API 特性
+
+- Fix multi-window sync and resource usage computation
+- Harden toolkit window init/close behavior and close it with the overlay
+- Validate target window existence before cross-window sync
+- Telemetry optimizations: push only to visible windows and throttle when none visible
+- App CPU/memory stats now aggregate process tree and normalize by logical cores
+- Improve GPU query timeout handling to avoid PowerShell blocking
+- Bump version to 1.5.7 and add required Windows API features
+
 ## v1.5.5
 
 - 升级版本至 1.5.5 并同步 Tauri 配置

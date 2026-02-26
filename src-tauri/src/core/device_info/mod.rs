@@ -1,7 +1,4 @@
-use std::{
-    collections::BTreeSet,
-    process::Command,
-};
+use std::{collections::BTreeSet, process::Command};
 
 use sysinfo::{Disks, System};
 
@@ -62,8 +59,7 @@ if ($mem) {
     "{0} {1}MHz {2}G" -f $typeStr, $speed, [math]::Round($total / 1GB)
 }
 "#;
-    run_powershell_lines(script)
-        .and_then(|lines| lines.first().map(|s| s.trim().to_string()))
+    run_powershell_lines(script).and_then(|lines| lines.first().map(|s| s.trim().to_string()))
 }
 
 fn fallback_disk_models() -> Vec<String> {
@@ -88,8 +84,7 @@ fn cpu_max_frequency() -> Option<u64> {
 $freq = Get-CimInstance Win32_Processor -ErrorAction SilentlyContinue | Select-Object -ExpandProperty MaxClockSpeed
 if ($freq) { $freq }
 "#;
-    run_powershell_lines(script)
-        .and_then(|lines| lines.first().and_then(|s| s.parse().ok()))
+    run_powershell_lines(script).and_then(|lines| lines.first().and_then(|s| s.parse().ok()))
 }
 
 fn gpu_models() -> Option<String> {
