@@ -304,6 +304,7 @@ fn query_gpu_memory_dxgi_windows() -> Option<(f64, f64)> {
 
 pub struct SystemCollector {
     system: System,
+    #[cfg(not(target_os = "windows"))]
     app_usage_system: System,
     networks: Networks,
     disks: Disks,
@@ -317,6 +318,12 @@ pub struct SystemCollector {
     current_pid: Pid,
     app_usage_cache: (Option<f64>, Option<f64>),
     last_app_usage_poll: Instant,
+    #[cfg(target_os = "windows")]
+    app_process_cpu_prev_by_pid: HashMap<u32, u64>,
+    #[cfg(target_os = "windows")]
+    app_process_cpu_last_sample: Option<Instant>,
+    #[cfg(target_os = "windows")]
+    app_process_cpu_cache: Option<f64>,
     cpu_usage_ema: Option<f64>,
     disk_cache: Vec<DiskMetrics>,
     last_disk_poll: Instant,
@@ -331,6 +338,7 @@ pub struct SystemCollector {
 impl SystemCollector {
     pub fn new() -> Self {
         let system = System::new_all();
+        #[cfg(not(target_os = "windows"))]
         let app_usage_system = System::new();
         let current_pid = Pid::from_u32(std::process::id());
 
@@ -343,6 +351,7 @@ impl SystemCollector {
 
         Self {
             system,
+            #[cfg(not(target_os = "windows"))]
             app_usage_system,
             networks,
             disks,
@@ -362,6 +371,12 @@ impl SystemCollector {
             current_pid,
             app_usage_cache: (None, None),
             last_app_usage_poll: Instant::now(),
+            #[cfg(target_os = "windows")]
+            app_process_cpu_prev_by_pid: HashMap::new(),
+            #[cfg(target_os = "windows")]
+            app_process_cpu_last_sample: None,
+            #[cfg(target_os = "windows")]
+            app_process_cpu_cache: None,
             cpu_usage_ema: None,
             disk_cache: Vec::new(),
             last_disk_poll: Instant::now() - Duration::from_secs(1),
@@ -561,6 +576,13 @@ impl SystemCollector {
             return (None, None);
         }
 
+        #[cfg(target_os = "windows")]
+        {
+            return self.collect_app_usage_metrics_windows(&process_tree);
+        }
+
+        #[cfg(not(target_os = "windows"))]
+        {
         self.app_usage_system
             .refresh_processes(ProcessesToUpdate::Some(&process_tree), true);
 
@@ -580,6 +602,7 @@ impl SystemCollector {
         let memory_mb = memory_bytes_sum as f64 / (1024.0 * 1024.0);
 
         (Some(cpu_usage_pct), Some(memory_mb))
+        }
     }
 
     #[cfg(target_os = "windows")]
@@ -590,6 +613,53 @@ impl SystemCollector {
     #[cfg(not(target_os = "windows"))]
     fn collect_process_tree_pids(&self) -> Vec<Pid> {
         vec![self.current_pid]
+    }
+
+    #[cfg(target_os = "windows")]
+    fn collect_app_usage_metrics_windows(&mut self, process_tree: &[Pid]) -> (Option<f64>, Option<f64>) {
+        let now = Instant::now();
+        let logical_cpu_count = self.system.cpus().len().max(1) as f64;
+        let mut memory_bytes_sum = 0_u64;
+        let mut current_cpu_times: HashMap<u32, u64> = HashMap::with_capacity(process_tree.len());
+
+        for pid in process_tree {
+            let pid_u32 = pid.as_u32();
+            if let Some((cpu_time_100ns, memory_bytes)) =
+                query_process_cpu_and_memory_windows(pid_u32)
+            {
+                current_cpu_times.insert(pid_u32, cpu_time_100ns);
+                memory_bytes_sum = memory_bytes_sum.saturating_add(memory_bytes);
+            }
+        }
+
+        let cpu_usage_pct = if let Some(last_sample) = self.app_process_cpu_last_sample {
+            let elapsed_seconds = now.duration_since(last_sample).as_secs_f64();
+            if elapsed_seconds >= 0.05 {
+                let mut delta_cpu_100ns_sum = 0_u64;
+                for (pid, cpu_time_now) in &current_cpu_times {
+                    if let Some(cpu_time_prev) = self.app_process_cpu_prev_by_pid.get(pid) {
+                        delta_cpu_100ns_sum =
+                            delta_cpu_100ns_sum.saturating_add(cpu_time_now.saturating_sub(*cpu_time_prev));
+                    }
+                }
+
+                let cpu_seconds = delta_cpu_100ns_sum as f64 / 10_000_000.0;
+                let usage = (cpu_seconds / (elapsed_seconds * logical_cpu_count) * 100.0)
+                    .clamp(0.0, 100.0);
+                self.app_process_cpu_cache = Some(usage);
+                Some(usage)
+            } else {
+                self.app_process_cpu_cache
+            }
+        } else {
+            self.app_process_cpu_cache
+        };
+
+        self.app_process_cpu_prev_by_pid = current_cpu_times;
+        self.app_process_cpu_last_sample = Some(now);
+
+        let memory_mb = memory_bytes_sum as f64 / (1024.0 * 1024.0);
+        (cpu_usage_pct, Some(memory_mb))
     }
 
     fn network_totals(networks: &Networks) -> (u64, u64) {
@@ -666,6 +736,78 @@ fn collect_process_tree_pids_windows(root_pid: u32) -> Vec<Pid> {
     }
 
     process_tree
+}
+
+#[cfg(target_os = "windows")]
+fn query_process_cpu_and_memory_windows(pid: u32) -> Option<(u64, u64)> {
+    use windows_sys::Win32::Foundation::{CloseHandle, FILETIME};
+    use windows_sys::Win32::System::ProcessStatus::{K32GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS_EX};
+    use windows_sys::Win32::System::Threading::{
+        GetProcessTimes, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_VM_READ,
+    };
+
+    fn filetime_to_u64(ft: FILETIME) -> u64 {
+        ((ft.dwHighDateTime as u64) << 32) | ft.dwLowDateTime as u64
+    }
+
+    unsafe {
+        let handle = OpenProcess(
+            PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ,
+            0,
+            pid,
+        );
+        if handle.is_null() {
+            return None;
+        }
+
+        let mut creation = FILETIME {
+            dwLowDateTime: 0,
+            dwHighDateTime: 0,
+        };
+        let mut exit = FILETIME {
+            dwLowDateTime: 0,
+            dwHighDateTime: 0,
+        };
+        let mut kernel = FILETIME {
+            dwLowDateTime: 0,
+            dwHighDateTime: 0,
+        };
+        let mut user = FILETIME {
+            dwLowDateTime: 0,
+            dwHighDateTime: 0,
+        };
+
+        let mut pmc = PROCESS_MEMORY_COUNTERS_EX {
+            cb: std::mem::size_of::<PROCESS_MEMORY_COUNTERS_EX>() as u32,
+            PageFaultCount: 0,
+            PeakWorkingSetSize: 0,
+            WorkingSetSize: 0,
+            QuotaPeakPagedPoolUsage: 0,
+            QuotaPagedPoolUsage: 0,
+            QuotaPeakNonPagedPoolUsage: 0,
+            QuotaNonPagedPoolUsage: 0,
+            PagefileUsage: 0,
+            PeakPagefileUsage: 0,
+            PrivateUsage: 0,
+        };
+
+        let got_times = GetProcessTimes(handle, &mut creation, &mut exit, &mut kernel, &mut user) != 0;
+        let got_memory = K32GetProcessMemoryInfo(
+            handle,
+            &mut pmc as *mut PROCESS_MEMORY_COUNTERS_EX as *mut _,
+            std::mem::size_of::<PROCESS_MEMORY_COUNTERS_EX>() as u32,
+        ) != 0;
+
+        let _ = CloseHandle(handle);
+        if !got_times || !got_memory {
+            return None;
+        }
+
+        let cpu_time_100ns = filetime_to_u64(kernel).saturating_add(filetime_to_u64(user));
+        // Task Manager "Memory" is closest to working set for process-level display.
+        let memory_bytes = pmc.WorkingSetSize as u64;
+        Some((cpu_time_100ns, memory_bytes))
+    }
 }
 
 #[cfg(target_os = "windows")]
