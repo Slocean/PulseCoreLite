@@ -21,6 +21,128 @@ struct WindowsCpuFrequencyQuery {
 unsafe impl Send for WindowsCpuFrequencyQuery {}
 
 #[cfg(target_os = "windows")]
+struct WindowsCpuUsageQuery {
+    query: windows::Win32::System::Performance::PDH_HQUERY,
+    utility_counter: Option<windows::Win32::System::Performance::PDH_HCOUNTER>,
+    time_counter: Option<windows::Win32::System::Performance::PDH_HCOUNTER>,
+}
+
+#[cfg(target_os = "windows")]
+unsafe impl Send for WindowsCpuUsageQuery {}
+
+#[cfg(target_os = "windows")]
+impl WindowsCpuUsageQuery {
+    fn new() -> Option<Self> {
+        use windows::core::{s, PCSTR};
+        use windows::Win32::Foundation::ERROR_SUCCESS;
+        use windows::Win32::System::Performance::{
+            PdhAddEnglishCounterA, PdhCloseQuery, PdhCollectQueryData, PdhOpenQueryA,
+        };
+
+        unsafe {
+            let mut query = windows::Win32::System::Performance::PDH_HQUERY::default();
+            if PdhOpenQueryA(PCSTR::null(), 0, &mut query) != ERROR_SUCCESS.0 {
+                return None;
+            }
+
+            // Task Manager on modern Windows tends to align with Utility, but some
+            // systems/drivers behave closer to Processor Time. Sample both and pick higher.
+            let mut utility_counter = windows::Win32::System::Performance::PDH_HCOUNTER::default();
+            let utility_status = PdhAddEnglishCounterA(
+                query,
+                s!("\\Processor Information(_Total)\\% Processor Utility"),
+                0,
+                &mut utility_counter,
+            );
+
+            let mut time_counter = windows::Win32::System::Performance::PDH_HCOUNTER::default();
+            let time_status = PdhAddEnglishCounterA(
+                query,
+                s!("\\Processor(_Total)\\% Processor Time"),
+                0,
+                &mut time_counter,
+            );
+
+            let utility_counter = (utility_status == ERROR_SUCCESS.0).then_some(utility_counter);
+            let time_counter = (time_status == ERROR_SUCCESS.0).then_some(time_counter);
+
+            if utility_counter.is_none() && time_counter.is_none() {
+                let _ = PdhCloseQuery(query);
+                return None;
+            }
+
+            let _ = PdhCollectQueryData(query);
+            Some(Self {
+                query,
+                utility_counter,
+                time_counter,
+            })
+        }
+    }
+
+    fn sample_pct(&mut self) -> Option<f64> {
+        use std::mem::MaybeUninit;
+        use windows::Win32::Foundation::ERROR_SUCCESS;
+        use windows::Win32::System::Performance::{
+            PdhCollectQueryData, PdhGetFormattedCounterValue, PDH_FMT_COUNTERVALUE, PDH_FMT_DOUBLE,
+        };
+
+        unsafe {
+            if PdhCollectQueryData(self.query) != ERROR_SUCCESS.0 {
+                return None;
+            }
+
+            let mut read_counter = |counter: windows::Win32::System::Performance::PDH_HCOUNTER| {
+                let mut display_value = MaybeUninit::<PDH_FMT_COUNTERVALUE>::uninit();
+                if PdhGetFormattedCounterValue(
+                    counter,
+                    PDH_FMT_DOUBLE,
+                    None,
+                    display_value.as_mut_ptr(),
+                ) != ERROR_SUCCESS.0
+                {
+                    return None;
+                }
+
+                let value = display_value.assume_init().Anonymous.doubleValue;
+                if value.is_finite() && value >= 0.0 {
+                    Some(value.clamp(0.0, 100.0))
+                } else {
+                    None
+                }
+            };
+
+            let utility = self.utility_counter.and_then(&mut read_counter);
+            let time = self.time_counter.and_then(&mut read_counter);
+
+            match (utility, time) {
+                (Some(u), Some(t)) => Some(u.max(t)),
+                (Some(u), None) => Some(u),
+                (None, Some(t)) => Some(t),
+                (None, None) => None,
+            }
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
+impl Drop for WindowsCpuUsageQuery {
+    fn drop(&mut self) {
+        use windows::Win32::System::Performance::{PdhCloseQuery, PdhRemoveCounter};
+
+        unsafe {
+            if let Some(counter) = self.utility_counter {
+                let _ = PdhRemoveCounter(counter);
+            }
+            if let Some(counter) = self.time_counter {
+                let _ = PdhRemoveCounter(counter);
+            }
+            let _ = PdhCloseQuery(self.query);
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
 impl WindowsCpuFrequencyQuery {
     fn new() -> Option<Self> {
         use windows::core::{s, PCSTR};
@@ -201,6 +323,8 @@ pub struct SystemCollector {
     app_usage_cache: (Option<f64>, Option<f64>),
     last_app_usage_poll: Instant,
     #[cfg(target_os = "windows")]
+    cpu_usage_query: Option<WindowsCpuUsageQuery>,
+    #[cfg(target_os = "windows")]
     cpu_frequency_query: Option<WindowsCpuFrequencyQuery>,
 }
 
@@ -239,11 +363,13 @@ impl SystemCollector {
             app_usage_cache: (None, None),
             last_app_usage_poll: Instant::now(),
             #[cfg(target_os = "windows")]
+            cpu_usage_query: WindowsCpuUsageQuery::new(),
+            #[cfg(target_os = "windows")]
             cpu_frequency_query: WindowsCpuFrequencyQuery::new(),
         }
     }
 
-    pub fn collect(&mut self) -> TelemetrySnapshot {
+    pub fn collect(&mut self, refresh_rate_ms: u64) -> TelemetrySnapshot {
         self.system.refresh_cpu_usage();
         self.system.refresh_memory();
         self.system
@@ -256,7 +382,17 @@ impl SystemCollector {
             self.warmup_done = true;
         }
 
-        let cpu_usage = self.system.global_cpu_usage() as f64;
+        let cpu_usage = {
+            #[cfg(target_os = "windows")]
+            let from_pdh = self
+                .cpu_usage_query
+                .as_mut()
+                .and_then(|query| query.sample_pct());
+            #[cfg(not(target_os = "windows"))]
+            let from_pdh: Option<f64> = None;
+
+            from_pdh.unwrap_or_else(|| self.system.global_cpu_usage() as f64)
+        };
         let frequency = {
             #[cfg(target_os = "windows")]
             let from_pdh = self
@@ -340,8 +476,9 @@ impl SystemCollector {
         self.prev_tx = tx_total;
         self.prev_tick = Instant::now();
 
-        let gpu_metrics = self.refresh_gpu_metrics();
-        let (app_cpu_usage_pct, app_memory_mb) = self.sample_app_usage_metrics();
+        let sample_interval = Duration::from_millis(refresh_rate_ms.max(10));
+        let gpu_metrics = self.refresh_gpu_metrics(sample_interval);
+        let (app_cpu_usage_pct, app_memory_mb) = self.sample_app_usage_metrics(sample_interval);
 
         TelemetrySnapshot {
             timestamp: Utc::now(),
@@ -368,12 +505,13 @@ impl SystemCollector {
         }
     }
 
-    fn sample_app_usage_metrics(&mut self) -> (Option<f64>, Option<f64>) {
-        const APP_USAGE_REFRESH_INTERVAL: Duration = Duration::from_millis(1200);
-
+    fn sample_app_usage_metrics(
+        &mut self,
+        refresh_interval: Duration,
+    ) -> (Option<f64>, Option<f64>) {
         if self.app_usage_cache.0.is_none()
             || self.app_usage_cache.1.is_none()
-            || self.last_app_usage_poll.elapsed() >= APP_USAGE_REFRESH_INTERVAL
+            || self.last_app_usage_poll.elapsed() >= refresh_interval
         {
             self.app_usage_cache = self.collect_app_usage_metrics();
             self.last_app_usage_poll = Instant::now();
@@ -429,8 +567,8 @@ impl SystemCollector {
         (rx, tx)
     }
 
-    fn refresh_gpu_metrics(&mut self) -> GpuMetrics {
-        if self.last_gpu_poll.elapsed() < Duration::from_secs(2) {
+    fn refresh_gpu_metrics(&mut self, refresh_interval: Duration) -> GpuMetrics {
+        if self.last_gpu_poll.elapsed() < refresh_interval {
             return self.gpu_cache.clone();
         }
 
@@ -510,8 +648,18 @@ $freqMhz = $null
 
 $usedBy = @{}
 $limitBy = @{}
+$usageByLuid = @{}
+$allEngineUsage = @()
 $bestInst = $null
 $bestLimit = -1
+$bestLuid = $null
+
+function Get-LuidText([string]$text) {
+  if ($text -and $text -match '(luid_0x[0-9a-fA-F]+)') {
+    return $Matches[1].ToLowerInvariant()
+  }
+  return $null
+}
 
 $adapterUsage = Get-Counter '\GPU Adapter Memory(*)\Dedicated Usage' -ErrorAction SilentlyContinue
 if ($adapterUsage) {
@@ -532,7 +680,52 @@ $instances += $usedBy.Keys
 $instances += $limitBy.Keys
 $instances = $instances | Sort-Object -Unique
 
+$engine = Get-Counter '\GPU Engine(*)\Utilization Percentage' -ErrorAction SilentlyContinue
+if ($engine) {
+  foreach ($s in $engine.CounterSamples) {
+    $value = [double]$s.CookedValue
+    if ([double]::IsNaN($value) -or [double]::IsInfinity($value)) {
+      continue
+    }
+    $value = [Math]::Min([Math]::Max($value, 0), 100)
+    $allEngineUsage += $value
+
+    $luid = Get-LuidText $s.Path
+    if ($luid) {
+      if (-not $usageByLuid.ContainsKey($luid) -or $usageByLuid[$luid] -lt $value) {
+        $usageByLuid[$luid] = $value
+      }
+    }
+  }
+}
+
+if ($usageByLuid.Count -gt 0) {
+  $bestLuid = ($usageByLuid.GetEnumerator() | Sort-Object -Property Value -Descending | Select-Object -First 1).Key
+  $usage = $usageByLuid[$bestLuid]
+} elseif ($allEngineUsage.Count -gt 0) {
+  $usage = ($allEngineUsage | Measure-Object -Maximum).Maximum
+}
+
+# Prefer memory counters that belong to the adapter currently carrying the highest utilization.
+if ($bestLuid) {
+  $candidateInstances = @($instances | Where-Object { (Get-LuidText $_) -eq $bestLuid })
+  if ($candidateInstances.Count -gt 0) {
+    foreach ($inst in $candidateInstances) {
+      $limit = 0
+      if ($limitBy.ContainsKey($inst)) { $limit = $limitBy[$inst] }
+      if ($limit -gt $bestLimit) { $bestLimit = $limit; $bestInst = $inst }
+    }
+    if (-not $bestInst) {
+      $bestInst = $candidateInstances |
+        Sort-Object { if ($usedBy.ContainsKey($_)) { [double]$usedBy[$_] } else { 0 } } -Descending |
+        Select-Object -First 1
+    }
+  }
+}
+
+# Fallback: use the adapter with the largest dedicated memory budget.
 foreach ($inst in $instances) {
+  if ($bestInst) { break }
   $limit = 0
   if ($limitBy.ContainsKey($inst)) { $limit = $limitBy[$inst] }
   if ($limit -gt $bestLimit) { $bestLimit = $limit; $bestInst = $inst }
@@ -540,15 +733,13 @@ foreach ($inst in $instances) {
 
 if (-not $bestInst -and $instances.Count -gt 0) { $bestInst = $instances[0] }
 
-# If the "Dedicated Limit" counter is missing (common on some Windows builds/drivers),
-# picking by limit doesn't work (everything is 0). In that case pick the instance with
-# the highest current dedicated usage, so "used VRAM" doesn't get stuck at 0 on dual-GPU systems.
 if ($bestLimit -le 0 -and $usedBy.Count -gt 0) {
   $bestInst = ($usedBy.GetEnumerator() | Sort-Object -Property Value -Descending | Select-Object -First 1).Key
 }
 
-$luid = $null
-if ($bestInst -and $bestInst -match '(luid_0x[0-9a-fA-F]+)') { $luid = $Matches[1] }
+if (-not $bestLuid) {
+  $bestLuid = Get-LuidText $bestInst
+}
 
 if ($bestInst) {
   if ($usedBy.ContainsKey($bestInst)) {
@@ -559,39 +750,22 @@ if ($bestInst) {
   }
 }
 
-if ($memTotalMb -eq $null) {
-  $videoController = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | Sort-Object -Property AdapterRAM -Descending | Select-Object -First 1
-  if ($videoController -and $videoController.AdapterRAM -gt 0) {
-    $memTotalMb = $videoController.AdapterRAM / 1MB
-  }
-}
-
-$engine = Get-Counter '\GPU Engine(*)\Utilization Percentage' -ErrorAction SilentlyContinue
-if ($engine) {
-  $engineSamples = $engine.CounterSamples
-  if ($luid) {
-    $engineSamples = $engineSamples | Where-Object { $_.Path -like "*$luid*" }
-  }
-  $samples = $engineSamples |
-    Where-Object { $_.Path -like '*engtype_3D*' -or $_.Path -like '*engtype_Compute*' } |
-    ForEach-Object { [double]$_.CookedValue }
-  if ($samples.Count -eq 0) {
-    $samples = $engineSamples | ForEach-Object { [double]$_.CookedValue }
-  }
-  if ($samples.Count -gt 0) {
-    $usage = ($samples | Measure-Object -Maximum).Maximum
-  }
-}
-
 $freqCounter = Get-Counter '\GPU Engine(*)\Frequency' -ErrorAction SilentlyContinue
 if ($freqCounter) {
   $freqSamples = $freqCounter.CounterSamples
-  if ($luid) {
-    $freqSamples = $freqSamples | Where-Object { $_.Path -like "*$luid*" }
+  if ($bestLuid) {
+    $freqSamples = $freqSamples | Where-Object { $_.Path -like "*$bestLuid*" }
   }
   $values = $freqSamples | ForEach-Object { [double]$_.CookedValue } | Where-Object { $_ -gt 0 }
   if ($values.Count -gt 0) {
     $freqMhz = ($values | Measure-Object -Maximum).Maximum
+  }
+}
+
+if ($memTotalMb -eq $null) {
+  $videoController = Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | Sort-Object -Property AdapterRAM -Descending | Select-Object -First 1
+  if ($videoController -and $videoController.AdapterRAM -gt 0) {
+    $memTotalMb = $videoController.AdapterRAM / 1MB
   }
 }
 

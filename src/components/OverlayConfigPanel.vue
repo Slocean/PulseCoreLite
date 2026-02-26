@@ -100,9 +100,9 @@
       <span class="overlay-config-value">{{ refreshRate }}ms</span>
       <input
         type="range"
-        min="100"
+        min="10"
         max="2000"
-        step="100"
+        step="10"
         v-model.number="refreshRate"
         @change="emit('refreshRateChange')" />
     </div>

@@ -38,9 +38,9 @@ impl AppState {
         *lock = snapshot;
     }
 
-    pub async fn collect_snapshot(&self) -> TelemetrySnapshot {
+    pub async fn collect_snapshot(&self, refresh_rate_ms: u64) -> TelemetrySnapshot {
         let mut collector = self.collector.lock().await;
-        collector.collect()
+        collector.collect(refresh_rate_ms)
     }
 }
 

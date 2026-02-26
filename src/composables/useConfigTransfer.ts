@@ -230,7 +230,7 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
       }
 
       if (typeof candidate.refreshRateMs === 'number' && Number.isFinite(candidate.refreshRateMs)) {
-        const nextRate = Math.max(100, Math.min(2000, Math.round(candidate.refreshRateMs)));
+        const nextRate = Math.max(10, Math.min(2000, Math.round(candidate.refreshRateMs)));
         refreshRate.value = nextRate;
         store.setRefreshRate(nextRate);
         localStorage.setItem('pulsecorelite.refresh_rate', String(nextRate));

@@ -9,15 +9,11 @@ pub fn start_telemetry_loop(app: AppHandle, state: SharedState) {
         loop {
             let visible_labels = visible_consumer_labels(&app);
             let has_visible_consumer = !visible_labels.is_empty();
-            let snapshot = match tokio::time::timeout(
-                Duration::from_secs(3),
-                state.collect_snapshot(),
-            )
-            .await
-            {
-                Ok(data) => data,
-                Err(_) => state.latest_snapshot.read().await.clone(),
-            };
+            let refresh_rate = state
+                .refresh_rate_ms
+                .load(std::sync::atomic::Ordering::Relaxed)
+                .max(10);
+            let snapshot = state.collect_snapshot(refresh_rate).await;
 
             state.record_snapshot(snapshot.clone()).await;
 
@@ -41,15 +37,7 @@ pub fn start_telemetry_loop(app: AppHandle, state: SharedState) {
                 }
             }
 
-            let base_rate = state
-                .refresh_rate_ms
-                .load(std::sync::atomic::Ordering::Relaxed);
-            let sleep_ms = if has_visible_consumer {
-                base_rate
-            } else {
-                base_rate.max(2500)
-            };
-            tokio::time::sleep(Duration::from_millis(sleep_ms)).await;
+            tokio::time::sleep(Duration::from_millis(refresh_rate)).await;
         }
     });
 }
