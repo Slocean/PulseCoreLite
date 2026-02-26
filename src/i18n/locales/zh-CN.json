@@ -92,6 +92,7 @@
     "gpuTemp": "GPU 温度",
     "app": "APP",
     "openMainWindow": "显示主窗口",
+    "hideMainWindow": "隐藏主窗口",
     "taskbarTwoLine": "两行模式",
     "closeTaskbarMonitor": "关闭任务栏监测",
     "toolkit": "工具箱",

@@ -92,6 +92,7 @@
     "gpuTemp": "GPU Temperature",
     "app": "APP",
     "openMainWindow": "Show Main Window",
+    "hideMainWindow": "Hide Main Window",
     "taskbarTwoLine": "Two-line mode",
     "closeTaskbarMonitor": "Disable Taskbar Monitor",
     "toolkit": "Toolkit",

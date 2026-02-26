@@ -51,6 +51,7 @@
     :remember-position="rememberPosition"
     :prefs="prefs"
     :show-main-window="showMainWindow"
+    :hide-main-window="hideMainWindow"
     :apply-taskbar-topmost="applyTaskbarTopmost"
     :pause-topmost-guard="pauseTopmostGuard"
     :resume-topmost-guard="resumeTopmostGuard" />
@@ -264,6 +265,10 @@ const twoLineCells = computed(() => {
 
 async function showMainWindow() {
   await store.toggleOverlay(true);
+}
+
+async function hideMainWindow() {
+  await store.toggleOverlay(false);
 }
 
 function handleContextMenu(event: MouseEvent) {

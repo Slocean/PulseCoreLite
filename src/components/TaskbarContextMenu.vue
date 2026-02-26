@@ -12,6 +12,7 @@ const props = defineProps<{
   rememberPosition: boolean;
   prefs: TaskbarPrefs;
   showMainWindow: () => Promise<void>;
+  hideMainWindow: () => Promise<void>;
   applyTaskbarTopmost: (enabled: boolean) => Promise<void>;
   pauseTopmostGuard: () => void;
   resumeTopmostGuard: () => void;
@@ -38,6 +39,10 @@ async function open(event: MouseEvent) {
       await MenuItem.new({
         text: t('overlay.openMainWindow'),
         action: () => void props.showMainWindow()
+      }),
+      await MenuItem.new({
+        text: t('overlay.hideMainWindow'),
+        action: () => void props.hideMainWindow()
       }),
       await PredefinedMenuItem.new({ item: 'Separator' }),
       await CheckMenuItem.new({
