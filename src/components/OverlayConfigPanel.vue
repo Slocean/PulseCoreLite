@@ -132,7 +132,7 @@
               @click="selectTheme(theme)">
               <!-- @contextmenu.prevent.stop="emit('editTheme', theme.id)" -->
               <!-- <span class="overlay-theme-name">{{ theme.name }}</span> -->
-              <span class="overlay-theme-thumb" :style="{ backgroundImage: `url(${theme.image})` }"></span>
+              <span class="overlay-theme-thumb" :style="{ backgroundImage: `url(${getThemePreviewUrl(theme)})` }"></span>
               <OverlayCornerDelete :ariaLabel="t('overlay.themeDelete')" @click="emit('deleteTheme', theme.id)" />
               <button
                 type="button"
@@ -239,6 +239,7 @@ const props = defineProps<{
   language: 'zh-CN' | 'en-US';
   canUninstall: boolean;
   themes: OverlayTheme[];
+  getThemePreviewUrl: (theme: OverlayTheme) => string;
   toolkitState: 'closed' | 'open' | 'hidden';
 }>();
 

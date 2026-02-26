@@ -1,6 +1,7 @@
-import { computed, nextTick, reactive, ref, watch, type Ref } from 'vue';
+import { computed, nextTick, onUnmounted, reactive, ref, watch, type Ref } from 'vue';
 
 import { kvGet, kvSet } from '../utils/kv';
+import { acquireImageUrl, deleteImageRef, isImageRef, normalizeImageRef, releaseImageRef } from '../utils/imageStore';
 import {
   DEFAULT_BACKGROUND_EFFECT,
   DEFAULT_BACKGROUND_GLASS_STRENGTH,
@@ -130,6 +131,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
   const backgroundBlurPx = ref(0);
   const backgroundEffect = ref<OverlayBackgroundEffect>(DEFAULT_BACKGROUND_EFFECT);
   const backgroundGlassStrength = ref(DEFAULT_BACKGROUND_GLASS_STRENGTH);
+  const backgroundImageUrl = ref<string | null>(null);
 
   const themeEditDialogOpen = ref(false);
   const themeToEdit = ref<OverlayTheme | null>(null);
@@ -138,6 +140,9 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
   const themeEditEffect = ref<OverlayBackgroundEffect>(DEFAULT_BACKGROUND_EFFECT);
   const themeEditGlassStrength = ref(DEFAULT_BACKGROUND_GLASS_STRENGTH);
 
+  const themePreviewUrls = reactive<Record<string, string>>({});
+  const themePreviewRefs = new Map<string, string | null>();
+  let backgroundImageRef: string | null = null;
   let currentObjectUrl: string | null = null;
 
   if (typeof window !== 'undefined') {
@@ -161,15 +166,77 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     { immediate: true }
   );
 
+  let backgroundResolveToken = 0;
+  watch(
+    () => prefs.backgroundImage,
+    async (value, previous) => {
+      const token = ++backgroundResolveToken;
+      if (backgroundImageRef) {
+        releaseImageRef(backgroundImageRef);
+        backgroundImageRef = null;
+      }
+      if (previous && previous !== value) {
+        await cleanupOldBackgroundImage(previous, value);
+      }
+      if (!value) {
+        backgroundImageUrl.value = null;
+        return;
+      }
+      const normalized = await normalizeImageRef(value);
+      if (normalized && normalized !== value) {
+        prefs.backgroundImage = normalized;
+      }
+      const { url, ref } = await acquireImageUrl(normalized ?? value);
+      if (token !== backgroundResolveToken) {
+        releaseImageRef(ref);
+        return;
+      }
+      backgroundImageRef = ref ?? null;
+      backgroundImageUrl.value = url || null;
+    },
+    { immediate: true }
+  );
+
+  let themePreviewToken = 0;
+  watch(
+    () => themes.value.map(theme => `${theme.id}:${theme.image}`).join('|'),
+    async () => {
+      const token = ++themePreviewToken;
+      const currentThemes = themes.value.slice();
+      const currentIds = new Set(currentThemes.map(theme => theme.id));
+      for (const existingId of Object.keys(themePreviewUrls)) {
+        if (!currentIds.has(existingId)) {
+          releaseImageRef(themePreviewRefs.get(existingId));
+          themePreviewRefs.delete(existingId);
+          delete themePreviewUrls[existingId];
+        }
+      }
+      for (const theme of currentThemes) {
+        const previousRef = themePreviewRefs.get(theme.id) ?? null;
+        if (previousRef && previousRef !== theme.image) {
+          releaseImageRef(previousRef);
+        }
+        const { url, ref } = await acquireImageUrl(theme.image);
+        if (token !== themePreviewToken) {
+          releaseImageRef(ref);
+          return;
+        }
+        themePreviewRefs.set(theme.id, ref ?? null);
+        themePreviewUrls[theme.id] = url;
+      }
+    },
+    { immediate: true }
+  );
+
   const overlayBackgroundStyle = computed(() => {
-    if (!prefs.backgroundImage) {
+    if (!backgroundImageUrl.value) {
       return {};
     }
     const effect = normalizeBackgroundEffect(prefs.backgroundEffect);
     const blurPx = clampBlurPx(prefs.backgroundBlurPx);
     const glassStrength = clampGlassStrength(prefs.backgroundGlassStrength);
     return {
-      backgroundImage: `url(${prefs.backgroundImage})`,
+      backgroundImage: `url(${backgroundImageUrl.value})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
@@ -297,8 +364,32 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
   }
 
   function updateThemes(next: OverlayTheme[]) {
+    const previous = themes.value;
     themes.value = next;
     persistThemes(next);
+    void cleanupRemovedThemeImages(previous, next);
+  }
+
+  async function migrateStoredThemes() {
+    const current = themes.value;
+    if (!current.length) {
+      return;
+    }
+    let changed = false;
+    const migrated: OverlayTheme[] = [];
+    for (const theme of current) {
+      const normalized = await normalizeImageRef(theme.image);
+      if (normalized && normalized !== theme.image) {
+        migrated.push({ ...theme, image: normalized });
+        changed = true;
+      } else {
+        migrated.push(theme);
+      }
+    }
+    if (changed) {
+      themes.value = migrated;
+      persistThemes(migrated);
+    }
   }
 
   async function hydrateThemes() {
@@ -310,9 +401,58 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
       await kvSet(THEME_STORAGE_KEY, themes.value);
     }
 
+    await migrateStoredThemes();
+
     try {
       localStorage.removeItem(THEME_STORAGE_KEY);
     } catch {}
+  }
+
+  function getThemePreviewUrl(theme: OverlayTheme) {
+    return themePreviewUrls[theme.id] ?? (isImageRef(theme.image) ? '' : theme.image);
+  }
+
+  function collectInUseImageRefs(excludeId?: string) {
+    const refs = new Set<string>();
+    const bg = prefs.backgroundImage;
+    if (isImageRef(bg)) {
+      refs.add(bg);
+    }
+    for (const theme of themes.value) {
+      if (excludeId && theme.id === excludeId) continue;
+      if (isImageRef(theme.image)) {
+        refs.add(theme.image);
+      }
+    }
+    return refs;
+  }
+
+  async function cleanupRemovedThemeImages(previous: OverlayTheme[], next: OverlayTheme[]) {
+    const inUse = new Set<string>();
+    for (const theme of next) {
+      if (isImageRef(theme.image)) {
+        inUse.add(theme.image);
+      }
+    }
+    const bg = prefs.backgroundImage;
+    if (isImageRef(bg)) {
+      inUse.add(bg);
+    }
+    for (const theme of previous) {
+      if (isImageRef(theme.image) && !inUse.has(theme.image)) {
+        await deleteImageRef(theme.image);
+      }
+    }
+  }
+
+  async function cleanupOldBackgroundImage(oldValue: string | null | undefined, nextValue: string | null | undefined) {
+    if (!isImageRef(oldValue) || oldValue === nextValue) {
+      return;
+    }
+    const inUse = collectInUseImageRefs();
+    if (!inUse.has(oldValue)) {
+      await deleteImageRef(oldValue);
+    }
   }
 
   function requestDeleteTheme(id: string) {
@@ -685,19 +825,23 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     return finalCanvas.toDataURL('image/jpeg', 0.85);
   }
 
-  function applyBackgroundCrop() {
+  async function applyBackgroundCrop() {
     const dataUrl = getCroppedBackground();
     if (!dataUrl) {
       return;
     }
-    prefs.backgroundImage = dataUrl;
+    const imageRef = await normalizeImageRef(dataUrl);
+    if (!imageRef) {
+      return;
+    }
+    prefs.backgroundImage = imageRef;
     prefs.backgroundBlurPx = clampBlurPx(backgroundBlurPx.value);
     prefs.backgroundEffect = normalizeBackgroundEffect(backgroundEffect.value);
     prefs.backgroundGlassStrength = clampGlassStrength(backgroundGlassStrength.value);
     closeBackgroundDialog();
   }
 
-  function applyBackgroundAndSave() {
+  async function applyBackgroundAndSave() {
     if (!canSaveTheme.value) {
       return;
     }
@@ -705,16 +849,20 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     if (!dataUrl) {
       return;
     }
-    prefs.backgroundImage = dataUrl;
+    const imageRef = await normalizeImageRef(dataUrl);
+    if (!imageRef) {
+      return;
+    }
+    prefs.backgroundImage = imageRef;
     prefs.backgroundBlurPx = clampBlurPx(backgroundBlurPx.value);
     prefs.backgroundEffect = normalizeBackgroundEffect(backgroundEffect.value);
     prefs.backgroundGlassStrength = clampGlassStrength(backgroundGlassStrength.value);
     closeBackgroundDialog();
     const name = `主题${themes.value.length + 1}`;
-    saveThemeWithName(name, dataUrl, backgroundBlurPx.value, backgroundEffect.value, backgroundGlassStrength.value);
+    await saveThemeWithName(name, imageRef, backgroundBlurPx.value, backgroundEffect.value, backgroundGlassStrength.value);
   }
 
-  function saveThemeWithName(
+  async function saveThemeWithName(
     name: string,
     image: string,
     blurPx: number,
@@ -724,10 +872,14 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     if (!canSaveTheme.value) {
       return;
     }
+    const imageRef = await normalizeImageRef(image);
+    if (!imageRef) {
+      return;
+    }
     const theme: OverlayTheme = {
       id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       name,
-      image,
+      image: imageRef,
       blurPx: clampBlurPx(blurPx),
       effect: normalizeBackgroundEffect(effect),
       glassStrength: clampGlassStrength(glassStrength)
@@ -743,7 +895,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     if (!name) {
       return;
     }
-    saveThemeWithName(
+    void saveThemeWithName(
       name,
       pendingThemeImage.value,
       pendingThemeBlurPx.value,
@@ -753,9 +905,21 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     closeThemeNameDialog();
   }
 
+  onUnmounted(() => {
+    if (backgroundImageRef) {
+      releaseImageRef(backgroundImageRef);
+      backgroundImageRef = null;
+    }
+    for (const ref of themePreviewRefs.values()) {
+      releaseImageRef(ref);
+    }
+    themePreviewRefs.clear();
+  });
+
   return {
     themes,
     updateThemes,
+    getThemePreviewUrl,
     overlayBackgroundStyle,
     showLiquidGlassHighlight,
     overlayLiquidGlassHighlightStyle,

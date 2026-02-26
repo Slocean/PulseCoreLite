@@ -35,6 +35,7 @@
         :app-version="appVersion"
         :language="store.settings.language"
         :themes="themes"
+        :get-theme-preview-url="getThemePreviewUrl"
         :toolkit-state="toolkitState"
         @setLanguage="setLanguage"
         @refreshRateChange="handleRefreshRateChange"
@@ -397,6 +398,7 @@ const { overlayRef, startDragging, handleOverlayMouseDown } = useOverlayWindow({
 const {
   themes,
   updateThemes,
+  getThemePreviewUrl,
   overlayBackgroundStyle,
   showLiquidGlassHighlight,
   overlayLiquidGlassHighlightStyle,

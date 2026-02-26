@@ -4,6 +4,7 @@ import { api, inTauri } from '../services/tauri';
 import type { OverlayPrefs } from './useOverlayPrefs';
 import type { OverlayTheme } from './useThemeManager';
 import { clampBlurPx, clampGlassStrength, normalizeBackgroundEffect, sanitizeThemes } from './useThemeManager';
+import { normalizeImageRef, resolveImageRefToDataUrl } from '../utils/imageStore';
 
 interface AppStoreLike {
   settings: {
@@ -57,14 +58,31 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
   async function exportConfig() {
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
+    const overlayPrefs = JSON.parse(JSON.stringify(prefs)) as OverlayPrefs;
+    if (overlayPrefs.backgroundImage) {
+      const resolved = await resolveImageRefToDataUrl(overlayPrefs.backgroundImage);
+      if (resolved) {
+        overlayPrefs.backgroundImage = resolved;
+      }
+    }
+    const overlayThemes = await Promise.all(
+      themes.value.map(async theme => {
+        const resolved = await resolveImageRefToDataUrl(theme.image);
+        return {
+          ...theme,
+          image: resolved ?? theme.image
+        };
+      })
+    );
+
     const payload = {
       schema: 'pulsecorelite.config',
       schemaVersion: 1,
       exportedAt: new Date().toISOString(),
       settings: store.settings,
       refreshRateMs: refreshRate.value,
-      overlayPrefs: JSON.parse(JSON.stringify(prefs)),
-      overlayThemes: themes.value,
+      overlayPrefs,
+      overlayThemes,
       taskbarPrefs: safeJsonParse<unknown>(localStorage.getItem('pulsecorelite.taskbar_prefs')),
       overlayPosition: safeJsonParse<unknown>(localStorage.getItem('pulsecorelite.overlay_pos')),
       taskbarPosition: safeJsonParse<unknown>(localStorage.getItem('pulsecorelite.taskbar_pos'))
@@ -149,7 +167,7 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
     };
   }
 
-  function applyImportedOverlayPrefs(input: unknown) {
+  async function applyImportedOverlayPrefs(input: unknown) {
     const parsed = input && typeof input === 'object' ? (input as any) : {};
     const boolKeys: Array<keyof typeof prefs> = [
       'showCpu',
@@ -172,7 +190,8 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
       prefs.backgroundOpacity = Math.max(0, Math.min(100, Math.round(parsed.backgroundOpacity)));
     }
     if (parsed.backgroundImage === null || typeof parsed.backgroundImage === 'string') {
-      prefs.backgroundImage = parsed.backgroundImage;
+      const normalized = await normalizeImageRef(parsed.backgroundImage);
+      prefs.backgroundImage = normalized;
     }
     if (typeof parsed.backgroundBlurPx === 'number' && Number.isFinite(parsed.backgroundBlurPx)) {
       prefs.backgroundBlurPx = clampBlurPx(parsed.backgroundBlurPx);
@@ -223,10 +242,16 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
           await store.setAutoStartEnabled(settings.autoStartEnabled);
       }
 
-      applyImportedOverlayPrefs(candidate.overlayPrefs);
+      await applyImportedOverlayPrefs(candidate.overlayPrefs);
       const importedThemes = sanitizeThemes(candidate.overlayThemes ?? candidate.themes);
       if (importedThemes.length || Array.isArray(candidate.overlayThemes) || Array.isArray(candidate.themes)) {
-        updateThemes(importedThemes.slice(0, 3));
+        const normalizedThemes = await Promise.all(
+          importedThemes.map(async theme => {
+            const image = await normalizeImageRef(theme.image);
+            return { ...theme, image: image ?? theme.image };
+          })
+        );
+        updateThemes(normalizedThemes.slice(0, 3));
       }
 
       if (typeof candidate.refreshRateMs === 'number' && Number.isFinite(candidate.refreshRateMs)) {

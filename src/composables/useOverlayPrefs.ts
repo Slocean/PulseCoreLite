@@ -2,6 +2,7 @@ import { onMounted, onUnmounted, reactive, watch } from 'vue';
 
 import { inTauri, listenEvent } from '../services/tauri';
 import { kvGet, kvSet } from '../utils/kv';
+import { normalizeImageRef } from '../utils/imageStore';
 
 const OVERLAY_PREF_KEY = 'pulsecorelite.overlay_prefs';
 const PREFS_SYNC_EVENT = 'pulsecorelite://prefs-sync';
@@ -156,9 +157,20 @@ export function useOverlayPrefs() {
   onMounted(async () => {
     const fromKv = await kvGet<Partial<OverlayPrefs>>(OVERLAY_PREF_KEY);
     if (fromKv && typeof fromKv === 'object') {
-      Object.assign(prefs, sanitizePrefs(fromKv));
+      const sanitized = sanitizePrefs(fromKv);
+      const normalizedImage = await normalizeImageRef(sanitized.backgroundImage);
+      if (normalizedImage !== sanitized.backgroundImage) {
+        sanitized.backgroundImage = normalizedImage;
+        await kvSet(OVERLAY_PREF_KEY, sanitized);
+      }
+      Object.assign(prefs, sanitized);
     } else {
       const snapshot = JSON.parse(JSON.stringify(prefs)) as OverlayPrefs;
+      const normalizedImage = await normalizeImageRef(snapshot.backgroundImage);
+      if (normalizedImage !== snapshot.backgroundImage) {
+        snapshot.backgroundImage = normalizedImage;
+        Object.assign(prefs, snapshot);
+      }
       await kvSet(OVERLAY_PREF_KEY, snapshot);
     }
 
