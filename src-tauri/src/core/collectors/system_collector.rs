@@ -340,7 +340,7 @@ pub struct SystemCollector {
 
 impl SystemCollector {
     pub fn new() -> Self {
-        let system = System::new_all();
+        let system = System::new();
         #[cfg(not(target_os = "windows"))]
         let app_usage_system = System::new();
         let current_pid = Pid::from_u32(std::process::id());

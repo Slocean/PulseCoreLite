@@ -9,14 +9,15 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import CompactOverlayPage from './pages/index.vue';
-import TaskbarMonitorPage from './pages/taskbar.vue';
-import ToolkitPage from './pages/toolkit.vue';
 import { api, inTauri } from './services/tauri';
 import { useAppStore } from './stores/app';
+
+const CompactOverlayPage = defineAsyncComponent(() => import('./pages/index.vue'));
+const TaskbarMonitorPage = defineAsyncComponent(() => import('./pages/taskbar.vue'));
+const ToolkitPage = defineAsyncComponent(() => import('./pages/toolkit.vue'));
 
 const store = useAppStore();
 const { locale } = useI18n();

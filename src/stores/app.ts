@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { markRaw } from 'vue';
 import { api, inTauri, listenEvent } from '../services/tauri';
 import type { AppBootstrap, AppSettings, HardwareInfo, TelemetrySnapshot } from '../types';
 import { kvResetAll } from '../utils/kv';
@@ -252,8 +253,8 @@ export const useAppStore = defineStore('app', {
   state: () => ({
     ready: false,
     bootstrapped: false,
-    snapshot: emptySnapshot(),
-    hardwareInfo: readStoredHardwareInfo() ?? emptyHardware(),
+    snapshot: markRaw(emptySnapshot()),
+    hardwareInfo: markRaw(readStoredHardwareInfo() ?? emptyHardware()),
     settings: defaultSettings(),
     installationMode: 'unknown' as 'unknown' | 'installed' | 'portable',
     unlisteners: [] as Array<() => void>,
@@ -261,11 +262,11 @@ export const useAppStore = defineStore('app', {
   }),
   actions: {
     pushSnapshot(snapshot: TelemetrySnapshot) {
-      this.snapshot = snapshot;
+      this.snapshot = markRaw(snapshot);
     },
     applyBootstrap(payload: AppBootstrap) {
       this.settings = resolveSettings(payload.settings);
-      this.hardwareInfo = resolveHardwareInfo(payload.hardware_info);
+      this.hardwareInfo = markRaw(resolveHardwareInfo(payload.hardware_info));
       this.pushSnapshot(payload.latest_snapshot ?? emptySnapshot());
     },
     async bootstrap() {
@@ -314,7 +315,7 @@ export const useAppStore = defineStore('app', {
       }
       try {
         const info = await api.getHardwareInfo();
-        this.hardwareInfo = info;
+        this.hardwareInfo = markRaw(info);
         persistHardwareInfo(info);
       } catch {
         return;
@@ -626,10 +627,10 @@ export const useAppStore = defineStore('app', {
         }
       }
 
-      // Create the window (index.html is used; the app selects UI by window label).
+      // Create the window (taskbar.html loads the minimal taskbar UI).
       // Note: keep it small and non-invasive; users can drag to their preferred spot.
       new WebviewWindow('taskbar', {
-        url: 'index.html',
+        url: 'taskbar.html',
         title: 'PulseCoreLite Taskbar Monitor',
         width,
         height,

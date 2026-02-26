@@ -16,7 +16,7 @@ export function useToolkitLauncher() {
         return;
       }
       new WebviewWindow('toolkit', {
-        url: 'index.html',
+        url: 'toolkit.html',
         title: 'PulseCoreLite Toolkit',
         width: TOOLKIT_WIDTH,
         height: 400,

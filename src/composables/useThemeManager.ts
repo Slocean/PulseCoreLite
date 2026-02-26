@@ -138,6 +138,8 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
   const themeEditEffect = ref<OverlayBackgroundEffect>(DEFAULT_BACKGROUND_EFFECT);
   const themeEditGlassStrength = ref(DEFAULT_BACKGROUND_GLASS_STRENGTH);
 
+  let currentObjectUrl: string | null = null;
+
   if (typeof window !== 'undefined') {
     themes.value = loadThemesFromLocalStorage();
     void hydrateThemes();
@@ -213,9 +215,17 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
   }
 
   function resetBackgroundDialogState() {
+    if (currentObjectUrl) {
+      URL.revokeObjectURL(currentObjectUrl);
+      currentObjectUrl = null;
+    }
     backgroundFileName.value = '';
     backgroundImageSource.value = null;
     backgroundImage.value = null;
+    if (cropCanvas.value) {
+      cropCanvas.value.width = 0;
+      cropCanvas.value.height = 0;
+    }
     backgroundEffect.value = prefs.backgroundImage
       ? normalizeBackgroundEffect(prefs.backgroundEffect)
       : DEFAULT_BACKGROUND_EFFECT;
@@ -430,21 +440,24 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
       return;
     }
     backgroundFileName.value = file.name;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result !== 'string') {
-        return;
-      }
-      backgroundImageSource.value = reader.result;
-      void loadBackgroundImage(reader.result);
-    };
-    reader.readAsDataURL(file);
+    if (currentObjectUrl) {
+      URL.revokeObjectURL(currentObjectUrl);
+      currentObjectUrl = null;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    currentObjectUrl = objectUrl;
+    backgroundImageSource.value = objectUrl;
+    void loadBackgroundImage(objectUrl);
   }
 
   async function loadBackgroundImage(src: string) {
     const img = new Image();
     img.onload = async () => {
       backgroundImage.value = img;
+      if (currentObjectUrl === src) {
+        URL.revokeObjectURL(currentObjectUrl);
+        currentObjectUrl = null;
+      }
       await nextTick();
       updateCanvasFromImage();
     };
