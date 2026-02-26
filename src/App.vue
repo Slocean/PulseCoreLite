@@ -1,71 +1,39 @@
 <template>
   <div class="app-root">
-    <div class="overlay-shell" :class="{ 'overlay-shell--taskbar': windowRole === 'taskbar' }">
-      <TaskbarMonitorPage v-if="windowRoleResolved && windowRole === 'taskbar'" />
-      <ToolkitPage v-else-if="windowRoleResolved && windowRole === 'toolkit'" />
-      <CompactOverlayPage v-else-if="windowRoleResolved" />
+    <div class="overlay-shell">
+      <CompactOverlayPage />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { nextTick, onMounted, onUnmounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import CompactOverlayPage from './pages/index.vue';
 import { api, inTauri } from './services/tauri';
 import { useAppStore } from './stores/app';
 
-const CompactOverlayPage = defineAsyncComponent(() => import('./pages/index.vue'));
-const TaskbarMonitorPage = defineAsyncComponent(() => import('./pages/taskbar.vue'));
-const ToolkitPage = defineAsyncComponent(() => import('./pages/toolkit.vue'));
-
 const store = useAppStore();
 const { locale } = useI18n();
-const windowRole = ref<'main' | 'taskbar' | 'toolkit'>('main');
-const windowRoleResolved = ref(!inTauri());
 let contextMenuHandler: ((event: MouseEvent) => void) | null = null;
 
 onMounted(async () => {
-  if (!windowRoleResolved.value && inTauri()) {
-    try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      const label = getCurrentWindow().label;
-      if (label === 'taskbar' || label === 'toolkit') {
-        windowRole.value = label;
-      } else {
-        windowRole.value = 'main';
-      }
-    } catch {
-      windowRole.value = 'main';
-    }
-    windowRoleResolved.value = true;
-  }
-
-  if (typeof document !== 'undefined') {
-    document.documentElement.classList.toggle('window-taskbar', windowRole.value === 'taskbar');
-    document.documentElement.classList.toggle('window-toolkit', windowRole.value === 'toolkit');
-  }
-
   // Disable the browser's default context menu in the main window.
-  // (Taskbar window uses a custom Tauri context menu.)
-  if (typeof window !== 'undefined' && windowRole.value === 'main') {
+  if (typeof window !== 'undefined') {
     contextMenuHandler = event => event.preventDefault();
     window.addEventListener('contextmenu', contextMenuHandler, true);
   }
 
   await store.bootstrap();
   locale.value = store.settings.language;
-  if (inTauri() && windowRole.value === 'main') {
+  if (inTauri()) {
     await nextTick();
     await api.toggleOverlay(true);
   }
 });
 
 onUnmounted(() => {
-  if (typeof document !== 'undefined') {
-    document.documentElement.classList.remove('window-taskbar');
-    document.documentElement.classList.remove('window-toolkit');
-  }
   if (typeof window !== 'undefined' && contextMenuHandler) {
     window.removeEventListener('contextmenu', contextMenuHandler, true);
     contextMenuHandler = null;
