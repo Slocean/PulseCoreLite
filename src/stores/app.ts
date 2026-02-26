@@ -338,6 +338,66 @@ export const useAppStore = defineStore('app', {
       }
       await api.toggleOverlay(visible);
     },
+    async ensureMainWindow() {
+      if (!inTauri()) {
+        return;
+      }
+      try {
+        const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+        const existing = await WebviewWindow.getByLabel('main');
+        if (existing) {
+          try {
+            await existing.show();
+            await existing.setFocus();
+          } catch {
+            // ignore
+          }
+          return;
+        }
+
+        const created = new WebviewWindow('main', {
+          url: 'index.html',
+          title: 'PulseCoreLite Overlay',
+          width: 340,
+          height: 260,
+          resizable: false,
+          maximizable: false,
+          minimizable: true,
+          decorations: false,
+          transparent: true,
+          alwaysOnTop: this.settings.overlayAlwaysOnTop,
+          visible: true,
+          skipTaskbar: false
+        });
+        try {
+          await created.show();
+          await created.setFocus();
+        } catch {
+          // ignore
+        }
+      } catch {
+        // ignore
+      }
+    },
+    async closeMainWindow() {
+      if (!inTauri()) {
+        return;
+      }
+      try {
+        const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+        const existing = await WebviewWindow.getByLabel('main');
+        if (!existing) {
+          return;
+        }
+        try {
+          await existing.close();
+        } catch {
+          // ignore
+        }
+      } catch {
+        // ignore
+      }
+    },
     async setRefreshRate(rateMs: number) {
       if (!inTauri()) {
         return;
@@ -521,7 +581,7 @@ export const useAppStore = defineStore('app', {
         import('@tauri-apps/api/app')
       ]);
       const showWindow = async () => {
-        await this.toggleOverlay(true);
+        await this.ensureMainWindow();
       };
       const exitApp = async () => {
         await this.exitApp();

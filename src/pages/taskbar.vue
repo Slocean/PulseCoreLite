@@ -264,11 +264,11 @@ const twoLineCells = computed(() => {
 });
 
 async function showMainWindow() {
-  await store.toggleOverlay(true);
+  await store.ensureMainWindow();
 }
 
 async function hideMainWindow() {
-  await store.toggleOverlay(false);
+  await store.closeMainWindow();
 }
 
 function handleContextMenu(event: MouseEvent) {

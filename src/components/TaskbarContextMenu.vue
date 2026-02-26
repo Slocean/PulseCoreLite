@@ -28,21 +28,32 @@ async function open(event: MouseEvent) {
 
   props.pauseTopmostGuard();
   try {
-    const [{ Menu, CheckMenuItem, MenuItem, PredefinedMenuItem }, { LogicalPosition }, { getCurrentWindow }] =
-      await Promise.all([
-        import('@tauri-apps/api/menu'),
-        import('@tauri-apps/api/dpi'),
-        import('@tauri-apps/api/window')
-      ]);
+    const [
+      { Menu, CheckMenuItem, MenuItem, PredefinedMenuItem },
+      { LogicalPosition },
+      { getCurrentWindow },
+      { WebviewWindow }
+    ] = await Promise.all([
+      import('@tauri-apps/api/menu'),
+      import('@tauri-apps/api/dpi'),
+      import('@tauri-apps/api/window'),
+      import('@tauri-apps/api/webviewWindow')
+    ]);
+
+    let mainVisible = false;
+    try {
+      const mainWindow = await WebviewWindow.getByLabel('main');
+      if (mainWindow) {
+        mainVisible = await mainWindow.isVisible();
+      }
+    } catch {
+      mainVisible = false;
+    }
 
     const items = [
       await MenuItem.new({
-        text: t('overlay.openMainWindow'),
-        action: () => void props.showMainWindow()
-      }),
-      await MenuItem.new({
-        text: t('overlay.hideMainWindow'),
-        action: () => void props.hideMainWindow()
+        text: mainVisible ? t('overlay.hideMainWindow') : t('overlay.openMainWindow'),
+        action: () => void (mainVisible ? props.hideMainWindow() : props.showMainWindow())
       }),
       await PredefinedMenuItem.new({ item: 'Separator' }),
       await CheckMenuItem.new({
