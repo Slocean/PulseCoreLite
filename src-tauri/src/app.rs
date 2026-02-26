@@ -6,14 +6,28 @@ use crate::{ipc::commands, state::SharedState};
 
 pub fn start_telemetry_loop(app: AppHandle, state: SharedState) {
     tauri::async_runtime::spawn(async move {
+        let mut current_rate = state
+            .refresh_rate_ms
+            .load(std::sync::atomic::Ordering::Relaxed)
+            .max(10);
+        let mut ticker = tokio::time::interval(Duration::from_millis(current_rate));
+        ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+
         loop {
-            let visible_labels = visible_consumer_labels(&app);
-            let has_visible_consumer = !visible_labels.is_empty();
-            let refresh_rate = state
+            let configured_rate = state
                 .refresh_rate_ms
                 .load(std::sync::atomic::Ordering::Relaxed)
                 .max(10);
-            let snapshot = state.collect_snapshot(refresh_rate).await;
+            if configured_rate != current_rate {
+                current_rate = configured_rate;
+                ticker = tokio::time::interval(Duration::from_millis(current_rate));
+                ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+            }
+            ticker.tick().await;
+
+            let visible_labels = visible_consumer_labels(&app);
+            let has_visible_consumer = !visible_labels.is_empty();
+            let snapshot = state.collect_snapshot(current_rate).await;
 
             state.record_snapshot(snapshot.clone()).await;
 
@@ -37,7 +51,6 @@ pub fn start_telemetry_loop(app: AppHandle, state: SharedState) {
                 }
             }
 
-            tokio::time::sleep(Duration::from_millis(refresh_rate)).await;
         }
     });
 }

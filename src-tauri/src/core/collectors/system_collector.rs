@@ -45,8 +45,8 @@ impl WindowsCpuUsageQuery {
                 return None;
             }
 
-            // Task Manager on modern Windows tends to align with Utility, but some
-            // systems/drivers behave closer to Processor Time. Sample both and pick higher.
+            // Keep both counters: Processor Time is used as primary to avoid overly
+            // aggressive boosting, Utility remains as fallback on unsupported systems.
             let mut utility_counter = windows::Win32::System::Performance::PDH_HCOUNTER::default();
             let utility_status = PdhAddEnglishCounterA(
                 query,
@@ -115,12 +115,7 @@ impl WindowsCpuUsageQuery {
             let utility = self.utility_counter.and_then(&mut read_counter);
             let time = self.time_counter.and_then(&mut read_counter);
 
-            match (utility, time) {
-                (Some(u), Some(t)) => Some(u.max(t)),
-                (Some(u), None) => Some(u),
-                (None, Some(t)) => Some(t),
-                (None, None) => None,
-            }
+            time.or(utility)
         }
     }
 }
@@ -322,6 +317,11 @@ pub struct SystemCollector {
     current_pid: Pid,
     app_usage_cache: (Option<f64>, Option<f64>),
     last_app_usage_poll: Instant,
+    cpu_usage_ema: Option<f64>,
+    disk_cache: Vec<DiskMetrics>,
+    last_disk_poll: Instant,
+    cpu_temp_cache: Option<f64>,
+    last_cpu_temp_poll: Instant,
     #[cfg(target_os = "windows")]
     cpu_usage_query: Option<WindowsCpuUsageQuery>,
     #[cfg(target_os = "windows")]
@@ -362,6 +362,11 @@ impl SystemCollector {
             current_pid,
             app_usage_cache: (None, None),
             last_app_usage_poll: Instant::now(),
+            cpu_usage_ema: None,
+            disk_cache: Vec::new(),
+            last_disk_poll: Instant::now() - Duration::from_secs(1),
+            cpu_temp_cache: None,
+            last_cpu_temp_poll: Instant::now() - Duration::from_secs(1),
             #[cfg(target_os = "windows")]
             cpu_usage_query: WindowsCpuUsageQuery::new(),
             #[cfg(target_os = "windows")]
@@ -375,14 +380,8 @@ impl SystemCollector {
         self.system
             .refresh_processes(ProcessesToUpdate::Some(&[self.current_pid]), true);
         self.networks.refresh(true);
-        self.disks.refresh(true);
-        if self.warmup_done {
-            self.components.refresh(true);
-        } else {
-            self.warmup_done = true;
-        }
 
-        let cpu_usage = {
+        let raw_cpu_usage = {
             #[cfg(target_os = "windows")]
             let from_pdh = self
                 .cpu_usage_query
@@ -392,6 +391,14 @@ impl SystemCollector {
             let from_pdh: Option<f64> = None;
 
             from_pdh.unwrap_or_else(|| self.system.global_cpu_usage() as f64)
+        };
+        let cpu_usage = if let Some(prev) = self.cpu_usage_ema {
+            let next = prev * 0.7 + raw_cpu_usage * 0.3;
+            self.cpu_usage_ema = Some(next);
+            next
+        } else {
+            self.cpu_usage_ema = Some(raw_cpu_usage);
+            raw_cpu_usage
         };
         let frequency = {
             #[cfg(target_os = "windows")]
@@ -412,25 +419,7 @@ impl SystemCollector {
             })
         };
 
-        // Attempt to find CPU temperature
-        let mut cpu_temp: Option<f64> = None;
-        for component in &self.components {
-            let label = component.label().to_lowercase();
-            if label.contains("cpu") || label.contains("core") || label.contains("package") {
-                if let Some(temp) = component.temperature() {
-                    match cpu_temp {
-                        Some(current) => {
-                            if (temp as f64) > current {
-                                cpu_temp = Some(temp as f64);
-                            }
-                        }
-                        None => {
-                            cpu_temp = Some(temp as f64);
-                        }
-                    }
-                }
-            }
-        }
+        let cpu_temp = self.refresh_cpu_temperature();
 
         let memory_total_mb = self.system.total_memory() as f64 / (1024.0 * 1024.0);
         let memory_used_mb = self.system.used_memory() as f64 / (1024.0 * 1024.0);
@@ -440,32 +429,7 @@ impl SystemCollector {
             0.0
         };
 
-        let mut disks_vec: Vec<DiskMetrics> = Vec::new();
-        for disk in self.disks.list() {
-            let total = disk.total_space() as f64 / (1024.0 * 1024.0 * 1024.0);
-            let avail = disk.available_space() as f64 / (1024.0 * 1024.0 * 1024.0);
-            let used = (total - avail).max(0.0);
-            let usage_pct = if total > 0.0 {
-                used / total * 100.0
-            } else {
-                0.0
-            };
-
-            // usage() returns DiskUsage which contains deltas since last refresh
-            let usage = disk.usage();
-            let read_bytes = usage.read_bytes;
-            let written_bytes = usage.written_bytes;
-
-            disks_vec.push(DiskMetrics {
-                name: disk.mount_point().to_string_lossy().to_string(),
-                label: disk.name().to_string_lossy().to_string(),
-                used_gb: used,
-                total_gb: total,
-                usage_pct,
-                read_bytes_per_sec: Some(read_bytes as f64),
-                write_bytes_per_sec: Some(written_bytes as f64),
-            });
-        }
+        let disks_vec = self.refresh_disk_metrics();
 
         let (rx_total, tx_total) = Self::network_totals(&self.networks);
         let elapsed = self.prev_tick.elapsed().as_secs_f64().max(0.001);
@@ -476,9 +440,14 @@ impl SystemCollector {
         self.prev_tx = tx_total;
         self.prev_tick = Instant::now();
 
-        let sample_interval = Duration::from_millis(refresh_rate_ms.max(10));
-        let gpu_metrics = self.refresh_gpu_metrics(sample_interval);
-        let (app_cpu_usage_pct, app_memory_mb) = self.sample_app_usage_metrics(sample_interval);
+        let base_interval_ms = refresh_rate_ms.max(10);
+        // GPU/per-process counters are expensive and naturally low-frequency; decouple
+        // from UI push interval to avoid 10ms settings causing counter thrashing.
+        let gpu_sample_interval = Duration::from_millis(base_interval_ms.max(400));
+        let app_usage_sample_interval = Duration::from_millis(base_interval_ms.max(300));
+        let gpu_metrics = self.refresh_gpu_metrics(gpu_sample_interval);
+        let (app_cpu_usage_pct, app_memory_mb) =
+            self.sample_app_usage_metrics(app_usage_sample_interval);
 
         TelemetrySnapshot {
             timestamp: Utc::now(),
@@ -503,6 +472,72 @@ impl SystemCollector {
             app_memory_mb,
             power_watts: None,
         }
+    }
+
+    fn refresh_cpu_temperature(&mut self) -> Option<f64> {
+        let temp_interval = Duration::from_millis(1000);
+        if self.last_cpu_temp_poll.elapsed() < temp_interval && self.warmup_done {
+            return self.cpu_temp_cache;
+        }
+
+        if self.warmup_done {
+            self.components.refresh(true);
+        } else {
+            self.warmup_done = true;
+        }
+        self.last_cpu_temp_poll = Instant::now();
+
+        let mut cpu_temp: Option<f64> = None;
+        for component in &self.components {
+            let label = component.label().to_lowercase();
+            if label.contains("cpu") || label.contains("core") || label.contains("package") {
+                if let Some(temp) = component.temperature() {
+                    let temp = temp as f64;
+                    if temp.is_finite() {
+                        cpu_temp = Some(cpu_temp.map_or(temp, |current| current.max(temp)));
+                    }
+                }
+            }
+        }
+
+        self.cpu_temp_cache = cpu_temp;
+        self.cpu_temp_cache
+    }
+
+    fn refresh_disk_metrics(&mut self) -> Vec<DiskMetrics> {
+        let disk_interval = Duration::from_millis(500);
+        if self.last_disk_poll.elapsed() < disk_interval && !self.disk_cache.is_empty() {
+            return self.disk_cache.clone();
+        }
+
+        self.disks.refresh(true);
+        self.last_disk_poll = Instant::now();
+
+        let mut disks_vec: Vec<DiskMetrics> = Vec::new();
+        for disk in self.disks.list() {
+            let total = disk.total_space() as f64 / (1024.0 * 1024.0 * 1024.0);
+            let avail = disk.available_space() as f64 / (1024.0 * 1024.0 * 1024.0);
+            let used = (total - avail).max(0.0);
+            let usage_pct = if total > 0.0 {
+                used / total * 100.0
+            } else {
+                0.0
+            };
+
+            let usage = disk.usage();
+            disks_vec.push(DiskMetrics {
+                name: disk.mount_point().to_string_lossy().to_string(),
+                label: disk.name().to_string_lossy().to_string(),
+                used_gb: used,
+                total_gb: total,
+                usage_pct,
+                read_bytes_per_sec: Some(usage.read_bytes as f64),
+                write_bytes_per_sec: Some(usage.written_bytes as f64),
+            });
+        }
+
+        self.disk_cache = disks_vec;
+        self.disk_cache.clone()
     }
 
     fn sample_app_usage_metrics(
@@ -649,6 +684,7 @@ $freqMhz = $null
 $usedBy = @{}
 $limitBy = @{}
 $usageByLuid = @{}
+$sumUsageByLuid = @{}
 $allEngineUsage = @()
 $bestInst = $null
 $bestLimit = -1
@@ -695,11 +731,26 @@ if ($engine) {
       if (-not $usageByLuid.ContainsKey($luid) -or $usageByLuid[$luid] -lt $value) {
         $usageByLuid[$luid] = $value
       }
+      if ($sumUsageByLuid.ContainsKey($luid)) {
+        $sumUsageByLuid[$luid] = [double]$sumUsageByLuid[$luid] + $value
+      } else {
+        $sumUsageByLuid[$luid] = $value
+      }
     }
   }
 }
 
-if ($usageByLuid.Count -gt 0) {
+if ($sumUsageByLuid.Count -gt 0) {
+  $scores = @{}
+  foreach ($k in $sumUsageByLuid.Keys) {
+    $sumValue = [Math]::Min([Math]::Max([double]$sumUsageByLuid[$k], 0), 100)
+    $maxValue = if ($usageByLuid.ContainsKey($k)) { [double]$usageByLuid[$k] } else { 0 }
+    # Bias toward higher total utilization while keeping compatibility with busiest-engine behavior.
+    $scores[$k] = [Math]::Max($sumValue, $maxValue)
+  }
+  $bestLuid = ($scores.GetEnumerator() | Sort-Object -Property Value -Descending | Select-Object -First 1).Key
+  $usage = $scores[$bestLuid]
+} elseif ($usageByLuid.Count -gt 0) {
   $bestLuid = ($usageByLuid.GetEnumerator() | Sort-Object -Property Value -Descending | Select-Object -First 1).Key
   $usage = $usageByLuid[$bestLuid]
 } elseif ($allEngineUsage.Count -gt 0) {
