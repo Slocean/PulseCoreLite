@@ -12,7 +12,7 @@ function emptySnapshot(): TelemetrySnapshot {
     timestamp: new Date().toISOString(),
     cpu: { usage_pct: 0, frequency_mhz: null, temperature_c: null },
     gpu: {
-      usage_pct: null,
+      usage_pct: 0,
       temperature_c: null,
       memory_used_mb: null,
       memory_total_mb: null,
@@ -21,7 +21,7 @@ function emptySnapshot(): TelemetrySnapshot {
     memory: { used_mb: 0, total_mb: 1, usage_pct: 0 },
     disks: [],
     network: { download_bytes_per_sec: 0, upload_bytes_per_sec: 0, latency_ms: null },
-    appCpuUsagePct: null,
+    appCpuUsagePct: 0,
     appMemoryMb: null,
     power_watts: null
   };

@@ -53,7 +53,7 @@ fn empty_snapshot() -> TelemetrySnapshot {
             temperature_c: None,
         },
         gpu: crate::types::GpuMetrics {
-            usage_pct: None,
+            usage_pct: Some(0.0),
             temperature_c: None,
             memory_used_mb: None,
             memory_total_mb: None,
@@ -70,7 +70,7 @@ fn empty_snapshot() -> TelemetrySnapshot {
             upload_bytes_per_sec: 0.0,
             latency_ms: None,
         },
-        app_cpu_usage_pct: None,
+        app_cpu_usage_pct: Some(0.0),
         app_memory_mb: None,
         power_watts: None,
     }

@@ -373,13 +373,10 @@ const { refreshRate, handleRefreshRateChange } = useOverlayRefreshRate(store);
 const { uptimeLabel } = useOverlayUptime();
 const appUsageLabel = computed(() => {
   const snap = store.snapshot;
-  const cpu = snap.appCpuUsagePct;
+  const cpu = snap.appCpuUsagePct ?? 0;
   const mem = snap.appMemoryMb;
-  if (cpu == null && mem == null) {
-    return t('common.na');
-  }
   const parts: string[] = [];
-  if (cpu != null) parts.push(`${cpu.toFixed(1)}%`);
+  parts.push(`${cpu.toFixed(1)}%`);
   if (mem != null) parts.push(`${mem.toFixed(0)}MB`);
   return parts.join(' · ');
 });

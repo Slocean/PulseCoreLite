@@ -15,9 +15,7 @@ export function useOverlayMetrics(prefs: OverlayPrefs) {
   const memoryUsagePct = computed(() => snapshot.value.memory.usage_pct);
   const disks = computed(() => snapshot.value.disks);
   const cpuPercentLabel = computed(() => `${snapshot.value.cpu.usage_pct.toFixed(1)}%`);
-  const gpuPercentLabel = computed(() =>
-    snapshot.value.gpu.usage_pct == null ? t('common.na') : `${snapshot.value.gpu.usage_pct.toFixed(1)}%`
-  );
+  const gpuPercentLabel = computed(() => `${(snapshot.value.gpu.usage_pct ?? 0).toFixed(1)}%`);
   const memoryPercentLabel = computed(() => `${snapshot.value.memory.usage_pct.toFixed(1)}%`);
   const cpuDetailLabel = computed(() => {
     const parts: string[] = [];

@@ -318,12 +318,15 @@ pub struct SystemCollector {
     current_pid: Pid,
     app_usage_cache: (Option<f64>, Option<f64>),
     last_app_usage_poll: Instant,
+    app_usage_started_at: Instant,
     #[cfg(target_os = "windows")]
     app_process_cpu_prev_by_pid: HashMap<u32, u64>,
     #[cfg(target_os = "windows")]
     app_process_cpu_last_sample: Option<Instant>,
     #[cfg(target_os = "windows")]
     app_process_cpu_cache: Option<f64>,
+    #[cfg(target_os = "windows")]
+    app_process_cpu_ema: Option<f64>,
     cpu_usage_ema: Option<f64>,
     disk_cache: Vec<DiskMetrics>,
     last_disk_poll: Instant,
@@ -360,7 +363,7 @@ impl SystemCollector {
             prev_tx,
             prev_tick: Instant::now(),
             gpu_cache: GpuMetrics {
-                usage_pct: None,
+                usage_pct: Some(0.0),
                 temperature_c: None,
                 memory_used_mb: None,
                 memory_total_mb: None,
@@ -371,12 +374,15 @@ impl SystemCollector {
             current_pid,
             app_usage_cache: (None, None),
             last_app_usage_poll: Instant::now(),
+            app_usage_started_at: Instant::now(),
             #[cfg(target_os = "windows")]
             app_process_cpu_prev_by_pid: HashMap::new(),
             #[cfg(target_os = "windows")]
             app_process_cpu_last_sample: None,
             #[cfg(target_os = "windows")]
             app_process_cpu_cache: None,
+            #[cfg(target_os = "windows")]
+            app_process_cpu_ema: None,
             cpu_usage_ema: None,
             disk_cache: Vec::new(),
             last_disk_poll: Instant::now() - Duration::from_secs(1),
@@ -617,6 +623,10 @@ impl SystemCollector {
 
     #[cfg(target_os = "windows")]
     fn collect_app_usage_metrics_windows(&mut self, process_tree: &[Pid]) -> (Option<f64>, Option<f64>) {
+        const STARTUP_GRACE_SECONDS: f64 = 2.0;
+        const MIN_CPU_WINDOW_SECONDS: f64 = 0.8;
+        const CPU_EMA_ALPHA: f64 = 0.25;
+
         let now = Instant::now();
         let logical_cpu_count = self.system.cpus().len().max(1) as f64;
         let mut memory_bytes_sum = 0_u64;
@@ -634,7 +644,7 @@ impl SystemCollector {
 
         let cpu_usage_pct = if let Some(last_sample) = self.app_process_cpu_last_sample {
             let elapsed_seconds = now.duration_since(last_sample).as_secs_f64();
-            if elapsed_seconds >= 0.05 {
+            if elapsed_seconds >= MIN_CPU_WINDOW_SECONDS {
                 let mut delta_cpu_100ns_sum = 0_u64;
                 for (pid, cpu_time_now) in &current_cpu_times {
                     if let Some(cpu_time_prev) = self.app_process_cpu_prev_by_pid.get(pid) {
@@ -644,15 +654,35 @@ impl SystemCollector {
                 }
 
                 let cpu_seconds = delta_cpu_100ns_sum as f64 / 10_000_000.0;
-                let usage = (cpu_seconds / (elapsed_seconds * logical_cpu_count) * 100.0)
+                let usage_raw = (cpu_seconds / (elapsed_seconds * logical_cpu_count) * 100.0)
                     .clamp(0.0, 100.0);
-                self.app_process_cpu_cache = Some(usage);
-                Some(usage)
+
+                let usage_smoothed = if let Some(prev) = self.app_process_cpu_ema {
+                    prev * (1.0 - CPU_EMA_ALPHA) + usage_raw * CPU_EMA_ALPHA
+                } else {
+                    usage_raw
+                };
+
+                self.app_process_cpu_ema = Some(usage_smoothed);
+                self.app_process_cpu_cache = Some(usage_smoothed);
+                if now.duration_since(self.app_usage_started_at).as_secs_f64()
+                    < STARTUP_GRACE_SECONDS
+                {
+                    Some(0.0)
+                } else {
+                    Some(usage_smoothed)
+                }
             } else {
-                self.app_process_cpu_cache
+                if now.duration_since(self.app_usage_started_at).as_secs_f64()
+                    < STARTUP_GRACE_SECONDS
+                {
+                    Some(0.0)
+                } else {
+                    self.app_process_cpu_cache
+                }
             }
         } else {
-            self.app_process_cpu_cache
+            Some(0.0)
         };
 
         self.app_process_cpu_prev_by_pid = current_cpu_times;
@@ -989,7 +1019,7 @@ if ($usage -ne $null) {
     }
 
     let payload: serde_json::Value = serde_json::from_str(&raw).ok()?;
-    let usage_pct = payload.get("usage").and_then(|v| v.as_f64());
+    let usage_pct = Some(payload.get("usage").and_then(|v| v.as_f64()).unwrap_or(0.0));
     let mut memory_used_mb = payload.get("memUsedMb").and_then(|v| v.as_f64());
     let mut memory_total_mb = payload.get("memTotalMb").and_then(|v| v.as_f64());
     let frequency_mhz = payload.get("freqMhz").and_then(|v| v.as_f64());

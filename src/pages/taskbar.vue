@@ -91,8 +91,8 @@ const cpuTemp = computed(() => {
 });
 
 const gpuPct = computed(() => {
-  const pct = snapshot.value.gpu.usage_pct;
-  return pct == null ? null : `${pct.toFixed(0)}%`;
+  const pct = snapshot.value.gpu.usage_pct ?? 0;
+  return `${pct.toFixed(0)}%`;
 });
 const gpuTemp = computed(() => {
   const temp = snapshot.value.gpu.temperature_c;
@@ -115,8 +115,8 @@ const latency = computed(() => {
 });
 
 const appCpuPct = computed(() => {
-  const value = snapshot.value.appCpuUsagePct;
-  return value == null ? null : `${value.toFixed(1)}%`;
+  const value = snapshot.value.appCpuUsagePct ?? 0;
+  return `${value.toFixed(1)}%`;
 });
 const appMem = computed(() => {
   const value = snapshot.value.appMemoryMb;
@@ -183,7 +183,7 @@ const segments = computed<SizedSegment[]>(() => {
   }
 
   if (prefs.showGpu) {
-    const value = gpuPct.value ?? t('common.na');
+    const value = gpuPct.value;
     const extras: string[] = [];
     if (prefs.showGpuTemp && gpuTemp.value) extras.push(gpuTemp.value);
     parts.push(
@@ -192,7 +192,7 @@ const segments = computed<SizedSegment[]>(() => {
         label: 'GPU',
         value,
         extra: extras.length > 0 ? extras.join(' ') : undefined,
-        valueClass: snapshot.value.gpu.usage_pct == null ? '' : usageClass(snapshot.value.gpu.usage_pct, 'pink')
+        valueClass: usageClass(snapshot.value.gpu.usage_pct ?? 0, 'pink')
       })
     );
   }
@@ -213,7 +213,7 @@ const segments = computed<SizedSegment[]>(() => {
       createSegment({
         id: 'app',
         label: 'APP',
-        value: appCpuPct.value ?? t('common.na'),
+        value: appCpuPct.value,
         extra: appMem.value ?? undefined,
         valueClass: 'overlay-glow-cyan'
       })
