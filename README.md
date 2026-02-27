@@ -1,6 +1,6 @@
 [中文文档](#中文文档) | [English Documentation](#english-documentation) | [下载地址](https://github.com/Slocean/PulseCoreLite/releases)
 
-# PulseCore Lite v1.6.0 <img src="src/static/img/ice_logo.png" alt="Logo" height="28" />
+# PulseCore Lite v1.6.1 <img src="src/static/img/ice_logo.png" alt="Logo" height="28" />
 
 PulseCoreLite 是一个基于 Tauri 2 + Vue 3 的桌面性能监控应用，提供悬浮窗监控与任务栏监控两种形态，实时展示 CPU、GPU、内存、磁盘与网络等指标，并支持多语言、透明度与刷新率配置、自动启动与托盘行为等系统级能力。
 
@@ -11,16 +11,6 @@ PulseCoreLite 是一个基于 Tauri 2 + Vue 3 的桌面性能监控应用，提�
 - 形态：悬浮窗（主窗口）+ 任务栏监控条（独立窗口）
 - 目的：在最小占用前提下，持续提供硬件与网络实时指标
 - 平台：Windows（自动启动、任务栏位置、卸载能力基于 Windows API）
-
-### 版本更新 v1.6.0
-
-- 拆分为独立 taskbar / toolkit 入口，实现三窗口独立打包并懒加载主窗口以降低内存占用
-- 移除多窗口角色分支，统一使用 CompactOverlayPage，简化启动流程并清理未使用字体引用
-- 主题图片处理升级：统一数据 URL 解析与预览，保存时规范化并清理无用引用
-- 任务栏右键菜单增强：支持显示/隐藏主窗口，并新增“隐藏主窗口”项
-- 托盘管理优化：移除“关闭时最小化到托盘”，新增托盘接力与跨窗口保证逻辑
-- 新增“全屏自动隐藏任务栏”功能，支持配置持久化与 800ms 轮询检测
-- 升级版本号至 1.6.0 并同步前端与 Tauri 配置
 
 ### 页面截图（中文）
 
@@ -165,15 +155,11 @@ npm run pack:release
 - Goal: continuous, low-overhead telemetry for core hardware and network stats
 - Platform: Windows (autostart, taskbar position, uninstall are Windows API based)
 
-### Release Notes v1.6.0
+### Release Notes v1.6.1
 
-- Split taskbar/toolkit into dedicated entry points for three-window packaging and lazy-load the main window to reduce memory
-- Standardize on CompactOverlayPage and remove multi-window role branches and unused font imports
-- Improve theme image handling with unified data-URL resolution, preview support, normalization, and cleanup of unused references
-- Enhance taskbar context menu to show/hide the main window, including a dedicated "Hide Main Window" action
-- Optimize tray management by removing close-to-tray option and adding cross-window tray handoff/ensure logic
-- Add auto-hide taskbar on fullscreen with persisted setting and 800 ms polling
-- Bump and sync version to 1.6.0 (frontend + Tauri)
+- Fix taskbar remaining on top during fullscreen hide and reduce detection interval to 250ms
+- Add auto-hide taskbar when fullscreen app is active with topmost restoration
+- Unify settings sync logic and remove redundant ensureTaskbarMonitor calls
 
 ### Screenshots (English)
 

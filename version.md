@@ -1,3 +1,13 @@
+## v1.6.1
+
+- 修复全屏隐藏时任务栏仍置顶问题并缩短检测间隔至 250ms
+- 实现任务栏在全屏应用激活时自动隐藏与恢复置顶功能
+- 统一 settings 同步逻辑，移除冗余 ensureTaskbarMonitor 调用
+
+- Fix taskbar remaining on top during fullscreen hide and reduce detection interval to 250ms
+- Add auto-hide taskbar when fullscreen app is active with topmost restoration
+- Unify settings sync logic and remove redundant ensureTaskbarMonitor calls
+
 ## v1.6.0
 
 - 拆分为独立 taskbar / toolkit 入口，实现三窗口独立打包并懒加载主窗口以降低内存占用
