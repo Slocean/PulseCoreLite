@@ -297,6 +297,9 @@ let topmostRepairTimer: number | null = null;
 let topmostHeartbeatTimer: number | null = null;
 let unlistenFocusChanged: (() => void) | null = null;
 let topmostGuardPauseDepth = 0;
+let fullscreenPollTimer: number | null = null;
+let fullscreenCheckInFlight = false;
+let fullscreenSuppressed = false;
 
 function isTopmostGuardPaused() {
   return topmostGuardPauseDepth > 0;
@@ -370,6 +373,58 @@ function stopTopmostGuard() {
   }
 }
 
+async function setFullscreenSuppressed(suppressed: boolean) {
+  if (!inTauri() || fullscreenSuppressed === suppressed) {
+    return;
+  }
+  fullscreenSuppressed = suppressed;
+  if (suppressed) {
+    pauseTopmostGuard();
+    await applyTaskbarTopmost(false);
+    return;
+  }
+  resumeTopmostGuard();
+  await applyTaskbarTopmost(alwaysOnTop.value);
+}
+
+function stopFullscreenAutoHideMonitor() {
+  if (fullscreenPollTimer != null) {
+    window.clearInterval(fullscreenPollTimer);
+    fullscreenPollTimer = null;
+  }
+  fullscreenCheckInFlight = false;
+  void setFullscreenSuppressed(false);
+}
+
+function startFullscreenAutoHideMonitor() {
+  if (!inTauri() || fullscreenPollTimer != null) {
+    return;
+  }
+  const poll = async () => {
+    if (fullscreenCheckInFlight) {
+      return;
+    }
+    fullscreenCheckInFlight = true;
+    try {
+      const shouldAutoHide = autoHideOnFullscreen.value;
+      if (!shouldAutoHide) {
+        await setFullscreenSuppressed(false);
+        return;
+      }
+      const isFullscreen = await api.isFullscreenWindowActive();
+      await setFullscreenSuppressed(isFullscreen);
+    } catch {
+      // ignore
+    } finally {
+      fullscreenCheckInFlight = false;
+    }
+  };
+  fullscreenPollTimer = window.setInterval(() => {
+    void poll();
+  }, 1000);
+  void poll();
+}
+
 async function syncTaskbarHeightVar() {
   if (!inTauri() || typeof document === 'undefined') {
     return;
@@ -393,6 +448,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  stopFullscreenAutoHideMonitor();
   stopTopmostGuard();
 });
 
@@ -400,11 +456,27 @@ watch(
   alwaysOnTop,
   enabled => {
     if (!inTauri()) return;
+    if (fullscreenSuppressed) {
+      return;
+    }
     void applyTaskbarTopmost(enabled);
     if (enabled) {
       void startTopmostGuard();
     } else {
       stopTopmostGuard();
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  autoHideOnFullscreen,
+  enabled => {
+    if (!inTauri()) return;
+    if (enabled) {
+      startFullscreenAutoHideMonitor();
+    } else {
+      stopFullscreenAutoHideMonitor();
     }
   },
   { immediate: true }

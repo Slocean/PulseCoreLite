@@ -299,7 +299,6 @@ export const useAppStore = defineStore('app', {
         if (label === 'main') {
           void this.ensureTray();
           void this.ensureTaskbarMonitor();
-          void this.ensureTaskbarFullscreenMonitor();
           void this.syncAutoStartEnabled();
           void this.detectInstallationMode();
           this.unlisteners.push(
@@ -308,15 +307,6 @@ export const useAppStore = defineStore('app', {
               () => {
                 void this.ensureTaskbarMonitor();
               }
-            )
-          );
-          this.unlisteners.push(
-            watch(
-              () => [this.settings.taskbarMonitorEnabled, this.settings.taskbarAutoHideOnFullscreen],
-              () => {
-                void this.ensureTaskbarFullscreenMonitor();
-              },
-              { immediate: true }
             )
           );
         }
