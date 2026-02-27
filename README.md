@@ -1,6 +1,6 @@
 [中文文档](#中文文档) | [English Documentation](#english-documentation) | [下载地址](https://github.com/Slocean/PulseCoreLite/releases)
 
-# PulseCore Lite v1.5.7 <img src="src/static/img/ice_logo.png" alt="Logo" height="28" />
+# PulseCore Lite v1.6.0 <img src="src/static/img/ice_logo.png" alt="Logo" height="28" />
 
 PulseCoreLite 是一个基于 Tauri 2 + Vue 3 的桌面性能监控应用，提供悬浮窗监控与任务栏监控两种形态，实时展示 CPU、GPU、内存、磁盘与网络等指标，并支持多语言、透明度与刷新率配置、自动启动与托盘行为等系统级能力。
 
@@ -12,15 +12,15 @@ PulseCoreLite 是一个基于 Tauri 2 + Vue 3 的桌面性能监控应用，提�
 - 目的：在最小占用前提下，持续提供硬件与网络实时指标
 - 平台：Windows（自动启动、任务栏位置、卸载能力基于 Windows API）
 
-### 版本更新 v1.5.7
+### 版本更新 v1.6.0
 
-- 修复多窗口同步与资源使用率计算问题
-- 工具箱窗口初始化与关闭逻辑优化，关闭悬浮窗时同步关闭工具箱
-- 跨窗口同步前校验目标窗口是否存在，避免无效事件
-- 遥测采集与发送优化：仅向可见窗口推送，无可见窗口时降低轮询频率
-- 应用 CPU/内存统计升级：采集应用及其子进程并按逻辑核心归一化
-- 优化 GPU 查询超时处理，避免 PowerShell 阻塞
-- 升级版本号至 1.5.7 并补充必要的 Windows API 特性
+- 拆分为独立 taskbar / toolkit 入口，实现三窗口独立打包并懒加载主窗口以降低内存占用
+- 移除多窗口角色分支，统一使用 CompactOverlayPage，简化启动流程并清理未使用字体引用
+- 主题图片处理升级：统一数据 URL 解析与预览，保存时规范化并清理无用引用
+- 任务栏右键菜单增强：支持显示/隐藏主窗口，并新增“隐藏主窗口”项
+- 托盘管理优化：移除“关闭时最小化到托盘”，新增托盘接力与跨窗口保证逻辑
+- 新增“全屏自动隐藏任务栏”功能，支持配置持久化与 800ms 轮询检测
+- 升级版本号至 1.6.0 并同步前端与 Tauri 配置
 
 ### 页面截图（中文）
 
@@ -56,7 +56,7 @@ PulseCoreLite 是一个基于 Tauri 2 + Vue 3 的桌面性能监控应用，提�
 - 交互能力：拖拽移动、双击交互、透明度可调
 - 任务栏监控条：可常驻置顶、可右键快速切换显示项
 - 工具箱：定时关机与系统工具能力
-- 系统能力：自动启动、退出到托盘、记住窗口位置
+- 系统能力：自动启动、托盘集成、记住窗口位置
 - 语言支持：中文/英文切换
 - 数据刷新：采样刷新率可配置
 - 工厂重置：可通过快捷键清空本地设置并重启
@@ -69,8 +69,7 @@ PulseCoreLite 是一个基于 Tauri 2 + Vue 3 的桌面性能监控应用，提�
 - 硬件型号：显示硬件型号与规格信息
 - 占用预警：高负载时改变颜色提示
 - 拖拽按钮：仅通过拖拽按钮移动窗口
-- 退出到托盘：关闭主窗口时最小化到托盘
-- 开机自启：系统启动时自动运行
+- - 开机自启：系统启动时自动运行
 - 记住位置：记住悬浮窗与任务栏条的拖拽位置
 - 任务栏监测：开启/关闭任务栏监控条
 - 语言 / Language：中英切换
@@ -166,15 +165,15 @@ npm run pack:release
 - Goal: continuous, low-overhead telemetry for core hardware and network stats
 - Platform: Windows (autostart, taskbar position, uninstall are Windows API based)
 
-### Release Notes v1.5.7
+### Release Notes v1.6.0
 
-- Fix multi-window sync and resource usage computation
-- Harden toolkit window init/close behavior and close it with the overlay
-- Validate target window existence before cross-window sync
-- Telemetry optimizations: push only to visible windows and throttle when none visible
-- App CPU/memory stats now aggregate process tree and normalize by logical cores
-- Improve GPU query timeout handling to avoid PowerShell blocking
-- Bump version to 1.5.7 and add required Windows API features
+- Split taskbar/toolkit into dedicated entry points for three-window packaging and lazy-load the main window to reduce memory
+- Standardize on CompactOverlayPage and remove multi-window role branches and unused font imports
+- Improve theme image handling with unified data-URL resolution, preview support, normalization, and cleanup of unused references
+- Enhance taskbar context menu to show/hide the main window, including a dedicated "Hide Main Window" action
+- Optimize tray management by removing close-to-tray option and adding cross-window tray handoff/ensure logic
+- Add auto-hide taskbar on fullscreen with persisted setting and 800 ms polling
+- Bump and sync version to 1.6.0 (frontend + Tauri)
 
 ### Screenshots (English)
 
@@ -210,7 +209,7 @@ npm run pack:release
 - Interactions: drag, double-click, adjustable background opacity
 - Taskbar monitor bar: always-on-top support and quick toggles
 - Toolkit: scheduled shutdown and system utilities
-- System options: autostart, close-to-tray, remember window position
+- System options: autostart, system tray integration, remember window position
 - Localization: Chinese and English UI
 - Refresh control: configurable sampling rate
 - Factory reset: hotkey clears local data and reloads
@@ -223,8 +222,7 @@ npm run pack:release
 - Hardware Info: show model/spec strings
 - Usage Warning: highlight on high utilization
 - Drag Handle: use the handle to move the window
-- Close to System Tray: close main window to tray
-- Launch at Startup: autostart on Windows
+- - Launch at Startup: autostart on Windows
 - Remember Position: persist overlay/taskbar window position
 - Taskbar Monitor: enable/disable taskbar bar
 - Language: Chinese/English switch

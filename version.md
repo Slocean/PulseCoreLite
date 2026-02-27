@@ -1,3 +1,21 @@
+## v1.6.0
+
+- 拆分为独立 taskbar / toolkit 入口，实现三窗口独立打包并懒加载主窗口以降低内存占用
+- 移除多窗口角色分支，统一使用 CompactOverlayPage，简化启动流程并清理未使用字体引用
+- 主题图片处理升级：统一数据 URL 解析与预览，保存时规范化并清理无用引用
+- 任务栏右键菜单增强：支持显示/隐藏主窗口，并新增“隐藏主窗口”项
+- 托盘管理优化：移除“关闭时最小化到托盘”，新增托盘接力与跨窗口保证逻辑
+- 新增“全屏自动隐藏任务栏”功能，支持配置持久化与 800ms 轮询检测
+- 升级版本号至 1.6.0 并同步前端与 Tauri 配置
+
+- Split taskbar/toolkit into dedicated entry points for three-window packaging and lazy-load the main window to reduce memory
+- Standardize on CompactOverlayPage and remove multi-window role branches and unused font imports
+- Improve theme image handling with unified data-URL resolution, preview support, normalization, and cleanup of unused references
+- Enhance taskbar context menu to show/hide the main window, including a dedicated "Hide Main Window" action
+- Optimize tray management by removing close-to-tray option and adding cross-window tray handoff/ensure logic
+- Add auto-hide taskbar on fullscreen with persisted setting and 800 ms polling
+- Bump and sync version to 1.6.0 (frontend + Tauri)
+
 ## v1.5.7
 
 - 修复多窗口同步与资源使用率计算问题
