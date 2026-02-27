@@ -2,7 +2,12 @@ $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$tauriCliPath = Join-Path $projectRoot "node_modules\.bin\tauri.cmd"
 Set-Location $projectRoot
+
+if (-not (Test-Path -LiteralPath $tauriCliPath -PathType Leaf)) {
+  throw "Tauri CLI not found at $tauriCliPath. Run package install first (npm install / pnpm install)."
+}
 
 function Resolve-WebViewInstallerPath {
   if ($env:WEBVIEW2_OFFLINE_INSTALLER) {
@@ -56,7 +61,7 @@ function Build-WithWebViewMode {
 
   try {
     $override | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $overridePath -Encoding ASCII
-    & npm run tauri:build -- --config $overridePath
+    & $tauriCliPath build --config $overridePath
     if ($LASTEXITCODE -ne 0) {
       throw "tauri build failed for webview mode '$ModeType' with exit code $LASTEXITCODE"
     }
