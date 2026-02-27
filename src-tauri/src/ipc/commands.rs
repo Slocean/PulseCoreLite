@@ -986,11 +986,10 @@ pub fn set_window_system_topmost(app: AppHandle, label: String, topmost: bool) -
         use windows_sys::Win32::Foundation::{GetLastError, HWND};
         use windows_sys::Win32::UI::WindowsAndMessaging::{
             SetWindowPos, HWND_NOTOPMOST, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE,
-            SWP_SHOWWINDOW,
         };
 
         let hwnd = win.hwnd().map_err(|e| e.to_string())?;
-        let flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW;
+        let flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE;
         let hwnd_value = hwnd.0 as HWND;
         if topmost {
             // Two-step promote keeps the window at the front of the TOPMOST band.

@@ -300,6 +300,7 @@ let topmostGuardPauseDepth = 0;
 let fullscreenPollTimer: number | null = null;
 let fullscreenCheckInFlight = false;
 let fullscreenSuppressed = false;
+let fullscreenWindowHidden = false;
 
 function isTopmostGuardPaused() {
   return topmostGuardPauseDepth > 0;
@@ -380,8 +381,25 @@ async function setFullscreenSuppressed(suppressed: boolean) {
   fullscreenSuppressed = suppressed;
   if (suppressed) {
     pauseTopmostGuard();
-    await applyTaskbarTopmost(false);
+    if (!fullscreenWindowHidden) {
+      try {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        await getCurrentWindow().hide();
+        fullscreenWindowHidden = true;
+      } catch {
+        // ignore
+      }
+    }
     return;
+  }
+  if (fullscreenWindowHidden) {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      await getCurrentWindow().show();
+      fullscreenWindowHidden = false;
+    } catch {
+      // ignore
+    }
   }
   resumeTopmostGuard();
   await applyTaskbarTopmost(alwaysOnTop.value);
@@ -421,7 +439,7 @@ function startFullscreenAutoHideMonitor() {
   };
   fullscreenPollTimer = window.setInterval(() => {
     void poll();
-  }, 1000);
+  }, 250);
   void poll();
 }
 
