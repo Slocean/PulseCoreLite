@@ -31,6 +31,7 @@
     "rememberPosition": "记住位置",
     "mainWindowAlwaysOnTop": "总是置顶",
     "alwaysOnTop": "总是置顶",
+    "taskbarFullscreenAutoHide": "全屏时自动隐藏",
     "taskbarMonitor": "任务栏监测",
     "taskbarMonitorOpen": "开启",
     "taskbarMonitorClose": "关闭",

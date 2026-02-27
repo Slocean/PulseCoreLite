@@ -906,6 +906,76 @@ pub fn get_taskbar_info() -> CmdResult<Option<crate::types::TaskbarInfo>> {
 }
 
 #[tauri::command]
+pub fn is_fullscreen_window_active() -> CmdResult<bool> {
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::Foundation::RECT;
+        use windows_sys::Win32::Graphics::Gdi::{
+            GetMonitorInfoW, MonitorFromWindow, MONITORINFO, MONITOR_DEFAULTTONEAREST,
+        };
+        use windows_sys::Win32::UI::WindowsAndMessaging::{
+            GetForegroundWindow, GetWindowRect, GetWindowThreadProcessId, IsIconic, IsWindowVisible,
+        };
+
+        let hwnd = unsafe { GetForegroundWindow() };
+        if hwnd == std::ptr::null_mut() {
+            return Ok(false);
+        }
+        if unsafe { IsWindowVisible(hwnd) } == 0 {
+            return Ok(false);
+        }
+        if unsafe { IsIconic(hwnd) } != 0 {
+            return Ok(false);
+        }
+
+        let mut pid: u32 = 0;
+        unsafe {
+            GetWindowThreadProcessId(hwnd, &mut pid);
+        }
+        if pid == std::process::id() {
+            return Ok(false);
+        }
+
+        let monitor = unsafe { MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST) };
+        if monitor == std::ptr::null_mut() {
+            return Ok(false);
+        }
+
+        let mut info: MONITORINFO = unsafe { std::mem::zeroed() };
+        info.cbSize = std::mem::size_of::<MONITORINFO>() as u32;
+        if unsafe { GetMonitorInfoW(monitor, &mut info) } == 0 {
+            return Ok(false);
+        }
+
+        let mut rect: RECT = unsafe { std::mem::zeroed() };
+        if unsafe { GetWindowRect(hwnd, &mut rect) } == 0 {
+            return Ok(false);
+        }
+
+        let win_width = rect.right - rect.left;
+        let win_height = rect.bottom - rect.top;
+        let monitor_width = info.rcMonitor.right - info.rcMonitor.left;
+        let monitor_height = info.rcMonitor.bottom - info.rcMonitor.top;
+
+        if win_width <= 0 || win_height <= 0 || monitor_width <= 0 || monitor_height <= 0 {
+            return Ok(false);
+        }
+
+        let width_ratio = win_width as f64 / monitor_width as f64;
+        let height_ratio = win_height as f64 / monitor_height as f64;
+        let area_ratio =
+            (win_width as f64 * win_height as f64) / (monitor_width as f64 * monitor_height as f64);
+
+        Ok(width_ratio >= 0.98 && height_ratio >= 0.98 && area_ratio >= 0.95)
+    }
+
+    #[cfg(not(windows))]
+    {
+        Ok(false)
+    }
+}
+
+#[tauri::command]
 pub fn set_window_system_topmost(app: AppHandle, label: String, topmost: bool) -> CmdResult<()> {
     let win = app
         .get_webview_window(&label)

@@ -48,6 +48,7 @@
   <TaskbarContextMenu
     ref="contextMenuRef"
     :always-on-top="alwaysOnTop"
+    :auto-hide-on-fullscreen="autoHideOnFullscreen"
     :remember-position="rememberPosition"
     :prefs="prefs"
     :show-main-window="showMainWindow"
@@ -73,6 +74,7 @@ const { prefs } = useTaskbarPrefs();
 
 const rememberPosition = computed(() => store.settings.rememberOverlayPosition);
 const alwaysOnTop = computed(() => store.settings.taskbarAlwaysOnTop);
+const autoHideOnFullscreen = computed(() => store.settings.taskbarAutoHideOnFullscreen);
 const { barRef, handleMouseDown, scheduleResize } = useTaskbarWindow({ rememberPosition });
 const contextMenuRef = ref<{ open: (event: MouseEvent) => void } | null>(null);
 

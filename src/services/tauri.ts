@@ -39,6 +39,7 @@ export const api = {
   getInstallationMode: () => tauriInvoke<"installed" | "portable">("get_installation_mode"),
   uninstallApp: (title: string, message: string) => tauriInvoke<void>("uninstall_app", { title, message }),
   getTaskbarInfo: () => tauriInvoke<TaskbarInfo | null>("get_taskbar_info"),
+  isFullscreenWindowActive: () => tauriInvoke<boolean>("is_fullscreen_window_active"),
   setWindowSystemTopmost: (label: string, topmost: boolean) =>
     tauriInvoke<void>("set_window_system_topmost", { label, topmost }),
   getAutoStartEnabled: () => tauriInvoke<boolean>("get_auto_start_enabled"),

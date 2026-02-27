@@ -9,6 +9,7 @@ import { useAppStore } from '../stores/app';
 
 const props = defineProps<{
   alwaysOnTop: boolean;
+  autoHideOnFullscreen: boolean;
   rememberPosition: boolean;
   prefs: TaskbarPrefs;
   showMainWindow: () => Promise<void>;
@@ -64,6 +65,11 @@ async function open(event: MouseEvent) {
           store.setTaskbarAlwaysOnTop(next);
           await props.applyTaskbarTopmost(next);
         }
+      }),
+      await CheckMenuItem.new({
+        text: t('overlay.taskbarFullscreenAutoHide'),
+        checked: props.autoHideOnFullscreen,
+        action: () => store.setTaskbarAutoHideOnFullscreen(!props.autoHideOnFullscreen)
       }),
       await CheckMenuItem.new({
         text: t('overlay.rememberPosition'),

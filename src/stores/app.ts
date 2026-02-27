@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { markRaw } from 'vue';
+import { markRaw, watch } from 'vue';
 import { api, inTauri, listenEvent } from '../services/tauri';
 import type { AppBootstrap, AppSettings, HardwareInfo, TelemetrySnapshot } from '../types';
 import { kvResetAll } from '../utils/kv';
@@ -7,6 +7,12 @@ import { kvResetAll } from '../utils/kv';
 const SETTINGS_KEY = 'pulsecorelite.settings';
 const HARDWARE_KEY = 'pulsecorelite.hardware_info';
 const OVERLAY_POS_KEY = 'pulsecorelite.overlay_pos';
+const FULLSCREEN_POLL_MS = 800;
+
+let fullscreenMonitorTimer: number | null = null;
+let fullscreenMonitorActive = false;
+let fullscreenSuppressed = false;
+let fullscreenCheckInFlight = false;
 
 function emptySnapshot(): TelemetrySnapshot {
   return {
@@ -48,6 +54,8 @@ function readStoredSettings(): Partial<AppSettings> | null {
     const hasTaskbarMonitorEnabled =
       hasOwn('taskbarMonitorEnabled') && typeof parsed.taskbarMonitorEnabled === 'boolean';
     const hasTaskbarAlwaysOnTop = hasOwn('taskbarAlwaysOnTop') && typeof parsed.taskbarAlwaysOnTop === 'boolean';
+    const hasTaskbarAutoHideOnFullscreen =
+      hasOwn('taskbarAutoHideOnFullscreen') && typeof parsed.taskbarAutoHideOnFullscreen === 'boolean';
     const hasFactoryResetHotkey =
       hasOwn('factoryResetHotkey') &&
       (parsed.factoryResetHotkey == null || typeof parsed.factoryResetHotkey === 'string');
@@ -60,6 +68,7 @@ function readStoredSettings(): Partial<AppSettings> | null {
       hasOverlayAlwaysOnTop ||
       hasTaskbarMonitorEnabled ||
       hasTaskbarAlwaysOnTop ||
+      hasTaskbarAutoHideOnFullscreen ||
       hasFactoryResetHotkey
     ) {
       return {
@@ -70,6 +79,9 @@ function readStoredSettings(): Partial<AppSettings> | null {
         ...(hasOverlayAlwaysOnTop ? { overlayAlwaysOnTop: parsed.overlayAlwaysOnTop } : {}),
         ...(hasTaskbarMonitorEnabled ? { taskbarMonitorEnabled: parsed.taskbarMonitorEnabled } : {}),
         ...(hasTaskbarAlwaysOnTop ? { taskbarAlwaysOnTop: parsed.taskbarAlwaysOnTop } : {}),
+        ...(hasTaskbarAutoHideOnFullscreen
+          ? { taskbarAutoHideOnFullscreen: parsed.taskbarAutoHideOnFullscreen }
+          : {}),
         ...(hasFactoryResetHotkey ? { factoryResetHotkey: parsed.factoryResetHotkey ?? null } : {})
       };
     }
@@ -88,6 +100,7 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
     overlayAlwaysOnTop: true,
     taskbarMonitorEnabled: false,
     taskbarAlwaysOnTop: true,
+    taskbarAutoHideOnFullscreen: false,
     factoryResetHotkey: null
   };
 
@@ -111,6 +124,10 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
       typeof candidate.taskbarAlwaysOnTop === 'boolean'
         ? candidate.taskbarAlwaysOnTop
         : fallback.taskbarAlwaysOnTop,
+    taskbarAutoHideOnFullscreen:
+      typeof candidate.taskbarAutoHideOnFullscreen === 'boolean'
+        ? candidate.taskbarAutoHideOnFullscreen
+        : fallback.taskbarAutoHideOnFullscreen,
     factoryResetHotkey:
       candidate.factoryResetHotkey == null || typeof candidate.factoryResetHotkey === 'string'
         ? candidate.factoryResetHotkey
@@ -130,6 +147,7 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
     overlayAlwaysOnTop: stored.overlayAlwaysOnTop ?? base.overlayAlwaysOnTop,
     taskbarMonitorEnabled: stored.taskbarMonitorEnabled ?? base.taskbarMonitorEnabled,
     taskbarAlwaysOnTop: stored.taskbarAlwaysOnTop ?? base.taskbarAlwaysOnTop,
+    taskbarAutoHideOnFullscreen: stored.taskbarAutoHideOnFullscreen ?? base.taskbarAutoHideOnFullscreen,
     factoryResetHotkey: stored.factoryResetHotkey ?? base.factoryResetHotkey
   };
 }
@@ -281,8 +299,26 @@ export const useAppStore = defineStore('app', {
         if (label === 'main') {
           void this.ensureTray();
           void this.ensureTaskbarMonitor();
+          void this.ensureTaskbarFullscreenMonitor();
           void this.syncAutoStartEnabled();
           void this.detectInstallationMode();
+          this.unlisteners.push(
+            watch(
+              () => this.settings.taskbarMonitorEnabled,
+              () => {
+                void this.ensureTaskbarMonitor();
+              }
+            )
+          );
+          this.unlisteners.push(
+            watch(
+              () => [this.settings.taskbarMonitorEnabled, this.settings.taskbarAutoHideOnFullscreen],
+              () => {
+                void this.ensureTaskbarFullscreenMonitor();
+              },
+              { immediate: true }
+            )
+          );
         }
         await this.bindEvents();
         void this.refreshHardwareInfo();
@@ -501,6 +537,17 @@ export const useAppStore = defineStore('app', {
       persistSettings(this.settings);
       void broadcastSettingsSync();
     },
+    setTaskbarAutoHideOnFullscreen(taskbarAutoHideOnFullscreen: boolean) {
+      if (this.settings.taskbarAutoHideOnFullscreen === taskbarAutoHideOnFullscreen) {
+        return;
+      }
+      this.settings = {
+        ...this.settings,
+        taskbarAutoHideOnFullscreen
+      };
+      persistSettings(this.settings);
+      void broadcastSettingsSync();
+    },
     async setTaskbarMonitorEnabled(taskbarMonitorEnabled: boolean) {
       if (this.settings.taskbarMonitorEnabled === taskbarMonitorEnabled) {
         return;
@@ -662,6 +709,85 @@ export const useAppStore = defineStore('app', {
       const { getCurrentWindow } = await import('@tauri-apps/api/window');
       await getCurrentWindow().minimize();
     },
+    async ensureTaskbarFullscreenMonitor() {
+      if (!inTauri()) {
+        return;
+      }
+      const shouldRun = this.settings.taskbarMonitorEnabled && this.settings.taskbarAutoHideOnFullscreen;
+      if (shouldRun) {
+        this.startTaskbarFullscreenMonitor();
+      } else {
+        this.stopTaskbarFullscreenMonitor(this.settings.taskbarMonitorEnabled);
+      }
+    },
+    startTaskbarFullscreenMonitor() {
+      if (!inTauri() || typeof window === 'undefined') {
+        return;
+      }
+      if (fullscreenMonitorTimer != null) {
+        fullscreenMonitorActive = true;
+        return;
+      }
+      fullscreenMonitorActive = true;
+      const store = this;
+      const poll = async () => {
+        if (!fullscreenMonitorActive || !inTauri()) {
+          return;
+        }
+        if (fullscreenCheckInFlight) {
+          return;
+        }
+        fullscreenCheckInFlight = true;
+        try {
+          const monitorEnabled = store.settings.taskbarMonitorEnabled;
+          const autoHide = store.settings.taskbarAutoHideOnFullscreen;
+          if (!monitorEnabled || !autoHide) {
+            if (fullscreenSuppressed) {
+              fullscreenSuppressed = false;
+              if (monitorEnabled) {
+                await store.openTaskbarMonitor();
+              }
+            }
+            return;
+          }
+
+          const isFullscreen = await api.isFullscreenWindowActive();
+          if (!fullscreenMonitorActive) {
+            return;
+          }
+          if (isFullscreen && !fullscreenSuppressed) {
+            fullscreenSuppressed = true;
+            await store.closeTaskbarMonitor();
+          } else if (!isFullscreen && fullscreenSuppressed) {
+            fullscreenSuppressed = false;
+            await store.openTaskbarMonitor();
+          }
+        } catch {
+          // ignore
+        } finally {
+          fullscreenCheckInFlight = false;
+        }
+      };
+
+      fullscreenMonitorTimer = window.setInterval(() => {
+        void poll();
+      }, FULLSCREEN_POLL_MS);
+      void poll();
+    },
+    stopTaskbarFullscreenMonitor(restoreIfHidden = false) {
+      fullscreenMonitorActive = false;
+      if (fullscreenMonitorTimer != null && typeof window !== 'undefined') {
+        window.clearInterval(fullscreenMonitorTimer);
+        fullscreenMonitorTimer = null;
+      }
+      fullscreenCheckInFlight = false;
+      if (fullscreenSuppressed) {
+        fullscreenSuppressed = false;
+        if (restoreIfHidden) {
+          void this.openTaskbarMonitor();
+        }
+      }
+    },
     async ensureTaskbarMonitor() {
       if (!inTauri()) {
         return;
@@ -789,6 +915,7 @@ export const useAppStore = defineStore('app', {
       await api.uninstallApp(title, message);
     },
     dispose() {
+      this.stopTaskbarFullscreenMonitor();
       this.unlisteners.forEach(fn => fn());
       this.unlisteners = [];
     }

@@ -64,6 +64,7 @@ export interface AppSettings {
   overlayAlwaysOnTop: boolean;
   taskbarMonitorEnabled: boolean;
   taskbarAlwaysOnTop: boolean;
+  taskbarAutoHideOnFullscreen: boolean;
   factoryResetHotkey: string | null;
 }
 
