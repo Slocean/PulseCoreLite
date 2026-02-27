@@ -331,6 +331,11 @@ export const useAppStore = defineStore('app', {
           this.settings = resolveSettings(this.settings);
         })
       );
+      this.unlisteners.push(
+        await listenEvent<null>('pulsecorelite://ensure-tray', () => {
+          void this.ensureTray();
+        })
+      );
     },
     async toggleOverlay(visible: boolean) {
       if (!inTauri()) {
@@ -571,11 +576,12 @@ export const useAppStore = defineStore('app', {
       window.localStorage.clear();
       window.location.reload();
     },
-    async ensureTray() {
+    async ensureTray(): Promise<boolean> {
       if (!inTauri() || this.trayReady) {
-        return;
+        return true;
       }
-      const [{ TrayIcon }, { Menu }, { defaultWindowIcon }] = await Promise.all([
+      try {
+        const [{ TrayIcon }, { Menu }, { defaultWindowIcon }] = await Promise.all([
         import('@tauri-apps/api/tray'),
         import('@tauri-apps/api/menu'),
         import('@tauri-apps/api/app')
@@ -608,13 +614,45 @@ export const useAppStore = defineStore('app', {
       }
       await TrayIcon.new(trayOptions);
       this.trayReady = true;
+      return true;
+    } catch {
+      return false;
+    }
+    },
+    async handoffTrayToOtherWindow(): Promise<boolean> {
+      if (!inTauri()) {
+        return false;
+      }
+      try {
+        const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        for (const label of ['taskbar', 'toolkit']) {
+          const existing = await WebviewWindow.getByLabel(label);
+          if (!existing) {
+            continue;
+          }
+          try {
+            await getCurrentWindow().emitTo(label, 'pulsecorelite://ensure-tray', null);
+            return true;
+          } catch {
+            // ignore
+          }
+        }
+      } catch {
+        // ignore
+      }
+      return false;
     },
     async minimizeToTray() {
       if (!inTauri()) {
         return;
       }
       await this.ensureTray();
-      await this.closeToolkitWindow();
+      const canHandoff = await this.handoffTrayToOtherWindow();
+      if (canHandoff) {
+        await this.closeMainWindow();
+        return;
+      }
       await this.toggleOverlay(false);
     },
     async minimizeOverlay() {

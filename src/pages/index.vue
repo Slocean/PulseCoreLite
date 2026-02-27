@@ -562,10 +562,6 @@ onMounted(() => {
 });
 
 function handleClose() {
-  if (store.settings.closeToTray) {
-    void store.minimizeToTray();
-    return;
-  }
   void store.exitApp();
 }
 
