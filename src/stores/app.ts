@@ -557,23 +557,21 @@ export const useAppStore = defineStore('app', {
         taskbarMonitorEnabled
       };
       persistSettings(this.settings);
+      void broadcastSettingsSync();
 
       if (!inTauri()) {
         return;
       }
 
       const label = await getCurrentWindowLabel();
-      if (label === 'main') {
-        await this.ensureTaskbarMonitor();
-        return;
-      }
-
-      // Non-main windows: ask main to re-sync its settings state.
-      try {
-        const { getCurrentWindow } = await import('@tauri-apps/api/window');
-        await getCurrentWindow().emitTo('main', 'pulsecorelite://settings-sync', null);
-      } catch {
-        // best-effort; ignore
+      if (label !== 'main') {
+        // Non-main windows ask main to re-sync so it can own monitor window state changes.
+        try {
+          const { getCurrentWindow } = await import('@tauri-apps/api/window');
+          await getCurrentWindow().emitTo('main', 'pulsecorelite://settings-sync', null);
+        } catch {
+          // best-effort; ignore
+        }
       }
     },
     setFactoryResetHotkey(factoryResetHotkey: string | null) {
