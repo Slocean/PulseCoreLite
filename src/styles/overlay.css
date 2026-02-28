@@ -32,7 +32,7 @@
   mix-blend-mode: screen;
 }
 
-.overlay-widget > :not(.overlay-bg) {
+.overlay-widget > :not(.overlay-bg):not(.overlay-toast-layer) {
   position: relative;
   z-index: 2;
 }
@@ -48,6 +48,30 @@
   align-items: center;
   margin-bottom: 14px;
   position: relative;
+}
+
+.overlay-toast-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 8px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.overlay-toast {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.7);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
 }
 
 .overlay-title {

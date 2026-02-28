@@ -1,218 +1,232 @@
 <template>
-  <div class="overlay-config" @mousedown.stop>
-    <!-- <div class="overlay-config-grid overlay-config-grid--3"> -->
-    <label>
-      <input v-model="prefs.showCpu" type="checkbox" />
-      {{ t('overlay.showCpu') }}
-    </label>
-    <label>
-      <input v-model="prefs.showGpu" type="checkbox" />
-      {{ t('overlay.showGpu') }}
-    </label>
-    <label>
-      <input v-model="prefs.showMemory" type="checkbox" />
-      {{ t('overlay.showMemory') }}
-    </label>
-    <label>
-      <input v-model="prefs.showDisk" type="checkbox" />
-      {{ t('overlay.showDisk') }}
-    </label>
-    <label>
-      <input v-model="prefs.showDown" type="checkbox" />
-      {{ t('overlay.showDown') }}
-    </label>
-    <label>
-      <input v-model="prefs.showUp" type="checkbox" />
-      {{ t('overlay.showUp') }}
-    </label>
-    <!-- </div> -->
-    <label>
-      <input v-model="prefs.showLatency" type="checkbox" />
-      {{ t('overlay.showLatency') }}
-    </label>
-    <label>
-      <input v-model="prefs.showValues" type="checkbox" />
-      {{ t('overlay.showValues') }}
-    </label>
-    <label>
-      <input v-model="prefs.showPercent" type="checkbox" />
-      {{ t('overlay.showPercent') }}
-    </label>
-    <label>
-      <input v-model="prefs.showHardwareInfo" type="checkbox" />
-      {{ t('overlay.showHardware') }}
-    </label>
-    <label>
-      <input v-model="prefs.showWarning" type="checkbox" />
-      {{ t('overlay.showWarning') }}
-    </label>
-    <label>
-      <input v-model="prefs.showDragHandle" type="checkbox" />
-      {{ t('overlay.showDragHandle') }}
-    </label>
-
-    <label>
-      <input v-model="autoStartEnabled" type="checkbox" />
-      {{ t('overlay.autoStart') }}
-    </label>
-    <label>
-      <input v-model="rememberOverlayPosition" type="checkbox" />
-      {{ t('overlay.rememberPosition') }}
-    </label>
-    <label>
-      <input v-model="overlayAlwaysOnTop" type="checkbox" />
-      {{ t('overlay.mainWindowAlwaysOnTop') }}
-    </label>
-    <div class="overlay-config-row">
-      <label class="overlay-config-inline">
-        <input v-model="closeToTray" type="checkbox" />
-        {{ t('overlay.closeToTray') }}
+  <div class="overlay-config-wrap">
+    <div class="overlay-config" @mousedown.stop>
+      <!-- <div class="overlay-config-grid overlay-config-grid--3"> -->
+      <label>
+        <input v-model="prefs.showCpu" type="checkbox" />
+        {{ t('overlay.showCpu') }}
       </label>
-      <div class="overlay-config-taskbar overlay-config-taskbar--compact">
-        <span class="overlay-config-label">{{ t('overlay.taskbarMonitor') }}</span>
-        <label class="overlay-switch" :aria-label="t('overlay.taskbarMonitor')">
-          <input v-model="taskbarMonitorEnabled" type="checkbox" role="switch" />
-          <span class="overlay-switch-track" aria-hidden="true"></span>
+      <label>
+        <input v-model="prefs.showGpu" type="checkbox" />
+        {{ t('overlay.showGpu') }}
+      </label>
+      <label>
+        <input v-model="prefs.showMemory" type="checkbox" />
+        {{ t('overlay.showMemory') }}
+      </label>
+      <label>
+        <input v-model="prefs.showDisk" type="checkbox" />
+        {{ t('overlay.showDisk') }}
+      </label>
+      <label>
+        <input v-model="prefs.showDown" type="checkbox" />
+        {{ t('overlay.showDown') }}
+      </label>
+      <label>
+        <input v-model="prefs.showUp" type="checkbox" />
+        {{ t('overlay.showUp') }}
+      </label>
+      <!-- </div> -->
+      <label>
+        <input v-model="prefs.showLatency" type="checkbox" />
+        {{ t('overlay.showLatency') }}
+      </label>
+      <label>
+        <input v-model="prefs.showValues" type="checkbox" />
+        {{ t('overlay.showValues') }}
+      </label>
+      <label>
+        <input v-model="prefs.showPercent" type="checkbox" />
+        {{ t('overlay.showPercent') }}
+      </label>
+      <label>
+        <input v-model="prefs.showHardwareInfo" type="checkbox" />
+        {{ t('overlay.showHardware') }}
+      </label>
+      <label>
+        <input v-model="prefs.showWarning" type="checkbox" />
+        {{ t('overlay.showWarning') }}
+      </label>
+      <label>
+        <input v-model="prefs.showDragHandle" type="checkbox" />
+        {{ t('overlay.showDragHandle') }}
+      </label>
+
+      <label>
+        <input v-model="autoStartEnabled" type="checkbox" />
+        {{ t('overlay.autoStart') }}
+      </label>
+      <label>
+        <input v-model="rememberOverlayPosition" type="checkbox" />
+        {{ t('overlay.rememberPosition') }}
+      </label>
+      <label>
+        <input v-model="overlayAlwaysOnTop" type="checkbox" />
+        {{ t('overlay.mainWindowAlwaysOnTop') }}
+      </label>
+      <div class="overlay-config-row">
+        <label class="overlay-config-inline">
+          <input v-model="closeToTray" type="checkbox" />
+          {{ t('overlay.closeToTray') }}
         </label>
+        <div class="overlay-config-taskbar overlay-config-taskbar--compact">
+          <span class="overlay-config-label">{{ t('overlay.taskbarMonitor') }}</span>
+          <label class="overlay-switch" :aria-label="t('overlay.taskbarMonitor')">
+            <input v-model="taskbarMonitorEnabled" type="checkbox" role="switch" />
+            <span class="overlay-switch-track" aria-hidden="true"></span>
+          </label>
+        </div>
       </div>
-    </div>
-    <div class="overlay-config-language">
-      <span class="overlay-config-label">{{ t('overlay.language') }}</span>
-      <div class="overlay-lang-buttons">
-        <button
-          type="button"
-          class="overlay-lang-button"
-          :class="{ 'overlay-lang-button--active': language === 'zh-CN' }"
-          @click="emit('setLanguage', 'zh-CN')">
-          {{ t('overlay.langZh') }}
-        </button>
-        <button
-          type="button"
-          class="overlay-lang-button"
-          :class="{ 'overlay-lang-button--active': language === 'en-US' }"
-          @click="emit('setLanguage', 'en-US')">
-          {{ t('overlay.langEn') }}
-        </button>
-      </div>
-    </div>
-    <div class="overlay-config-range">
-      <span class="overlay-config-label">{{ t('overlay.refreshRate') }}</span>
-      <span class="overlay-config-value">{{ refreshRate }}ms</span>
-      <input
-        type="range"
-        min="10"
-        max="2000"
-        step="10"
-        v-model.number="refreshRate"
-        @change="emit('refreshRateChange')" />
-    </div>
-    <div v-if="!prefs.backgroundImage" class="overlay-config-range">
-      <span class="overlay-config-label">{{ t('overlay.backgroundOpacity') }}</span>
-      <span class="overlay-config-value">{{ backgroundOpacity }}%</span>
-      <input type="range" min="0" max="100" step="5" v-model.number="backgroundOpacity" />
-    </div>
-    <div class="overlay-config-item--wide overlay-config-action">
-      <div class="overlay-config-theme">
-        <span class="overlay-config-label">{{ t('overlay.backgroundImage') }}</span>
-        <div class="overlay-lang-buttons overlay-config-theme-tabs">
+      <div class="overlay-config-language">
+        <span class="overlay-config-label">{{ t('overlay.language') }}</span>
+        <div class="overlay-lang-buttons">
           <button
             type="button"
             class="overlay-lang-button"
-            :class="{ 'overlay-lang-button--active': isDefaultTheme }"
-            @click="selectDefaultTheme">
-            {{ t('overlay.themeDefault') }}
+            :class="{ 'overlay-lang-button--active': language === 'zh-CN' }"
+            @click="emit('setLanguage', 'zh-CN')">
+            {{ t('overlay.langZh') }}
           </button>
-          <div class="overlay-theme-list">
-            <div
-              v-for="theme in themes"
-              :key="theme.id"
-              class="overlay-theme-chip"
-              :class="{ 'overlay-theme-chip--active': isThemeActive(theme) }"
-              :data-name="theme.name"
-              @click="selectTheme(theme)">
-              <!-- @contextmenu.prevent.stop="emit('editTheme', theme.id)" -->
-              <!-- <span class="overlay-theme-name">{{ theme.name }}</span> -->
-              <span class="overlay-theme-thumb" :style="{ backgroundImage: `url(${getThemePreviewUrl(theme)})` }"></span>
-              <OverlayCornerDelete :ariaLabel="t('overlay.themeDelete')" @click="emit('deleteTheme', theme.id)" />
-              <button
-                type="button"
-                class="overlay-corner-edit"
-                :aria-label="t('overlay.themeEditTitle')"
-                @click.stop="emit('editTheme', theme.id)"
-                @contextmenu.prevent.stop>
-                <span class="material-symbols-outlined">edit</span>
-              </button>
+          <button
+            type="button"
+            class="overlay-lang-button"
+            :class="{ 'overlay-lang-button--active': language === 'en-US' }"
+            @click="emit('setLanguage', 'en-US')">
+            {{ t('overlay.langEn') }}
+          </button>
+        </div>
+      </div>
+      <div class="overlay-config-range">
+        <span class="overlay-config-label">{{ t('overlay.refreshRate') }}</span>
+        <span class="overlay-config-value">{{ refreshRate }}ms</span>
+        <input
+          type="range"
+          min="10"
+          max="2000"
+          step="10"
+          v-model.number="refreshRate"
+          @change="emit('refreshRateChange')" />
+      </div>
+      <div v-if="!prefs.backgroundImage" class="overlay-config-range">
+        <span class="overlay-config-label">{{ t('overlay.backgroundOpacity') }}</span>
+        <span class="overlay-config-value">{{ backgroundOpacity }}%</span>
+        <input type="range" min="0" max="100" step="5" v-model.number="backgroundOpacity" />
+      </div>
+      <div class="overlay-config-item--wide overlay-config-action">
+        <div class="overlay-config-theme">
+          <span class="overlay-config-label">{{ t('overlay.backgroundImage') }}</span>
+          <div class="overlay-lang-buttons overlay-config-theme-tabs">
+            <button
+              type="button"
+              class="overlay-lang-button"
+              :class="{ 'overlay-lang-button--active': isDefaultTheme }"
+              @click="selectDefaultTheme">
+              {{ t('overlay.themeDefault') }}
+            </button>
+            <div class="overlay-theme-list">
+              <div
+                v-for="theme in themes"
+                :key="theme.id"
+                class="overlay-theme-chip"
+                :class="{ 'overlay-theme-chip--active': isThemeActive(theme) }"
+                :data-name="theme.name"
+                @click="selectTheme(theme)">
+                <!-- @contextmenu.prevent.stop="emit('editTheme', theme.id)" -->
+                <!-- <span class="overlay-theme-name">{{ theme.name }}</span> -->
+                <span class="overlay-theme-thumb" :style="{ backgroundImage: `url(${getThemePreviewUrl(theme)})` }"></span>
+                <OverlayCornerDelete :ariaLabel="t('overlay.themeDelete')" @click="emit('deleteTheme', theme.id)" />
+                <button
+                  type="button"
+                  class="overlay-corner-edit"
+                  :aria-label="t('overlay.themeEditTitle')"
+                  @click.stop="emit('editTheme', theme.id)"
+                  @contextmenu.prevent.stop>
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <button
-        type="button"
-        class="overlay-lang-button"
-        :disabled="!canAddTheme"
-        @click="emit('openBackgroundDialog')">
-        {{ t('overlay.backgroundImageButton') }}
-      </button>
-    </div>
-    <div class="overlay-config-language">
-      <span class="overlay-config-label">{{ t('overlay.configTransfer') }}</span>
-      <div class="overlay-lang-buttons">
-        <button type="button" class="overlay-lang-button" @click="emit('exportConfig')">
-          {{ t('overlay.exportConfig') }}
-        </button>
-        <button type="button" class="overlay-lang-button" @click="triggerImport">
-          {{ t('overlay.importConfig') }}
+        <button
+          type="button"
+          class="overlay-lang-button"
+          :disabled="!canAddTheme"
+          @click="emit('openBackgroundDialog')">
+          {{ t('overlay.backgroundImageButton') }}
         </button>
       </div>
-      <input
-        ref="importFileInput"
-        class="overlay-upload-input"
-        type="file"
-        accept="application/json"
-        @change="handleImportChange" />
-    </div>
-    <div class="overlay-config-language">
-      <span class="overlay-config-label">{{ t('overlay.toolkit') }}</span>
-      <div class="overlay-lang-buttons">
-        <button type="button" class="overlay-lang-button" @click="emit('openToolkit')">
-          {{ toolkitActionLabel }}
-        </button>
-      </div>
-    </div>
-    <div class="overlay-config-hotkey">
-      <span class="overlay-config-label">{{ t('overlay.factoryResetHotkey') }}</span>
-      <div class="overlay-config-hotkey-controls">
-        <div class="overlay-hotkey-chip">
-          <button type="button" class="overlay-lang-button" @click="beginHotkeyCapture">
-            {{ recordingHotkey ? t('overlay.hotkeyRecording') : hotkeyLabel }}
+      <div class="overlay-config-language">
+        <span class="overlay-config-label">{{ t('overlay.configTransfer') }}</span>
+        <div class="overlay-lang-buttons">
+          <button type="button" class="overlay-lang-button" @click="emit('exportConfig')">
+            {{ t('overlay.exportConfig') }}
           </button>
-          <OverlayCornerDelete
-            v-if="factoryResetHotkey != null && !recordingHotkey"
-            :ariaLabel="t('overlay.hotkeyClear')"
-            @click="requestClearHotkey" />
+          <button type="button" class="overlay-lang-button" @click="triggerImport">
+            {{ t('overlay.importConfig') }}
+          </button>
         </div>
-        <button type="button" class="overlay-config-danger" @click="confirmFactoryReset">
-          {{ t('overlay.factoryReset') }}
+        <input
+          ref="importFileInput"
+          class="overlay-upload-input"
+          type="file"
+          accept="application/json"
+          @change="handleImportChange" />
+      </div>
+      <div class="overlay-config-language">
+        <span class="overlay-config-label">{{ t('overlay.update') }}</span>
+        <div class="overlay-lang-buttons">
+          <button
+            type="button"
+            class="overlay-lang-button"
+            :disabled="checkingUpdate"
+            @click="emit('checkUpdate')">
+            {{ checkingUpdate ? t('overlay.updateChecking') : t('overlay.checkUpdate') }}
+          </button>
+        </div>
+      </div>
+      <div class="overlay-config-language">
+        <span class="overlay-config-label">{{ t('overlay.toolkit') }}</span>
+        <div class="overlay-lang-buttons">
+          <button type="button" class="overlay-lang-button" @click="emit('openToolkit')">
+            {{ toolkitActionLabel }}
+          </button>
+        </div>
+      </div>
+      <div class="overlay-config-hotkey">
+        <span class="overlay-config-label">{{ t('overlay.factoryResetHotkey') }}</span>
+        <div class="overlay-config-hotkey-controls">
+          <div class="overlay-hotkey-chip">
+            <button type="button" class="overlay-lang-button" @click="beginHotkeyCapture">
+              {{ recordingHotkey ? t('overlay.hotkeyRecording') : hotkeyLabel }}
+            </button>
+            <OverlayCornerDelete
+              v-if="factoryResetHotkey != null && !recordingHotkey"
+              :ariaLabel="t('overlay.hotkeyClear')"
+              @click="requestClearHotkey" />
+          </div>
+          <button type="button" class="overlay-config-danger" @click="confirmFactoryReset">
+            {{ t('overlay.factoryReset') }}
+          </button>
+        </div>
+      </div>
+      <div v-if="false && canUninstall" class="overlay-config-uninstall">
+        <button type="button" class="overlay-config-danger" @click="emit('uninstall')">
+          {{ t('overlay.uninstall') }}
         </button>
       </div>
+      <!-- <div class="overlay-config-version">v{{ appVersion }}</div> -->
     </div>
-    <div v-if="false && canUninstall" class="overlay-config-uninstall">
-      <button type="button" class="overlay-config-danger" @click="emit('uninstall')">
-        {{ t('overlay.uninstall') }}
-      </button>
-    </div>
-    <!-- <div class="overlay-config-version">v{{ appVersion }}</div> -->
-  </div>
 
-  <OverlayDialog
-    v-model:open="hotkeyClearDialogOpen"
-    :title="t('overlay.hotkeyClearTitle')"
-    :message="t('overlay.hotkeyClearMessage')"
-    :confirm-text="t('overlay.dialogConfirm')"
-    :cancel-text="t('overlay.dialogCancel')"
-    :close-label="t('overlay.dialogClose')"
-    @confirm="confirmClearHotkey"
-    @cancel="closeClearHotkeyDialog" />
+    <OverlayDialog
+      v-model:open="hotkeyClearDialogOpen"
+      :title="t('overlay.hotkeyClearTitle')"
+      :message="t('overlay.hotkeyClearMessage')"
+      :confirm-text="t('overlay.dialogConfirm')"
+      :cancel-text="t('overlay.dialogCancel')"
+      :close-label="t('overlay.dialogClose')"
+      @confirm="confirmClearHotkey"
+      @cancel="closeClearHotkeyDialog" />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -241,6 +255,7 @@ const props = defineProps<{
   themes: OverlayTheme[];
   getThemePreviewUrl: (theme: OverlayTheme) => string;
   toolkitState: 'closed' | 'open' | 'hidden';
+  checkingUpdate: boolean;
 }>();
 
 const prefs = defineModel<OverlayPrefs>('prefs', { required: true });
@@ -264,6 +279,7 @@ const emit = defineEmits<{
   (e: 'exportConfig'): void;
   (e: 'importConfig', value: File): void;
   (e: 'openToolkit'): void;
+  (e: 'checkUpdate'): void;
 }>();
 
 const { t } = useI18n();

@@ -10,6 +10,13 @@
       class="overlay-bg overlay-bg--liquid-highlight"
       :style="overlayLiquidGlassHighlightStyle"
       aria-hidden="true"></div>
+    <Transition name="toast">
+      <div v-if="updateToastVisible" class="overlay-toast-layer" aria-live="polite">
+        <div class="overlay-toast">
+          {{ updateToastMessage }}
+        </div>
+      </div>
+    </Transition>
     <OverlayHeader
       :show-drag-handle="prefs.showDragHandle"
       :app-version="appVersion"
@@ -40,6 +47,7 @@
         :themes="themes"
         :get-theme-preview-url="getThemePreviewUrl"
         :toolkit-state="toolkitState"
+        :checking-update="checkingUpdate"
         @setLanguage="setLanguage"
         @refreshRateChange="handleRefreshRateChange"
         @factoryReset="handleFactoryReset"
@@ -49,7 +57,8 @@
         @editTheme="requestEditTheme"
         @exportConfig="exportConfig"
         @importConfig="handleImportConfig"
-        @openToolkit="toggleToolkitWindow" />
+        @openToolkit="toggleToolkitWindow"
+        @checkUpdate="handleCheckUpdate" />
     </Transition>
 
     <OverlayMetricsPanel
@@ -354,7 +363,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import OverlayConfigPanel from '../components/OverlayConfigPanel.vue';
@@ -391,6 +400,9 @@ const {
 } = useUpdater();
 const updateDialogOpen = ref(false);
 const updateNotes = computed(() => updateInfo.value?.notes?.trim() ?? '');
+const updateToastMessage = ref('');
+const updateToastVisible = ref(false);
+let updateToastTimer: number | null = null;
 const showConfig = ref(false);
 const toolkitState = ref<'closed' | 'open' | 'hidden'>('closed');
 const closeToTray = computed({
@@ -574,11 +586,35 @@ async function toggleToolkitWindow() {
 }
 
 async function handleVersionClick() {
-  if (!updateAvailable.value && !checkingUpdate.value) {
-    await checkForUpdates();
+  await triggerUpdateCheck();
+}
+
+async function handleCheckUpdate() {
+  await triggerUpdateCheck();
+}
+
+function showUpdateToast(message: string) {
+  updateToastMessage.value = message;
+  updateToastVisible.value = true;
+  if (updateToastTimer != null) {
+    window.clearTimeout(updateToastTimer);
   }
+  updateToastTimer = window.setTimeout(() => {
+    updateToastVisible.value = false;
+  }, 2000);
+}
+
+async function triggerUpdateCheck() {
+  if (checkingUpdate.value) {
+    return;
+  }
+  await checkForUpdates();
   if (updateAvailable.value) {
     updateDialogOpen.value = true;
+    return;
+  }
+  if (!updateError.value) {
+    showUpdateToast(t('overlay.updateUpToDate'));
   }
 }
 
@@ -625,6 +661,12 @@ watch(
 onMounted(() => {
   void refreshToolkitState();
   void checkForUpdates();
+});
+
+onBeforeUnmount(() => {
+  if (updateToastTimer != null) {
+    window.clearTimeout(updateToastTimer);
+  }
 });
 
 function handleClose() {
