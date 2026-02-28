@@ -1,3 +1,12 @@
+## v1.6.2
+
+- 新增热更新（Hot Update）功能
+- 建立 CI/CD 自动化构建与发布流程
+- 修复若干已知缺陷
+- Implement hot update functionality
+- Establish automated CI/CD build and release workflow
+- Resolve several known issues
+
 ## v1.6.1
 
 - 修复全屏隐藏时任务栏仍置顶问题并缩短检测间隔至 250ms

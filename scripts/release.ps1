@@ -7,6 +7,35 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+function Get-ReleaseNotes {
+  param(
+    [Parameter(Mandatory = $true)][string]$Version
+  )
+
+  $notesPath = Join-Path $projectRoot "version.md"
+  if (-not (Test-Path -LiteralPath $notesPath -PathType Leaf)) {
+    return ""
+  }
+
+  $lines = Get-Content -LiteralPath $notesPath
+  $target = "## v$Version"
+  $start = [Array]::IndexOf($lines, $target)
+  if ($start -lt 0) {
+    return ""
+  }
+
+  $notes = New-Object System.Collections.Generic.List[string]
+  for ($i = $start + 1; $i -lt $lines.Length; $i++) {
+    $line = $lines[$i]
+    if ($line -match '^##\s+') {
+      break
+    }
+    $notes.Add($line)
+  }
+
+  return ($notes -join "`n").Trim()
+}
+
 function Resolve-RepoInfo {
   $origin = ""
   try {
@@ -37,6 +66,11 @@ if (-not $version) {
 
 $tag = "v$version"
 
+$notes = Get-ReleaseNotes -Version $version
+if (-not $notes) {
+  throw "Missing release notes for $tag in version.md."
+}
+
 if (-not $Force) {
   $dirty = git status --porcelain
   if ($dirty) {
@@ -58,6 +92,9 @@ if (-not $SkipBuild) {
   $env:GITHUB_TAG = $tag
   Write-Host "[release] Running custom pack command..."
   npm run pack:release
+  if ($LASTEXITCODE -ne 0) {
+    throw "pack:release failed with exit code $LASTEXITCODE"
+  }
 }
 
 Write-Host "[release] Creating git tag $tag"
