@@ -44,12 +44,14 @@ https://developer.microsoft.com/microsoft-edge/webview2/
 function Build-WithWebViewMode {
   param(
     [Parameter(Mandatory = $true)][string]$ModeType,
-    [Parameter(Mandatory = $true)][bool]$Silent
+    [Parameter(Mandatory = $true)][bool]$Silent,
+    [Parameter()][Nullable[bool]]$CreateUpdaterArtifacts
   )
 
   $overridePath = [System.IO.Path]::ChangeExtension([System.IO.Path]::GetTempFileName(), ".json")
   $override = @{
     bundle = @{
+      createUpdaterArtifacts = $CreateUpdaterArtifacts
       windows = @{
         webviewInstallMode = @{
           type = $ModeType
@@ -57,6 +59,10 @@ function Build-WithWebViewMode {
         }
       }
     }
+  }
+
+  if ($null -eq $CreateUpdaterArtifacts) {
+    $override.bundle.Remove("createUpdaterArtifacts")
   }
 
   try {
@@ -192,6 +198,12 @@ $base = "PulseCoreLite_v${version}_${date}"
 $releaseDir = Join-Path $projectRoot "release"
 New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
 $webviewInstaller = Resolve-WebViewInstallerPath
+$hasSigningKey = -not [string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY)
+$createUpdaterArtifacts = $hasSigningKey
+if (-not $hasSigningKey) {
+  Write-Host "[pack-release] TAURI_SIGNING_PRIVATE_KEY not set; disabling updater artifact signing for this build."
+  Write-Host "[pack-release] Set TAURI_SIGNING_PRIVATE_KEY to re-enable signatures (.sig) and updater manifest output."
+}
 
 # Clean stale outputs for this version/date naming set so release folder stays unambiguous.
 $staleNames = @(
@@ -215,7 +227,7 @@ foreach ($name in $staleNames) {
 }
 
 Write-Host "[pack-release] Building standard (no bundled WebView2) installers..."
-Build-WithWebViewMode -ModeType "downloadBootstrapper" -Silent $true
+Build-WithWebViewMode -ModeType "downloadBootstrapper" -Silent $true -CreateUpdaterArtifacts $createUpdaterArtifacts
 $liteOutputs = Collect-BuildOutputs -Version $version -ExeName $exeName
 
 $setupLiteExeOut = Join-Path $releaseDir "${base}_setup-lite.exe"
@@ -231,7 +243,7 @@ if ($liteOutputs.NsisSig) {
 }
 
 Write-Host "[pack-release] Building full (bundled offline WebView2) installers..."
-Build-WithWebViewMode -ModeType "offlineInstaller" -Silent $true
+Build-WithWebViewMode -ModeType "offlineInstaller" -Silent $true -CreateUpdaterArtifacts $createUpdaterArtifacts
 $fullOutputs = Collect-BuildOutputs -Version $version -ExeName $exeName
 
 $setupFullExeOut = Join-Path $releaseDir "${base}_setup-full.exe"
