@@ -56,6 +56,8 @@ function readStoredSettings(): Partial<AppSettings> | null {
     const hasTaskbarAlwaysOnTop = hasOwn('taskbarAlwaysOnTop') && typeof parsed.taskbarAlwaysOnTop === 'boolean';
     const hasTaskbarAutoHideOnFullscreen =
       hasOwn('taskbarAutoHideOnFullscreen') && typeof parsed.taskbarAutoHideOnFullscreen === 'boolean';
+    const hasTaskbarPositionLocked =
+      hasOwn('taskbarPositionLocked') && typeof parsed.taskbarPositionLocked === 'boolean';
     const hasFactoryResetHotkey =
       hasOwn('factoryResetHotkey') &&
       (parsed.factoryResetHotkey == null || typeof parsed.factoryResetHotkey === 'string');
@@ -69,6 +71,7 @@ function readStoredSettings(): Partial<AppSettings> | null {
       hasTaskbarMonitorEnabled ||
       hasTaskbarAlwaysOnTop ||
       hasTaskbarAutoHideOnFullscreen ||
+      hasTaskbarPositionLocked ||
       hasFactoryResetHotkey
     ) {
       return {
@@ -82,6 +85,7 @@ function readStoredSettings(): Partial<AppSettings> | null {
         ...(hasTaskbarAutoHideOnFullscreen
           ? { taskbarAutoHideOnFullscreen: parsed.taskbarAutoHideOnFullscreen }
           : {}),
+        ...(hasTaskbarPositionLocked ? { taskbarPositionLocked: parsed.taskbarPositionLocked } : {}),
         ...(hasFactoryResetHotkey ? { factoryResetHotkey: parsed.factoryResetHotkey ?? null } : {})
       };
     }
@@ -101,6 +105,7 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
     taskbarMonitorEnabled: false,
     taskbarAlwaysOnTop: true,
     taskbarAutoHideOnFullscreen: false,
+    taskbarPositionLocked: false,
     factoryResetHotkey: null
   };
 
@@ -128,6 +133,10 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
       typeof candidate.taskbarAutoHideOnFullscreen === 'boolean'
         ? candidate.taskbarAutoHideOnFullscreen
         : fallback.taskbarAutoHideOnFullscreen,
+    taskbarPositionLocked:
+      typeof candidate.taskbarPositionLocked === 'boolean'
+        ? candidate.taskbarPositionLocked
+        : fallback.taskbarPositionLocked,
     factoryResetHotkey:
       candidate.factoryResetHotkey == null || typeof candidate.factoryResetHotkey === 'string'
         ? candidate.factoryResetHotkey
@@ -148,6 +157,7 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
     taskbarMonitorEnabled: stored.taskbarMonitorEnabled ?? base.taskbarMonitorEnabled,
     taskbarAlwaysOnTop: stored.taskbarAlwaysOnTop ?? base.taskbarAlwaysOnTop,
     taskbarAutoHideOnFullscreen: stored.taskbarAutoHideOnFullscreen ?? base.taskbarAutoHideOnFullscreen,
+    taskbarPositionLocked: stored.taskbarPositionLocked ?? base.taskbarPositionLocked,
     factoryResetHotkey: stored.factoryResetHotkey ?? base.factoryResetHotkey
   };
 }
@@ -534,6 +544,17 @@ export const useAppStore = defineStore('app', {
       this.settings = {
         ...this.settings,
         taskbarAutoHideOnFullscreen
+      };
+      persistSettings(this.settings);
+      void broadcastSettingsSync();
+    },
+    setTaskbarPositionLocked(taskbarPositionLocked: boolean) {
+      if (this.settings.taskbarPositionLocked === taskbarPositionLocked) {
+        return;
+      }
+      this.settings = {
+        ...this.settings,
+        taskbarPositionLocked
       };
       persistSettings(this.settings);
       void broadcastSettingsSync();

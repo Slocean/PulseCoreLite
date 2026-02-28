@@ -85,6 +85,8 @@ pub struct AppSettings {
     pub taskbar_always_on_top: bool,
     #[serde(rename = "taskbarAutoHideOnFullscreen")]
     pub taskbar_auto_hide_on_fullscreen: bool,
+    #[serde(rename = "taskbarPositionLocked")]
+    pub taskbar_position_locked: bool,
     #[serde(rename = "factoryResetHotkey")]
     pub factory_reset_hotkey: Option<String>,
 }
@@ -100,6 +102,7 @@ impl Default for AppSettings {
             taskbar_monitor_enabled: false,
             taskbar_always_on_top: true,
             taskbar_auto_hide_on_fullscreen: false,
+            taskbar_position_locked: false,
             factory_reset_hotkey: None,
         }
     }

@@ -29,6 +29,8 @@
     "closeToTray": "Exit to System Tray",
     "autoStart": "Launch on Startup",
     "rememberPosition": "Remember Position",
+    "lockTaskbarPosition": "Lock Position",
+    "unlockTaskbarPosition": "Unlock Position",
     "mainWindowAlwaysOnTop": "Main Window Always on Top",
     "alwaysOnTop": "Always on Top",
     "taskbarFullscreenAutoHide": "Auto-hide on Fullscreen",

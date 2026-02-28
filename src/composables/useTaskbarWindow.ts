@@ -6,9 +6,10 @@ const TASKBAR_POS_KEY = 'pulsecorelite.taskbar_pos';
 
 interface UseTaskbarWindowOptions {
   rememberPosition: Ref<boolean>;
+  positionLocked: Ref<boolean>;
 }
 
-export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) {
+export function useTaskbarWindow({ rememberPosition, positionLocked }: UseTaskbarWindowOptions) {
   const barRef = ref<HTMLElement | null>(null);
   let resizeObserver: ResizeObserver | undefined;
   let resizeFrame: number | undefined;
@@ -18,6 +19,8 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
   let moveFrame: number | undefined;
   let correctingVerticalBounds = false;
   let lastPosition: { x: number; y: number } | null = null;
+  let lockedPosition: { x: number; y: number } | null = null;
+  let restoringLockedPosition = false;
   let rememberInit = false;
 
   const getWindowApi = async () => {
@@ -209,6 +212,9 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
     const { getCurrentWindow, LogicalSize } = await getWindowApi();
     await getCurrentWindow().setSize(new LogicalSize(nextWidth, nextHeight));
     const corrected = await clampWindowToVerticalBounds();
+    if (corrected && positionLocked.value) {
+      lockedPosition = corrected;
+    }
     if (corrected && rememberPosition.value) {
       savePosition(corrected);
     }
@@ -221,6 +227,9 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
     savePosition(safePosition);
     const { getCurrentWindow, PhysicalPosition } = await getWindowApi();
     await getCurrentWindow().setPosition(new PhysicalPosition(safePosition.x, safePosition.y));
+    if (positionLocked.value) {
+      lockedPosition = { ...safePosition };
+    }
   };
 
   const schedulePositionSave = () => {
@@ -231,6 +240,33 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
       if (!corrected || !rememberPosition.value) return;
       savePosition(corrected);
     });
+  };
+
+  const captureLockedPosition = async () => {
+    if (!inTauri()) return;
+    try {
+      const { getCurrentWindow } = await getWindowApi();
+      const pos = await getCurrentWindow().outerPosition();
+      lockedPosition = { x: pos.x, y: pos.y };
+    } catch {
+      // ignore
+    }
+  };
+
+  const restoreLockedPosition = async () => {
+    if (!inTauri() || restoringLockedPosition || !positionLocked.value) return;
+    const target = lockedPosition;
+    if (!target) {
+      await captureLockedPosition();
+      return;
+    }
+    restoringLockedPosition = true;
+    try {
+      const { getCurrentWindow, PhysicalPosition } = await getWindowApi();
+      await getCurrentWindow().setPosition(new PhysicalPosition(target.x, target.y));
+    } finally {
+      restoringLockedPosition = false;
+    }
   };
 
   watch(
@@ -260,6 +296,18 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
     { immediate: true }
   );
 
+  watch(
+    positionLocked,
+    enabled => {
+      if (!enabled) {
+        lockedPosition = null;
+        return;
+      }
+      void captureLockedPosition();
+    },
+    { immediate: true }
+  );
+
   const scheduleResize = () => {
     if (resizeFrame != null) return;
     resizeFrame = window.requestAnimationFrame(() => {
@@ -272,12 +320,13 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
   };
 
   const startDragging = async () => {
-    if (!inTauri()) return;
+    if (!inTauri() || positionLocked.value) return;
     const { getCurrentWindow } = await getWindowApi();
     await getCurrentWindow().startDragging();
   };
 
   const handleMouseDown = (event: MouseEvent) => {
+    if (positionLocked.value) return;
     if (event.button !== 0) return;
     const target = event.target as HTMLElement | null;
     if (!target) return;
@@ -294,6 +343,10 @@ export function useTaskbarWindow({ rememberPosition }: UseTaskbarWindowOptions) 
       .then(({ getCurrentWindow }) =>
         getCurrentWindow().onMoved(() => {
           if (correctingVerticalBounds) return;
+          if (positionLocked.value) {
+            void restoreLockedPosition();
+            return;
+          }
           schedulePositionSave();
         })
       )

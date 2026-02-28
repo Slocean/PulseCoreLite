@@ -50,6 +50,7 @@
     :always-on-top="alwaysOnTop"
     :auto-hide-on-fullscreen="autoHideOnFullscreen"
     :remember-position="rememberPosition"
+    :position-locked="positionLocked"
     :prefs="prefs"
     :show-main-window="showMainWindow"
     :hide-main-window="hideMainWindow"
@@ -75,7 +76,8 @@ const { prefs } = useTaskbarPrefs();
 const rememberPosition = computed(() => store.settings.rememberOverlayPosition);
 const alwaysOnTop = computed(() => store.settings.taskbarAlwaysOnTop);
 const autoHideOnFullscreen = computed(() => store.settings.taskbarAutoHideOnFullscreen);
-const { barRef, handleMouseDown, scheduleResize } = useTaskbarWindow({ rememberPosition });
+const positionLocked = computed(() => store.settings.taskbarPositionLocked);
+const { barRef, handleMouseDown, scheduleResize } = useTaskbarWindow({ rememberPosition, positionLocked });
 const contextMenuRef = ref<{ open: (event: MouseEvent) => void } | null>(null);
 
 const snapshot = computed(() => store.snapshot);

@@ -11,6 +11,7 @@ const props = defineProps<{
   alwaysOnTop: boolean;
   autoHideOnFullscreen: boolean;
   rememberPosition: boolean;
+  positionLocked: boolean;
   prefs: TaskbarPrefs;
   showMainWindow: () => Promise<void>;
   hideMainWindow: () => Promise<void>;
@@ -75,6 +76,10 @@ async function open(event: MouseEvent) {
         text: t('overlay.rememberPosition'),
         checked: props.rememberPosition,
         action: () => store.setRememberOverlayPosition(!props.rememberPosition)
+      }),
+      await MenuItem.new({
+        text: props.positionLocked ? t('overlay.unlockTaskbarPosition') : t('overlay.lockTaskbarPosition'),
+        action: () => store.setTaskbarPositionLocked(!props.positionLocked)
       }),
       await PredefinedMenuItem.new({ item: 'Separator' }),
       await CheckMenuItem.new({

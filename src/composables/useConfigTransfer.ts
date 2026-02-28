@@ -14,6 +14,7 @@ interface AppStoreLike {
     overlayAlwaysOnTop: boolean;
     taskbarAlwaysOnTop: boolean;
     taskbarAutoHideOnFullscreen: boolean;
+    taskbarPositionLocked: boolean;
     factoryResetHotkey: string | null;
     taskbarMonitorEnabled: boolean;
     autoStartEnabled: boolean;
@@ -24,6 +25,7 @@ interface AppStoreLike {
   setOverlayAlwaysOnTop: (value: boolean) => void;
   setTaskbarAlwaysOnTop: (value: boolean) => void;
   setTaskbarAutoHideOnFullscreen: (value: boolean) => void;
+  setTaskbarPositionLocked: (value: boolean) => void;
   setFactoryResetHotkey: (value: string | null) => void;
   setTaskbarMonitorEnabled: (value: boolean) => Promise<void>;
   setAutoStartEnabled: (value: boolean) => Promise<void>;
@@ -238,6 +240,8 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
           store.setTaskbarAlwaysOnTop(settings.taskbarAlwaysOnTop);
         if (typeof settings.taskbarAutoHideOnFullscreen === 'boolean')
           store.setTaskbarAutoHideOnFullscreen(settings.taskbarAutoHideOnFullscreen);
+        if (typeof settings.taskbarPositionLocked === 'boolean')
+          store.setTaskbarPositionLocked(settings.taskbarPositionLocked);
         if (settings.factoryResetHotkey == null || typeof settings.factoryResetHotkey === 'string')
           store.setFactoryResetHotkey(settings.factoryResetHotkey ?? null);
         if (typeof settings.taskbarMonitorEnabled === 'boolean')
