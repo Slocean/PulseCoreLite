@@ -13,6 +13,7 @@
     "tbuild": "tauri build",
     "tauri:build": "tauri build",
     "pack:release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/pack-release.ps1",
+    "release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release.ps1",
     "abuild": "npm run pack:release"
   },
   "dependencies": {

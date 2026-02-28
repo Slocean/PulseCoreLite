@@ -5,6 +5,10 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v1.6.2)"
+        required: true
 
 permissions:
   contents: write
@@ -15,6 +19,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -28,16 +34,75 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build & publish
-        uses: tauri-apps/tauri-action@v1
+      - name: Resolve tag
+        id: tag
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $tag = "${{ inputs.tag }}"
+          }
+          if (-not $tag) {
+            throw "Tag is required."
+          }
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          $pkg = Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json
+          $version = $pkg.version
+          $tag = "${{ steps.tag.outputs.tag }}"
+          if ($tag -match '^v(.+)$') {
+            $version = $Matches[1]
+          }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Extract release notes
+        id: notes
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $notesPath = Join-Path $env:GITHUB_WORKSPACE "release-notes.txt"
+          if (-not (Test-Path -LiteralPath "version.md" -PathType Leaf)) {
+            "" | Set-Content -LiteralPath $notesPath -Encoding utf8
+            "notes_path=$notesPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+            exit 0
+          }
+          $lines = Get-Content -LiteralPath "version.md"
+          $target = "## v$version"
+          $start = [Array]::IndexOf($lines, $target)
+          if ($start -lt 0) {
+            "" | Set-Content -LiteralPath $notesPath -Encoding utf8
+            "notes_path=$notesPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+            exit 0
+          }
+          $notes = New-Object System.Collections.Generic.List[string]
+          for ($i = $start + 1; $i -lt $lines.Length; $i++) {
+            $line = $lines[$i]
+            if ($line -match '^##\s+') {
+              break
+            }
+            $notes.Add($line)
+          }
+          ($notes -join "`n").Trim() | Set-Content -LiteralPath $notesPath -Encoding utf8
+          "notes_path=$notesPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Build release artifacts
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          GITHUB_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO: ${{ github.event.repository.name }}
+          GITHUB_TAG: ${{ steps.tag.outputs.tag }}
+        run: npm run pack:release
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          tagName: "v__VERSION__"
-          releaseName: "PulseCoreLite v__VERSION__"
-          releaseDraft: false
-          prerelease: false
-          uploadUpdaterJson: true
-          updaterJsonPreferNsis: true
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: PulseCoreLite v${{ steps.version.outputs.version }}
+          body_path: ${{ steps.notes.outputs.notes_path }}
+          files: |
+            release/*
