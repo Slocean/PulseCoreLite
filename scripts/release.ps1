@@ -1,11 +1,11 @@
-$ErrorActionPreference = "Stop"
-Set-StrictMode -Version Latest
-
 param(
   [switch]$SkipBuild,
   [switch]$NoPush,
   [switch]$Force
 )
+
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
 
 function Resolve-RepoInfo {
   $origin = ""
