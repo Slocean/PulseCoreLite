@@ -19,12 +19,20 @@ fn main() {
 
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             let state = tauri::async_runtime::block_on(AppState::initialize())
                 .expect("failed to initialize PulseCoreLite state");
 
             app.manage(state.clone());
             crate::app::start_telemetry_loop(app.handle().clone(), state);
+
+            #[cfg(desktop)]
+            {
+                if let Err(err) = app.handle().plugin(tauri_plugin_updater::Builder::new().build()) {
+                    tracing::warn!("Failed to initialize updater plugin: {err}");
+                }
+            }
 
             Ok(())
         });

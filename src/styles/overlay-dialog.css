@@ -76,6 +76,18 @@
   color: rgba(255, 255, 255, 0.86);
 }
 
+.overlay-dialog-message--pre {
+  white-space: pre-line;
+}
+
+.overlay-dialog-message--muted {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.overlay-dialog-message--error {
+  color: rgba(255, 107, 107, 0.95);
+}
+
 .overlay-dialog-input-wrap {
   display: grid;
   gap: 8px;

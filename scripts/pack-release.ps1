@@ -92,6 +92,64 @@ function Get-LatestBundleArtifact {
     Select-Object -First 1
 }
 
+function Get-ReleaseNotes {
+  param(
+    [Parameter(Mandatory = $true)][string]$Version
+  )
+
+  $notesPath = Join-Path $projectRoot "version.md"
+  if (-not (Test-Path -LiteralPath $notesPath -PathType Leaf)) {
+    return ""
+  }
+
+  $lines = Get-Content -LiteralPath $notesPath
+  $target = "## v$Version"
+  $start = [Array]::IndexOf($lines, $target)
+  if ($start -lt 0) {
+    return ""
+  }
+
+  $notes = New-Object System.Collections.Generic.List[string]
+  for ($i = $start + 1; $i -lt $lines.Length; $i++) {
+    $line = $lines[$i]
+    if ($line -match '^##\s+') {
+      break
+    }
+    $notes.Add($line)
+  }
+
+  return ($notes -join "`n").Trim()
+}
+
+function New-UpdaterManifest {
+  param(
+    [Parameter(Mandatory = $true)][string]$Version,
+    [Parameter(Mandatory = $true)][string]$SignaturePath,
+    [Parameter(Mandatory = $true)][string]$DownloadUrl,
+    [Parameter(Mandatory = $true)][string]$OutputPath,
+    [string]$Notes
+  )
+
+  if (-not (Test-Path -LiteralPath $SignaturePath -PathType Leaf)) {
+    throw "Updater signature not found: $SignaturePath"
+  }
+
+  $signature = (Get-Content -LiteralPath $SignaturePath -Raw).Trim()
+  $manifest = @{
+    version = $Version
+    notes = $Notes
+    pub_date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+    platforms = @{
+      "windows-x86_64" = @{
+        signature = $signature
+        url = $DownloadUrl
+      }
+    }
+  }
+
+  $manifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $OutputPath -Encoding ASCII
+}
+
 function Collect-BuildOutputs {
   param(
     [Parameter(Mandatory = $true)][string]$Version,
@@ -111,10 +169,16 @@ function Collect-BuildOutputs {
     throw "Portable executable not found: $portableExe"
   }
 
+  $nsisSig = "$($nsis.FullName).sig"
+  if (-not (Test-Path -LiteralPath $nsisSig -PathType Leaf)) {
+    $nsisSig = $null
+  }
+
   return @{
     Nsis = $nsis
     Msi = $msi
     PortableExe = $portableExe
+    NsisSig = $nsisSig
   }
 }
 
@@ -132,6 +196,7 @@ $webviewInstaller = Resolve-WebViewInstallerPath
 # Clean stale outputs for this version/date naming set so release folder stays unambiguous.
 $staleNames = @(
   "${base}_setup-lite.exe",
+  "${base}_setup-lite.exe.sig",
   "${base}_setup-lite.msi",
   "${base}_portable-lite.exe",
   "${base}_setup-full.exe",
@@ -139,7 +204,8 @@ $staleNames = @(
   "${base}_portable-full.zip",
   "${base}_setup.exe",
   "${base}_setup.msi",
-  "${base}_portable.exe"
+  "${base}_portable.exe",
+  "latest.json"
 )
 foreach ($name in $staleNames) {
   $path = Join-Path $releaseDir $name
@@ -155,10 +221,14 @@ $liteOutputs = Collect-BuildOutputs -Version $version -ExeName $exeName
 $setupLiteExeOut = Join-Path $releaseDir "${base}_setup-lite.exe"
 $setupLiteMsiOut = Join-Path $releaseDir "${base}_setup-lite.msi"
 $portableLiteOut = Join-Path $releaseDir "${base}_portable-lite.exe"
+$setupLiteSigOut = "${setupLiteExeOut}.sig"
 
 Copy-Item -LiteralPath $liteOutputs.Nsis.FullName -Destination $setupLiteExeOut -Force
 Copy-Item -LiteralPath $liteOutputs.Msi.FullName -Destination $setupLiteMsiOut -Force
 Copy-Item -LiteralPath $liteOutputs.PortableExe -Destination $portableLiteOut -Force
+if ($liteOutputs.NsisSig) {
+  Copy-Item -LiteralPath $liteOutputs.NsisSig -Destination $setupLiteSigOut -Force
+}
 
 Write-Host "[pack-release] Building full (bundled offline WebView2) installers..."
 Build-WithWebViewMode -ModeType "offlineInstaller" -Silent $true
@@ -240,11 +310,36 @@ Set-Content -LiteralPath $readmePath -Value $readmeContent -Encoding ASCII
 Compress-Archive -Path $portableFullDir -DestinationPath $portableFullZip -Force
 Remove-Item -LiteralPath $portableFullDir -Recurse -Force
 
+$githubOwner = $env:GITHUB_OWNER
+$githubRepo = $env:GITHUB_REPO
+$githubTag = $env:GITHUB_TAG
+
+if ($githubOwner -and $githubRepo -and (Test-Path -LiteralPath $setupLiteSigOut -PathType Leaf)) {
+  $downloadBase = if ($githubTag) {
+    "https://github.com/$githubOwner/$githubRepo/releases/download/$githubTag"
+  } else {
+    "https://github.com/$githubOwner/$githubRepo/releases/latest/download"
+  }
+  $downloadUrl = "$downloadBase/$([System.IO.Path]::GetFileName($setupLiteExeOut))"
+  $notes = Get-ReleaseNotes -Version $version
+  $latestJsonPath = Join-Path $releaseDir "latest.json"
+  New-UpdaterManifest -Version $version -SignaturePath $setupLiteSigOut -DownloadUrl $downloadUrl -OutputPath $latestJsonPath -Notes $notes
+  Write-Host "[pack-release] Updater manifest generated: $latestJsonPath"
+} else {
+  Write-Host "[pack-release] Skipping updater manifest (set GITHUB_OWNER/GITHUB_REPO and ensure .sig is present)."
+}
+
 Write-Host ""
-Write-Host "[pack-release] Done. Generated 6 release artifacts:"
+Write-Host "[pack-release] Done. Generated release artifacts:"
 Write-Host " - $setupLiteExeOut"
 Write-Host " - $setupLiteMsiOut"
 Write-Host " - $portableLiteOut"
 Write-Host " - $setupFullExeOut"
 Write-Host " - $setupFullMsiOut"
 Write-Host " - $portableFullZip"
+if (Test-Path -LiteralPath $setupLiteSigOut -PathType Leaf) {
+  Write-Host " - $setupLiteSigOut"
+}
+if (Test-Path -LiteralPath (Join-Path $releaseDir "latest.json") -PathType Leaf) {
+  Write-Host " - $(Join-Path $releaseDir "latest.json")"
+}

@@ -38,7 +38,15 @@
       </button>
     </div>
     <div class="overlay-meta">
-      <span class="version">v{{ appVersion }}</span>
+      <button
+        type="button"
+        class="version"
+        :class="{ 'version--update': updateAvailable }"
+        :title="updateAvailable ? updateLabel : undefined"
+        @click="handleVersionClick">
+        v{{ appVersion }}
+        <span v-if="updateAvailable" class="version-dot" aria-hidden="true"></span>
+      </button>
       <span class="usage">{{ appUsageLabel }}</span>
     </div>
   </header>
@@ -51,6 +59,8 @@ defineProps<{
   showDragHandle: boolean;
   appVersion: string;
   appUsageLabel: string;
+  updateAvailable?: boolean;
+  updateLabel?: string;
 }>();
 
 const emit = defineEmits<{
@@ -58,7 +68,12 @@ const emit = defineEmits<{
   (e: 'minimize'): void;
   (e: 'toggleConfig'): void;
   (e: 'close'): void;
+  (e: 'versionClick'): void;
 }>();
 
 const { t } = useI18n();
+
+function handleVersionClick() {
+  emit('versionClick');
+}
 </script>

@@ -21,6 +21,8 @@
     "@fontsource/material-symbols-outlined": "^5.2.34",
     "@tauri-apps/api": "2.5.0",
     "@tauri-apps/plugin-dialog": "^2.0.0",
+    "@tauri-apps/plugin-process": "^2.0.0",
+    "@tauri-apps/plugin-updater": "^2.0.0",
     "pinia": "^2.3.0",
     "vue": "^3.5.13",
     "vue-i18n": "^9.14.1"

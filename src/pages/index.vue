@@ -14,10 +14,13 @@
       :show-drag-handle="prefs.showDragHandle"
       :app-version="appVersion"
       :app-usage-label="appUsageLabel"
+      :update-available="updateAvailable"
+      :update-label="t('overlay.updateAvailable')"
       @startDrag="startDragging"
       @minimize="minimizeOverlay"
       @toggleConfig="showConfig = !showConfig"
-      @close="handleClose" />
+      @close="handleClose"
+      @versionClick="handleVersionClick" />
 
     <Transition name="slide">
       <OverlayConfigPanel
@@ -315,6 +318,39 @@
     :show-actions="false"
     @confirm="closeExportSuccessDialog"
     @cancel="closeExportSuccessDialog" />
+
+  <OverlayDialog
+    v-model:open="updateDialogOpen"
+    :title="t('overlay.updateTitle')"
+    :close-label="t('overlay.dialogClose')"
+    @cancel="closeUpdateDialog"
+    @confirm="handleInstallUpdate">
+    <template #body>
+      <div class="overlay-dialog-message overlay-dialog-message--muted">
+        {{ t('overlay.updateVersionLabel', { version: updateInfo?.version ?? appVersion }) }}
+      </div>
+      <div
+        class="overlay-dialog-message overlay-dialog-message--pre"
+        :class="{ 'overlay-dialog-message--muted': !updateNotes }">
+        {{ updateNotes || t('overlay.updateNotesEmpty') }}
+      </div>
+      <div v-if="updateError" class="overlay-dialog-message overlay-dialog-message--error">
+        {{ updateError }}
+      </div>
+    </template>
+    <template #actions>
+      <button type="button" class="overlay-lang-button" :disabled="installingUpdate" @click="closeUpdateDialog">
+        {{ t('overlay.dialogCancel') }}
+      </button>
+      <button
+        type="button"
+        class="overlay-config-primary"
+        :disabled="installingUpdate"
+        @click="handleInstallUpdate">
+        {{ installingUpdate ? t('overlay.updateInstalling') : t('overlay.updateNow') }}
+      </button>
+    </template>
+  </OverlayDialog>
 </template>
 
 <script setup lang="ts">
@@ -336,6 +372,7 @@ import { useOverlayUptime } from '../composables/useOverlayUptime';
 import { useOverlayWindow } from '../composables/useOverlayWindow';
 import { useThemeManager } from '../composables/useThemeManager';
 import { useToolkitLauncher } from '../composables/useToolkitLauncher';
+import { useUpdater } from '../composables/useUpdater';
 import packageJson from '../../package.json';
 import { useAppStore } from '../stores/app';
 import { api, inTauri } from '../services/tauri';
@@ -343,6 +380,17 @@ import { api, inTauri } from '../services/tauri';
 const store = useAppStore();
 const { t } = useI18n();
 const appVersion = packageJson.version;
+const {
+  updateAvailable,
+  updateInfo,
+  checkingUpdate,
+  installingUpdate,
+  updateError,
+  checkForUpdates,
+  installUpdate
+} = useUpdater();
+const updateDialogOpen = ref(false);
+const updateNotes = computed(() => updateInfo.value?.notes?.trim() ?? '');
 const showConfig = ref(false);
 const toolkitState = ref<'closed' | 'open' | 'hidden'>('closed');
 const closeToTray = computed({
@@ -525,6 +573,23 @@ async function toggleToolkitWindow() {
   await refreshToolkitState();
 }
 
+async function handleVersionClick() {
+  if (!updateAvailable.value && !checkingUpdate.value) {
+    await checkForUpdates();
+  }
+  if (updateAvailable.value) {
+    updateDialogOpen.value = true;
+  }
+}
+
+function closeUpdateDialog() {
+  updateDialogOpen.value = false;
+}
+
+async function handleInstallUpdate() {
+  await installUpdate();
+}
+
 async function applyOverlayTopmost(enabled: boolean) {
   if (!inTauri()) {
     return;
@@ -559,6 +624,7 @@ watch(
 
 onMounted(() => {
   void refreshToolkitState();
+  void checkForUpdates();
 });
 
 function handleClose() {

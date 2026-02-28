@@ -96,10 +96,32 @@
 }
 
 .overlay-meta .version {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
   padding-left: 2px;
   font-size: 10px;
   color: rgba(255, 255, 255, 0.38);
   letter-spacing: 0.12em;
+}
+
+.overlay-meta .version--update {
+  color: rgba(255, 107, 107, 0.95);
+  text-shadow: 0 0 8px rgba(255, 107, 107, 0.35);
+}
+
+.overlay-meta .version-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #ff4d4f;
+  box-shadow:
+    0 0 6px rgba(255, 77, 79, 0.55),
+    0 0 12px rgba(255, 77, 79, 0.35);
 }
 
 .overlay-meta .usage {
