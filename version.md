@@ -1,3 +1,12 @@
+## v1.6.3
+
+- 新增手动触发版本更新
+- 新增任务栏窗口位置锁定
+- 修复若干已知缺陷
+- Added manual version update trigger
+- Added taskbar window position locking
+- Fixed several known issues
+
 ## v1.6.2
 
 - 新增热更新（Hot Update）功能
