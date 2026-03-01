@@ -5,9 +5,14 @@
         <div class="overlay-dialog" role="dialog" aria-modal="true" @mousedown.stop>
           <div class="overlay-dialog-header">
             <div class="overlay-dialog-title">{{ title }}</div>
-            <button type="button" class="overlay-dialog-close" :aria-label="closeLabel" @click="handleCancel">
+            <UiButton
+              native-type="button"
+              class="overlay-dialog-close"
+              variant="icon"
+              :aria-label="closeLabel"
+              @click="handleCancel">
               <span class="material-symbols-outlined">close</span>
-            </button>
+            </UiButton>
           </div>
           <div class="overlay-dialog-body">
             <slot name="body">
@@ -16,16 +21,17 @@
           </div>
           <div v-if="showActions" class="overlay-dialog-actions">
             <slot name="actions">
-              <button type="button" class="overlay-lang-button" @click="handleCancel">
+              <UiButton native-type="button" class="overlay-lang-button" variant="text" @click="handleCancel">
                 {{ cancelText }}
-              </button>
-              <button
-                type="button"
+              </UiButton>
+              <UiButton
+                native-type="button"
                 class="overlay-config-danger"
+                variant="text"
                 :autofocus="autofocusConfirm"
                 @click="handleConfirm">
                 {{ confirmText }}
-              </button>
+              </UiButton>
             </slot>
           </div>
         </div>
@@ -36,6 +42,7 @@
 
 <script setup lang="ts">
 import { onUnmounted, watch } from 'vue';
+import UiButton from '@/components/ui/Button';
 
 const open = defineModel<boolean>('open', { required: true });
 
@@ -107,3 +114,4 @@ onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown, true);
 });
 </script>
+

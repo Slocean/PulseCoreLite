@@ -18,9 +18,9 @@
       </div>
     </div>
     <div class="overlay-config-range">
-      <button type="button" class="toolkit-link-label" @click="openTargetsDialog">
+      <UiButton native-type="button" class="toolkit-link-label" variant="text" @click="openTargetsDialog">
         {{ t('toolkit.cleanupInterval') }}
-      </button>
+      </UiButton>
       <span class="overlay-config-value">{{ memoryTrimIntervalMinutes }}{{ t('toolkit.minutes') }}</span>
       <input
         type="range"
@@ -58,6 +58,7 @@
 import { computed, nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import UiButton from '@/components/ui/Button';
 import OverlayDialog from '../OverlayDialog.vue';
 import { useAppStore } from '../../stores/app';
 
@@ -122,3 +123,4 @@ function cancelTargets() {
   // no-op, temp selections are discarded
 }
 </script>
+

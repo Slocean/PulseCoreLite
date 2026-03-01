@@ -30,9 +30,9 @@
           @wheel="onNumberWheel($event, 'seconds', 0, 59)" />
       </label>
     </div>
-    <button type="button" class="overlay-config-primary" @click="scheduleCountdown">
+    <UiButton native-type="button" class="overlay-config-primary" variant="text" @click="scheduleCountdown">
       {{ t('toolkit.scheduleCountdown') }}
-    </button>
+    </UiButton>
   </div>
 
   <div class="toolkit-card">
@@ -62,9 +62,9 @@
         <input v-model.number="monthlyDay" type="number" min="1" max="31" />
       </label>
     </div>
-    <button type="button" class="overlay-config-primary" @click="scheduleByDatetime">
+    <UiButton native-type="button" class="overlay-config-primary" variant="text" @click="scheduleByDatetime">
       {{ t('toolkit.scheduleDatetime') }}
-    </button>
+    </UiButton>
   </div>
 
   <div class="toolkit-card">
@@ -73,9 +73,9 @@
       {{ planText }}
     </p>
     <div class="toolkit-actions">
-      <button type="button" class="overlay-config-danger" @click="cancelPlan">
+      <UiButton native-type="button" class="overlay-config-danger" variant="text" @click="cancelPlan">
         {{ t('toolkit.cancelPlan') }}
-      </button>
+      </UiButton>
     </div>
   </div>
 
@@ -87,6 +87,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import UiButton from '@/components/ui/Button';
 import { api, inTauri } from '../../services/tauri';
 import type { ScheduleShutdownRequest, ShutdownPlan } from '../../types';
 
@@ -338,3 +339,4 @@ function clearTips() {
   errorMessage.value = '';
 }
 </script>
+

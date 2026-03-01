@@ -124,20 +124,22 @@
         <div v-if="backgroundImageSource" class="overlay-config-language overlay-config-effect">
           <span class="overlay-config-label">{{ t('overlay.backgroundEffect') }}</span>
           <div class="overlay-lang-buttons overlay-config-effect-buttons">
-            <button
-              type="button"
+            <UiButton
+              native-type="button"
               class="overlay-lang-button"
+              variant="text"
               :class="{ 'overlay-lang-button--active': backgroundEffect === 'gaussian' }"
               @click="setBackgroundEffect('gaussian')">
               {{ t('overlay.effectGaussian') }}
-            </button>
-            <button
-              type="button"
+            </UiButton>
+            <UiButton
+              native-type="button"
               class="overlay-lang-button"
+              variant="text"
               :class="{ 'overlay-lang-button--active': backgroundEffect === 'liquidGlass' }"
               @click="setBackgroundEffect('liquidGlass')">
               {{ t('overlay.effectLiquidGlass') }}
-            </button>
+            </UiButton>
           </div>
         </div>
         <div v-if="backgroundImageSource" class="overlay-config-range">
@@ -167,23 +169,25 @@
       </div>
     </template>
     <template #actions>
-      <button type="button" class="overlay-lang-button" @click="closeBackgroundDialog">
+      <UiButton native-type="button" class="overlay-lang-button" variant="text" @click="closeBackgroundDialog">
         {{ t('overlay.dialogCancel') }}
-      </button>
-      <button
-        type="button"
+      </UiButton>
+      <UiButton
+        native-type="button"
         class="overlay-config-primary"
+        variant="text"
         :disabled="!canApplyBackground"
         @click="applyBackgroundCrop">
         {{ t('overlay.backgroundApply') }}
-      </button>
-      <button
-        type="button"
+      </UiButton>
+      <UiButton
+        native-type="button"
         class="overlay-config-primary"
+        variant="text"
         :disabled="!canApplyBackground || !canSaveTheme"
         @click="applyBackgroundAndSave">
         {{ t('overlay.backgroundApplySave') }}
-      </button>
+      </UiButton>
     </template>
   </OverlayDialog>
 
@@ -208,16 +212,17 @@
       </div>
     </template>
     <template #actions>
-      <button type="button" class="overlay-lang-button" @click="closeThemeNameDialog">
+      <UiButton native-type="button" class="overlay-lang-button" variant="text" @click="closeThemeNameDialog">
         {{ t('overlay.dialogCancel') }}
-      </button>
-      <button
-        type="button"
+      </UiButton>
+      <UiButton
+        native-type="button"
         class="overlay-config-primary"
+        variant="text"
         :disabled="!canConfirmThemeName"
         @click="confirmSaveTheme">
         {{ t('overlay.dialogConfirm') }}
-      </button>
+      </UiButton>
     </template>
   </OverlayDialog>
 
@@ -253,20 +258,22 @@
         <div class="overlay-config-language overlay-config-effect" style="margin-top: 10px">
           <span class="overlay-config-label">{{ t('overlay.backgroundEffect') }}</span>
           <div class="overlay-lang-buttons overlay-config-effect-buttons">
-            <button
-              type="button"
+            <UiButton
+              native-type="button"
               class="overlay-lang-button"
+              variant="text"
               :class="{ 'overlay-lang-button--active': themeEditEffect === 'gaussian' }"
               @click="themeEditEffect = 'gaussian'">
               {{ t('overlay.effectGaussian') }}
-            </button>
-            <button
-              type="button"
+            </UiButton>
+            <UiButton
+              native-type="button"
               class="overlay-lang-button"
+              variant="text"
               :class="{ 'overlay-lang-button--active': themeEditEffect === 'liquidGlass' }"
               @click="themeEditEffect = 'liquidGlass'">
               {{ t('overlay.effectLiquidGlass') }}
-            </button>
+            </UiButton>
           </div>
         </div>
         <div class="overlay-config-range" style="margin-top: 10px">
@@ -284,16 +291,17 @@
       </div>
     </template>
     <template #actions>
-      <button type="button" class="overlay-lang-button" @click="closeEditThemeDialog">
+      <UiButton native-type="button" class="overlay-lang-button" variant="text" @click="closeEditThemeDialog">
         {{ t('overlay.dialogCancel') }}
-      </button>
-      <button
-        type="button"
+      </UiButton>
+      <UiButton
+        native-type="button"
         class="overlay-config-primary"
+        variant="text"
         :disabled="!canConfirmThemeEdit"
         @click="confirmEditTheme">
         {{ t('overlay.dialogConfirm') }}
-      </button>
+      </UiButton>
     </template>
   </OverlayDialog>
 
@@ -349,16 +357,22 @@
       </div>
     </template>
     <template #actions>
-      <button type="button" class="overlay-lang-button" :disabled="installingUpdate" @click="closeUpdateDialog">
+      <UiButton
+        native-type="button"
+        class="overlay-lang-button"
+        variant="text"
+        :disabled="installingUpdate"
+        @click="closeUpdateDialog">
         {{ t('overlay.dialogCancel') }}
-      </button>
-      <button
-        type="button"
+      </UiButton>
+      <UiButton
+        native-type="button"
         class="overlay-config-primary"
+        variant="text"
         :disabled="installingUpdate"
         @click="handleInstallUpdate">
         {{ installingUpdate ? t('overlay.updateInstalling') : t('overlay.updateNow') }}
-      </button>
+      </UiButton>
     </template>
   </OverlayDialog>
 </template>
@@ -367,6 +381,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import UiButton from '@/components/ui/Button';
 import OverlayConfigPanel from '../components/OverlayConfigPanel.vue';
 import OverlayDialog from '../components/OverlayDialog.vue';
 import OverlayHeader from '../components/OverlayHeader.vue';
@@ -709,3 +724,4 @@ function setLanguage(language: 'zh-CN' | 'en-US') {
   store.setLanguage(language);
 }
 </script>
+

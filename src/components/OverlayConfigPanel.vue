@@ -84,20 +84,22 @@
       <div class="overlay-config-language">
         <span class="overlay-config-label">{{ t('overlay.language') }}</span>
         <div class="overlay-lang-buttons">
-          <button
-            type="button"
+          <UiButton
+            native-type="button"
             class="overlay-lang-button"
+            variant="text"
             :class="{ 'overlay-lang-button--active': language === 'zh-CN' }"
             @click="emit('setLanguage', 'zh-CN')">
             {{ t('overlay.langZh') }}
-          </button>
-          <button
-            type="button"
+          </UiButton>
+          <UiButton
+            native-type="button"
             class="overlay-lang-button"
+            variant="text"
             :class="{ 'overlay-lang-button--active': language === 'en-US' }"
             @click="emit('setLanguage', 'en-US')">
             {{ t('overlay.langEn') }}
-          </button>
+          </UiButton>
         </div>
       </div>
       <div class="overlay-config-range">
@@ -120,13 +122,14 @@
         <div class="overlay-config-theme">
           <span class="overlay-config-label">{{ t('overlay.backgroundImage') }}</span>
           <div class="overlay-lang-buttons overlay-config-theme-tabs">
-            <button
-              type="button"
+            <UiButton
+              native-type="button"
               class="overlay-lang-button"
+              variant="text"
               :class="{ 'overlay-lang-button--active': isDefaultTheme }"
               @click="selectDefaultTheme">
               {{ t('overlay.themeDefault') }}
-            </button>
+            </UiButton>
             <div class="overlay-theme-list">
               <div
                 v-for="theme in themes"
@@ -143,48 +146,51 @@
                 <OverlayCornerDelete
                   :ariaLabel="t('overlay.themeDelete')"
                   @click="emit('deleteTheme', theme.id)" />
-                <button
-                  type="button"
+                <UiButton
+                  native-type="button"
                   class="overlay-corner-edit"
+                  variant="icon"
                   :aria-label="t('overlay.themeEditTitle')"
                   @click.stop="emit('editTheme', theme.id)"
                   @contextmenu.prevent.stop>
                   <span class="material-symbols-outlined">edit</span>
-                </button>
+                </UiButton>
               </div>
             </div>
           </div>
         </div>
-        <button
-          type="button"
+        <UiButton
+          native-type="button"
           class="overlay-lang-button"
+          variant="text"
           :disabled="!canAddTheme"
           @click="emit('openBackgroundDialog')">
           {{ t('overlay.backgroundImageButton') }}
-        </button>
+        </UiButton>
       </div>
       <div class="overlay-config-duo">
         <div class="overlay-config-language">
           <span class="overlay-config-label">{{ t('overlay.update') }}</span>
           <div class="overlay-lang-buttons">
-            <button
-              type="button"
+            <UiButton
+              native-type="button"
               class="overlay-lang-button"
+              variant="text"
               :disabled="checkingUpdate"
               @click="emit('checkUpdate')">
               {{ checkingUpdate ? t('overlay.updateChecking') : t('overlay.checkUpdate') }}
-            </button>
+            </UiButton>
           </div>
         </div>
         <div class="overlay-config-language">
           <span class="overlay-config-label">{{ t('overlay.configTransfer') }}</span>
           <div class="overlay-lang-buttons">
-            <button type="button" class="overlay-lang-button" @click="emit('exportConfig')">
+            <UiButton native-type="button" class="overlay-lang-button" variant="text" @click="emit('exportConfig')">
               {{ t('overlay.exportConfig') }}
-            </button>
-            <button type="button" class="overlay-lang-button" @click="triggerImport">
+            </UiButton>
+            <UiButton native-type="button" class="overlay-lang-button" variant="text" @click="triggerImport">
               {{ t('overlay.importConfig') }}
-            </button>
+            </UiButton>
           </div>
           <input
             ref="importFileInput"
@@ -199,17 +205,17 @@
           <span class="overlay-config-label">{{ t('overlay.factoryResetHotkey') }}</span>
           <div class="overlay-config-hotkey-controls">
             <div class="overlay-hotkey-chip">
-              <button type="button" class="overlay-lang-button" @click="beginHotkeyCapture">
+              <UiButton native-type="button" class="overlay-lang-button" variant="text" @click="beginHotkeyCapture">
                 {{ recordingHotkey ? t('overlay.hotkeyRecording') : hotkeyLabel }}
-              </button>
+              </UiButton>
               <OverlayCornerDelete
                 v-if="factoryResetHotkey != null && !recordingHotkey"
                 :ariaLabel="t('overlay.hotkeyClear')"
                 @click="requestClearHotkey" />
             </div>
-            <button type="button" class="overlay-config-danger" @click="confirmFactoryReset">
+            <UiButton native-type="button" class="overlay-config-danger" variant="text" @click="confirmFactoryReset">
               {{ t('overlay.factoryReset') }}
-            </button>
+            </UiButton>
           </div>
         </div>
         <div class="overlay-config-language">
@@ -221,9 +227,9 @@
         </div>
       </div>
       <div v-if="false && canUninstall" class="overlay-config-uninstall">
-        <button type="button" class="overlay-config-danger" @click="emit('uninstall')">
+        <UiButton native-type="button" class="overlay-config-danger" variant="text" @click="emit('uninstall')">
           {{ t('overlay.uninstall') }}
-        </button>
+        </UiButton>
       </div>
       <!-- <div class="overlay-config-version">v{{ appVersion }}</div> -->
     </div>
@@ -244,6 +250,7 @@
 import { computed, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import UiButton from '@/components/ui/Button';
 import OverlayCornerDelete from './OverlayCornerDelete.vue';
 import OverlayDialog from './OverlayDialog.vue';
 import type { OverlayBackgroundEffect, OverlayPrefs } from '../composables/useOverlayPrefs';
@@ -426,3 +433,4 @@ onUnmounted(() => {
   stopHotkeyCapture();
 });
 </script>
+

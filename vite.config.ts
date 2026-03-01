@@ -16,6 +16,11 @@ function resolvePort(rawPort: string | undefined) {
 
 export default defineConfig({
   plugins: [vue()],
+  resolve: {
+    alias: {
+      '@': resolve(ROOT_DIR, 'src')
+    }
+  },
   build: {
     rollupOptions: {
       input: {

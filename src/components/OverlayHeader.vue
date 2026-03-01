@@ -12,41 +12,45 @@
       <div v-if="showDragHandle" class="overlay-drag" @mousedown.stop="emit('startDrag')">
         <span class="material-symbols-outlined">drag_handle</span>
       </div>
-      <button
+      <UiButton
         class="overlay-action overlay-action--info"
-        type="button"
+        native-type="button"
+        variant="icon"
         @mousedown.stop
         @click="emit('minimize')"
         :title="t('overlay.minimizeToTray')">
         <span class="material-symbols-outlined">remove</span>
-      </button>
-      <button
+      </UiButton>
+      <UiButton
         class="overlay-action overlay-action--primary"
-        type="button"
+        native-type="button"
+        variant="icon"
         @mousedown.stop
         @click="emit('toggleConfig')"
         :title="t('overlay.configure')">
         <span class="material-symbols-outlined">settings</span>
-      </button>
-      <button
+      </UiButton>
+      <UiButton
         class="overlay-action overlay-action--danger"
-        type="button"
+        native-type="button"
+        variant="icon"
         @mousedown.stop
         @click="emit('close')"
         :title="t('overlay.close')">
         <span class="material-symbols-outlined">close</span>
-      </button>
+      </UiButton>
     </div>
     <div class="overlay-meta">
-      <button
-        type="button"
+      <UiButton
+        native-type="button"
         class="version"
+        variant="text"
         :class="{ 'version--update': updateAvailable }"
         :title="updateAvailable ? updateLabel : undefined"
         @click="handleVersionClick">
         v{{ appVersion }}
         <span v-if="updateAvailable" class="version-dot" aria-hidden="true"></span>
-      </button>
+      </UiButton>
       <span class="usage">{{ appUsageLabel }}</span>
     </div>
   </header>
@@ -54,6 +58,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import UiButton from '@/components/ui/Button';
 
 defineProps<{
   showDragHandle: boolean;
@@ -77,3 +82,4 @@ function handleVersionClick() {
   emit('versionClick');
 }
 </script>
+

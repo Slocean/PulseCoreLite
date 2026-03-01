@@ -5,9 +5,14 @@
         <div class="ui-dialog" role="dialog" aria-modal="true" @mousedown.stop>
           <div class="ui-dialog-header">
             <div class="ui-dialog-title">{{ props.title }}</div>
-            <button type="button" class="ui-dialog-close" :aria-label="props.closeLabel" @click="handleCancel">
+            <UiButton
+              native-type="button"
+              class="ui-dialog-close"
+              variant="icon"
+              :aria-label="props.closeLabel"
+              @click="handleCancel">
               <span class="material-symbols-outlined">close</span>
-            </button>
+            </UiButton>
           </div>
           <div class="ui-dialog-body">
             <slot name="body">
@@ -16,16 +21,21 @@
           </div>
           <div v-if="props.showActions" class="ui-dialog-actions">
             <slot name="actions">
-              <button type="button" class="ui-dialog-btn ui-dialog-btn--cancel" @click="handleCancel">
+              <UiButton
+                native-type="button"
+                class="ui-dialog-btn ui-dialog-btn--cancel"
+                variant="text"
+                @click="handleCancel">
                 {{ props.cancelText }}
-              </button>
-              <button
-                type="button"
+              </UiButton>
+              <UiButton
+                native-type="button"
                 class="ui-dialog-btn ui-dialog-btn--confirm"
+                variant="text"
                 :autofocus="props.autofocusConfirm"
                 @click="handleConfirm">
                 {{ props.confirmText }}
-              </button>
+              </UiButton>
             </slot>
           </div>
         </div>
@@ -37,6 +47,7 @@
 <script setup lang="ts">
 import { onUnmounted, watch } from 'vue'
 import type { DialogProps } from './types'
+import UiButton from '@/components/ui/Button'
 
 const props = withDefaults(defineProps<DialogProps>(), {
   closeLabel: 'Close',
@@ -237,3 +248,4 @@ onUnmounted(() => {
   opacity: 0;
 }
 </style>
+

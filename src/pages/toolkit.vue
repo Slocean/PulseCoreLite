@@ -15,33 +15,36 @@
         <div class="overlay-drag" @mousedown.stop="startDragging" :aria-label="t('overlay.showDragHandle')">
           <span class="material-symbols-outlined">drag_handle</span>
         </div>
-        <button
-          type="button"
+        <UiButton
+          native-type="button"
           class="overlay-action overlay-action--primary"
+          variant="icon"
           :aria-label="t('overlay.minimizeToTray')"
           @click="minimizeToolkitWindow">
           <span class="material-symbols-outlined">remove</span>
-        </button>
-        <button
-          type="button"
+        </UiButton>
+        <UiButton
+          native-type="button"
           class="overlay-action overlay-action--danger"
+          variant="icon"
           :aria-label="t('overlay.close')"
           @click="closeToolkitWindow">
           <span class="material-symbols-outlined">close</span>
-        </button>
+        </UiButton>
       </div>
     </header>
 
     <nav class="toolkit-tabs" :aria-label="t('toolkit.tabs')">
-      <button
+      <UiButton
         v-for="tab in tabs"
         :key="tab.id"
-        type="button"
+        native-type="button"
         class="toolkit-tab"
+        variant="text"
         :class="{ 'toolkit-tab--active': activeTab === tab.id }"
         @click="activeTab = tab.id">
         {{ tab.label }}
-      </button>
+      </UiButton>
     </nav>
 
     <ToolkitShutdownTab v-if="activeTab === 'shutdown'" @contentChange="handleContentChange" />
@@ -54,6 +57,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import UiButton from '@/components/ui/Button';
 import ToolkitCleanupTab from '../components/toolkit/ToolkitCleanupTab.vue';
 import ToolkitHardwareTab from '../components/toolkit/ToolkitHardwareTab.vue';
 import ToolkitShutdownTab from '../components/toolkit/ToolkitShutdownTab.vue';
@@ -244,3 +248,4 @@ function getBackgroundFilter(effect: OverlayBackgroundEffect, blurPx: number, gl
   return safeBlur > 0 ? `blur(${safeBlur}px)` : 'none';
 }
 </script>
+

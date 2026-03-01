@@ -1,11 +1,11 @@
 <template>
   <div class="toolkit-card toolkit-card--score">
-    <button type="button" class="toolkit-collapse-toggle" @click="toggleSection('score')">
+    <UiButton native-type="button" class="toolkit-collapse-toggle" variant="text" @click="toggleSection('score')">
       <span class="toolkit-section-title">{{ t('toolkit.hardwareScoreTitle') }}</span>
       <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.score }">
         expand_more
       </span>
-    </button>
+    </UiButton>
     <div v-if="sections.score">
       <div class="toolkit-score-ring" :style="scoreRingStyle">
         <div class="toolkit-score-center">
@@ -20,22 +20,32 @@
 
   <div class="toolkit-card">
     <div class="toolkit-section-header">
-      <button type="button" class="toolkit-collapse-toggle toolkit-collapse-toggle--title" @click="toggleSection('dimension')">
+      <UiButton
+        native-type="button"
+        class="toolkit-collapse-toggle toolkit-collapse-toggle--title"
+        variant="text"
+        @click="toggleSection('dimension')">
         <span class="toolkit-section-title">{{ t('toolkit.dimensionTitle') }}</span>
-      </button>
-      <button type="button" class="toolkit-view-toggle" :aria-label="dimensionViewLabel" @click="toggleDimensionView">
+      </UiButton>
+      <UiButton
+        native-type="button"
+        class="toolkit-view-toggle"
+        variant="text"
+        :aria-label="dimensionViewLabel"
+        @click="toggleDimensionView">
         <span class="material-symbols-outlined">{{ dimensionViewIcon }}</span>
         <span class="toolkit-view-toggle-text">{{ dimensionViewLabel }}</span>
-      </button>
-      <button
-        type="button"
+      </UiButton>
+      <UiButton
+        native-type="button"
         class="toolkit-collapse-toggle toolkit-collapse-toggle--icon"
+        variant="text"
         @click="toggleSection('dimension')"
         :aria-label="t('toolkit.dimensionTitle')">
         <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.dimension }">
           expand_more
         </span>
-      </button>
+      </UiButton>
     </div>
     <div v-if="sections.dimension">
       <div v-if="dimensionView === 'bars'" class="toolkit-score-list">
@@ -101,14 +111,14 @@
   </div>
 
   <div class="toolkit-card">
-    <button type="button" class="toolkit-collapse-toggle" @click="toggleSection('summary')">
+    <UiButton native-type="button" class="toolkit-collapse-toggle" variant="text" @click="toggleSection('summary')">
       <span class="toolkit-section-title">{{ t('toolkit.hardwareSummaryTitle') }}</span>
       <span
         class="toolkit-collapse-indicator material-symbols-outlined"
         :class="{ 'is-open': sections.summary }">
         expand_more
       </span>
-    </button>
+    </UiButton>
     <div v-if="sections.summary" class="toolkit-summary-grid">
       <div v-for="row in hardwareSummaryRows" :key="row.id" class="toolkit-summary-item">
         <span class="toolkit-summary-label">{{ row.label }}</span>
@@ -118,12 +128,12 @@
   </div>
 
   <div class="toolkit-card">
-    <button type="button" class="toolkit-collapse-toggle" @click="toggleSection('advice')">
+    <UiButton native-type="button" class="toolkit-collapse-toggle" variant="text" @click="toggleSection('advice')">
       <span class="toolkit-section-title">{{ t('toolkit.hardwareAdviceTitle') }}</span>
       <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.advice }">
         expand_more
       </span>
-    </button>
+    </UiButton>
     <ul v-if="sections.advice" class="toolkit-advice-list">
       <li v-for="(item, index) in adviceList" :key="index" class="toolkit-advice-item">{{ item }}</li>
     </ul>
@@ -134,6 +144,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import UiButton from '@/components/ui/Button';
 import { useAppStore } from '../../stores/app';
 
 type Grade = 'S' | 'A' | 'B' | 'C' | 'D';
@@ -767,3 +778,4 @@ function isCudaSupported(model: string) {
   return /(nvidia|geforce|rtx|gtx|quadro|tesla)/i.test(model ?? '');
 }
 </script>
+

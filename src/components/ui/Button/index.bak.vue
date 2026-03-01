@@ -20,8 +20,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { ButtonProps } from './types';
+import { computed } from 'vue'
+import type { ButtonProps } from './types'
 
 const props = withDefaults(defineProps<ButtonProps>(), {
   type: 'default',
@@ -31,9 +31,9 @@ const props = withDefaults(defineProps<ButtonProps>(), {
   disabled: false,
   loading: false,
   active: false
-});
+})
 
-const isDisabled = computed(() => props.disabled || props.loading);
+const isDisabled = computed(() => props.disabled || props.loading)
 </script>
 
 <style scoped>
@@ -65,12 +65,7 @@ const isDisabled = computed(() => props.disabled || props.loading);
   letter-spacing: var(--btn-letter-spacing);
   text-transform: var(--btn-text-transform);
   cursor: pointer;
-  transition:
-    opacity 0.2s,
-    transform 0.1s,
-    border-color 0.16s,
-    color 0.16s,
-    background 0.16s;
+  transition: opacity 0.2s, transform 0.1s, border-color 0.16s, color 0.16s, background 0.16s;
 }
 
 :where(.ui-button--sm) {
