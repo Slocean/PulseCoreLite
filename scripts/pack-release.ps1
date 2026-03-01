@@ -108,7 +108,7 @@ function Get-ReleaseNotes {
     return ""
   }
 
-  $lines = Get-Content -LiteralPath $notesPath
+  $lines = Get-Content -LiteralPath $notesPath -Encoding UTF8
   $target = "## v$Version"
   $start = [Array]::IndexOf($lines, $target)
   if ($start -lt 0) {
@@ -124,7 +124,17 @@ function Get-ReleaseNotes {
     $notes.Add($line)
   }
 
-  return ($notes -join "`n").Trim()
+  $notesText = ($notes -join "`n").Trim()
+  $historyUrl = "https://github.com/Slocean/PulseCoreLite/releases"
+  $historyLine = "查看历史版本: $historyUrl"
+  if ($notesText -notmatch [regex]::Escape($historyUrl)) {
+    if ($notesText) {
+      $notesText = "$notesText`n`n$historyLine"
+    } else {
+      $notesText = $historyLine
+    }
+  }
+  return $notesText
 }
 
 function New-UpdaterManifest {
@@ -153,7 +163,9 @@ function New-UpdaterManifest {
     }
   }
 
-  $manifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $OutputPath -Encoding ASCII
+  $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+  $manifestJson = $manifest | ConvertTo-Json -Depth 6
+  [System.IO.File]::WriteAllText($OutputPath, $manifestJson, $utf8NoBom)
 }
 
 function Collect-BuildOutputs {
