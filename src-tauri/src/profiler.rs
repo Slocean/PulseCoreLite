@@ -85,13 +85,20 @@ impl ProfilerHandle {
     }
 }
 
-pub fn resolve_profile_path(path: &str) -> PathBuf {
+pub fn resolve_profile_path(base_dir: &PathBuf, path: &str) -> PathBuf {
     let candidate = PathBuf::from(path);
-    if candidate.extension().is_some() {
-        return candidate;
+    let resolved = if candidate.is_absolute() {
+        candidate
+    } else {
+        base_dir.join(candidate)
+    };
+
+    if resolved.extension().is_some() {
+        return resolved;
     }
+
     let filename = format!("profile-{}.jsonl", Utc::now().format("%Y%m%d-%H%M%S"));
-    candidate.join(filename)
+    resolved.join(filename)
 }
 
 pub async fn start_profile_capture(
@@ -262,9 +269,17 @@ fn classify_process(name: &str) -> String {
     }
 }
 
-pub fn ensure_profile_path(path: &str) -> PathBuf {
+pub fn ensure_profile_path(app: &AppHandle, path: &str) -> PathBuf {
+    // Resolve relative paths into app data to avoid dev hot-reload watching project folders.
+    let base_dir = app
+        .path()
+        .app_data_dir()
+        .or_else(|_| std::env::current_dir())
+        .unwrap_or_else(|_| PathBuf::from("."));
+
     if path.trim().is_empty() {
-        return resolve_profile_path("profile-data");
+        return resolve_profile_path(&base_dir, "profile-data");
     }
-    resolve_profile_path(path)
+
+    resolve_profile_path(&base_dir, path)
 }

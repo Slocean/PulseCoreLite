@@ -214,7 +214,7 @@ pub async fn start_profile_capture(
         return Err("Profile capture already running.".to_string());
     }
 
-    let resolved = ensure_profile_path(&path);
+    let resolved = ensure_profile_path(&app, &path);
     let handle = crate::profiler::start_profile_capture(
         app,
         state.inner().clone(),
