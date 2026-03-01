@@ -21,6 +21,7 @@ export function useTaskbarWindow({ rememberPosition, positionLocked }: UseTaskba
   let lastPosition: { x: number; y: number } | null = null;
   let lockedPosition: { x: number; y: number } | null = null;
   let restoringLockedPosition = false;
+  let restoringInitialPosition = false;
   let rememberInit = false;
 
   const getWindowApi = async () => {
@@ -226,7 +227,12 @@ export function useTaskbarWindow({ rememberPosition, positionLocked }: UseTaskba
     const safePosition = await sanitizePosition(saved);
     savePosition(safePosition);
     const { getCurrentWindow, PhysicalPosition } = await getWindowApi();
-    await getCurrentWindow().setPosition(new PhysicalPosition(safePosition.x, safePosition.y));
+    restoringInitialPosition = true;
+    try {
+      await getCurrentWindow().setPosition(new PhysicalPosition(safePosition.x, safePosition.y));
+    } finally {
+      restoringInitialPosition = false;
+    }
     if (positionLocked.value) {
       lockedPosition = { ...safePosition };
     }
@@ -304,8 +310,7 @@ export function useTaskbarWindow({ rememberPosition, positionLocked }: UseTaskba
         return;
       }
       void captureLockedPosition();
-    },
-    { immediate: true }
+    }
   );
 
   const scheduleResize = () => {
@@ -338,11 +343,14 @@ export function useTaskbarWindow({ rememberPosition, positionLocked }: UseTaskba
     if (!inTauri()) return;
     if (rememberPosition.value) {
       void restorePosition();
+    } else if (positionLocked.value) {
+      void captureLockedPosition();
     }
     void getWindowApi()
       .then(({ getCurrentWindow }) =>
         getCurrentWindow().onMoved(() => {
           if (correctingVerticalBounds) return;
+          if (restoringInitialPosition) return;
           if (positionLocked.value) {
             void restoreLockedPosition();
             return;
