@@ -10,6 +10,43 @@ const OVERLAY_POS_KEY = 'pulsecorelite.overlay_pos';
 const FULLSCREEN_POLL_MS = 800;
 const MEMORY_TRIM_MIN = 1;
 const MEMORY_TRIM_MAX = 30;
+const MEMORY_TRIM_TARGET_APP = 'app' as const;
+const MEMORY_TRIM_TARGET_SYSTEM = 'system' as const;
+const MEMORY_TRIM_TARGETS = [MEMORY_TRIM_TARGET_APP, MEMORY_TRIM_TARGET_SYSTEM] as const;
+type MemoryTrimTarget = (typeof MEMORY_TRIM_TARGETS)[number];
+
+function normalizeMemoryTrimTargets(input: unknown): MemoryTrimTarget[] {
+  if (!Array.isArray(input)) return [];
+  const set = new Set<MemoryTrimTarget>();
+  for (const item of input) {
+    if (item === MEMORY_TRIM_TARGET_APP || item === MEMORY_TRIM_TARGET_SYSTEM) {
+      set.add(item);
+    }
+  }
+  return Array.from(set);
+}
+
+function filterTargetsByEnabled(settings: AppSettings, targets: MemoryTrimTarget[]) {
+  return targets.filter(target => {
+    if (target === MEMORY_TRIM_TARGET_APP) return settings.memoryTrimEnabled;
+    if (target === MEMORY_TRIM_TARGET_SYSTEM) return settings.memoryTrimSystemEnabled;
+    return false;
+  });
+}
+
+function isTargetSelected(targets: MemoryTrimTarget[], target: MemoryTrimTarget) {
+  return targets.includes(target);
+}
+
+function computeEffectiveTrimEnabled(settings: AppSettings) {
+  return settings.memoryTrimEnabled && isTargetSelected(settings.memoryTrimTargets, MEMORY_TRIM_TARGET_APP);
+}
+
+function computeEffectiveSystemTrimEnabled(settings: AppSettings) {
+  return (
+    settings.memoryTrimSystemEnabled && isTargetSelected(settings.memoryTrimTargets, MEMORY_TRIM_TARGET_SYSTEM)
+  );
+}
 
 let fullscreenMonitorTimer: number | null = null;
 let fullscreenMonitorActive = false;
@@ -52,6 +89,10 @@ function readStoredSettings(): Partial<AppSettings> | null {
     const hasAutoStartEnabled = hasOwn('autoStartEnabled') && typeof parsed.autoStartEnabled === 'boolean';
     const hasMemoryTrimEnabled =
       hasOwn('memoryTrimEnabled') && typeof parsed.memoryTrimEnabled === 'boolean';
+    const hasMemoryTrimSystemEnabled =
+      hasOwn('memoryTrimSystemEnabled') && typeof parsed.memoryTrimSystemEnabled === 'boolean';
+    const hasMemoryTrimTargets =
+      hasOwn('memoryTrimTargets') && Array.isArray(parsed.memoryTrimTargets);
     const hasMemoryTrimIntervalMinutes =
       hasOwn('memoryTrimIntervalMinutes') &&
       typeof parsed.memoryTrimIntervalMinutes === 'number' &&
@@ -75,6 +116,8 @@ function readStoredSettings(): Partial<AppSettings> | null {
       hasCloseToTray ||
       hasAutoStartEnabled ||
       hasMemoryTrimEnabled ||
+      hasMemoryTrimSystemEnabled ||
+      hasMemoryTrimTargets ||
       hasMemoryTrimIntervalMinutes ||
       hasRememberOverlayPosition ||
       hasOverlayAlwaysOnTop ||
@@ -89,6 +132,10 @@ function readStoredSettings(): Partial<AppSettings> | null {
         ...(hasCloseToTray ? { closeToTray: parsed.closeToTray } : {}),
         ...(hasAutoStartEnabled ? { autoStartEnabled: parsed.autoStartEnabled } : {}),
         ...(hasMemoryTrimEnabled ? { memoryTrimEnabled: parsed.memoryTrimEnabled } : {}),
+        ...(hasMemoryTrimSystemEnabled ? { memoryTrimSystemEnabled: parsed.memoryTrimSystemEnabled } : {}),
+        ...(hasMemoryTrimTargets
+          ? { memoryTrimTargets: normalizeMemoryTrimTargets(parsed.memoryTrimTargets) }
+          : {}),
         ...(hasMemoryTrimIntervalMinutes
           ? { memoryTrimIntervalMinutes: Math.round(parsed.memoryTrimIntervalMinutes) }
           : {}),
@@ -115,6 +162,8 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
     closeToTray: false,
     autoStartEnabled: false,
     memoryTrimEnabled: true,
+    memoryTrimSystemEnabled: false,
+    memoryTrimTargets: [MEMORY_TRIM_TARGET_APP],
     memoryTrimIntervalMinutes: 5,
     rememberOverlayPosition: true,
     overlayAlwaysOnTop: true,
@@ -127,6 +176,7 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
 
   const candidate = settings ?? fallback;
   const clampMemoryTrimInterval = (value: number) => Math.max(1, Math.min(30, Math.round(value)));
+  const candidateTargets = normalizeMemoryTrimTargets((candidate as AppSettings).memoryTrimTargets);
   const base: AppSettings = {
     language: candidate.language === 'en-US' ? 'en-US' : 'zh-CN',
     closeToTray: typeof candidate.closeToTray === 'boolean' ? candidate.closeToTray : fallback.closeToTray,
@@ -134,6 +184,11 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
       typeof candidate.autoStartEnabled === 'boolean' ? candidate.autoStartEnabled : fallback.autoStartEnabled,
     memoryTrimEnabled:
       typeof candidate.memoryTrimEnabled === 'boolean' ? candidate.memoryTrimEnabled : fallback.memoryTrimEnabled,
+    memoryTrimSystemEnabled:
+      typeof candidate.memoryTrimSystemEnabled === 'boolean'
+        ? candidate.memoryTrimSystemEnabled
+        : fallback.memoryTrimSystemEnabled,
+    memoryTrimTargets: candidateTargets.length ? candidateTargets : fallback.memoryTrimTargets,
     memoryTrimIntervalMinutes:
       typeof candidate.memoryTrimIntervalMinutes === 'number' && Number.isFinite(candidate.memoryTrimIntervalMinutes)
         ? clampMemoryTrimInterval(candidate.memoryTrimIntervalMinutes)
@@ -170,12 +225,14 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
   if (!stored) {
     return base;
   }
-  return {
+  const merged: AppSettings = {
     ...base,
     language: stored.language ?? base.language,
     closeToTray: stored.closeToTray ?? base.closeToTray,
     autoStartEnabled: stored.autoStartEnabled ?? base.autoStartEnabled,
     memoryTrimEnabled: stored.memoryTrimEnabled ?? base.memoryTrimEnabled,
+    memoryTrimSystemEnabled: stored.memoryTrimSystemEnabled ?? base.memoryTrimSystemEnabled,
+    memoryTrimTargets: stored.memoryTrimTargets ?? base.memoryTrimTargets,
     memoryTrimIntervalMinutes:
       typeof stored.memoryTrimIntervalMinutes === 'number'
         ? clampMemoryTrimInterval(stored.memoryTrimIntervalMinutes)
@@ -188,6 +245,11 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
     taskbarPositionLocked: stored.taskbarPositionLocked ?? base.taskbarPositionLocked,
     factoryResetHotkey: stored.factoryResetHotkey ?? base.factoryResetHotkey
   };
+
+  const normalizedTargets = normalizeMemoryTrimTargets(merged.memoryTrimTargets);
+  merged.memoryTrimTargets = filterTargetsByEnabled(merged, normalizedTargets);
+
+  return merged;
 }
 
 function persistSettings(settings: AppSettings) {
@@ -339,6 +401,7 @@ export const useAppStore = defineStore('app', {
           void this.ensureTaskbarMonitor();
           void this.syncAutoStartEnabled();
           void this.syncMemoryTrimEnabled();
+          void this.syncMemoryTrimSystemEnabled();
           void this.syncMemoryTrimInterval();
           void this.detectInstallationMode();
           this.unlisteners.push(
@@ -536,9 +599,14 @@ export const useAppStore = defineStore('app', {
         return;
       }
       const previous = this.settings.memoryTrimEnabled;
+      const previousTargets = this.settings.memoryTrimTargets;
+      const nextTargets = memoryTrimEnabled
+        ? previousTargets
+        : previousTargets.filter(target => target !== MEMORY_TRIM_TARGET_APP);
       this.settings = {
         ...this.settings,
-        memoryTrimEnabled
+        memoryTrimEnabled,
+        memoryTrimTargets: nextTargets
       };
       persistSettings(this.settings);
       void broadcastSettingsSync();
@@ -546,11 +614,73 @@ export const useAppStore = defineStore('app', {
         return;
       }
       try {
-        await api.setMemoryTrimEnabled(memoryTrimEnabled);
+        await api.setMemoryTrimEnabled(computeEffectiveTrimEnabled(this.settings));
       } catch {
         this.settings = {
           ...this.settings,
-          memoryTrimEnabled: previous
+          memoryTrimEnabled: previous,
+          memoryTrimTargets: previousTargets
+        };
+        persistSettings(this.settings);
+        void broadcastSettingsSync();
+      }
+    },
+    async setMemoryTrimSystemEnabled(memoryTrimSystemEnabled: boolean) {
+      if (this.settings.memoryTrimSystemEnabled === memoryTrimSystemEnabled) {
+        return;
+      }
+      const previous = this.settings.memoryTrimSystemEnabled;
+      const previousTargets = this.settings.memoryTrimTargets;
+      const nextTargets = memoryTrimSystemEnabled
+        ? previousTargets
+        : previousTargets.filter(target => target !== MEMORY_TRIM_TARGET_SYSTEM);
+      this.settings = {
+        ...this.settings,
+        memoryTrimSystemEnabled,
+        memoryTrimTargets: nextTargets
+      };
+      persistSettings(this.settings);
+      void broadcastSettingsSync();
+      if (!inTauri()) {
+        return;
+      }
+      try {
+        await api.setMemoryTrimSystemEnabled(computeEffectiveSystemTrimEnabled(this.settings));
+      } catch {
+        this.settings = {
+          ...this.settings,
+          memoryTrimSystemEnabled: previous,
+          memoryTrimTargets: previousTargets
+        };
+        persistSettings(this.settings);
+        void broadcastSettingsSync();
+      }
+    },
+    async setMemoryTrimTargets(memoryTrimTargets: MemoryTrimTarget[]) {
+      const normalized = normalizeMemoryTrimTargets(memoryTrimTargets);
+      const filtered = filterTargetsByEnabled(this.settings, normalized);
+      const previous = this.settings.memoryTrimTargets;
+      const same =
+        filtered.length === previous.length && filtered.every(target => previous.includes(target));
+      if (same) {
+        return;
+      }
+      this.settings = {
+        ...this.settings,
+        memoryTrimTargets: filtered
+      };
+      persistSettings(this.settings);
+      void broadcastSettingsSync();
+      if (!inTauri()) {
+        return;
+      }
+      try {
+        await api.setMemoryTrimEnabled(computeEffectiveTrimEnabled(this.settings));
+        await api.setMemoryTrimSystemEnabled(computeEffectiveSystemTrimEnabled(this.settings));
+      } catch {
+        this.settings = {
+          ...this.settings,
+          memoryTrimTargets: previous
         };
         persistSettings(this.settings);
         void broadcastSettingsSync();
@@ -709,7 +839,17 @@ export const useAppStore = defineStore('app', {
         return;
       }
       try {
-        await api.setMemoryTrimEnabled(this.settings.memoryTrimEnabled);
+        await api.setMemoryTrimEnabled(computeEffectiveTrimEnabled(this.settings));
+      } catch {
+        return;
+      }
+    },
+    async syncMemoryTrimSystemEnabled() {
+      if (!inTauri()) {
+        return;
+      }
+      try {
+        await api.setMemoryTrimSystemEnabled(computeEffectiveSystemTrimEnabled(this.settings));
       } catch {
         return;
       }

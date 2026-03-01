@@ -1,4 +1,5 @@
 @import './styles/base.css';
 @import './styles/overlay.css';
 @import './styles/overlay-config.css';
+@import './styles/overlay-dialog.css';
 @import './styles/toolkit.css';

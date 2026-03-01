@@ -318,6 +318,32 @@ html.window-toolkit body {
   width: 100%;
 }
 
+.toolkit-card .toolkit-inline-button {
+  width: auto;
+  min-width: 96px;
+}
+
+.toolkit-link-label {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-size: 12px;
+  color: rgba(0, 242, 255, 0.92);
+  cursor: pointer;
+  transition: color 160ms ease;
+  -webkit-app-region: no-drag;
+}
+
+.toolkit-link-label:hover {
+  color: rgba(0, 242, 255, 1);
+}
+
+.toolkit-link-label:disabled {
+  color: rgba(255, 255, 255, 0.45);
+  cursor: not-allowed;
+}
+
 .toolkit-status,
 .toolkit-error {
   margin: 0;

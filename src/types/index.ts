@@ -61,6 +61,8 @@ export interface AppSettings {
   closeToTray: boolean;
   autoStartEnabled: boolean;
   memoryTrimEnabled: boolean;
+  memoryTrimSystemEnabled: boolean;
+  memoryTrimTargets: Array<'app' | 'system'>;
   memoryTrimIntervalMinutes: number;
   rememberOverlayPosition: boolean;
   overlayAlwaysOnTop: boolean;

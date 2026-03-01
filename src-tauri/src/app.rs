@@ -137,6 +137,7 @@ pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Bu
         commands::toggle_overlay,
         commands::set_refresh_rate,
         commands::set_memory_trim_enabled,
+        commands::set_memory_trim_system_enabled,
         commands::set_memory_trim_interval,
         commands::save_export_config,
         commands::confirm_factory_reset,

@@ -19,6 +19,8 @@ interface AppStoreLike {
     taskbarMonitorEnabled: boolean;
     autoStartEnabled: boolean;
     memoryTrimEnabled: boolean;
+    memoryTrimSystemEnabled: boolean;
+    memoryTrimTargets: Array<'app' | 'system'>;
     memoryTrimIntervalMinutes: number;
   };
   setLanguage: (language: 'zh-CN' | 'en-US') => void;
@@ -32,6 +34,8 @@ interface AppStoreLike {
   setTaskbarMonitorEnabled: (value: boolean) => Promise<void>;
   setAutoStartEnabled: (value: boolean) => Promise<void>;
   setMemoryTrimEnabled: (value: boolean) => Promise<void> | void;
+  setMemoryTrimSystemEnabled: (value: boolean) => Promise<void> | void;
+  setMemoryTrimTargets: (value: Array<'app' | 'system'>) => Promise<void> | void;
   setMemoryTrimIntervalMinutes: (value: number) => Promise<void> | void;
   setRefreshRate: (value: number) => void;
 }
@@ -254,6 +258,10 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
           await store.setAutoStartEnabled(settings.autoStartEnabled);
         if (typeof settings.memoryTrimEnabled === 'boolean')
           await store.setMemoryTrimEnabled(settings.memoryTrimEnabled);
+        if (typeof settings.memoryTrimSystemEnabled === 'boolean')
+          await store.setMemoryTrimSystemEnabled(settings.memoryTrimSystemEnabled);
+        if (Array.isArray(settings.memoryTrimTargets))
+          await store.setMemoryTrimTargets(settings.memoryTrimTargets as Array<'app' | 'system'>);
         if (typeof settings.memoryTrimIntervalMinutes === 'number' && Number.isFinite(settings.memoryTrimIntervalMinutes))
           await store.setMemoryTrimIntervalMinutes(settings.memoryTrimIntervalMinutes);
       }

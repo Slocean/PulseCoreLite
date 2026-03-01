@@ -77,6 +77,10 @@ pub struct AppSettings {
     pub auto_start_enabled: bool,
     #[serde(rename = "memoryTrimEnabled")]
     pub memory_trim_enabled: bool,
+    #[serde(rename = "memoryTrimSystemEnabled")]
+    pub memory_trim_system_enabled: bool,
+    #[serde(rename = "memoryTrimTargets")]
+    pub memory_trim_targets: Vec<String>,
     #[serde(rename = "memoryTrimIntervalMinutes")]
     pub memory_trim_interval_minutes: u8,
     #[serde(rename = "rememberOverlayPosition")]
@@ -102,6 +106,8 @@ impl Default for AppSettings {
             close_to_tray: false,
             auto_start_enabled: false,
             memory_trim_enabled: true,
+            memory_trim_system_enabled: false,
+            memory_trim_targets: vec!["app".to_string()],
             memory_trim_interval_minutes: 5,
             remember_overlay_position: true,
             overlay_always_on_top: true,

@@ -862,6 +862,16 @@ pub async fn set_memory_trim_enabled(state: State<'_, SharedState>, enabled: boo
 }
 
 #[tauri::command]
+pub async fn set_memory_trim_system_enabled(
+    state: State<'_, SharedState>,
+    enabled: bool,
+) -> CmdResult<()> {
+    let mut settings = state.settings.write().await;
+    settings.memory_trim_system_enabled = enabled;
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn set_memory_trim_interval(
     state: State<'_, SharedState>,
     interval_minutes: u64,
