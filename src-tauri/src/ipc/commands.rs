@@ -866,8 +866,9 @@ pub async fn set_memory_trim_system_enabled(
     state: State<'_, SharedState>,
     enabled: bool,
 ) -> CmdResult<()> {
-    let mut settings = state.settings.write().await;
-    settings.memory_trim_system_enabled = enabled;
+    use std::sync::atomic::Ordering;
+    state.memory_trim_system_enabled.store(enabled, Ordering::Relaxed);
+    state.settings.write().await.memory_trim_system_enabled = enabled;
     Ok(())
 }
 

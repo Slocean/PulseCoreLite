@@ -86,6 +86,14 @@ pub fn start_memory_trim_loop(state: SharedState) {
                     tracing::debug!("memory trim skipped/failed: {err}");
                 }
             }
+            let system_enabled = state
+                .memory_trim_system_enabled
+                .load(std::sync::atomic::Ordering::Relaxed);
+            if system_enabled {
+                if let Err(err) = trim_all_processes_working_set() {
+                    tracing::debug!("system memory trim skipped/failed: {err}");
+                }
+            }
         }
     });
 }
@@ -106,8 +114,59 @@ fn trim_working_set() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[cfg(windows)]
+fn trim_all_processes_working_set() -> anyhow::Result<()> {
+    use windows_sys::Win32::System::Diagnostics::ToolHelp::{
+        CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W,
+        TH32CS_SNAPPROCESS,
+    };
+    use windows_sys::Win32::System::ProcessStatus::EmptyWorkingSet;
+    use windows_sys::Win32::System::Threading::{
+        OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_SET_QUOTA,
+    };
+    use windows_sys::Win32::Foundation::{CloseHandle, ERROR_NO_MORE_FILES};
+
+    unsafe {
+        let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if snapshot == windows_sys::Win32::Foundation::INVALID_HANDLE_VALUE {
+            return Err(anyhow::anyhow!("CreateToolhelp32Snapshot failed"));
+        }
+
+        let mut entry: PROCESSENTRY32W = std::mem::zeroed();
+        entry.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
+
+        if Process32FirstW(snapshot, &mut entry) != 0 {
+            loop {
+                let handle = OpenProcess(
+                    PROCESS_QUERY_INFORMATION | PROCESS_SET_QUOTA,
+                    0,
+                    entry.th32ProcessID,
+                );
+                if !handle.is_null() {
+                    let _ = EmptyWorkingSet(handle);
+                    CloseHandle(handle);
+                }
+
+                entry = std::mem::zeroed();
+                entry.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
+                if Process32NextW(snapshot, &mut entry) == 0 {
+                    let err = std::io::Error::last_os_error();
+                    if err.raw_os_error() == Some(ERROR_NO_MORE_FILES as i32) {
+                        break;
+                    }
+                    break;
+                }
+            }
+        }
+
+        CloseHandle(snapshot);
+    }
+
+    Ok(())
+}
+
 #[cfg(not(windows))]
-fn trim_working_set() -> anyhow::Result<()> {
+fn trim_all_processes_working_set() -> anyhow::Result<()> {
     Ok(())
 }
 

@@ -18,6 +18,7 @@ pub struct AppState {
     pub refresh_rate_ms: AtomicU64,
     pub memory_trim_interval_ms: AtomicU64,
     pub memory_trim_enabled: AtomicBool,
+    pub memory_trim_system_enabled: AtomicBool,
 }
 
 pub type SharedState = Arc<AppState>;
@@ -27,6 +28,7 @@ impl AppState {
         let settings = AppSettings::default();
         let trim_interval_ms = settings.memory_trim_interval_minutes as u64 * 60 * 1000;
         let trim_enabled = settings.memory_trim_enabled;
+        let trim_system_enabled = settings.memory_trim_system_enabled;
         let collector = SystemCollector::new();
         let initial_snapshot = empty_snapshot();
         let hardware_info = empty_hardware_info();
@@ -39,6 +41,7 @@ impl AppState {
             refresh_rate_ms: AtomicU64::new(1000),
             memory_trim_interval_ms: AtomicU64::new(trim_interval_ms),
             memory_trim_enabled: AtomicBool::new(trim_enabled),
+            memory_trim_system_enabled: AtomicBool::new(trim_system_enabled),
         }))
     }
 
