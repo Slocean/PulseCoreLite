@@ -203,6 +203,9 @@ pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Bu
         commands::get_shutdown_plan,
         commands::schedule_shutdown,
         commands::cancel_shutdown_schedule,
-        commands::exit_app
+        commands::exit_app,
+        commands::start_profile_capture,
+        commands::stop_profile_capture,
+        commands::get_profile_status
     ])
 }

@@ -7,6 +7,7 @@ use tokio::sync::{Mutex, RwLock};
 
 use crate::{
     core::collectors::system_collector::SystemCollector,
+    profiler::ProfilerHandle,
     types::{AppSettings, HardwareInfo, TelemetrySnapshot},
 };
 
@@ -15,6 +16,7 @@ pub struct AppState {
     pub hardware_info: RwLock<HardwareInfo>,
     pub latest_snapshot: RwLock<TelemetrySnapshot>,
     pub collector: Mutex<SystemCollector>,
+    pub profiler: Mutex<Option<ProfilerHandle>>,
     pub refresh_rate_ms: AtomicU64,
     pub memory_trim_interval_ms: AtomicU64,
     pub memory_trim_enabled: AtomicBool,
@@ -38,6 +40,7 @@ impl AppState {
             hardware_info: RwLock::new(hardware_info),
             latest_snapshot: RwLock::new(initial_snapshot),
             collector: Mutex::new(collector),
+            profiler: Mutex::new(None),
             refresh_rate_ms: AtomicU64::new(1000),
             memory_trim_interval_ms: AtomicU64::new(trim_interval_ms),
             memory_trim_enabled: AtomicBool::new(trim_enabled),

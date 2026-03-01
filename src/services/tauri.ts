@@ -53,5 +53,26 @@ export const api = {
   scheduleShutdown: (request: ScheduleShutdownRequest) =>
     tauriInvoke<ShutdownPlan>("schedule_shutdown", { request }),
   cancelShutdownSchedule: () => tauriInvoke<void>("cancel_shutdown_schedule"),
-  exitApp: () => tauriInvoke<void>("exit_app")
+  exitApp: () => tauriInvoke<void>("exit_app"),
+  startProfileCapture: (options: { path: string; intervalMs: number; durationMs?: number | null }) =>
+    tauriInvoke<{
+      active: boolean;
+      path: string | null;
+      startedAt: string | null;
+      samples: number;
+    }>("start_profile_capture", options),
+  stopProfileCapture: () =>
+    tauriInvoke<{
+      active: boolean;
+      path: string | null;
+      startedAt: string | null;
+      samples: number;
+    }>("stop_profile_capture"),
+  getProfileStatus: () =>
+    tauriInvoke<{
+      active: boolean;
+      path: string | null;
+      startedAt: string | null;
+      samples: number;
+    }>("get_profile_status")
 };

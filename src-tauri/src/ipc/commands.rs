@@ -6,6 +6,7 @@ use tauri::{AppHandle, Manager, State};
 
 use crate::{
     core::device_info,
+    profiler::{ensure_profile_path, ProfileStatus},
     state::SharedState,
     types::{AppBootstrap, ScheduleShutdownRequest, ShutdownPlan},
 };
@@ -198,6 +199,74 @@ pub fn get_auto_start_enabled() -> CmdResult<bool> {
     {
         Err("Autostart is not supported on this platform.".to_string())
     }
+}
+
+#[tauri::command]
+pub async fn start_profile_capture(
+    app: AppHandle,
+    state: State<'_, SharedState>,
+    path: String,
+    interval_ms: u64,
+    duration_ms: Option<u64>,
+) -> CmdResult<ProfileStatus> {
+    let mut profiler_lock = state.profiler.lock().await;
+    if profiler_lock.is_some() {
+        return Err("Profile capture already running.".to_string());
+    }
+
+    let resolved = ensure_profile_path(&path);
+    let handle = crate::profiler::start_profile_capture(
+        app,
+        state.inner().clone(),
+        resolved,
+        interval_ms,
+        duration_ms,
+    )
+    .await?;
+
+    let status = handle.status();
+    *profiler_lock = Some(handle);
+    Ok(status)
+}
+
+#[tauri::command]
+pub async fn stop_profile_capture(state: State<'_, SharedState>) -> CmdResult<ProfileStatus> {
+    let handle = {
+        let mut profiler_lock = state.profiler.lock().await;
+        profiler_lock.take()
+    };
+
+    if let Some(handle) = handle {
+        let status = handle.status();
+        handle.stop().await;
+        return Ok(ProfileStatus {
+            active: false,
+            path: status.path,
+            started_at: status.started_at,
+            samples: status.samples,
+        });
+    }
+
+    Ok(ProfileStatus {
+        active: false,
+        path: None,
+        started_at: None,
+        samples: 0,
+    })
+}
+
+#[tauri::command]
+pub async fn get_profile_status(state: State<'_, SharedState>) -> CmdResult<ProfileStatus> {
+    let profiler_lock = state.profiler.lock().await;
+    if let Some(handle) = profiler_lock.as_ref() {
+        return Ok(handle.status());
+    }
+    Ok(ProfileStatus {
+        active: false,
+        path: None,
+        started_at: None,
+        samples: 0,
+    })
 }
 
 #[tauri::command]

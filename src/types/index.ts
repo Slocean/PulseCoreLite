@@ -107,3 +107,10 @@ export interface ScheduleShutdownRequest {
   weekday?: number;
   dayOfMonth?: number;
 }
+
+export interface ProfileStatus {
+  active: boolean;
+  path: string | null;
+  startedAt: string | null;
+  samples: number;
+}

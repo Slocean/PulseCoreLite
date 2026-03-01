@@ -31,6 +31,65 @@
     </div>
   </div>
 
+  <div class="toolkit-card">
+    <h2 class="toolkit-section-title">{{ t('toolkit.profileTitle') }}</h2>
+    <p class="toolkit-profile-hint">{{ t('toolkit.profileHint') }}</p>
+    <div class="toolkit-profile-grid">
+      <div class="toolkit-profile-row">
+        <label class="overlay-config-label" :for="profilePathId">{{ t('toolkit.profilePath') }}</label>
+        <input
+          :id="profilePathId"
+          v-model="profilePath"
+          type="text"
+          class="toolkit-profile-input"
+          autocomplete="off" />
+      </div>
+      <div class="toolkit-profile-row">
+        <label class="overlay-config-label" :for="profileIntervalId">{{ t('toolkit.profileInterval') }}</label>
+        <input
+          :id="profileIntervalId"
+          v-model.number="profileIntervalMs"
+          type="number"
+          min="200"
+          max="10000"
+          class="toolkit-profile-input"
+          autocomplete="off" />
+      </div>
+      <div class="toolkit-profile-row">
+        <label class="overlay-config-label" :for="profileDurationId">{{ t('toolkit.profileDuration') }}</label>
+        <input
+          :id="profileDurationId"
+          v-model.number="profileDurationSec"
+          type="number"
+          min="5"
+          max="1800"
+          class="toolkit-profile-input"
+          autocomplete="off" />
+      </div>
+    </div>
+    <div class="toolkit-profile-actions">
+      <UiButton
+        native-type="button"
+        class="overlay-config-primary"
+        variant="text"
+        :disabled="profileStatus.active"
+        @click="startProfile">
+        {{ t('toolkit.profileStart') }}
+      </UiButton>
+      <UiButton
+        native-type="button"
+        class="overlay-config-danger"
+        variant="text"
+        :disabled="!profileStatus.active"
+        @click="stopProfile">
+        {{ t('toolkit.profileStop') }}
+      </UiButton>
+      <span class="toolkit-profile-status">
+        {{ profileStatusText }}
+      </span>
+    </div>
+  </div>
+
   <OverlayDialog
     v-model:open="targetsDialogOpen"
     :title="t('toolkit.cleanupTargetsTitle')"
@@ -55,12 +114,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
 import OverlayDialog from '../OverlayDialog.vue';
 import { useAppStore } from '../../stores/app';
+import { api } from '../../services/tauri';
 
 const emit = defineEmits<{
   (event: 'contentChange'): void;
@@ -86,6 +146,21 @@ const memoryTrimIntervalMinutes = computed({
   get: () => store.settings.memoryTrimIntervalMinutes,
   set: value => void store.setMemoryTrimIntervalMinutes(value)
 });
+
+const profilePathId = 'toolkit-profile-path';
+const profileIntervalId = 'toolkit-profile-interval';
+const profileDurationId = 'toolkit-profile-duration';
+
+const profilePath = ref(defaultProfilePath());
+const profileIntervalMs = ref(1000);
+const profileDurationSec = ref(120);
+const profileStatus = ref<{ active: boolean; path: string | null; startedAt: string | null; samples: number }>({
+  active: false,
+  path: null,
+  startedAt: null,
+  samples: 0
+});
+let profileStatusTimer: number | undefined;
 
 const enabledTargetOptions = computed(() => {
   const options: Array<{ id: 'app' | 'system'; label: string }> = [];
@@ -122,5 +197,59 @@ async function confirmTargets() {
 function cancelTargets() {
   // no-op, temp selections are discarded
 }
+
+const profileStatusText = computed(() => {
+  if (!profileStatus.value.active) {
+    return t('toolkit.profileStatusIdle');
+  }
+  const samples = profileStatus.value.samples;
+  return t('toolkit.profileStatusRunning', { samples });
+});
+
+async function refreshProfileStatus() {
+  try {
+    profileStatus.value = await api.getProfileStatus();
+  } catch {
+    // ignore
+  }
+}
+
+async function startProfile() {
+  const durationSec = Number.isFinite(profileDurationSec.value) ? profileDurationSec.value : 120;
+  const interval = Number.isFinite(profileIntervalMs.value) ? profileIntervalMs.value : 1000;
+  const durationMs = Math.max(5, durationSec) * 1000;
+  const response = await api.startProfileCapture({
+    path: profilePath.value,
+    intervalMs: Math.max(200, interval),
+    durationMs
+  });
+  profileStatus.value = response;
+}
+
+async function stopProfile() {
+  const response = await api.stopProfileCapture();
+  profileStatus.value = response;
+}
+
+function defaultProfilePath() {
+  const now = new Date();
+  const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(
+    now.getDate()
+  ).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(
+    now.getSeconds()
+  ).padStart(2, '0')}`;
+  return `profile-data/taskbar-profile-${stamp}.jsonl`;
+}
+
+onMounted(() => {
+  refreshProfileStatus();
+  profileStatusTimer = window.setInterval(refreshProfileStatus, 1000);
+});
+
+onUnmounted(() => {
+  if (profileStatusTimer) {
+    window.clearInterval(profileStatusTimer);
+  }
+});
 </script>
 
