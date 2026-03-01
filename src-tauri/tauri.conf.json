@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "PulseCore",
+  "productName": "PulseCoreLite",
   "version": "1.6.4",
   "identifier": "com.pulsecore.app",
   "build": {

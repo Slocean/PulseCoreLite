@@ -55,6 +55,45 @@ pub fn start_telemetry_loop(app: AppHandle, state: SharedState) {
     });
 }
 
+pub fn start_memory_trim_loop() {
+    // 15 minutes is a safe default: avoids frequent GC/working-set churn while
+    // still reclaiming idle pages over long runs.
+    const TRIM_INTERVAL: Duration = Duration::from_secs(15 * 60);
+
+    tauri::async_runtime::spawn(async move {
+        let mut ticker = tokio::time::interval(TRIM_INTERVAL);
+        ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+
+        loop {
+            ticker.tick().await;
+            if let Err(err) = trim_working_set() {
+                tracing::debug!("memory trim skipped/failed: {err}");
+            }
+        }
+    });
+}
+
+#[cfg(windows)]
+fn trim_working_set() -> anyhow::Result<()> {
+    use windows_sys::Win32::System::ProcessStatus::EmptyWorkingSet;
+    use windows_sys::Win32::System::Threading::GetCurrentProcess;
+
+    unsafe {
+        let handle = GetCurrentProcess();
+        let ok = EmptyWorkingSet(handle);
+        if ok == 0 {
+            return Err(anyhow::anyhow!(std::io::Error::last_os_error()));
+        }
+    }
+
+    Ok(())
+}
+
+#[cfg(not(windows))]
+fn trim_working_set() -> anyhow::Result<()> {
+    Ok(())
+}
+
 fn visible_consumer_labels(app: &AppHandle) -> Vec<&'static str> {
     let mut labels = Vec::with_capacity(3);
     for label in ["main", "taskbar", "toolkit"] {

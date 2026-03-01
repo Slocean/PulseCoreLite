@@ -26,6 +26,7 @@ fn main() {
 
             app.manage(state.clone());
             crate::app::start_telemetry_loop(app.handle().clone(), state);
+            crate::app::start_memory_trim_loop();
 
             #[cfg(desktop)]
             {
