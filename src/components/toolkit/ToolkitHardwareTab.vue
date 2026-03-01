@@ -1,19 +1,31 @@
 <template>
   <div class="toolkit-card toolkit-card--score">
-    <h2 class="toolkit-section-title">{{ t('toolkit.hardwareScoreTitle') }}</h2>
-    <div class="toolkit-score-ring" :style="scoreRingStyle">
-      <div class="toolkit-score-center">
-        <div class="toolkit-score-value">{{ totalScore }}</div>
-        <div class="toolkit-score-grade">{{ totalGrade }}</div>
+    <button type="button" class="toolkit-collapse-toggle" @click="toggleSection('score')">
+      <span class="toolkit-section-title">{{ t('toolkit.hardwareScoreTitle') }}</span>
+      <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.score }">
+        expand_more
+      </span>
+    </button>
+    <div v-if="sections.score">
+      <div class="toolkit-score-ring" :style="scoreRingStyle">
+        <div class="toolkit-score-center">
+          <div class="toolkit-score-value">{{ totalScore }}</div>
+          <div class="toolkit-score-grade">{{ totalGrade }}</div>
+        </div>
       </div>
+      <div class="toolkit-score-caption">{{ totalGradeLabel }}</div>
+      <p class="toolkit-score-desc">{{ totalSummary }}</p>
     </div>
-    <div class="toolkit-score-caption">{{ totalGradeLabel }}</div>
-    <p class="toolkit-score-desc">{{ totalSummary }}</p>
   </div>
 
   <div class="toolkit-card">
-    <h2 class="toolkit-section-title">{{ t('toolkit.dimensionTitle') }}</h2>
-    <div class="toolkit-score-list">
+    <button type="button" class="toolkit-collapse-toggle" @click="toggleSection('dimension')">
+      <span class="toolkit-section-title">{{ t('toolkit.dimensionTitle') }}</span>
+      <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.dimension }">
+        expand_more
+      </span>
+    </button>
+    <div v-if="sections.dimension" class="toolkit-score-list">
       <div v-for="item in dimensionScores" :key="item.id" class="toolkit-score-item">
         <div class="toolkit-score-item-header">
           <span class="toolkit-score-title">{{ item.title }}</span>
@@ -29,8 +41,15 @@
   </div>
 
   <div class="toolkit-card">
-    <h2 class="toolkit-section-title">{{ t('toolkit.hardwareSummaryTitle') }}</h2>
-    <div class="toolkit-summary-grid">
+    <button type="button" class="toolkit-collapse-toggle" @click="toggleSection('summary')">
+      <span class="toolkit-section-title">{{ t('toolkit.hardwareSummaryTitle') }}</span>
+      <span
+        class="toolkit-collapse-indicator material-symbols-outlined"
+        :class="{ 'is-open': sections.summary }">
+        expand_more
+      </span>
+    </button>
+    <div v-if="sections.summary" class="toolkit-summary-grid">
       <div v-for="row in hardwareSummaryRows" :key="row.id" class="toolkit-summary-item">
         <span class="toolkit-summary-label">{{ row.label }}</span>
         <span class="toolkit-summary-value">{{ row.value }}</span>
@@ -39,15 +58,20 @@
   </div>
 
   <div class="toolkit-card">
-    <h2 class="toolkit-section-title">{{ t('toolkit.hardwareAdviceTitle') }}</h2>
-    <ul class="toolkit-advice-list">
+    <button type="button" class="toolkit-collapse-toggle" @click="toggleSection('advice')">
+      <span class="toolkit-section-title">{{ t('toolkit.hardwareAdviceTitle') }}</span>
+      <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.advice }">
+        expand_more
+      </span>
+    </button>
+    <ul v-if="sections.advice" class="toolkit-advice-list">
       <li v-for="(item, index) in adviceList" :key="index" class="toolkit-advice-item">{{ item }}</li>
     </ul>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { useAppStore } from '../../stores/app';
@@ -61,6 +85,13 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const store = useAppStore();
+
+const sections = ref({
+  score: true,
+  dimension: true,
+  summary: false,
+  advice: false
+});
 
 const hardwareInfo = computed(() => store.hardwareInfo);
 const snapshot = computed(() => store.snapshot);
@@ -361,6 +392,11 @@ watch(
 onMounted(() => {
   nextTick(() => emit('contentChange'));
 });
+
+function toggleSection(key: 'score' | 'dimension' | 'summary' | 'advice') {
+  sections.value[key] = !sections.value[key];
+  nextTick(() => emit('contentChange'));
+}
 
 function clampScore(value: number) {
   if (!Number.isFinite(value)) return 0;
