@@ -41,7 +41,7 @@
     @confirm="confirmTargets"
     @cancel="cancelTargets">
     <template #body>
-      <div v-if="enabledTargetOptions.length" class="overlay-config">
+      <div v-if="enabledTargetOptions.length" class="overlay-config overlay-config--single-column">
         <label v-for="item in enabledTargetOptions" :key="item.id">
           <input v-model="tempTargets" type="checkbox" :value="item.id" />
           {{ item.label }}

@@ -10,6 +10,10 @@
   gap: 8px 12px;
 }
 
+.overlay-config--single-column {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .overlay-config-grid {
   grid-column: 1 / -1;
   display: grid;
