@@ -1,4 +1,7 @@
-use std::sync::{atomic::AtomicU64, Arc};
+use std::sync::{
+    atomic::{AtomicBool, AtomicU64},
+    Arc,
+};
 
 use tokio::sync::{Mutex, RwLock};
 
@@ -14,6 +17,7 @@ pub struct AppState {
     pub collector: Mutex<SystemCollector>,
     pub refresh_rate_ms: AtomicU64,
     pub memory_trim_interval_ms: AtomicU64,
+    pub memory_trim_enabled: AtomicBool,
 }
 
 pub type SharedState = Arc<AppState>;
@@ -22,6 +26,7 @@ impl AppState {
     pub async fn initialize() -> anyhow::Result<SharedState> {
         let settings = AppSettings::default();
         let trim_interval_ms = settings.memory_trim_interval_minutes as u64 * 60 * 1000;
+        let trim_enabled = settings.memory_trim_enabled;
         let collector = SystemCollector::new();
         let initial_snapshot = empty_snapshot();
         let hardware_info = empty_hardware_info();
@@ -33,6 +38,7 @@ impl AppState {
             collector: Mutex::new(collector),
             refresh_rate_ms: AtomicU64::new(1000),
             memory_trim_interval_ms: AtomicU64::new(trim_interval_ms),
+            memory_trim_enabled: AtomicBool::new(trim_enabled),
         }))
     }
 

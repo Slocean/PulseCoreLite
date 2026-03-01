@@ -57,6 +57,10 @@
         {{ t('overlay.autoStart') }}
       </label>
       <label>
+        <input v-model="memoryTrimEnabled" type="checkbox" />
+        {{ t('overlay.memoryTrim') }}
+      </label>
+      <label>
         <input v-model="rememberOverlayPosition" type="checkbox" />
         {{ t('overlay.rememberPosition') }}
       </label>
@@ -106,11 +110,6 @@
           step="10"
           v-model.number="refreshRate"
           @change="emit('refreshRateChange')" />
-      </div>
-      <div class="overlay-config-range">
-        <span class="overlay-config-label">{{ t('overlay.memoryTrimInterval') }}</span>
-        <span class="overlay-config-value">{{ memoryTrimIntervalMinutes }}{{ t('overlay.minutes') }}</span>
-        <input type="range" min="1" max="30" step="1" v-model.number="memoryTrimIntervalMinutes" />
       </div>
       <div v-if="!prefs.backgroundImage" class="overlay-config-range">
         <span class="overlay-config-label">{{ t('overlay.backgroundOpacity') }}</span>
@@ -273,7 +272,7 @@ const props = defineProps<{
 const prefs = defineModel<OverlayPrefs>('prefs', { required: true });
 const closeToTray = defineModel<boolean>('closeToTray', { required: true });
 const autoStartEnabled = defineModel<boolean>('autoStartEnabled', { required: true });
-const memoryTrimIntervalMinutes = defineModel<number>('memoryTrimIntervalMinutes', { required: true });
+const memoryTrimEnabled = defineModel<boolean>('memoryTrimEnabled', { required: true });
 const rememberOverlayPosition = defineModel<boolean>('rememberOverlayPosition', { required: true });
 const overlayAlwaysOnTop = defineModel<boolean>('overlayAlwaysOnTop', { required: true });
 const taskbarMonitorEnabled = defineModel<boolean>('taskbarMonitorEnabled', { required: true });

@@ -851,6 +851,17 @@ pub async fn set_refresh_rate(state: State<'_, SharedState>, rate_ms: u64) -> Cm
 }
 
 #[tauri::command]
+pub async fn set_memory_trim_enabled(state: State<'_, SharedState>, enabled: bool) -> CmdResult<()> {
+    use std::sync::atomic::Ordering;
+    state
+        .memory_trim_enabled
+        .store(enabled, Ordering::Relaxed);
+    let mut settings = state.settings.write().await;
+    settings.memory_trim_enabled = enabled;
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn set_memory_trim_interval(
     state: State<'_, SharedState>,
     interval_minutes: u64,

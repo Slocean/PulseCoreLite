@@ -35,7 +35,7 @@
         v-model:prefs="prefs"
         v-model:closeToTray="closeToTray"
         v-model:autoStartEnabled="autoStartEnabled"
-        v-model:memoryTrimIntervalMinutes="memoryTrimIntervalMinutes"
+        v-model:memoryTrimEnabled="memoryTrimEnabled"
         v-model:rememberOverlayPosition="rememberOverlayPosition"
         v-model:overlayAlwaysOnTop="overlayAlwaysOnTop"
         v-model:taskbarMonitorEnabled="taskbarMonitorEnabled"
@@ -414,9 +414,9 @@ const autoStartEnabled = computed({
   get: () => store.settings.autoStartEnabled,
   set: value => void store.setAutoStartEnabled(value)
 });
-const memoryTrimIntervalMinutes = computed({
-  get: () => store.settings.memoryTrimIntervalMinutes,
-  set: value => void store.setMemoryTrimIntervalMinutes(value)
+const memoryTrimEnabled = computed({
+  get: () => store.settings.memoryTrimEnabled,
+  set: value => void store.setMemoryTrimEnabled(value)
 });
 const rememberOverlayPosition = computed({
   get: () => store.settings.rememberOverlayPosition,

@@ -78,8 +78,13 @@ pub fn start_memory_trim_loop(state: SharedState) {
                 ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
             }
             ticker.tick().await;
-            if let Err(err) = trim_working_set() {
-                tracing::debug!("memory trim skipped/failed: {err}");
+            let enabled = state
+                .memory_trim_enabled
+                .load(std::sync::atomic::Ordering::Relaxed);
+            if enabled {
+                if let Err(err) = trim_working_set() {
+                    tracing::debug!("memory trim skipped/failed: {err}");
+                }
             }
         }
     });
@@ -131,6 +136,7 @@ pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Bu
         commands::uninstall_app,
         commands::toggle_overlay,
         commands::set_refresh_rate,
+        commands::set_memory_trim_enabled,
         commands::set_memory_trim_interval,
         commands::save_export_config,
         commands::confirm_factory_reset,

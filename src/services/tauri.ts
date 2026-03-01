@@ -34,6 +34,7 @@ export const api = {
   getHardwareInfo: () => tauriInvoke<HardwareInfo>("get_hardware_info"),
   toggleOverlay: (visible: boolean) => tauriInvoke<boolean>("toggle_overlay", { visible }),
   setRefreshRate: (rateMs: number) => tauriInvoke<void>("set_refresh_rate", { rateMs }),
+  setMemoryTrimEnabled: (enabled: boolean) => tauriInvoke<void>("set_memory_trim_enabled", { enabled }),
   setMemoryTrimIntervalMinutes: (intervalMinutes: number) =>
     tauriInvoke<void>("set_memory_trim_interval", { intervalMinutes }),
   confirmFactoryReset: (title: string, message: string) =>

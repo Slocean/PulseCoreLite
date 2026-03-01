@@ -45,6 +45,7 @@
     </nav>
 
     <ToolkitShutdownTab v-if="activeTab === 'shutdown'" @contentChange="handleContentChange" />
+    <ToolkitCleanupTab v-else-if="activeTab === 'cleanup'" @contentChange="handleContentChange" />
     <ToolkitHardwareTab v-else @contentChange="handleContentChange" />
   </section>
 </template>
@@ -53,12 +54,13 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import ToolkitCleanupTab from '../components/toolkit/ToolkitCleanupTab.vue';
 import ToolkitHardwareTab from '../components/toolkit/ToolkitHardwareTab.vue';
 import ToolkitShutdownTab from '../components/toolkit/ToolkitShutdownTab.vue';
 import { useOverlayPrefs, type OverlayBackgroundEffect } from '../composables/useOverlayPrefs';
 import { inTauri } from '../services/tauri';
 
-type ToolkitTab = 'shutdown' | 'hardware';
+type ToolkitTab = 'shutdown' | 'cleanup' | 'hardware';
 
 const { t } = useI18n();
 const { prefs } = useOverlayPrefs();
@@ -71,6 +73,7 @@ let windowApiPromise: Promise<typeof import('@tauri-apps/api/window')> | undefin
 
 const tabs = computed(() => [
   { id: 'shutdown' as const, label: t('toolkit.tabShutdown') },
+  { id: 'cleanup' as const, label: t('toolkit.tabCleanup') },
   { id: 'hardware' as const, label: t('toolkit.tabHardware') }
 ]);
 

@@ -60,6 +60,7 @@ export interface AppSettings {
   language: 'zh-CN' | 'en-US';
   closeToTray: boolean;
   autoStartEnabled: boolean;
+  memoryTrimEnabled: boolean;
   memoryTrimIntervalMinutes: number;
   rememberOverlayPosition: boolean;
   overlayAlwaysOnTop: boolean;

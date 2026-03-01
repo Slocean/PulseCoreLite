@@ -50,6 +50,8 @@ function readStoredSettings(): Partial<AppSettings> | null {
     const hasLanguage = parsed.language === 'zh-CN' || parsed.language === 'en-US';
     const hasCloseToTray = typeof parsed.closeToTray === 'boolean';
     const hasAutoStartEnabled = hasOwn('autoStartEnabled') && typeof parsed.autoStartEnabled === 'boolean';
+    const hasMemoryTrimEnabled =
+      hasOwn('memoryTrimEnabled') && typeof parsed.memoryTrimEnabled === 'boolean';
     const hasMemoryTrimIntervalMinutes =
       hasOwn('memoryTrimIntervalMinutes') &&
       typeof parsed.memoryTrimIntervalMinutes === 'number' &&
@@ -72,6 +74,7 @@ function readStoredSettings(): Partial<AppSettings> | null {
       hasLanguage ||
       hasCloseToTray ||
       hasAutoStartEnabled ||
+      hasMemoryTrimEnabled ||
       hasMemoryTrimIntervalMinutes ||
       hasRememberOverlayPosition ||
       hasOverlayAlwaysOnTop ||
@@ -85,6 +88,7 @@ function readStoredSettings(): Partial<AppSettings> | null {
         ...(hasLanguage ? { language: parsed.language } : {}),
         ...(hasCloseToTray ? { closeToTray: parsed.closeToTray } : {}),
         ...(hasAutoStartEnabled ? { autoStartEnabled: parsed.autoStartEnabled } : {}),
+        ...(hasMemoryTrimEnabled ? { memoryTrimEnabled: parsed.memoryTrimEnabled } : {}),
         ...(hasMemoryTrimIntervalMinutes
           ? { memoryTrimIntervalMinutes: Math.round(parsed.memoryTrimIntervalMinutes) }
           : {}),
@@ -110,6 +114,7 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
     language: 'zh-CN',
     closeToTray: false,
     autoStartEnabled: false,
+    memoryTrimEnabled: true,
     memoryTrimIntervalMinutes: 5,
     rememberOverlayPosition: true,
     overlayAlwaysOnTop: true,
@@ -127,6 +132,8 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
     closeToTray: typeof candidate.closeToTray === 'boolean' ? candidate.closeToTray : fallback.closeToTray,
     autoStartEnabled:
       typeof candidate.autoStartEnabled === 'boolean' ? candidate.autoStartEnabled : fallback.autoStartEnabled,
+    memoryTrimEnabled:
+      typeof candidate.memoryTrimEnabled === 'boolean' ? candidate.memoryTrimEnabled : fallback.memoryTrimEnabled,
     memoryTrimIntervalMinutes:
       typeof candidate.memoryTrimIntervalMinutes === 'number' && Number.isFinite(candidate.memoryTrimIntervalMinutes)
         ? clampMemoryTrimInterval(candidate.memoryTrimIntervalMinutes)
@@ -168,6 +175,7 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
     language: stored.language ?? base.language,
     closeToTray: stored.closeToTray ?? base.closeToTray,
     autoStartEnabled: stored.autoStartEnabled ?? base.autoStartEnabled,
+    memoryTrimEnabled: stored.memoryTrimEnabled ?? base.memoryTrimEnabled,
     memoryTrimIntervalMinutes:
       typeof stored.memoryTrimIntervalMinutes === 'number'
         ? clampMemoryTrimInterval(stored.memoryTrimIntervalMinutes)
@@ -330,6 +338,7 @@ export const useAppStore = defineStore('app', {
           void this.ensureTray();
           void this.ensureTaskbarMonitor();
           void this.syncAutoStartEnabled();
+          void this.syncMemoryTrimEnabled();
           void this.syncMemoryTrimInterval();
           void this.detectInstallationMode();
           this.unlisteners.push(
@@ -522,6 +531,31 @@ export const useAppStore = defineStore('app', {
         void broadcastSettingsSync();
       }
     },
+    async setMemoryTrimEnabled(memoryTrimEnabled: boolean) {
+      if (this.settings.memoryTrimEnabled === memoryTrimEnabled) {
+        return;
+      }
+      const previous = this.settings.memoryTrimEnabled;
+      this.settings = {
+        ...this.settings,
+        memoryTrimEnabled
+      };
+      persistSettings(this.settings);
+      void broadcastSettingsSync();
+      if (!inTauri()) {
+        return;
+      }
+      try {
+        await api.setMemoryTrimEnabled(memoryTrimEnabled);
+      } catch {
+        this.settings = {
+          ...this.settings,
+          memoryTrimEnabled: previous
+        };
+        persistSettings(this.settings);
+        void broadcastSettingsSync();
+      }
+    },
     async setMemoryTrimIntervalMinutes(intervalMinutes: number) {
       const next = Math.max(MEMORY_TRIM_MIN, Math.min(MEMORY_TRIM_MAX, Math.round(intervalMinutes)));
       if (this.settings.memoryTrimIntervalMinutes === next) {
@@ -666,6 +700,16 @@ export const useAppStore = defineStore('app', {
           persistSettings(this.settings);
           void broadcastSettingsSync();
         }
+      } catch {
+        return;
+      }
+    },
+    async syncMemoryTrimEnabled() {
+      if (!inTauri()) {
+        return;
+      }
+      try {
+        await api.setMemoryTrimEnabled(this.settings.memoryTrimEnabled);
       } catch {
         return;
       }
