@@ -63,6 +63,8 @@
     "themeEditTitle": "Edit Theme",
     "themeEditHint": "Edit theme name and effect settings",
     "refreshRate": "Refresh Interval",
+    "memoryTrimInterval": "Auto Memory Trim Interval",
+    "minutes": " min",
     "configTransfer": "Import/Export",
     "exportConfig": "Export",
     "exportConfigSuccess": "Exported successfully.",

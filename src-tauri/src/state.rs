@@ -13,6 +13,7 @@ pub struct AppState {
     pub latest_snapshot: RwLock<TelemetrySnapshot>,
     pub collector: Mutex<SystemCollector>,
     pub refresh_rate_ms: AtomicU64,
+    pub memory_trim_interval_ms: AtomicU64,
 }
 
 pub type SharedState = Arc<AppState>;
@@ -20,6 +21,7 @@ pub type SharedState = Arc<AppState>;
 impl AppState {
     pub async fn initialize() -> anyhow::Result<SharedState> {
         let settings = AppSettings::default();
+        let trim_interval_ms = settings.memory_trim_interval_minutes as u64 * 60 * 1000;
         let collector = SystemCollector::new();
         let initial_snapshot = empty_snapshot();
         let hardware_info = empty_hardware_info();
@@ -30,6 +32,7 @@ impl AppState {
             latest_snapshot: RwLock::new(initial_snapshot),
             collector: Mutex::new(collector),
             refresh_rate_ms: AtomicU64::new(1000),
+            memory_trim_interval_ms: AtomicU64::new(trim_interval_ms),
         }))
     }
 

@@ -55,16 +55,28 @@ pub fn start_telemetry_loop(app: AppHandle, state: SharedState) {
     });
 }
 
-pub fn start_memory_trim_loop() {
-    // 15 minutes is a safe default: avoids frequent GC/working-set churn while
-    // still reclaiming idle pages over long runs.
-    const TRIM_INTERVAL: Duration = Duration::from_secs(15 * 60);
+pub fn start_memory_trim_loop(state: SharedState) {
+    const MIN_INTERVAL_MS: u64 = 60_000;
+    const MAX_INTERVAL_MS: u64 = 30 * 60 * 1000;
 
     tauri::async_runtime::spawn(async move {
-        let mut ticker = tokio::time::interval(TRIM_INTERVAL);
+        let mut current_interval_ms = state
+            .memory_trim_interval_ms
+            .load(std::sync::atomic::Ordering::Relaxed)
+            .clamp(MIN_INTERVAL_MS, MAX_INTERVAL_MS);
+        let mut ticker = tokio::time::interval(Duration::from_millis(current_interval_ms));
         ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
         loop {
+            let configured = state
+                .memory_trim_interval_ms
+                .load(std::sync::atomic::Ordering::Relaxed)
+                .clamp(MIN_INTERVAL_MS, MAX_INTERVAL_MS);
+            if configured != current_interval_ms {
+                current_interval_ms = configured;
+                ticker = tokio::time::interval(Duration::from_millis(current_interval_ms));
+                ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+            }
             ticker.tick().await;
             if let Err(err) = trim_working_set() {
                 tracing::debug!("memory trim skipped/failed: {err}");
@@ -119,6 +131,7 @@ pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Bu
         commands::uninstall_app,
         commands::toggle_overlay,
         commands::set_refresh_rate,
+        commands::set_memory_trim_interval,
         commands::save_export_config,
         commands::confirm_factory_reset,
         commands::get_shutdown_plan,

@@ -851,6 +851,22 @@ pub async fn set_refresh_rate(state: State<'_, SharedState>, rate_ms: u64) -> Cm
 }
 
 #[tauri::command]
+pub async fn set_memory_trim_interval(
+    state: State<'_, SharedState>,
+    interval_minutes: u64,
+) -> CmdResult<()> {
+    use std::sync::atomic::Ordering;
+    let minutes = interval_minutes.clamp(1, 30);
+    let interval_ms = minutes * 60 * 1000;
+    state
+        .memory_trim_interval_ms
+        .store(interval_ms, Ordering::Relaxed);
+    let mut settings = state.settings.write().await;
+    settings.memory_trim_interval_minutes = minutes as u8;
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn save_export_config(path: String, content: String) -> CmdResult<()> {
     if path.trim().is_empty() {
         return Err("path is empty".to_string());

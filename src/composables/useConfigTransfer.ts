@@ -18,6 +18,7 @@ interface AppStoreLike {
     factoryResetHotkey: string | null;
     taskbarMonitorEnabled: boolean;
     autoStartEnabled: boolean;
+    memoryTrimIntervalMinutes: number;
   };
   setLanguage: (language: 'zh-CN' | 'en-US') => void;
   setCloseToTray: (value: boolean) => void;
@@ -29,6 +30,7 @@ interface AppStoreLike {
   setFactoryResetHotkey: (value: string | null) => void;
   setTaskbarMonitorEnabled: (value: boolean) => Promise<void>;
   setAutoStartEnabled: (value: boolean) => Promise<void>;
+  setMemoryTrimIntervalMinutes: (value: number) => Promise<void> | void;
   setRefreshRate: (value: number) => void;
 }
 
@@ -248,6 +250,8 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
           await store.setTaskbarMonitorEnabled(settings.taskbarMonitorEnabled);
         if (typeof settings.autoStartEnabled === 'boolean')
           await store.setAutoStartEnabled(settings.autoStartEnabled);
+        if (typeof settings.memoryTrimIntervalMinutes === 'number' && Number.isFinite(settings.memoryTrimIntervalMinutes))
+          await store.setMemoryTrimIntervalMinutes(settings.memoryTrimIntervalMinutes);
       }
 
       await applyImportedOverlayPrefs(candidate.overlayPrefs);

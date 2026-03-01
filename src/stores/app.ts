@@ -8,6 +8,8 @@ const SETTINGS_KEY = 'pulsecorelite.settings';
 const HARDWARE_KEY = 'pulsecorelite.hardware_info';
 const OVERLAY_POS_KEY = 'pulsecorelite.overlay_pos';
 const FULLSCREEN_POLL_MS = 800;
+const MEMORY_TRIM_MIN = 1;
+const MEMORY_TRIM_MAX = 30;
 
 let fullscreenMonitorTimer: number | null = null;
 let fullscreenMonitorActive = false;
@@ -48,6 +50,10 @@ function readStoredSettings(): Partial<AppSettings> | null {
     const hasLanguage = parsed.language === 'zh-CN' || parsed.language === 'en-US';
     const hasCloseToTray = typeof parsed.closeToTray === 'boolean';
     const hasAutoStartEnabled = hasOwn('autoStartEnabled') && typeof parsed.autoStartEnabled === 'boolean';
+    const hasMemoryTrimIntervalMinutes =
+      hasOwn('memoryTrimIntervalMinutes') &&
+      typeof parsed.memoryTrimIntervalMinutes === 'number' &&
+      Number.isFinite(parsed.memoryTrimIntervalMinutes);
     const hasRememberOverlayPosition =
       hasOwn('rememberOverlayPosition') && typeof parsed.rememberOverlayPosition === 'boolean';
     const hasOverlayAlwaysOnTop = hasOwn('overlayAlwaysOnTop') && typeof parsed.overlayAlwaysOnTop === 'boolean';
@@ -66,6 +72,7 @@ function readStoredSettings(): Partial<AppSettings> | null {
       hasLanguage ||
       hasCloseToTray ||
       hasAutoStartEnabled ||
+      hasMemoryTrimIntervalMinutes ||
       hasRememberOverlayPosition ||
       hasOverlayAlwaysOnTop ||
       hasTaskbarMonitorEnabled ||
@@ -78,6 +85,9 @@ function readStoredSettings(): Partial<AppSettings> | null {
         ...(hasLanguage ? { language: parsed.language } : {}),
         ...(hasCloseToTray ? { closeToTray: parsed.closeToTray } : {}),
         ...(hasAutoStartEnabled ? { autoStartEnabled: parsed.autoStartEnabled } : {}),
+        ...(hasMemoryTrimIntervalMinutes
+          ? { memoryTrimIntervalMinutes: Math.round(parsed.memoryTrimIntervalMinutes) }
+          : {}),
         ...(hasRememberOverlayPosition ? { rememberOverlayPosition: parsed.rememberOverlayPosition } : {}),
         ...(hasOverlayAlwaysOnTop ? { overlayAlwaysOnTop: parsed.overlayAlwaysOnTop } : {}),
         ...(hasTaskbarMonitorEnabled ? { taskbarMonitorEnabled: parsed.taskbarMonitorEnabled } : {}),
@@ -100,6 +110,7 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
     language: 'zh-CN',
     closeToTray: false,
     autoStartEnabled: false,
+    memoryTrimIntervalMinutes: 5,
     rememberOverlayPosition: true,
     overlayAlwaysOnTop: true,
     taskbarMonitorEnabled: false,
@@ -110,11 +121,16 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
   };
 
   const candidate = settings ?? fallback;
+  const clampMemoryTrimInterval = (value: number) => Math.max(1, Math.min(30, Math.round(value)));
   const base: AppSettings = {
     language: candidate.language === 'en-US' ? 'en-US' : 'zh-CN',
     closeToTray: typeof candidate.closeToTray === 'boolean' ? candidate.closeToTray : fallback.closeToTray,
     autoStartEnabled:
       typeof candidate.autoStartEnabled === 'boolean' ? candidate.autoStartEnabled : fallback.autoStartEnabled,
+    memoryTrimIntervalMinutes:
+      typeof candidate.memoryTrimIntervalMinutes === 'number' && Number.isFinite(candidate.memoryTrimIntervalMinutes)
+        ? clampMemoryTrimInterval(candidate.memoryTrimIntervalMinutes)
+        : fallback.memoryTrimIntervalMinutes,
     rememberOverlayPosition:
       typeof candidate.rememberOverlayPosition === 'boolean'
         ? candidate.rememberOverlayPosition
@@ -152,6 +168,10 @@ function resolveSettings(settings?: AppSettings | null): AppSettings {
     language: stored.language ?? base.language,
     closeToTray: stored.closeToTray ?? base.closeToTray,
     autoStartEnabled: stored.autoStartEnabled ?? base.autoStartEnabled,
+    memoryTrimIntervalMinutes:
+      typeof stored.memoryTrimIntervalMinutes === 'number'
+        ? clampMemoryTrimInterval(stored.memoryTrimIntervalMinutes)
+        : base.memoryTrimIntervalMinutes,
     rememberOverlayPosition: stored.rememberOverlayPosition ?? base.rememberOverlayPosition,
     overlayAlwaysOnTop: stored.overlayAlwaysOnTop ?? base.overlayAlwaysOnTop,
     taskbarMonitorEnabled: stored.taskbarMonitorEnabled ?? base.taskbarMonitorEnabled,
@@ -310,6 +330,7 @@ export const useAppStore = defineStore('app', {
           void this.ensureTray();
           void this.ensureTaskbarMonitor();
           void this.syncAutoStartEnabled();
+          void this.syncMemoryTrimInterval();
           void this.detectInstallationMode();
           this.unlisteners.push(
             watch(
@@ -501,6 +522,32 @@ export const useAppStore = defineStore('app', {
         void broadcastSettingsSync();
       }
     },
+    async setMemoryTrimIntervalMinutes(intervalMinutes: number) {
+      const next = Math.max(MEMORY_TRIM_MIN, Math.min(MEMORY_TRIM_MAX, Math.round(intervalMinutes)));
+      if (this.settings.memoryTrimIntervalMinutes === next) {
+        return;
+      }
+      const previous = this.settings.memoryTrimIntervalMinutes;
+      this.settings = {
+        ...this.settings,
+        memoryTrimIntervalMinutes: next
+      };
+      persistSettings(this.settings);
+      void broadcastSettingsSync();
+      if (!inTauri()) {
+        return;
+      }
+      try {
+        await api.setMemoryTrimIntervalMinutes(next);
+      } catch {
+        this.settings = {
+          ...this.settings,
+          memoryTrimIntervalMinutes: previous
+        };
+        persistSettings(this.settings);
+        void broadcastSettingsSync();
+      }
+    },
     setRememberOverlayPosition(rememberOverlayPosition: boolean) {
       if (this.settings.rememberOverlayPosition === rememberOverlayPosition) {
         return;
@@ -619,6 +666,20 @@ export const useAppStore = defineStore('app', {
           persistSettings(this.settings);
           void broadcastSettingsSync();
         }
+      } catch {
+        return;
+      }
+    },
+    async syncMemoryTrimInterval() {
+      if (!inTauri()) {
+        return;
+      }
+      const value = Math.max(
+        MEMORY_TRIM_MIN,
+        Math.min(MEMORY_TRIM_MAX, Math.round(this.settings.memoryTrimIntervalMinutes))
+      );
+      try {
+        await api.setMemoryTrimIntervalMinutes(value);
       } catch {
         return;
       }

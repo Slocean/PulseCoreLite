@@ -25,8 +25,8 @@ fn main() {
                 .expect("failed to initialize PulseCoreLite state");
 
             app.manage(state.clone());
-            crate::app::start_telemetry_loop(app.handle().clone(), state);
-            crate::app::start_memory_trim_loop();
+            crate::app::start_telemetry_loop(app.handle().clone(), state.clone());
+            crate::app::start_memory_trim_loop(state);
 
             #[cfg(desktop)]
             {

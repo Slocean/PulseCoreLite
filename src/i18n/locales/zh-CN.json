@@ -63,6 +63,8 @@
     "themeEditTitle": "编辑主题",
     "themeEditHint": "修改主题名称与效果配置",
     "refreshRate": "刷新时间",
+    "memoryTrimInterval": "自动清理",
+    "minutes": "分钟",
     "configTransfer": "配置",
     "exportConfig": "导出",
     "exportConfigSuccess": "导出成功",

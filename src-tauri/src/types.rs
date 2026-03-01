@@ -75,6 +75,8 @@ pub struct AppSettings {
     pub close_to_tray: bool,
     #[serde(rename = "autoStartEnabled")]
     pub auto_start_enabled: bool,
+    #[serde(rename = "memoryTrimIntervalMinutes")]
+    pub memory_trim_interval_minutes: u8,
     #[serde(rename = "rememberOverlayPosition")]
     pub remember_overlay_position: bool,
     #[serde(rename = "overlayAlwaysOnTop")]
@@ -97,6 +99,7 @@ impl Default for AppSettings {
             language: "zh-CN".to_string(),
             close_to_tray: false,
             auto_start_enabled: false,
+            memory_trim_interval_minutes: 5,
             remember_overlay_position: true,
             overlay_always_on_top: true,
             taskbar_monitor_enabled: false,
