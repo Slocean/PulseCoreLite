@@ -58,7 +58,7 @@ html.window-toolkit body {
 
 .toolkit-tabs {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
   gap: 8px;
   padding: 4px;
   border-radius: 12px;
@@ -254,4 +254,179 @@ html.window-toolkit body {
 .toolkit-header .overlay-header-actions,
 .toolkit-header .overlay-action {
   -webkit-app-region: no-drag;
+}
+
+.toolkit-card--score {
+  text-align: center;
+}
+
+.toolkit-score-ring {
+  --score-value: 0;
+  --score-color: rgba(0, 242, 255, 0.9);
+  width: 128px;
+  height: 128px;
+  margin: 6px auto 2px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--score-color) calc(var(--score-value) * 1%), rgba(255, 255, 255, 0.08) 0);
+  box-shadow:
+    0 0 16px rgba(0, 242, 255, 0.18),
+    inset 0 0 12px rgba(0, 0, 0, 0.4);
+}
+
+.toolkit-score-center {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: rgba(6, 10, 16, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: grid;
+  place-items: center;
+  gap: 2px;
+}
+
+.toolkit-score-value {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #eafcff;
+}
+
+.toolkit-score-grade {
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--score-color);
+}
+
+.toolkit-score-caption {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.toolkit-score-desc {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.toolkit-score-list {
+  display: grid;
+  gap: 8px;
+}
+
+.toolkit-score-item {
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.toolkit-score-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.toolkit-score-title {
+  flex: 1 1 auto;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.toolkit-score-number {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.toolkit-score-badge {
+  border-radius: 999px;
+  padding: 2px 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.toolkit-score-badge--s {
+  border-color: rgba(0, 242, 255, 0.6);
+  color: rgba(0, 242, 255, 0.95);
+}
+
+.toolkit-score-badge--a {
+  border-color: rgba(99, 255, 212, 0.6);
+  color: rgba(99, 255, 212, 0.95);
+}
+
+.toolkit-score-badge--b {
+  border-color: rgba(255, 214, 102, 0.6);
+  color: rgba(255, 214, 102, 0.95);
+}
+
+.toolkit-score-badge--c {
+  border-color: rgba(255, 144, 155, 0.6);
+  color: rgba(255, 144, 155, 0.95);
+}
+
+.toolkit-score-badge--d {
+  border-color: rgba(255, 92, 92, 0.6);
+  color: rgba(255, 92, 92, 0.95);
+}
+
+.toolkit-score-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.toolkit-score-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
+}
+
+.toolkit-summary-grid {
+  display: grid;
+  gap: 6px;
+}
+
+.toolkit-summary-item {
+  display: grid;
+  gap: 2px;
+}
+
+.toolkit-summary-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+}
+
+.toolkit-summary-value {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  word-break: break-word;
+}
+
+.toolkit-advice-list {
+  margin: 0;
+  padding-left: 16px;
+  display: grid;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.toolkit-advice-item {
+  margin: 0;
 }
