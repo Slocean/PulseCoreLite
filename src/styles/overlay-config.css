@@ -44,6 +44,23 @@
   gap: 12px;
 }
 
+.overlay-config-duo {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.overlay-config-duo .overlay-config-language,
+.overlay-config-duo .overlay-config-hotkey {
+  grid-column: auto;
+}
+
+.overlay-config-duo .overlay-config-hotkey {
+  flex-wrap: wrap;
+}
+
 .overlay-config-effect {
   align-items: center;
   justify-content: space-between;
@@ -159,7 +176,7 @@
   border: 1px dashed rgba(255, 255, 255, 0.18);
   background: transparent;
   border-radius: 8px;
-  padding: 4px 10px;
+  padding: 4px 5px;
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -448,7 +465,7 @@
   border: 1px dashed rgba(255, 59, 59, 0.45);
   background: rgba(255, 59, 59, 0.08);
   border-radius: 8px;
-  padding: 4px 10px;
+  padding: 4px 5px;
   font-size: 11px;
   letter-spacing: 0.05em;
   color: #ff9a9a;

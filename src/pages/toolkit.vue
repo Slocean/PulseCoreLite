@@ -131,7 +131,7 @@ async function updateWindowHeight() {
     const { LogicalSize } = await import('@tauri-apps/api/dpi');
     const content = document.querySelector('.toolkit-page') as HTMLElement | null;
     const rect = content ? content.getBoundingClientRect() : document.body.getBoundingClientRect();
-    const height = Math.ceil(rect.height);
+    const height = Math.max(1, Math.round(rect.height));
     await getCurrentWindow().setSize(new LogicalSize(260, height));
   } catch {}
 }

@@ -133,8 +133,12 @@
                 @click="selectTheme(theme)">
                 <!-- @contextmenu.prevent.stop="emit('editTheme', theme.id)" -->
                 <!-- <span class="overlay-theme-name">{{ theme.name }}</span> -->
-                <span class="overlay-theme-thumb" :style="{ backgroundImage: `url(${getThemePreviewUrl(theme)})` }"></span>
-                <OverlayCornerDelete :ariaLabel="t('overlay.themeDelete')" @click="emit('deleteTheme', theme.id)" />
+                <span
+                  class="overlay-theme-thumb"
+                  :style="{ backgroundImage: `url(${getThemePreviewUrl(theme)})` }"></span>
+                <OverlayCornerDelete
+                  :ariaLabel="t('overlay.themeDelete')"
+                  @click="emit('deleteTheme', theme.id)" />
                 <button
                   type="button"
                   class="overlay-corner-edit"
@@ -155,58 +159,61 @@
           {{ t('overlay.backgroundImageButton') }}
         </button>
       </div>
-      <div class="overlay-config-language">
-        <span class="overlay-config-label">{{ t('overlay.configTransfer') }}</span>
-        <div class="overlay-lang-buttons">
-          <button type="button" class="overlay-lang-button" @click="emit('exportConfig')">
-            {{ t('overlay.exportConfig') }}
-          </button>
-          <button type="button" class="overlay-lang-button" @click="triggerImport">
-            {{ t('overlay.importConfig') }}
-          </button>
-        </div>
-        <input
-          ref="importFileInput"
-          class="overlay-upload-input"
-          type="file"
-          accept="application/json"
-          @change="handleImportChange" />
-      </div>
-      <div class="overlay-config-language">
-        <span class="overlay-config-label">{{ t('overlay.update') }}</span>
-        <div class="overlay-lang-buttons">
-          <button
-            type="button"
-            class="overlay-lang-button"
-            :disabled="checkingUpdate"
-            @click="emit('checkUpdate')">
-            {{ checkingUpdate ? t('overlay.updateChecking') : t('overlay.checkUpdate') }}
-          </button>
-        </div>
-      </div>
-      <div class="overlay-config-language">
-        <span class="overlay-config-label">{{ t('overlay.toolkit') }}</span>
-        <div class="overlay-lang-buttons">
-          <button type="button" class="overlay-lang-button" @click="emit('openToolkit')">
-            {{ toolkitActionLabel }}
-          </button>
-        </div>
-      </div>
-      <div class="overlay-config-hotkey">
-        <span class="overlay-config-label">{{ t('overlay.factoryResetHotkey') }}</span>
-        <div class="overlay-config-hotkey-controls">
-          <div class="overlay-hotkey-chip">
-            <button type="button" class="overlay-lang-button" @click="beginHotkeyCapture">
-              {{ recordingHotkey ? t('overlay.hotkeyRecording') : hotkeyLabel }}
+      <div class="overlay-config-duo">
+        <div class="overlay-config-language">
+          <span class="overlay-config-label">{{ t('overlay.update') }}</span>
+          <div class="overlay-lang-buttons">
+            <button
+              type="button"
+              class="overlay-lang-button"
+              :disabled="checkingUpdate"
+              @click="emit('checkUpdate')">
+              {{ checkingUpdate ? t('overlay.updateChecking') : t('overlay.checkUpdate') }}
             </button>
-            <OverlayCornerDelete
-              v-if="factoryResetHotkey != null && !recordingHotkey"
-              :ariaLabel="t('overlay.hotkeyClear')"
-              @click="requestClearHotkey" />
           </div>
-          <button type="button" class="overlay-config-danger" @click="confirmFactoryReset">
-            {{ t('overlay.factoryReset') }}
-          </button>
+        </div>
+        <div class="overlay-config-language">
+          <span class="overlay-config-label">{{ t('overlay.configTransfer') }}</span>
+          <div class="overlay-lang-buttons">
+            <button type="button" class="overlay-lang-button" @click="emit('exportConfig')">
+              {{ t('overlay.exportConfig') }}
+            </button>
+            <button type="button" class="overlay-lang-button" @click="triggerImport">
+              {{ t('overlay.importConfig') }}
+            </button>
+          </div>
+          <input
+            ref="importFileInput"
+            class="overlay-upload-input"
+            type="file"
+            accept="application/json"
+            @change="handleImportChange" />
+        </div>
+      </div>
+      <div class="overlay-config-duo">
+        <div class="overlay-config-hotkey">
+          <span class="overlay-config-label">{{ t('overlay.factoryResetHotkey') }}</span>
+          <div class="overlay-config-hotkey-controls">
+            <div class="overlay-hotkey-chip">
+              <button type="button" class="overlay-lang-button" @click="beginHotkeyCapture">
+                {{ recordingHotkey ? t('overlay.hotkeyRecording') : hotkeyLabel }}
+              </button>
+              <OverlayCornerDelete
+                v-if="factoryResetHotkey != null && !recordingHotkey"
+                :ariaLabel="t('overlay.hotkeyClear')"
+                @click="requestClearHotkey" />
+            </div>
+            <button type="button" class="overlay-config-danger" @click="confirmFactoryReset">
+              {{ t('overlay.factoryReset') }}
+            </button>
+          </div>
+        </div>
+        <div class="overlay-config-language">
+          <span class="overlay-config-label">{{ t('overlay.toolkit') }}</span>
+          <label class="overlay-switch" :aria-label="t('overlay.toolkit')">
+            <input type="checkbox" role="switch" :checked="toolkitSwitchOn" @change="handleToolkitToggle" />
+            <span class="overlay-switch-track" aria-hidden="true"></span>
+          </label>
         </div>
       </div>
       <div v-if="false && canUninstall" class="overlay-config-uninstall">
@@ -278,7 +285,7 @@ const emit = defineEmits<{
   (e: 'editTheme', value: string): void;
   (e: 'exportConfig'): void;
   (e: 'importConfig', value: File): void;
-  (e: 'openToolkit'): void;
+  (e: 'openToolkit', value: boolean): void;
   (e: 'checkUpdate'): void;
 }>();
 
@@ -292,7 +299,7 @@ const importFileInput = ref<HTMLInputElement | null>(null);
 const hotkeyLabel = computed(() => factoryResetHotkey.value ?? t('overlay.hotkeyNotSet'));
 const isDefaultTheme = computed(() => !prefs.value.backgroundImage);
 const themes = computed(() => props.themes);
-const toolkitActionLabel = computed(() => (props.toolkitState === 'open' ? t('overlay.closeToolkit') : t('overlay.showToolkit')));
+const toolkitSwitchOn = computed(() => props.toolkitState !== 'closed');
 
 function stopHotkeyCapture() {
   if (hotkeyUnlisten) {
@@ -394,6 +401,12 @@ function confirmClearHotkey() {
 
 function triggerImport() {
   importFileInput.value?.click();
+}
+
+function handleToolkitToggle(event: Event) {
+  const target = event.target as HTMLInputElement | null;
+  if (!target) return;
+  emit('openToolkit', target.checked);
 }
 
 function handleImportChange(event: Event) {

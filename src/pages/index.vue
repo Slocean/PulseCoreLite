@@ -554,7 +554,7 @@ async function refreshToolkitState() {
   }
 }
 
-async function toggleToolkitWindow() {
+async function toggleToolkitWindow(forceOpen?: boolean) {
   if (!inTauri()) {
     return;
   }
@@ -566,6 +566,25 @@ async function toggleToolkitWindow() {
       try {
         visible = await existing.isVisible();
       } catch {}
+      if (forceOpen === true) {
+        if (!visible) {
+          try {
+            await existing.show();
+          } catch {}
+        }
+        try {
+          await existing.setFocus();
+        } catch {}
+        toolkitState.value = 'open';
+        return;
+      }
+      if (forceOpen === false) {
+        try {
+          await existing.close();
+        } catch {}
+        toolkitState.value = 'closed';
+        return;
+      }
       if (visible) {
         try {
           await existing.close();
@@ -581,6 +600,10 @@ async function toggleToolkitWindow() {
       return;
     }
   } catch {}
+  if (forceOpen === false) {
+    toolkitState.value = 'closed';
+    return;
+  }
   await openToolkitWindow();
   await refreshToolkitState();
 }
