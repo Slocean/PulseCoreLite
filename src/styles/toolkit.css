@@ -7,7 +7,7 @@ html.window-toolkit body,
 
 html.window-toolkit body {
   background: transparent;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .window-toolkit .overlay-shell {
@@ -23,6 +23,7 @@ html.window-toolkit body {
   align-content: start;
   gap: 8px;
   background: rgba(11, 14, 20, var(--overlay-bg-opacity, 1));
+  transform: translateZ(0);
 }
 
 .toolkit-header {
@@ -118,6 +119,64 @@ html.window-toolkit body {
   text-align: left;
   width: 100%;
   -webkit-app-region: no-drag;
+}
+
+.toolkit-section-header {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolkit-section-header .toolkit-collapse-toggle {
+  width: auto;
+  justify-content: flex-start;
+}
+
+.toolkit-collapse-toggle--title {
+  min-height: 22px;
+}
+
+.toolkit-collapse-toggle--icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  justify-content: center;
+}
+
+.toolkit-collapse-toggle--icon:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.toolkit-view-toggle {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.78);
+  border-radius: 999px;
+  min-height: 22px;
+  padding: 2px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 160ms ease;
+  -webkit-app-region: no-drag;
+}
+
+.toolkit-view-toggle:hover {
+  border-color: rgba(0, 242, 255, 0.6);
+  color: rgba(0, 242, 255, 0.92);
+}
+
+.toolkit-view-toggle .material-symbols-outlined {
+  font-size: 14px;
+}
+
+.toolkit-view-toggle-text {
+  white-space: nowrap;
 }
 
 .toolkit-collapse-indicator {
@@ -341,6 +400,78 @@ html.window-toolkit body {
 .toolkit-score-list {
   display: grid;
   gap: 8px;
+}
+
+.toolkit-radar {
+  display: grid;
+  gap: 10px;
+  align-items: center;
+  justify-items: center;
+}
+
+.toolkit-radar-svg {
+  width: 180px;
+  max-width: 100%;
+  height: auto;
+}
+
+.toolkit-radar-grid,
+.toolkit-radar-axis {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-width: 1;
+}
+
+.toolkit-radar-area {
+  fill: rgba(0, 242, 255, 0.2);
+  stroke: rgba(0, 242, 255, 0.75);
+  stroke-width: 1.5;
+}
+
+.toolkit-radar-point {
+  fill: rgba(0, 242, 255, 0.9);
+  stroke: rgba(0, 0, 0, 0.3);
+  stroke-width: 0.6;
+}
+
+.toolkit-radar-label {
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  fill: rgba(255, 255, 255, 0.72);
+}
+
+.toolkit-radar-legend {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 10px;
+}
+
+.toolkit-radar-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.toolkit-radar-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(0, 242, 255, 0.3);
+}
+
+.toolkit-radar-label-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toolkit-radar-value {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .toolkit-score-item {

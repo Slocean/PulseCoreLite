@@ -19,23 +19,83 @@
   </div>
 
   <div class="toolkit-card">
-    <button type="button" class="toolkit-collapse-toggle" @click="toggleSection('dimension')">
-      <span class="toolkit-section-title">{{ t('toolkit.dimensionTitle') }}</span>
-      <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.dimension }">
-        expand_more
-      </span>
-    </button>
-    <div v-if="sections.dimension" class="toolkit-score-list">
-      <div v-for="item in dimensionScores" :key="item.id" class="toolkit-score-item">
-        <div class="toolkit-score-item-header">
-          <span class="toolkit-score-title">{{ item.title }}</span>
-          <span class="toolkit-score-badge" :class="item.badgeClass">{{ item.level }}</span>
-          <span class="toolkit-score-number" :style="{ color: item.color }">{{ item.score }}</span>
+    <div class="toolkit-section-header">
+      <button type="button" class="toolkit-collapse-toggle toolkit-collapse-toggle--title" @click="toggleSection('dimension')">
+        <span class="toolkit-section-title">{{ t('toolkit.dimensionTitle') }}</span>
+      </button>
+      <button type="button" class="toolkit-view-toggle" :aria-label="dimensionViewLabel" @click="toggleDimensionView">
+        <span class="material-symbols-outlined">{{ dimensionViewIcon }}</span>
+        <span class="toolkit-view-toggle-text">{{ dimensionViewLabel }}</span>
+      </button>
+      <button
+        type="button"
+        class="toolkit-collapse-toggle toolkit-collapse-toggle--icon"
+        @click="toggleSection('dimension')"
+        :aria-label="t('toolkit.dimensionTitle')">
+        <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.dimension }">
+          expand_more
+        </span>
+      </button>
+    </div>
+    <div v-if="sections.dimension">
+      <div v-if="dimensionView === 'bars'" class="toolkit-score-list">
+        <div v-for="item in dimensionScores" :key="item.id" class="toolkit-score-item">
+          <div class="toolkit-score-item-header">
+            <span class="toolkit-score-title">{{ item.title }}</span>
+            <span class="toolkit-score-badge" :class="item.badgeClass">{{ item.level }}</span>
+            <span class="toolkit-score-number" :style="{ color: item.color }">{{ item.score }}</span>
+          </div>
+          <div class="toolkit-score-bar">
+            <span class="toolkit-score-bar-fill" :style="{ width: `${item.score}%`, background: item.color }"></span>
+          </div>
+          <p class="toolkit-score-desc">{{ item.summary }}</p>
         </div>
-        <div class="toolkit-score-bar">
-          <span class="toolkit-score-bar-fill" :style="{ width: `${item.score}%`, background: item.color }"></span>
+      </div>
+      <div v-else class="toolkit-radar">
+        <svg class="toolkit-radar-svg" viewBox="0 0 200 200" aria-hidden="true">
+          <g>
+            <polygon
+              v-for="ring in radarGridPolygons"
+              :key="ring.step"
+              class="toolkit-radar-grid"
+              :points="ring.points" />
+          </g>
+          <g>
+            <line
+              v-for="(axis, index) in radarAxes"
+              :key="`axis-${index}`"
+              class="toolkit-radar-axis"
+              :x1="RADAR_CENTER"
+              :y1="RADAR_CENTER"
+              :x2="axis.x"
+              :y2="axis.y" />
+          </g>
+          <polygon class="toolkit-radar-area" :points="radarValuePoints" />
+          <circle
+            v-for="(point, index) in radarValueDots"
+            :key="`dot-${index}`"
+            class="toolkit-radar-point"
+            :cx="point.x"
+            :cy="point.y"
+            r="2.4" />
+          <text
+            v-for="(axis, index) in radarAxes"
+            :key="`label-${index}`"
+            class="toolkit-radar-label"
+            :x="axis.labelX"
+            :y="axis.labelY"
+            :text-anchor="axis.anchor"
+            :dominant-baseline="axis.baseline">
+            {{ axis.label }}
+          </text>
+        </svg>
+        <div class="toolkit-radar-legend">
+          <div v-for="item in dimensionScores" :key="`legend-${item.id}`" class="toolkit-radar-legend-item">
+            <span class="toolkit-radar-dot" :style="{ background: item.color }"></span>
+            <span class="toolkit-radar-label-text">{{ item.title }}</span>
+            <span class="toolkit-radar-value">{{ item.score }}</span>
+          </div>
         </div>
-        <p class="toolkit-score-desc">{{ item.summary }}</p>
       </div>
     </div>
   </div>
@@ -86,12 +146,19 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const store = useAppStore();
 
+const RADAR_CENTER = 100;
+const RADAR_RADIUS = 68;
+const RADAR_LABEL_RADIUS = 88;
+const RADAR_RINGS = [0.2, 0.4, 0.6, 0.8, 1];
+
 const sections = ref({
   score: true,
   dimension: true,
   summary: false,
   advice: false
 });
+
+const dimensionView = ref<'bars' | 'radar'>('bars');
 
 const hardwareInfo = computed(() => store.hardwareInfo);
 const snapshot = computed(() => store.snapshot);
@@ -328,6 +395,68 @@ const dimensionScores = computed(() => [
   }
 ]);
 
+const dimensionViewLabel = computed(() =>
+  dimensionView.value === 'bars' ? t('toolkit.dimensionViewRadar') : t('toolkit.dimensionViewBars')
+);
+const dimensionViewIcon = computed(() => (dimensionView.value === 'bars' ? 'radar' : 'bar_chart'));
+
+const radarAxes = computed(() => {
+  const total = Math.max(1, dimensionScores.value.length);
+  return dimensionScores.value.map((item, index) => {
+    const angle = ((-90 + (360 / total) * index) * Math.PI) / 180;
+    const x = RADAR_CENTER + RADAR_RADIUS * Math.cos(angle);
+    const y = RADAR_CENTER + RADAR_RADIUS * Math.sin(angle);
+    const labelX = RADAR_CENTER + RADAR_LABEL_RADIUS * Math.cos(angle);
+    const labelY = RADAR_CENTER + RADAR_LABEL_RADIUS * Math.sin(angle);
+    const axisCos = Math.cos(angle);
+    const axisSin = Math.sin(angle);
+    const anchor = Math.abs(axisCos) < 0.2 ? 'middle' : axisCos > 0 ? 'start' : 'end';
+    const baseline = Math.abs(axisSin) < 0.2 ? 'middle' : axisSin > 0 ? 'hanging' : 'baseline';
+    return { x, y, labelX, labelY, label: item.title, anchor, baseline };
+  });
+});
+
+const radarGridPolygons = computed(() => {
+  const total = Math.max(1, dimensionScores.value.length);
+  return RADAR_RINGS.map(step => {
+    const points = dimensionScores.value
+      .map((_, index) => {
+        const angle = ((-90 + (360 / total) * index) * Math.PI) / 180;
+        const radius = RADAR_RADIUS * step;
+        const x = RADAR_CENTER + radius * Math.cos(angle);
+        const y = RADAR_CENTER + radius * Math.sin(angle);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(' ');
+    return { step, points };
+  });
+});
+
+const radarValuePoints = computed(() => {
+  const total = Math.max(1, dimensionScores.value.length);
+  return dimensionScores.value
+    .map((item, index) => {
+      const angle = ((-90 + (360 / total) * index) * Math.PI) / 180;
+      const radius = (RADAR_RADIUS * item.score) / 100;
+      const x = RADAR_CENTER + radius * Math.cos(angle);
+      const y = RADAR_CENTER + radius * Math.sin(angle);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(' ');
+});
+
+const radarValueDots = computed(() => {
+  const total = Math.max(1, dimensionScores.value.length);
+  return dimensionScores.value.map((item, index) => {
+    const angle = ((-90 + (360 / total) * index) * Math.PI) / 180;
+    const radius = (RADAR_RADIUS * item.score) / 100;
+    return {
+      x: RADAR_CENTER + radius * Math.cos(angle),
+      y: RADAR_CENTER + radius * Math.sin(angle)
+    };
+  });
+});
+
 const hardwareSummaryRows = computed(() => {
   const cpuLabel = hardwareInfo.value.cpu_model || t('common.na');
   const gpuLabel = hardwareInfo.value.gpu_model || t('common.na');
@@ -395,6 +524,11 @@ onMounted(() => {
 
 function toggleSection(key: 'score' | 'dimension' | 'summary' | 'advice') {
   sections.value[key] = !sections.value[key];
+  nextTick(() => emit('contentChange'));
+}
+
+function toggleDimensionView() {
+  dimensionView.value = dimensionView.value === 'bars' ? 'radar' : 'bars';
   nextTick(() => emit('contentChange'));
 }
 

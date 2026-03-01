@@ -123,6 +123,8 @@
     "tabPlan": "Plan",
     "hardwareScoreTitle": "Total Score",
     "dimensionTitle": "Six Dimensions",
+    "dimensionViewRadar": "Radar",
+    "dimensionViewBars": "Score Bars",
     "hardwareSummaryTitle": "Hardware Overview",
     "hardwareAdviceTitle": "Recommendations",
     "hardwareSystem": "System",

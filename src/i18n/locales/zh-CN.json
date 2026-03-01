@@ -123,6 +123,8 @@
     "tabPlan": "计划",
     "hardwareScoreTitle": "综合评分",
     "dimensionTitle": "六维评分",
+    "dimensionViewRadar": "雷达图",
+    "dimensionViewBars": "评分条",
     "hardwareSummaryTitle": "硬件概览",
     "hardwareAdviceTitle": "智能建议",
     "hardwareSystem": "系统",

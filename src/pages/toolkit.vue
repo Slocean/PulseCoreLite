@@ -1,5 +1,5 @@
 <template>
-  <section class="overlay-widget overlay-widget--cyber toolkit-page" @mousedown="handleToolkitMouseDown">
+  <section ref="pageRef" class="overlay-widget overlay-widget--cyber toolkit-page" @mousedown="handleToolkitMouseDown">
     <div v-if="prefs.backgroundImage" class="overlay-bg" :style="overlayBackgroundStyle" aria-hidden="true"></div>
     <div
       v-if="showLiquidGlassHighlight"
@@ -50,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import ToolkitHardwareTab from '../components/toolkit/ToolkitHardwareTab.vue';
@@ -63,6 +63,11 @@ type ToolkitTab = 'shutdown' | 'hardware';
 const { t } = useI18n();
 const { prefs } = useOverlayPrefs();
 const activeTab = ref<ToolkitTab>('shutdown');
+const pageRef = ref<HTMLElement | null>(null);
+let resizeObserver: ResizeObserver | undefined;
+let resizeFrame: number | undefined;
+let lastHeight = 0;
+let windowApiPromise: Promise<typeof import('@tauri-apps/api/window')> | undefined;
 
 const tabs = computed(() => [
   { id: 'shutdown' as const, label: t('toolkit.tabShutdown') },
@@ -113,25 +118,62 @@ watch(
 );
 
 watch(activeTab, () => {
-  nextTick(updateWindowHeight);
+  nextTick(scheduleResize);
 });
 
 onMounted(() => {
-  setTimeout(updateWindowHeight, 100);
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => {
+      scheduleResize();
+    });
+    if (pageRef.value) {
+      resizeObserver.observe(pageRef.value);
+    }
+  }
+  setTimeout(scheduleResize, 100);
+});
+
+onUnmounted(() => {
+  if (resizeObserver && pageRef.value) {
+    resizeObserver.unobserve(pageRef.value);
+  }
+  resizeObserver = undefined;
+  if (resizeFrame != null) {
+    window.cancelAnimationFrame(resizeFrame);
+  }
 });
 
 function handleContentChange() {
-  nextTick(updateWindowHeight);
+  nextTick(scheduleResize);
 }
+
+function scheduleResize() {
+  if (resizeFrame != null) return;
+  resizeFrame = window.requestAnimationFrame(() => {
+    resizeFrame = undefined;
+    void updateWindowHeight();
+  });
+}
+
+const getWindowApi = async () => {
+  if (!windowApiPromise) {
+    windowApiPromise = import('@tauri-apps/api/window');
+  }
+  return windowApiPromise;
+};
 
 async function updateWindowHeight() {
   if (!inTauri()) return;
   try {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window');
+    const { getCurrentWindow } = await getWindowApi();
     const { LogicalSize } = await import('@tauri-apps/api/dpi');
-    const content = document.querySelector('.toolkit-page') as HTMLElement | null;
+    const content = pageRef.value ?? (document.querySelector('.toolkit-page') as HTMLElement | null);
     const rect = content ? content.getBoundingClientRect() : document.body.getBoundingClientRect();
-    const height = Math.max(1, Math.round(rect.height));
+    const height = Math.max(1, Math.ceil(rect.height));
+    if (Math.abs(height - lastHeight) < 2) {
+      return;
+    }
+    lastHeight = height;
     await getCurrentWindow().setSize(new LogicalSize(260, height));
   } catch {}
 }
