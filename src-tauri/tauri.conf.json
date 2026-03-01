@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "PulseCore",
-  "version": "1.6.3",
+  "version": "1.6.4",
   "identifier": "com.pulsecore.app",
   "build": {
     "beforeDevCommand": "npm run sync:tauri-version && npm run dev",

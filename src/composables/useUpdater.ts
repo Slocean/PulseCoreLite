@@ -1,4 +1,4 @@
-import { ref } from "vue";
+import { ref, shallowRef } from "vue";
 import { inTauri } from "../services/tauri";
 
 type UpdatePayload = {
@@ -30,7 +30,8 @@ export function useUpdater() {
   const checkingUpdate = ref(false);
   const installingUpdate = ref(false);
   const updateError = ref<string | null>(null);
-  const updateRef = ref<UpdatePayload | null>(null);
+  // Keep the updater instance raw; Vue proxies break private fields on class instances.
+  const updateRef = shallowRef<UpdatePayload | null>(null);
 
   async function checkForUpdates() {
     if (!inTauri() || checkingUpdate.value) {
