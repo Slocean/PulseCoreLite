@@ -125,9 +125,13 @@ html.window-toolkit body {
 
 .toolkit-profile-row {
   display: grid;
-  grid-template-columns: 1fr 200px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
   align-items: center;
+}
+
+.toolkit-profile-row > * {
+  min-width: 0;
 }
 
 .toolkit-profile-input {
@@ -139,6 +143,9 @@ html.window-toolkit body {
   color: rgba(255, 255, 255, 0.85);
   font-size: 12px;
   letter-spacing: 0.02em;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .toolkit-profile-input:focus {

@@ -34,18 +34,7 @@
       </div>
     </header>
 
-    <nav class="toolkit-tabs" :aria-label="t('toolkit.tabs')">
-      <UiButton
-        v-for="tab in tabs"
-        :key="tab.id"
-        native-type="button"
-        class="toolkit-tab"
-        variant="text"
-        :class="{ 'toolkit-tab--active': activeTab === tab.id }"
-        @click="activeTab = tab.id">
-        {{ tab.label }}
-      </UiButton>
-    </nav>
+    <ToolkitTabs v-model="activeTab" :tabs="tabs" :aria-label="t('toolkit.tabs')" />
 
     <ToolkitShutdownTab v-if="activeTab === 'shutdown'" @contentChange="handleContentChange" />
     <ToolkitCleanupTab v-else-if="activeTab === 'cleanup'" @contentChange="handleContentChange" />
@@ -61,6 +50,7 @@ import UiButton from '@/components/ui/Button';
 import ToolkitCleanupTab from '../components/toolkit/ToolkitCleanupTab.vue';
 import ToolkitHardwareTab from '../components/toolkit/ToolkitHardwareTab.vue';
 import ToolkitShutdownTab from '../components/toolkit/ToolkitShutdownTab.vue';
+import ToolkitTabs from '../components/toolkit/ToolkitTabs.vue';
 import { useOverlayPrefs, type OverlayBackgroundEffect } from '../composables/useOverlayPrefs';
 import { inTauri } from '../services/tauri';
 
