@@ -48,6 +48,14 @@
             @click="copyProfilePath">
             <span class="material-symbols-outlined">content_copy</span>
           </UiButton>
+          <UiButton
+            native-type="button"
+            preset="overlay-action-primary"
+            :aria-label="t('toolkit.openPath')"
+            :title="t('toolkit.openPath')"
+            @click="openProfilePath">
+            <span class="material-symbols-outlined">folder_open</span>
+          </UiButton>
         </div>
       </div>
       <div class="toolkit-profile-row">
@@ -266,6 +274,16 @@ async function copyProfilePath() {
     }, 2000);
   } catch {
     // ignore clipboard write failures
+  }
+}
+
+async function openProfilePath() {
+  const text = profilePath.value.trim();
+  if (!text) return;
+  try {
+    await api.openProfileOutputPath(text);
+  } catch {
+    // ignore open failures
   }
 }
 

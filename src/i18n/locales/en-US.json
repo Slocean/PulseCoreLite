@@ -141,6 +141,7 @@
     "profileStart": "Start capture",
     "profileStop": "Stop capture",
     "copyPathSuccess": "Path copied",
+    "openPath": "Open folder",
     "profileStatusIdle": "Idle",
     "profileStatusRunning": "Running · {samples} samples",
     "hardwareScoreTitle": "Total Score",

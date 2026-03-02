@@ -207,6 +207,7 @@ pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Bu
         commands::start_profile_capture,
         commands::stop_profile_capture,
         commands::get_profile_status,
-        commands::get_profile_output_dir
+        commands::get_profile_output_dir,
+        commands::open_profile_output_path
     ])
 }

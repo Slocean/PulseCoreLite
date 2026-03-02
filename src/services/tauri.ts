@@ -75,5 +75,6 @@ export const api = {
       startedAt: string | null;
       samples: number;
     }>("get_profile_status"),
-  getProfileOutputDir: () => tauriInvoke<string>("get_profile_output_dir")
+  getProfileOutputDir: () => tauriInvoke<string>("get_profile_output_dir"),
+  openProfileOutputPath: (path: string) => tauriInvoke<void>("open_profile_output_path", { path })
 };

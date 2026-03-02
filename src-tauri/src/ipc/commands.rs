@@ -277,6 +277,38 @@ pub fn get_profile_output_dir(app: AppHandle) -> CmdResult<String> {
 }
 
 #[tauri::command]
+pub fn open_profile_output_path(path: String) -> CmdResult<()> {
+    let raw = path.trim();
+    if raw.is_empty() {
+        return Err("path is empty".to_string());
+    }
+
+    let target = PathBuf::from(raw);
+    let open_target = if target.is_dir() {
+        target
+    } else {
+        target
+            .parent()
+            .map_or_else(|| PathBuf::from(raw), std::path::Path::to_path_buf)
+    };
+
+    #[cfg(windows)]
+    {
+        Command::new("explorer")
+            .arg(open_target)
+            .spawn()
+            .map_err(|e| format!("failed to open path: {e}"))?;
+        return Ok(());
+    }
+
+    #[cfg(not(windows))]
+    {
+        let _ = open_target;
+        Err("open path is not supported on this platform.".to_string())
+    }
+}
+
+#[tauri::command]
 pub fn set_auto_start_enabled(enabled: bool) -> CmdResult<bool> {
     #[cfg(windows)]
     {
