@@ -1,8 +1,7 @@
 <template>
   <UiToast :open="profileToastVisible" :message="profileToastMessage" />
 
-  <div class="toolkit-card">
-    <h2 class="toolkit-section-title">{{ t('toolkit.cleanupTitle') }}</h2>
+  <UiToolkitPanel :title="t('toolkit.cleanupTitle')" :collapsible="false">
     <div class="toolkit-cleanup-list">
       <div class="overlay-config-row">
         <span class="overlay-config-label">{{ t('toolkit.cleanupEnable') }}</span>
@@ -33,10 +32,9 @@
         :empty-text="t('toolkit.cleanupTargetsEmpty')"
         multiple />
     </div>
-  </div>
+  </UiToolkitPanel>
 
-  <div class="toolkit-card">
-    <h2 class="toolkit-section-title">{{ t('toolkit.profileTitle') }}</h2>
+  <UiToolkitPanel :title="t('toolkit.profileTitle')" :collapsible="false">
     <p class="toolkit-profile-hint">{{ t('toolkit.profileHint') }}</p>
     <div class="toolkit-profile-grid">
       <div class="toolkit-profile-row">
@@ -110,7 +108,7 @@
         {{ profileStatusText }}
       </span>
     </div>
-  </div>
+  </UiToolkitPanel>
 </template>
 
 <script setup lang="ts">
@@ -120,6 +118,7 @@ import { useI18n } from 'vue-i18n';
 import UiButton from '@/components/ui/Button';
 import UiSelect from '@/components/ui/Select';
 import UiSwitch from '@/components/ui/Switch';
+import UiToolkitPanel from '@/components/ui/ToolkitPanel';
 import UiToast from '@/components/ui/Toast';
 import { useAppStore } from '../../stores/app';
 import { api } from '../../services/tauri';

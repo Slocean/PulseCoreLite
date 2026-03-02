@@ -1,29 +1,24 @@
 <template>
-  <div class="toolkit-card">
-    <UiButton native-type="button" preset="toolkit-collapse" @click="toggleSection('summary')">
-      <span class="toolkit-section-title">{{ t('toolkit.reminderTitle') }}</span>
-      <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.summary }">
-        expand_more
-      </span>
-    </UiButton>
-    <div v-if="sections.summary" class="toolkit-reminder-count">
+  <UiToolkitPanel
+    :title="t('toolkit.reminderTitle')"
+    v-model="sections.summary"
+    @toggle="emit('contentChange')">
+    <div class="toolkit-reminder-count">
       <span>{{ t('toolkit.reminderSummary', { total: reminderCount, enabled: enabledCount }) }}</span>
     </div>
-  </div>
+  </UiToolkitPanel>
 
-  <div class="toolkit-card">
-    <UiButton native-type="button" preset="toolkit-collapse" @click="toggleSection('task')">
-      <span class="toolkit-section-title">{{ editingId ? t('toolkit.reminderEdit') : t('toolkit.reminderCreate') }}</span>
-      <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.task }">
-        expand_more
-      </span>
-    </UiButton>
-    <div v-if="sections.task" class="toolkit-actions">
-      <UiButton native-type="button" preset="toolkit-link" @click="openSmtpDialog">
+  <UiToolkitPanel
+    :title="editingId ? t('toolkit.reminderEdit') : t('toolkit.reminderCreate')"
+    v-model="sections.task"
+    header-mode="split"
+    @toggle="emit('contentChange')">
+    <template #header-actions>
+      <UiButton native-type="button" preset="toolkit-link" :aria-label="t('toolkit.reminderSmtpConfig')" @click="openSmtpDialog">
         {{ t('toolkit.reminderSmtpConfig') }}
       </UiButton>
-    </div>
-    <div v-if="sections.task" class="toolkit-grid">
+    </template>
+    <div class="toolkit-grid">
       <label class="toolkit-field">
         <span>{{ t('toolkit.reminderTaskTitle') }}</span>
         <input v-model.trim="form.title" type="text" maxlength="80" />
@@ -42,17 +37,13 @@
         <UiSwitch v-model="form.enabled" :aria-label="t('toolkit.reminderEnabled')" />
       </div>
     </div>
-  </div>
+  </UiToolkitPanel>
 
-  <div class="toolkit-card">
-    <UiButton native-type="button" preset="toolkit-collapse" @click="toggleSection('schedule')">
-      <span class="toolkit-section-title">{{ t('toolkit.reminderSchedule') }}</span>
-      <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.schedule }">
-        expand_more
-      </span>
-    </UiButton>
-
-    <div v-if="sections.schedule" class="toolkit-reminder-block">
+  <UiToolkitPanel
+    :title="t('toolkit.reminderSchedule')"
+    v-model="sections.schedule"
+    @toggle="emit('contentChange')">
+    <div class="toolkit-reminder-block">
       <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatDaily') }}</div>
       <div class="toolkit-reminder-inline">
         <UiTimeInput v-model="dailyInputTime" />
@@ -72,7 +63,7 @@
       </div>
     </div>
 
-    <div v-if="sections.schedule" class="toolkit-reminder-block">
+    <div class="toolkit-reminder-block">
       <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatWeekly') }}</div>
       <div class="toolkit-reminder-inline toolkit-reminder-inline--weekly">
         <UiSelect v-model="weeklyInputDays" :options="weekdayOptions" multiple />
@@ -93,7 +84,7 @@
       </div>
     </div>
 
-    <div v-if="sections.schedule" class="toolkit-reminder-block">
+    <div class="toolkit-reminder-block">
       <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatMonthly') }}</div>
       <div class="toolkit-reminder-inline toolkit-reminder-inline--monthly">
         <UiSelect v-model="monthlyInputDays" :options="monthlyDayOptions" multiple />
@@ -113,16 +104,13 @@
         </button>
       </div>
     </div>
-  </div>
+  </UiToolkitPanel>
 
-  <div class="toolkit-card">
-    <UiButton native-type="button" preset="toolkit-collapse" @click="toggleSection('content')">
-      <span class="toolkit-section-title">{{ t('toolkit.reminderContent') }}</span>
-      <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.content }">
-        expand_more
-      </span>
-    </UiButton>
-    <div v-if="sections.content" class="toolkit-grid">
+  <UiToolkitPanel
+    :title="t('toolkit.reminderContent')"
+    v-model="sections.content"
+    @toggle="emit('contentChange')">
+    <div class="toolkit-grid">
       <label class="toolkit-field">
         <span>{{ t('toolkit.reminderContentType') }}</span>
         <UiSelect v-model="form.contentType" :options="contentTypeOptions" />
@@ -135,7 +123,7 @@
       </label>
     </div>
 
-    <div v-if="sections.content" class="toolkit-profile-actions">
+    <div class="toolkit-profile-actions">
       <UiButton native-type="button" preset="overlay-primary" @click="saveReminder">
         {{ t('toolkit.reminderSave') }}
       </UiButton>
@@ -143,19 +131,16 @@
         {{ t('toolkit.reminderReset') }}
       </UiButton>
     </div>
-  </div>
+  </UiToolkitPanel>
 
-  <div class="toolkit-card">
-    <UiButton native-type="button" preset="toolkit-collapse" @click="toggleSection('list')">
-      <span class="toolkit-section-title">{{ t('toolkit.reminderList') }}</span>
-      <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.list }">
-        expand_more
-      </span>
-    </UiButton>
-    <div v-if="sections.list && !reminders.length" class="toolkit-plan toolkit-plan--muted">
+  <UiToolkitPanel
+    :title="t('toolkit.reminderList')"
+    v-model="sections.list"
+    @toggle="emit('contentChange')">
+    <div v-if="!reminders.length" class="toolkit-plan toolkit-plan--muted">
       {{ t('toolkit.reminderListEmpty') }}
     </div>
-    <div v-else-if="sections.list" class="toolkit-reminder-list">
+    <div v-else class="toolkit-reminder-list">
       <div v-for="item in reminders" :key="item.id" class="toolkit-reminder-item">
         <div class="toolkit-reminder-item-header">
           <div class="toolkit-reminder-item-title">{{ item.title }}</div>
@@ -181,7 +166,7 @@
         </div>
       </div>
     </div>
-  </div>
+  </UiToolkitPanel>
 
   <p v-if="statusMessage" class="toolkit-status">{{ statusMessage }}</p>
   <p v-if="errorMessage" class="toolkit-error">{{ errorMessage }}</p>
@@ -245,6 +230,7 @@ import { useI18n } from 'vue-i18n';
 import UiButton from '@/components/ui/Button';
 import UiSelect from '@/components/ui/Select';
 import UiSwitch from '@/components/ui/Switch';
+import UiToolkitPanel from '@/components/ui/ToolkitPanel';
 import UiTimeInput from '@/components/ui/TimeInput';
 import OverlayDialog from '../OverlayDialog.vue';
 import { useTaskReminders } from '../../composables/useTaskReminders';
@@ -369,10 +355,6 @@ onMounted(async () => {
 function clearTip() {
   statusMessage.value = '';
   errorMessage.value = '';
-}
-
-function toggleSection(key: 'summary' | 'task' | 'schedule' | 'content' | 'list') {
-  sections[key] = !sections[key];
 }
 
 function addDailyTime() {

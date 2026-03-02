@@ -1,12 +1,10 @@
 <template>
-  <div class="toolkit-card toolkit-card--score">
-    <UiButton native-type="button" preset="toolkit-collapse" @click="toggleSection('score')">
-      <span class="toolkit-section-title">{{ t('toolkit.hardwareScoreTitle') }}</span>
-      <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.score }">
-        expand_more
-      </span>
-    </UiButton>
-    <div v-if="sections.score">
+  <UiToolkitPanel
+    :title="t('toolkit.hardwareScoreTitle')"
+    v-model="sections.score"
+    card-class="toolkit-card--score"
+    @toggle="emit('contentChange')">
+    <div>
       <div class="toolkit-score-ring" :style="scoreRingStyle">
         <div class="toolkit-score-center">
           <div class="toolkit-score-value">{{ totalScore }}</div>
@@ -16,16 +14,15 @@
       <div class="toolkit-score-caption">{{ totalGradeLabel }}</div>
       <p class="toolkit-score-desc">{{ totalSummary }}</p>
     </div>
-  </div>
+  </UiToolkitPanel>
 
-  <div class="toolkit-card">
-    <div class="toolkit-section-header">
-      <UiButton
-        native-type="button"
-        preset="toolkit-collapse-title"
-        @click="toggleSection('dimension')">
-        <span class="toolkit-section-title">{{ t('toolkit.dimensionTitle') }}</span>
-      </UiButton>
+  <UiToolkitPanel
+    :title="t('toolkit.dimensionTitle')"
+    v-model="sections.dimension"
+    header-mode="split"
+    :toggle-aria-label="t('toolkit.dimensionTitle')"
+    @toggle="emit('contentChange')">
+    <template #header-actions>
       <UiButton
         native-type="button"
         preset="toolkit-view-toggle"
@@ -34,17 +31,8 @@
         <span class="material-symbols-outlined">{{ dimensionViewIcon }}</span>
         <span class="toolkit-view-toggle-text">{{ dimensionViewLabel }}</span>
       </UiButton>
-      <UiButton
-        native-type="button"
-        preset="toolkit-collapse-icon"
-        @click="toggleSection('dimension')"
-        :aria-label="t('toolkit.dimensionTitle')">
-        <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.dimension }">
-          expand_more
-        </span>
-      </UiButton>
-    </div>
-    <div v-if="sections.dimension">
+    </template>
+    <div>
       <div v-if="dimensionView === 'bars'" class="toolkit-score-list">
         <div v-for="item in dimensionScores" :key="item.id" class="toolkit-score-item">
           <div class="toolkit-score-item-header">
@@ -105,36 +93,28 @@
         </div>
       </div>
     </div>
-  </div>
+  </UiToolkitPanel>
 
-  <div class="toolkit-card">
-    <UiButton native-type="button" preset="toolkit-collapse" @click="toggleSection('summary')">
-      <span class="toolkit-section-title">{{ t('toolkit.hardwareSummaryTitle') }}</span>
-      <span
-        class="toolkit-collapse-indicator material-symbols-outlined"
-        :class="{ 'is-open': sections.summary }">
-        expand_more
-      </span>
-    </UiButton>
-    <div v-if="sections.summary" class="toolkit-summary-grid">
+  <UiToolkitPanel
+    :title="t('toolkit.hardwareSummaryTitle')"
+    v-model="sections.summary"
+    @toggle="emit('contentChange')">
+    <div class="toolkit-summary-grid">
       <div v-for="row in hardwareSummaryRows" :key="row.id" class="toolkit-summary-item">
         <span class="toolkit-summary-label">{{ row.label }}</span>
         <span class="toolkit-summary-value">{{ row.value }}</span>
       </div>
     </div>
-  </div>
+  </UiToolkitPanel>
 
-  <div class="toolkit-card">
-    <UiButton native-type="button" preset="toolkit-collapse" @click="toggleSection('advice')">
-      <span class="toolkit-section-title">{{ t('toolkit.hardwareAdviceTitle') }}</span>
-      <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.advice }">
-        expand_more
-      </span>
-    </UiButton>
-    <ul v-if="sections.advice" class="toolkit-advice-list">
+  <UiToolkitPanel
+    :title="t('toolkit.hardwareAdviceTitle')"
+    v-model="sections.advice"
+    @toggle="emit('contentChange')">
+    <ul class="toolkit-advice-list">
       <li v-for="(item, index) in adviceList" :key="index" class="toolkit-advice-item">{{ item }}</li>
     </ul>
-  </div>
+  </UiToolkitPanel>
 </template>
 
 <script setup lang="ts">
@@ -142,6 +122,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
+import UiToolkitPanel from '@/components/ui/ToolkitPanel';
 import { useAppStore } from '../../stores/app';
 
 type Grade = 'S' | 'A' | 'B' | 'C' | 'D';
@@ -529,11 +510,6 @@ watch(
 onMounted(() => {
   nextTick(() => emit('contentChange'));
 });
-
-function toggleSection(key: 'score' | 'dimension' | 'summary' | 'advice') {
-  sections.value[key] = !sections.value[key];
-  nextTick(() => emit('contentChange'));
-}
 
 function toggleDimensionView() {
   dimensionView.value = dimensionView.value === 'bars' ? 'radar' : 'bars';

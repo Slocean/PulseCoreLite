@@ -1,6 +1,5 @@
 <template>
-  <div class="toolkit-card">
-    <h2 class="toolkit-section-title">{{ t('toolkit.countdownTitle') }}</h2>
+  <UiToolkitPanel :title="t('toolkit.countdownTitle')" :collapsible="false">
     <div class="toolkit-grid toolkit-grid--3">
       <label class="toolkit-field">
         <span>{{ t('toolkit.hours') }}</span>
@@ -33,10 +32,9 @@
     <UiButton native-type="button" preset="overlay-primary" @click="scheduleCountdown">
       {{ t('toolkit.scheduleCountdown') }}
     </UiButton>
-  </div>
+  </UiToolkitPanel>
 
-  <div class="toolkit-card">
-    <h2 class="toolkit-section-title">{{ t('toolkit.datetimeTitle') }}</h2>
+  <UiToolkitPanel :title="t('toolkit.datetimeTitle')" :collapsible="false">
     <div class="toolkit-grid">
       <div class="toolkit-field">
         <span class="toolkit-field-label">{{ t('toolkit.datetime') }}</span>
@@ -61,10 +59,9 @@
     <UiButton native-type="button" preset="overlay-primary" @click="scheduleByDatetime">
       {{ t('toolkit.scheduleDatetime') }}
     </UiButton>
-  </div>
+  </UiToolkitPanel>
 
-  <div class="toolkit-card">
-    <h2 class="toolkit-section-title">{{ t('toolkit.currentPlan') }}</h2>
+  <UiToolkitPanel :title="t('toolkit.currentPlan')" :collapsible="false">
     <p class="toolkit-plan" :class="{ 'toolkit-plan--muted': !plan }">
       {{ planText }}
     </p>
@@ -73,7 +70,7 @@
         {{ t('toolkit.cancelPlan') }}
       </UiButton>
     </div>
-  </div>
+  </UiToolkitPanel>
 
   <p v-if="statusMessage" class="toolkit-status">{{ statusMessage }}</p>
   <p v-if="errorMessage" class="toolkit-error">{{ errorMessage }}</p>
@@ -86,6 +83,7 @@ import { useI18n } from 'vue-i18n';
 import UiButton from '@/components/ui/Button';
 import UiDateInput from '@/components/ui/DateInput';
 import UiSelect from '@/components/ui/Select';
+import UiToolkitPanel from '@/components/ui/ToolkitPanel';
 import UiTimeInput from '@/components/ui/TimeInput';
 import { api, inTauri } from '../../services/tauri';
 import type { ScheduleShutdownRequest, ShutdownPlan } from '../../types';
