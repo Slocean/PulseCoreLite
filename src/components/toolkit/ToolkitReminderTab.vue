@@ -1,19 +1,29 @@
 <template>
   <div class="toolkit-card">
-    <h2 class="toolkit-section-title">{{ t('toolkit.reminderTitle') }}</h2>
-    <div class="toolkit-reminder-count">
+    <UiButton native-type="button" preset="toolkit-collapse" @click="toggleSection('summary')">
+      <span class="toolkit-section-title">{{ t('toolkit.reminderTitle') }}</span>
+      <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.summary }">
+        expand_more
+      </span>
+    </UiButton>
+    <div v-if="sections.summary" class="toolkit-reminder-count">
       <span>{{ t('toolkit.reminderSummary', { total: reminderCount, enabled: enabledCount }) }}</span>
     </div>
   </div>
 
   <div class="toolkit-card">
-    <h2 class="toolkit-section-title">{{ editingId ? t('toolkit.reminderEdit') : t('toolkit.reminderCreate') }}</h2>
-    <div class="toolkit-actions">
+    <UiButton native-type="button" preset="toolkit-collapse" @click="toggleSection('task')">
+      <span class="toolkit-section-title">{{ editingId ? t('toolkit.reminderEdit') : t('toolkit.reminderCreate') }}</span>
+      <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.task }">
+        expand_more
+      </span>
+    </UiButton>
+    <div v-if="sections.task" class="toolkit-actions">
       <UiButton native-type="button" preset="toolkit-link" @click="openSmtpDialog">
         {{ t('toolkit.reminderSmtpConfig') }}
       </UiButton>
     </div>
-    <div class="toolkit-grid">
+    <div v-if="sections.task" class="toolkit-grid">
       <label class="toolkit-field">
         <span>{{ t('toolkit.reminderTaskTitle') }}</span>
         <input v-model.trim="form.title" type="text" maxlength="80" />
@@ -38,9 +48,14 @@
   </div>
 
   <div class="toolkit-card">
-    <h2 class="toolkit-section-title">{{ t('toolkit.reminderSchedule') }}</h2>
+    <UiButton native-type="button" preset="toolkit-collapse" @click="toggleSection('schedule')">
+      <span class="toolkit-section-title">{{ t('toolkit.reminderSchedule') }}</span>
+      <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.schedule }">
+        expand_more
+      </span>
+    </UiButton>
 
-    <div class="toolkit-reminder-block">
+    <div v-if="sections.schedule" class="toolkit-reminder-block">
       <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatDaily') }}</div>
       <div class="toolkit-reminder-inline">
         <input v-model="dailyInputTime" type="time" />
@@ -60,7 +75,7 @@
       </div>
     </div>
 
-    <div class="toolkit-reminder-block">
+    <div v-if="sections.schedule" class="toolkit-reminder-block">
       <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatWeekly') }}</div>
       <div class="toolkit-reminder-inline toolkit-reminder-inline--triple">
         <select v-model.number="weeklyInputDay">
@@ -85,7 +100,7 @@
       </div>
     </div>
 
-    <div class="toolkit-reminder-block">
+    <div v-if="sections.schedule" class="toolkit-reminder-block">
       <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatMonthly') }}</div>
       <div class="toolkit-reminder-inline toolkit-reminder-inline--triple">
         <input v-model.number="monthlyInputDay" type="number" min="1" max="31" />
@@ -108,8 +123,13 @@
   </div>
 
   <div class="toolkit-card">
-    <h2 class="toolkit-section-title">{{ t('toolkit.reminderContent') }}</h2>
-    <div class="toolkit-grid">
+    <UiButton native-type="button" preset="toolkit-collapse" @click="toggleSection('content')">
+      <span class="toolkit-section-title">{{ t('toolkit.reminderContent') }}</span>
+      <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.content }">
+        expand_more
+      </span>
+    </UiButton>
+    <div v-if="sections.content" class="toolkit-grid">
       <label class="toolkit-field">
         <span>{{ t('toolkit.reminderContentType') }}</span>
         <select v-model="form.contentType">
@@ -127,7 +147,7 @@
       </label>
     </div>
 
-    <div class="toolkit-profile-actions">
+    <div v-if="sections.content" class="toolkit-profile-actions">
       <UiButton native-type="button" preset="overlay-primary" @click="saveReminder">
         {{ t('toolkit.reminderSave') }}
       </UiButton>
@@ -138,11 +158,16 @@
   </div>
 
   <div class="toolkit-card">
-    <h2 class="toolkit-section-title">{{ t('toolkit.reminderList') }}</h2>
-    <div v-if="!reminders.length" class="toolkit-plan toolkit-plan--muted">
+    <UiButton native-type="button" preset="toolkit-collapse" @click="toggleSection('list')">
+      <span class="toolkit-section-title">{{ t('toolkit.reminderList') }}</span>
+      <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.list }">
+        expand_more
+      </span>
+    </UiButton>
+    <div v-if="sections.list && !reminders.length" class="toolkit-plan toolkit-plan--muted">
       {{ t('toolkit.reminderListEmpty') }}
     </div>
-    <div v-else class="toolkit-reminder-list">
+    <div v-else-if="sections.list" class="toolkit-reminder-list">
       <div v-for="item in reminders" :key="item.id" class="toolkit-reminder-item">
         <div class="toolkit-reminder-item-header">
           <div class="toolkit-reminder-item-title">{{ item.title }}</div>
@@ -263,6 +288,13 @@ const editingId = ref<string | null>(null);
 const smtpDialogOpen = ref(false);
 const statusMessage = ref('');
 const errorMessage = ref('');
+const sections = reactive({
+  summary: true,
+  task: true,
+  schedule: true,
+  content: true,
+  list: true
+});
 
 const form = reactive({
   id: '',
@@ -304,7 +336,7 @@ const weekdayOptions = computed(() => [
 ]);
 
 watch(
-  [reminders, statusMessage, errorMessage],
+  [reminders, statusMessage, errorMessage, sections],
   () => {
     nextTick(() => emit('contentChange'));
   },
@@ -323,6 +355,10 @@ onMounted(async () => {
 function clearTip() {
   statusMessage.value = '';
   errorMessage.value = '';
+}
+
+function toggleSection(key: 'summary' | 'task' | 'schedule' | 'content' | 'list') {
+  sections[key] = !sections[key];
 }
 
 function addDailyTime() {

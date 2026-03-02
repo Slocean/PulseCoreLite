@@ -387,6 +387,45 @@ pub async fn send_reminder_email(request: SendReminderEmailRequest) -> CmdResult
 }
 
 #[tauri::command]
+pub fn force_close_reminder_screens(app: AppHandle, token: String) -> CmdResult<u32> {
+    let token_trimmed = token.trim();
+    if token_trimmed.is_empty() {
+        return Err("token is empty".to_string());
+    }
+
+    let prefix = format!("reminder-screen-{token_trimmed}-");
+    let windows = app.webview_windows();
+    let mut closed_count: u32 = 0;
+
+    for (label, win) in windows {
+        if !label.starts_with(&prefix) {
+            continue;
+        }
+
+        #[cfg(windows)]
+        {
+            use windows_sys::Win32::Foundation::HWND;
+            use windows_sys::Win32::UI::WindowsAndMessaging::DestroyWindow;
+
+            if let Ok(hwnd) = win.hwnd() {
+                let hwnd_value = hwnd.0 as HWND;
+                let ok = unsafe { DestroyWindow(hwnd_value) };
+                if ok != 0 {
+                    closed_count += 1;
+                    continue;
+                }
+            }
+        }
+
+        if win.close().is_ok() {
+            closed_count += 1;
+        }
+    }
+
+    Ok(closed_count)
+}
+
+#[tauri::command]
 pub fn set_auto_start_enabled(enabled: bool) -> CmdResult<bool> {
     #[cfg(windows)]
     {

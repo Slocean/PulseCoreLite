@@ -31,6 +31,18 @@ onMounted(async () => {
   if (!isReminderScreen.value) {
     await store.bootstrap();
     locale.value = store.settings.language;
+  } else if (typeof window !== 'undefined') {
+    try {
+      const raw = window.localStorage.getItem('pulsecorelite.settings');
+      if (raw) {
+        const parsed = JSON.parse(raw) as { language?: 'zh-CN' | 'en-US' };
+        if (parsed.language === 'en-US' || parsed.language === 'zh-CN') {
+          locale.value = parsed.language;
+        }
+      }
+    } catch {
+      // ignore
+    }
   }
 });
 

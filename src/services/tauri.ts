@@ -78,5 +78,6 @@ export const api = {
     }>("get_profile_status"),
   getProfileOutputDir: () => tauriInvoke<string>("get_profile_output_dir"),
   openProfileOutputPath: (path: string) => tauriInvoke<void>("open_profile_output_path", { path }),
-  sendReminderEmail: (request: SendReminderEmailRequest) => tauriInvoke<void>("send_reminder_email", { request })
+  sendReminderEmail: (request: SendReminderEmailRequest) => tauriInvoke<void>("send_reminder_email", { request }),
+  forceCloseReminderScreens: (token: string) => tauriInvoke<number>("force_close_reminder_screens", { token })
 };

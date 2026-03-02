@@ -209,6 +209,7 @@ pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Bu
         commands::get_profile_status,
         commands::get_profile_output_dir,
         commands::open_profile_output_path,
-        commands::send_reminder_email
+        commands::send_reminder_email,
+        commands::force_close_reminder_screens
     ])
 }

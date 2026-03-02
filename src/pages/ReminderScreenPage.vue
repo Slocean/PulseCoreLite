@@ -1,7 +1,7 @@
 <template>
   <section class="reminder-screen" @contextmenu.prevent>
     <div class="reminder-screen__inner">
-      <div class="reminder-screen__badge">TASK REMINDER</div>
+      <div class="reminder-screen__badge">{{ t('toolkit.reminderScreenBadge') }}</div>
       <h1 class="reminder-screen__title">{{ title }}</h1>
       <div class="reminder-screen__content">
         <pre v-if="contentType === 'text'" class="reminder-screen__text">{{ content }}</pre>
@@ -13,27 +13,51 @@
           referrerpolicy="no-referrer"></iframe>
         <img v-else-if="contentType === 'image'" class="reminder-screen__image" :src="content" :alt="title" />
       </div>
-      <div class="reminder-screen__hint">This reminder is locked by policy.</div>
+      <div class="reminder-screen__hint">{{ t('toolkit.reminderScreenLockedHint') }}</div>
+      <div class="reminder-screen__actions">
+        <button
+          class="reminder-screen__close-btn"
+          type="button"
+          :disabled="!canClose"
+          @click="closeReminderWindows">
+          {{ closeButtonText }}
+        </button>
+      </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 import { readReminderScreenPayload } from '../composables/useTaskReminders';
+import { api, inTauri } from '../services/tauri';
 import type { ReminderContentType } from '../types';
 
+const { t } = useI18n();
 const contentType = ref<ReminderContentType>('text');
 const title = ref('Task Reminder');
 const content = ref('');
+const token = ref<string | null>(null);
+const canClose = ref(false);
+const closeWaitSeconds = ref(5);
+let closeTimer: number | null = null;
+let unlistenCloseRequested: (() => void) | null = null;
+let storageSignalHandler: ((event: StorageEvent) => void) | null = null;
+let allowSystemClose = false;
 
 const markdownHtml = computed(() => renderMarkdown(content.value));
+const closeButtonText = computed(() =>
+  canClose.value
+    ? t('toolkit.reminderScreenCloseReady')
+    : t('toolkit.reminderScreenCloseWait', { seconds: closeWaitSeconds.value })
+);
 
 onMounted(async () => {
   const params = new URLSearchParams(window.location.search);
-  const token = params.get('token');
-  const payload = readReminderScreenPayload(token);
+  token.value = params.get('token');
+  const payload = readReminderScreenPayload(token.value);
   if (payload) {
     title.value = payload.title || title.value;
     content.value = payload.content || '';
@@ -53,13 +77,84 @@ onMounted(async () => {
     const current = getCurrentWindow();
     await current.setAlwaysOnTop(true);
     await current.setFocus();
-    await current.onCloseRequested(event => {
-      event.preventDefault();
+    unlistenCloseRequested = await current.onCloseRequested(event => {
+      if (!canClose.value && !allowSystemClose) {
+        event.preventDefault();
+      }
     });
   } catch {
     // ignore
   }
+
+  storageSignalHandler = event => {
+    if (!token.value || !event.key || !event.newValue) {
+      return;
+    }
+    const key = `pulsecorelite.reminder-close.${token.value}`;
+    if (event.key !== key) {
+      return;
+    }
+    void closeCurrentWindowBySignal();
+  };
+  window.addEventListener('storage', storageSignalHandler);
+
+  closeTimer = window.setInterval(() => {
+    if (closeWaitSeconds.value <= 1) {
+      closeWaitSeconds.value = 0;
+      canClose.value = true;
+      if (closeTimer != null) {
+        window.clearInterval(closeTimer);
+        closeTimer = null;
+      }
+      return;
+    }
+    closeWaitSeconds.value -= 1;
+  }, 1000);
 });
+
+onUnmounted(() => {
+  if (closeTimer != null) {
+    window.clearInterval(closeTimer);
+    closeTimer = null;
+  }
+  if (unlistenCloseRequested) {
+    unlistenCloseRequested();
+    unlistenCloseRequested = null;
+  }
+  if (storageSignalHandler) {
+    window.removeEventListener('storage', storageSignalHandler);
+    storageSignalHandler = null;
+  }
+});
+
+async function closeReminderWindows() {
+  if (!canClose.value || !token.value) {
+    return;
+  }
+  if (inTauri()) {
+    try {
+      await api.forceCloseReminderScreens(token.value);
+    } catch {
+      // ignore backend close failures and continue with frontend signal fallback
+    }
+  }
+  try {
+    window.localStorage.setItem(`pulsecorelite.reminder-close.${token.value}`, String(Date.now()));
+  } catch {
+    // ignore
+  }
+  await closeCurrentWindowBySignal();
+}
+
+async function closeCurrentWindowBySignal() {
+  allowSystemClose = true;
+  try {
+    const { getCurrentWindow } = await import('@tauri-apps/api/window');
+    await getCurrentWindow().close();
+  } catch {
+    // ignore
+  }
+}
 
 function escapeHtml(value: string) {
   return value
@@ -167,5 +262,31 @@ function renderMarkdown(raw: string) {
   color: rgba(255, 173, 173, 0.95);
   border: 1px dashed rgba(255, 140, 140, 0.68);
   background: rgba(255, 72, 112, 0.08);
+}
+
+.reminder-screen__actions {
+  display: flex;
+  justify-content: center;
+}
+
+.reminder-screen__close-btn {
+  min-width: 190px;
+  height: 42px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.reminder-screen__close-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.reminder-screen__close-btn:not(:disabled):hover {
+  border-color: rgba(0, 242, 255, 0.66);
+  color: rgba(0, 242, 255, 0.96);
 }
 </style>

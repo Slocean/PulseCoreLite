@@ -311,6 +311,10 @@
     "reminderSmtpTestTo": "测试收件人",
     "reminderSmtpSendTest": "发送测试邮件",
     "reminderSmtpTestSuccess": "测试邮件发送成功。",
-    "reminderSmtpTestFailed": "测试邮件发送失败。"
+    "reminderSmtpTestFailed": "测试邮件发送失败。",
+    "reminderScreenBadge": "任务提醒",
+    "reminderScreenLockedHint": "该提醒已锁定，请在倒计时后关闭。",
+    "reminderScreenCloseReady": "关闭提醒",
+    "reminderScreenCloseWait": "{seconds} 秒后可关闭"
   }
 }

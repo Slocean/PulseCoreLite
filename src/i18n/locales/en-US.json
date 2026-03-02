@@ -311,6 +311,10 @@
     "reminderSmtpTestTo": "Test Recipient",
     "reminderSmtpSendTest": "Send Test Email",
     "reminderSmtpTestSuccess": "Test email sent.",
-    "reminderSmtpTestFailed": "Failed to send test email."
+    "reminderSmtpTestFailed": "Failed to send test email.",
+    "reminderScreenBadge": "TASK REMINDER",
+    "reminderScreenLockedHint": "This reminder is locked by policy.",
+    "reminderScreenCloseReady": "Close Reminder",
+    "reminderScreenCloseWait": "Close in {seconds}s"
   }
 }
