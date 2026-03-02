@@ -324,8 +324,10 @@
       "placeholder": "Select date",
       "today": "Today",
       "clear": "Clear",
+      "prevYear": "Previous year",
       "prevMonth": "Previous month",
-      "nextMonth": "Next month"
+      "nextMonth": "Next month",
+      "nextYear": "Next year"
     },
     "timeInput": {
       "triggerAria": "Select time",

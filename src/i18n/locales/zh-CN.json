@@ -324,8 +324,10 @@
       "placeholder": "选择日期",
       "today": "今天",
       "clear": "清除",
+      "prevYear": "上一年",
       "prevMonth": "上个月",
-      "nextMonth": "下个月"
+      "nextMonth": "下个月",
+      "nextYear": "下一年"
     },
     "timeInput": {
       "triggerAria": "选择时间",
