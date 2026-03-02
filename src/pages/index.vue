@@ -347,10 +347,15 @@
       <div class="overlay-dialog-message overlay-dialog-message--muted">
         {{ t('overlay.updateVersionLabel', { version: updateInfo?.version ?? appVersion }) }}
       </div>
-      <div
-        class="overlay-dialog-message overlay-dialog-message--pre"
-        :class="{ 'overlay-dialog-message--muted': !updateNotes }">
-        {{ updateNotes || t('overlay.updateNotesEmpty') }}
+      <div class="overlay-update-notes-scroll">
+        <div
+          class="overlay-dialog-message overlay-dialog-message--pre"
+          :class="{ 'overlay-dialog-message--muted': !updateNotes }">
+          {{ updateNotes || t('overlay.updateNotesEmpty') }}
+        </div>
+      </div>
+      <div class="overlay-update-notes-footer overlay-dialog-message overlay-dialog-message--muted">
+        {{ updateNotesFooterText }}
       </div>
       <div v-if="updateError" class="overlay-dialog-message overlay-dialog-message--error">
         {{ updateError }}
@@ -415,7 +420,49 @@ const {
   installUpdate
 } = useUpdater(appVersion);
 const updateDialogOpen = ref(false);
-const updateNotes = computed(() => updateInfo.value?.notes?.trim() ?? '');
+const releaseNotesUrl = 'https://github.com/Slocean/PulseCoreLite/releases';
+const updateNotesFooterText = computed(() =>
+  store.settings.language === 'zh-CN' ? `完整更新公告：${releaseNotesUrl}` : `Full release notes: ${releaseNotesUrl}`
+);
+
+function filterUpdateNotesByLanguage(notes: string, language: string): string {
+  const lines = notes.split(/\r?\n/);
+  const releaseLinePattern = /github\.com\/Slocean\/PulseCoreLite\/releases/i;
+  const skipInlineLinkLine = (line: string) => releaseLinePattern.test(line);
+  const hasCjk = (line: string) => /[\u4E00-\u9FFF]/.test(line);
+  const hasLatin = (line: string) => /[A-Za-z]/.test(line);
+  const kept = lines.filter(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return true;
+    if (skipInlineLinkLine(trimmed)) return false;
+    const cjk = hasCjk(trimmed);
+    if (language === 'zh-CN') {
+      return cjk;
+    }
+    return !cjk && hasLatin(trimmed);
+  });
+
+  const collapsed: string[] = [];
+  for (const line of kept) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (collapsed.length > 0 && collapsed[collapsed.length - 1] !== '') {
+        collapsed.push('');
+      }
+      continue;
+    }
+    collapsed.push(line);
+  }
+
+  const filtered = collapsed.join('\n').trim();
+  return filtered || notes;
+}
+
+const updateNotes = computed(() => {
+  const raw = updateInfo.value?.notes?.trim() ?? '';
+  if (!raw) return '';
+  return filterUpdateNotesByLanguage(raw, store.settings.language);
+});
 const updateToastMessage = ref('');
 const updateToastVisible = ref(false);
 let updateToastTimer: number | null = null;
@@ -630,7 +677,7 @@ async function toggleToolkitWindow(forceOpen?: boolean) {
 
 async function handleVersionClick() {
   if (updateAvailable.value) {
-    updateDialogOpen.value = true;
+    openUpdateDialog();
     return;
   }
   await triggerUpdateCheck();
@@ -638,10 +685,14 @@ async function handleVersionClick() {
 
 async function handleCheckUpdate() {
   if (updateAvailable.value) {
-    updateDialogOpen.value = true;
+    openUpdateDialog();
     return;
   }
   await triggerUpdateCheck();
+}
+
+function openUpdateDialog() {
+  updateDialogOpen.value = true;
 }
 
 function showUpdateToast(message: string) {
@@ -661,7 +712,7 @@ async function triggerUpdateCheck() {
   }
   await checkForUpdates();
   if (updateAvailable.value) {
-    updateDialogOpen.value = true;
+    openUpdateDialog();
     return;
   }
   if (!updateError.value) {

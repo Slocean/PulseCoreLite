@@ -1,4 +1,4 @@
-import { ref, shallowRef } from "vue";
+﻿import { markRaw, ref, shallowRef, toRaw } from "vue";
 import { inTauri } from "../services/tauri";
 
 type UpdatePayload = {
@@ -60,9 +60,16 @@ function toMessage(error: unknown): string {
     lower.includes("timeout") ||
     lower.includes("connection")
   ) {
-    return `更新服务器连接失败，请检查网络后重试。可手动下载：${RELEASES_URL}`;
+    return `Update server connection failed. Please check your network and retry. Manual download: ${RELEASES_URL}`;
   }
   return message;
+}
+
+function keepRawUpdate(update: UpdatePayload | null): UpdatePayload | null {
+  if (!update) {
+    return null;
+  }
+  return markRaw(toRaw(update)) as UpdatePayload;
 }
 
 function normalizeVersion(version: string): number[] {
@@ -151,7 +158,7 @@ export function useUpdater(currentVersion: string) {
     updateError.value = null;
     try {
       const { check } = await import("@tauri-apps/plugin-updater");
-      const update = (await check()) as UpdatePayload | null;
+      const update = keepRawUpdate((await check()) as UpdatePayload | null);
       updateRef.value = update;
       manualDownloadUrl.value = null;
       if (update) {
@@ -183,10 +190,10 @@ export function useUpdater(currentVersion: string) {
     installingUpdate.value = true;
     updateError.value = null;
     try {
-      let update = updateRef.value;
+      let update = keepRawUpdate(updateRef.value);
       if (!update) {
         const { check } = await import("@tauri-apps/plugin-updater");
-        update = (await check()) as UpdatePayload | null;
+        update = keepRawUpdate((await check()) as UpdatePayload | null);
         updateRef.value = update;
       }
       if (!update) {
@@ -195,10 +202,13 @@ export function useUpdater(currentVersion: string) {
         }
         updateAvailable.value = false;
         updateInfo.value = null;
-        updateError.value = `自动更新暂不可用，请手动下载：${RELEASES_URL}`;
+        updateError.value = `Automatic update is unavailable. Manual download: ${RELEASES_URL}`;
         return;
       }
-      await update.downloadAndInstall();
+
+      const downloadAndInstall = update.downloadAndInstall.bind(update);
+      await downloadAndInstall();
+
       const { relaunch } = await import("@tauri-apps/plugin-process");
       await relaunch();
     } catch (error) {
