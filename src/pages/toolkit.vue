@@ -56,6 +56,7 @@ import { inTauri } from '../services/tauri';
 import { acquireImageUrl, normalizeImageRef, releaseImageRef } from '../utils/imageStore';
 
 type ToolkitTab = 'shutdown' | 'cleanup' | 'hardware' | 'reminder';
+const TOOLKIT_WIDTH = 280;
 
 const { t } = useI18n();
 const { prefs } = useOverlayPrefs();
@@ -207,7 +208,7 @@ async function updateWindowHeight() {
       return;
     }
     lastHeight = height;
-    await getCurrentWindow().setSize(new LogicalSize(260, height));
+    await getCurrentWindow().setSize(new LogicalSize(TOOLKIT_WIDTH, height));
   } catch {}
 }
 

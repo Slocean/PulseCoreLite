@@ -273,7 +273,7 @@
     "reminderEnabled": "启用提醒",
     "reminderSchedule": "提醒配置",
     "reminderAddTime": "添加时间",
-    "reminderAddSlot": "添加条目",
+    "reminderAddSlot": "添加",
     "reminderDayOfMonth": "每月 {day} 号",
     "reminderContent": "任务内容",
     "reminderContentType": "内容类型",

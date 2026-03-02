@@ -5,7 +5,7 @@ export function useToolkitLauncher() {
     if (!inTauri()) {
       return;
     }
-    const TOOLKIT_WIDTH = 260;
+    const TOOLKIT_WIDTH = 280;
     try {
       const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
       const { LogicalSize } = await import('@tauri-apps/api/dpi');
