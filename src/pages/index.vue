@@ -454,6 +454,7 @@ const updateToastMessage = ref('');
 const updateToastVisible = ref(false);
 let updateToastTimer: number | null = null;
 let unlistenReminderTrigger: (() => void) | null = null;
+let unlistenToolkitDestroyed: (() => void) | null = null;
 const showConfig = ref(false);
 const toolkitState = ref<'closed' | 'open' | 'hidden'>('closed');
 const closeToTray = computed({
@@ -587,6 +588,31 @@ const {
 
 const { openToolkitWindow } = useToolkitLauncher();
 
+function clearToolkitDestroyedListener() {
+  if (!unlistenToolkitDestroyed) {
+    return;
+  }
+  unlistenToolkitDestroyed();
+  unlistenToolkitDestroyed = null;
+}
+
+async function ensureToolkitDestroyedListener() {
+  if (!inTauri() || unlistenToolkitDestroyed) {
+    return;
+  }
+  try {
+    const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+    const existing = await WebviewWindow.getByLabel('toolkit');
+    if (!existing) {
+      return;
+    }
+    unlistenToolkitDestroyed = await existing.listen('tauri://destroyed', () => {
+      toolkitState.value = 'closed';
+      clearToolkitDestroyedListener();
+    });
+  } catch {}
+}
+
 async function refreshToolkitState() {
   if (!inTauri()) {
     toolkitState.value = 'closed';
@@ -596,9 +622,11 @@ async function refreshToolkitState() {
     const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
     const existing = await WebviewWindow.getByLabel('toolkit');
     if (!existing) {
+      clearToolkitDestroyedListener();
       toolkitState.value = 'closed';
       return;
     }
+    await ensureToolkitDestroyedListener();
     let visible = true;
     try {
       visible = await existing.isVisible();
@@ -617,6 +645,7 @@ async function toggleToolkitWindow(forceOpen?: boolean) {
     const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
     const existing = await WebviewWindow.getByLabel('toolkit');
     if (existing) {
+      await ensureToolkitDestroyedListener();
       let visible = true;
       try {
         visible = await existing.isVisible();
@@ -660,6 +689,7 @@ async function toggleToolkitWindow(forceOpen?: boolean) {
     return;
   }
   await openToolkitWindow();
+  await ensureToolkitDestroyedListener();
   await refreshToolkitState();
 }
 
@@ -762,6 +792,7 @@ onBeforeUnmount(() => {
     unlistenReminderTrigger();
     unlistenReminderTrigger = null;
   }
+  clearToolkitDestroyedListener();
 });
 
 function handleClose() {
