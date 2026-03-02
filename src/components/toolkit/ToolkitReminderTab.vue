@@ -30,10 +30,7 @@
       </label>
       <label class="toolkit-field">
         <span>{{ t('toolkit.reminderChannel') }}</span>
-        <select v-model="form.channel">
-          <option value="email">{{ t('toolkit.reminderChannelEmail') }}</option>
-          <option value="fullscreen">{{ t('toolkit.reminderChannelFullscreen') }}</option>
-        </select>
+        <UiSelect v-model="form.channel" :options="channelOptions" />
       </label>
       <label v-if="form.channel === 'email'" class="toolkit-field">
         <span>{{ t('toolkit.reminderEmail') }}</span>
@@ -78,11 +75,7 @@
     <div v-if="sections.schedule" class="toolkit-reminder-block">
       <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatWeekly') }}</div>
       <div class="toolkit-reminder-inline toolkit-reminder-inline--triple">
-        <select v-model.number="weeklyInputDay">
-          <option v-for="item in weekdayOptions" :key="item.value" :value="item.value">
-            {{ item.label }}
-          </option>
-        </select>
+        <UiSelect v-model="weeklyInputDay" :options="weekdayOptions" />
         <input v-model="weeklyInputTime" type="time" />
         <UiButton native-type="button" preset="overlay-primary" @click="addWeeklySlot">
           {{ t('toolkit.reminderAddSlot') }}
@@ -132,12 +125,7 @@
     <div v-if="sections.content" class="toolkit-grid">
       <label class="toolkit-field">
         <span>{{ t('toolkit.reminderContentType') }}</span>
-        <select v-model="form.contentType">
-          <option value="text">{{ t('toolkit.reminderContentText') }}</option>
-          <option value="markdown">{{ t('toolkit.reminderContentMarkdown') }}</option>
-          <option value="web">{{ t('toolkit.reminderContentWeb') }}</option>
-          <option value="image">{{ t('toolkit.reminderContentImage') }}</option>
-        </select>
+        <UiSelect v-model="form.contentType" :options="contentTypeOptions" />
       </label>
 
       <label class="toolkit-field">
@@ -218,11 +206,7 @@
         </label>
         <label class="toolkit-field">
           <span>{{ t('toolkit.reminderSmtpSecurity') }}</span>
-          <select v-model="smtpForm.security">
-            <option value="none">{{ t('toolkit.reminderSmtpSecurityNone') }}</option>
-            <option value="starttls">{{ t('toolkit.reminderSmtpSecurityStarttls') }}</option>
-            <option value="tls">{{ t('toolkit.reminderSmtpSecurityTls') }}</option>
-          </select>
+          <UiSelect v-model="smtpForm.security" :options="smtpSecurityOptions" />
         </label>
         <label class="toolkit-field">
           <span>{{ t('toolkit.reminderSmtpUsername') }}</span>
@@ -259,6 +243,7 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
+import UiSelect from '@/components/ui/Select';
 import UiSwitch from '@/components/ui/Switch';
 import OverlayDialog from '../OverlayDialog.vue';
 import { useTaskReminders } from '../../composables/useTaskReminders';
@@ -333,6 +318,24 @@ const weekdayOptions = computed(() => [
   { value: 5, label: t('toolkit.weekdayFri') },
   { value: 6, label: t('toolkit.weekdaySat') },
   { value: 7, label: t('toolkit.weekdaySun') }
+]);
+
+const channelOptions = computed(() => [
+  { value: 'email', label: t('toolkit.reminderChannelEmail') },
+  { value: 'fullscreen', label: t('toolkit.reminderChannelFullscreen') }
+]);
+
+const contentTypeOptions = computed(() => [
+  { value: 'text', label: t('toolkit.reminderContentText') },
+  { value: 'markdown', label: t('toolkit.reminderContentMarkdown') },
+  { value: 'web', label: t('toolkit.reminderContentWeb') },
+  { value: 'image', label: t('toolkit.reminderContentImage') }
+]);
+
+const smtpSecurityOptions = computed(() => [
+  { value: 'none', label: t('toolkit.reminderSmtpSecurityNone') },
+  { value: 'starttls', label: t('toolkit.reminderSmtpSecurityStarttls') },
+  { value: 'tls', label: t('toolkit.reminderSmtpSecurityTls') }
 ]);
 
 watch(

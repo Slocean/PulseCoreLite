@@ -115,9 +115,12 @@
     @cancel="cancelTargets">
     <template #body>
       <div v-if="enabledTargetOptions.length" class="overlay-config overlay-config--single-column">
-        <UiCheckbox v-for="item in enabledTargetOptions" :key="item.id" v-model="tempTargets" :value="item.id">
-          {{ item.label }}
-        </UiCheckbox>
+        <UiSelect
+          v-model="tempTargets"
+          :options="enabledTargetOptions"
+          :placeholder="t('toolkit.cleanupTargetsTitle')"
+          :empty-text="t('toolkit.cleanupTargetsEmpty')"
+          multiple />
       </div>
       <div v-else class="overlay-dialog-message overlay-dialog-message--muted">
         {{ t('toolkit.cleanupTargetsEmpty') }}
@@ -131,7 +134,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
-import UiCheckbox from '@/components/ui/Checkbox';
+import UiSelect from '@/components/ui/Select';
 import UiSwitch from '@/components/ui/Switch';
 import UiToast from '@/components/ui/Toast';
 import OverlayDialog from '../OverlayDialog.vue';
@@ -182,12 +185,12 @@ let profileStatusTimer: number | undefined;
 let profileToastTimer: number | undefined;
 
 const enabledTargetOptions = computed(() => {
-  const options: Array<{ id: 'app' | 'system'; label: string }> = [];
+  const options: Array<{ value: 'app' | 'system'; label: string }> = [];
   if (memoryTrimEnabled.value) {
-    options.push({ id: 'app', label: t('toolkit.cleanupEnable') });
+    options.push({ value: 'app', label: t('toolkit.cleanupEnable') });
   }
   if (memoryTrimSystemEnabled.value) {
-    options.push({ id: 'system', label: t('toolkit.cleanupSystem') });
+    options.push({ value: 'system', label: t('toolkit.cleanupSystem') });
   }
   return options;
 });
@@ -200,7 +203,7 @@ watch(
   () => targetsDialogOpen.value,
   open => {
     if (!open) return;
-    const enabledIds = enabledTargetOptions.value.map(item => item.id);
+    const enabledIds = enabledTargetOptions.value.map(item => item.value);
     tempTargets.value = memoryTrimTargets.value.filter(target => enabledIds.includes(target));
   }
 );

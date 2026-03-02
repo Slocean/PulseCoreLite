@@ -44,18 +44,11 @@
       </div>
       <label class="toolkit-field">
         <span>{{ t('toolkit.repeat') }}</span>
-        <select v-model="repeatMode">
-          <option value="none">{{ t('toolkit.repeatNone') }}</option>
-          <option value="daily">{{ t('toolkit.repeatDaily') }}</option>
-          <option value="weekly">{{ t('toolkit.repeatWeekly') }}</option>
-          <option value="monthly">{{ t('toolkit.repeatMonthly') }}</option>
-        </select>
+        <UiSelect v-model="repeatMode" :options="repeatOptions" />
       </label>
       <label v-if="repeatMode === 'weekly'" class="toolkit-field">
         <span>{{ t('toolkit.weekday') }}</span>
-        <select v-model.number="weeklyDay">
-          <option v-for="item in weekdayOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-        </select>
+        <UiSelect v-model="weeklyDay" :options="weekdayOptions" />
       </label>
       <label v-if="repeatMode === 'monthly'" class="toolkit-field">
         <span>{{ t('toolkit.dayOfMonth') }}</span>
@@ -88,6 +81,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
+import UiSelect from '@/components/ui/Select';
 import { api, inTauri } from '../../services/tauri';
 import type { ScheduleShutdownRequest, ShutdownPlan } from '../../types';
 
@@ -118,6 +112,13 @@ const weekdayOptions = computed(() => [
   { value: 5, label: t('toolkit.weekdayFri') },
   { value: 6, label: t('toolkit.weekdaySat') },
   { value: 7, label: t('toolkit.weekdaySun') }
+]);
+
+const repeatOptions = computed(() => [
+  { value: 'none', label: t('toolkit.repeatNone') },
+  { value: 'daily', label: t('toolkit.repeatDaily') },
+  { value: 'weekly', label: t('toolkit.repeatWeekly') },
+  { value: 'monthly', label: t('toolkit.repeatMonthly') }
 ]);
 
 const planText = computed(() => {
