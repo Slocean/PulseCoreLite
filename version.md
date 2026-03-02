@@ -1,3 +1,12 @@
+## v1.6.5
+
+- 更新检查新增清单回退机制，网络异常时可给出手动下载地址
+- 修复更新说明乱码问题，并在弹窗中按当前语言过滤中/英文发布日志
+- 更新弹窗支持滚动阅读与“完整公告”链接，安装流程增强响应式对象兼容性
+- Add manifest-based fallback for update checks and provide manual download URL on network failures
+- Fix mojibake in release notes and filter notes by current UI language in the update dialog
+- Improve update dialog readability with scrollable notes/full release link and harden install flow for raw updater objects
+
 ## v1.6.4
 
 - 新增系统级内存整理能力，支持定时清理并可配置间隔
