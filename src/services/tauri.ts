@@ -2,6 +2,7 @@ import type { UnlistenFn } from "@tauri-apps/api/event";
 import type {
   AppBootstrap,
   HardwareInfo,
+  SendReminderEmailRequest,
   ScheduleShutdownRequest,
   ShutdownPlan,
   TaskbarInfo
@@ -76,5 +77,6 @@ export const api = {
       samples: number;
     }>("get_profile_status"),
   getProfileOutputDir: () => tauriInvoke<string>("get_profile_output_dir"),
-  openProfileOutputPath: (path: string) => tauriInvoke<void>("open_profile_output_path", { path })
+  openProfileOutputPath: (path: string) => tauriInvoke<void>("open_profile_output_path", { path }),
+  sendReminderEmail: (request: SendReminderEmailRequest) => tauriInvoke<void>("send_reminder_email", { request })
 };

@@ -1,4 +1,9 @@
 use chrono::Utc;
+use lettre::{
+    message::Mailbox,
+    transport::smtp::authentication::Credentials,
+    AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
+};
 #[cfg(windows)]
 use std::process::Command;
 use std::{fs, path::PathBuf};
@@ -8,7 +13,7 @@ use crate::{
     core::device_info,
     profiler::{ensure_profile_path, profile_output_dir, ProfileStatus},
     state::SharedState,
-    types::{AppBootstrap, ScheduleShutdownRequest, ShutdownPlan},
+    types::{AppBootstrap, ScheduleShutdownRequest, SendReminderEmailRequest, ShutdownPlan},
 };
 
 type CmdResult<T> = Result<T, String>;
@@ -306,6 +311,79 @@ pub fn open_profile_output_path(path: String) -> CmdResult<()> {
         let _ = open_target;
         Err("open path is not supported on this platform.".to_string())
     }
+}
+
+#[tauri::command]
+pub async fn send_reminder_email(request: SendReminderEmailRequest) -> CmdResult<()> {
+    let smtp = request.smtp;
+    if smtp.host.trim().is_empty() {
+        return Err("smtp host is empty".to_string());
+    }
+    if smtp.username.trim().is_empty() {
+        return Err("smtp username is empty".to_string());
+    }
+    if smtp.password.is_empty() {
+        return Err("smtp password is empty".to_string());
+    }
+    if smtp.from_email.trim().is_empty() {
+        return Err("smtp from email is empty".to_string());
+    }
+    if request.to.trim().is_empty() {
+        return Err("mail recipient is empty".to_string());
+    }
+
+    let from: Mailbox = if smtp.from_name.trim().is_empty() {
+        smtp.from_email
+            .trim()
+            .parse()
+            .map_err(|e| format!("invalid from email: {e}"))?
+    } else {
+        format!("{} <{}>", smtp.from_name.trim(), smtp.from_email.trim())
+            .parse()
+            .map_err(|e| format!("invalid from mailbox: {e}"))?
+    };
+    let to: Mailbox = request
+        .to
+        .trim()
+        .parse()
+        .map_err(|e| format!("invalid recipient email: {e}"))?;
+
+    let message = Message::builder()
+        .from(from)
+        .to(to)
+        .subject(request.subject)
+        .body(request.body)
+        .map_err(|e| format!("failed to build email: {e}"))?;
+
+    let creds = Credentials::new(smtp.username, smtp.password);
+    let host = smtp.host.trim().to_string();
+    let security = smtp.security.to_ascii_lowercase();
+    let port = smtp.port;
+
+    let mailer = if security == "tls" {
+        AsyncSmtpTransport::<Tokio1Executor>::relay(&host)
+            .map_err(|e| format!("failed to build TLS smtp client: {e}"))?
+            .credentials(creds)
+            .port(port)
+            .build()
+    } else if security == "starttls" {
+        AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(&host)
+            .map_err(|e| format!("failed to build STARTTLS smtp client: {e}"))?
+            .credentials(creds)
+            .port(port)
+            .build()
+    } else {
+        AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(&host)
+            .credentials(creds)
+            .port(port)
+            .build()
+    };
+
+    mailer
+        .send(message)
+        .await
+        .map_err(|e| format!("failed to send email: {e}"))?;
+    Ok(())
 }
 
 #[tauri::command]

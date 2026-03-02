@@ -114,3 +114,48 @@ export interface ProfileStatus {
   startedAt: string | null;
   samples: number;
 }
+
+export type ReminderChannel = 'email' | 'fullscreen';
+export type ReminderContentType = 'text' | 'markdown' | 'web' | 'image';
+
+export interface WeeklyReminderSlot {
+  weekday: number;
+  time: string;
+}
+
+export interface MonthlyReminderSlot {
+  day: number;
+  time: string;
+}
+
+export interface TaskReminder {
+  id: string;
+  enabled: boolean;
+  title: string;
+  channel: ReminderChannel;
+  email: string;
+  dailyTimes: string[];
+  weeklySlots: WeeklyReminderSlot[];
+  monthlySlots: MonthlyReminderSlot[];
+  contentType: ReminderContentType;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SmtpEmailConfig {
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  fromEmail: string;
+  fromName: string;
+  security: 'none' | 'starttls' | 'tls';
+}
+
+export interface SendReminderEmailRequest {
+  smtp: SmtpEmailConfig;
+  to: string;
+  subject: string;
+  body: string;
+}

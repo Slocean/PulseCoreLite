@@ -167,3 +167,25 @@ pub struct ScheduleShutdownRequest {
     /// 1..31
     pub day_of_month: Option<u8>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SmtpEmailConfig {
+    pub host: String,
+    pub port: u16,
+    pub username: String,
+    pub password: String,
+    pub from_email: String,
+    pub from_name: String,
+    /// none | starttls | tls
+    pub security: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SendReminderEmailRequest {
+    pub smtp: SmtpEmailConfig,
+    pub to: String,
+    pub subject: String,
+    pub body: String,
+}
