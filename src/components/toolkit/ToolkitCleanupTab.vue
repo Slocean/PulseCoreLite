@@ -4,17 +4,11 @@
     <div class="toolkit-cleanup-list">
       <div class="overlay-config-row">
         <span class="overlay-config-label">{{ t('toolkit.cleanupEnable') }}</span>
-        <label class="overlay-switch" :aria-label="t('toolkit.cleanupEnable')">
-          <input v-model="memoryTrimEnabled" type="checkbox" role="switch" />
-          <span class="overlay-switch-track" aria-hidden="true"></span>
-        </label>
+        <UiSwitch v-model="memoryTrimEnabled" :aria-label="t('toolkit.cleanupEnable')" />
       </div>
       <div class="overlay-config-row">
         <span class="overlay-config-label">{{ t('toolkit.cleanupSystem') }}</span>
-        <label class="overlay-switch" :aria-label="t('toolkit.cleanupSystem')">
-          <input v-model="memoryTrimSystemEnabled" type="checkbox" role="switch" />
-          <span class="overlay-switch-track" aria-hidden="true"></span>
-        </label>
+        <UiSwitch v-model="memoryTrimSystemEnabled" :aria-label="t('toolkit.cleanupSystem')" />
       </div>
     </div>
     <div class="overlay-config-range">
@@ -37,12 +31,22 @@
     <div class="toolkit-profile-grid">
       <div class="toolkit-profile-row">
         <label class="overlay-config-label" :for="profilePathId">{{ t('toolkit.profilePath') }}</label>
-        <input
-          :id="profilePathId"
-          v-model="profilePath"
-          type="text"
-          class="toolkit-profile-input"
-          autocomplete="off" />
+        <div class="toolkit-profile-path-control">
+          <input
+            :id="profilePathId"
+            v-model="profilePath"
+            type="text"
+            class="toolkit-profile-input"
+            autocomplete="off" />
+          <UiButton
+            native-type="button"
+            preset="overlay-action-primary"
+            aria-label="Copy path"
+            title="Copy path"
+            @click="copyProfilePath">
+            <span class="material-symbols-outlined">content_copy</span>
+          </UiButton>
+        </div>
       </div>
       <div class="toolkit-profile-row">
         <label class="overlay-config-label" :for="profileIntervalId">{{ t('toolkit.profileInterval') }}</label>
@@ -80,8 +84,10 @@
         preset="overlay-danger"
         :disabled="!profileStatus.active"
         @click="stopProfile">
-        {{ t('toolkit.profileStop') }}
+        停止
       </UiButton>
+    </div>
+    <div class="toolkit-profile-status-row">
       <span class="toolkit-profile-status">
         {{ profileStatusText }}
       </span>
@@ -99,10 +105,9 @@
     @cancel="cancelTargets">
     <template #body>
       <div v-if="enabledTargetOptions.length" class="overlay-config overlay-config--single-column">
-        <label v-for="item in enabledTargetOptions" :key="item.id">
-          <input v-model="tempTargets" type="checkbox" :value="item.id" />
+        <UiCheckbox v-for="item in enabledTargetOptions" :key="item.id" v-model="tempTargets" :value="item.id">
           {{ item.label }}
-        </label>
+        </UiCheckbox>
       </div>
       <div v-else class="overlay-dialog-message overlay-dialog-message--muted">
         {{ t('toolkit.cleanupTargetsEmpty') }}
@@ -116,6 +121,8 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
+import UiCheckbox from '@/components/ui/Checkbox';
+import UiSwitch from '@/components/ui/Switch';
 import OverlayDialog from '../OverlayDialog.vue';
 import { useAppStore } from '../../stores/app';
 import { api } from '../../services/tauri';
@@ -149,7 +156,7 @@ const profilePathId = 'toolkit-profile-path';
 const profileIntervalId = 'toolkit-profile-interval';
 const profileDurationId = 'toolkit-profile-duration';
 
-const profilePath = ref(defaultProfilePath());
+const profilePath = ref('');
 const profileIntervalMs = ref(1000);
 const profileDurationSec = ref(120);
 const profileStatus = ref<{ active: boolean; path: string | null; startedAt: string | null; samples: number }>({
@@ -217,7 +224,7 @@ async function startProfile() {
   const interval = Number.isFinite(profileIntervalMs.value) ? profileIntervalMs.value : 1000;
   const durationMs = Math.max(5, durationSec) * 1000;
   const response = await api.startProfileCapture({
-    path: profilePath.value,
+    path: profilePath.value.trim() || 'profile-data',
     intervalMs: Math.max(200, interval),
     durationMs
   });
@@ -229,17 +236,27 @@ async function stopProfile() {
   profileStatus.value = response;
 }
 
-function defaultProfilePath() {
-  const now = new Date();
-  const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(
-    now.getDate()
-  ).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(
-    now.getSeconds()
-  ).padStart(2, '0')}`;
-  return `profile-data/taskbar-profile-${stamp}.jsonl`;
+async function loadProfileOutputDir() {
+  try {
+    profilePath.value = await api.getProfileOutputDir();
+  } catch {
+    profilePath.value = 'profile-data';
+  }
+}
+
+async function copyProfilePath() {
+  const text = profilePath.value.trim();
+  if (!text) return;
+  if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) return;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    // ignore clipboard write failures
+  }
 }
 
 onMounted(() => {
+  loadProfileOutputDir();
   refreshProfileStatus();
   profileStatusTimer = window.setInterval(refreshProfileStatus, 1000);
 });

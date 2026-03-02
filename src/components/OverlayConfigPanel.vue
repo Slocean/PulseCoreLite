@@ -2,83 +2,29 @@
   <div class="overlay-config-wrap">
     <div class="overlay-config" @mousedown.stop>
       <!-- <div class="overlay-config-grid overlay-config-grid--3"> -->
-      <label>
-        <input v-model="prefs.showCpu" type="checkbox" />
-        {{ t('overlay.showCpu') }}
-      </label>
-      <label>
-        <input v-model="prefs.showGpu" type="checkbox" />
-        {{ t('overlay.showGpu') }}
-      </label>
-      <label>
-        <input v-model="prefs.showMemory" type="checkbox" />
-        {{ t('overlay.showMemory') }}
-      </label>
-      <label>
-        <input v-model="prefs.showDisk" type="checkbox" />
-        {{ t('overlay.showDisk') }}
-      </label>
-      <label>
-        <input v-model="prefs.showDown" type="checkbox" />
-        {{ t('overlay.showDown') }}
-      </label>
-      <label>
-        <input v-model="prefs.showUp" type="checkbox" />
-        {{ t('overlay.showUp') }}
-      </label>
+      <UiCheckbox v-model="prefs.showCpu">{{ t('overlay.showCpu') }}</UiCheckbox>
+      <UiCheckbox v-model="prefs.showGpu">{{ t('overlay.showGpu') }}</UiCheckbox>
+      <UiCheckbox v-model="prefs.showMemory">{{ t('overlay.showMemory') }}</UiCheckbox>
+      <UiCheckbox v-model="prefs.showDisk">{{ t('overlay.showDisk') }}</UiCheckbox>
+      <UiCheckbox v-model="prefs.showDown">{{ t('overlay.showDown') }}</UiCheckbox>
+      <UiCheckbox v-model="prefs.showUp">{{ t('overlay.showUp') }}</UiCheckbox>
       <!-- </div> -->
-      <label>
-        <input v-model="prefs.showLatency" type="checkbox" />
-        {{ t('overlay.showLatency') }}
-      </label>
-      <label>
-        <input v-model="prefs.showValues" type="checkbox" />
-        {{ t('overlay.showValues') }}
-      </label>
-      <label>
-        <input v-model="prefs.showPercent" type="checkbox" />
-        {{ t('overlay.showPercent') }}
-      </label>
-      <label>
-        <input v-model="prefs.showHardwareInfo" type="checkbox" />
-        {{ t('overlay.showHardware') }}
-      </label>
-      <label>
-        <input v-model="prefs.showWarning" type="checkbox" />
-        {{ t('overlay.showWarning') }}
-      </label>
-      <label>
-        <input v-model="prefs.showDragHandle" type="checkbox" />
-        {{ t('overlay.showDragHandle') }}
-      </label>
+      <UiCheckbox v-model="prefs.showLatency">{{ t('overlay.showLatency') }}</UiCheckbox>
+      <UiCheckbox v-model="prefs.showValues">{{ t('overlay.showValues') }}</UiCheckbox>
+      <UiCheckbox v-model="prefs.showPercent">{{ t('overlay.showPercent') }}</UiCheckbox>
+      <UiCheckbox v-model="prefs.showHardwareInfo">{{ t('overlay.showHardware') }}</UiCheckbox>
+      <UiCheckbox v-model="prefs.showWarning">{{ t('overlay.showWarning') }}</UiCheckbox>
+      <UiCheckbox v-model="prefs.showDragHandle">{{ t('overlay.showDragHandle') }}</UiCheckbox>
 
-      <label>
-        <input v-model="autoStartEnabled" type="checkbox" />
-        {{ t('overlay.autoStart') }}
-      </label>
-      <label>
-        <input v-model="memoryTrimEnabled" type="checkbox" />
-        {{ t('overlay.memoryTrim') }}
-      </label>
-      <label>
-        <input v-model="rememberOverlayPosition" type="checkbox" />
-        {{ t('overlay.rememberPosition') }}
-      </label>
-      <label>
-        <input v-model="overlayAlwaysOnTop" type="checkbox" />
-        {{ t('overlay.mainWindowAlwaysOnTop') }}
-      </label>
+      <UiCheckbox v-model="autoStartEnabled">{{ t('overlay.autoStart') }}</UiCheckbox>
+      <UiCheckbox v-model="memoryTrimEnabled">{{ t('overlay.memoryTrim') }}</UiCheckbox>
+      <UiCheckbox v-model="rememberOverlayPosition">{{ t('overlay.rememberPosition') }}</UiCheckbox>
+      <UiCheckbox v-model="overlayAlwaysOnTop">{{ t('overlay.mainWindowAlwaysOnTop') }}</UiCheckbox>
       <div class="overlay-config-row">
-        <label class="overlay-config-inline">
-          <input v-model="closeToTray" type="checkbox" />
-          {{ t('overlay.closeToTray') }}
-        </label>
+        <UiCheckbox v-model="closeToTray">{{ t('overlay.closeToTray') }}</UiCheckbox>
         <div class="overlay-config-taskbar overlay-config-taskbar--compact">
           <span class="overlay-config-label">{{ t('overlay.taskbarMonitor') }}</span>
-          <label class="overlay-switch" :aria-label="t('overlay.taskbarMonitor')">
-            <input v-model="taskbarMonitorEnabled" type="checkbox" role="switch" />
-            <span class="overlay-switch-track" aria-hidden="true"></span>
-          </label>
+          <UiSwitch v-model="taskbarMonitorEnabled" :aria-label="t('overlay.taskbarMonitor')" />
         </div>
       </div>
       <div class="overlay-config-language">
@@ -214,10 +160,7 @@
         </div>
         <div class="overlay-config-language">
           <span class="overlay-config-label">{{ t('overlay.toolkit') }}</span>
-          <label class="overlay-switch" :aria-label="t('overlay.toolkit')">
-            <input type="checkbox" role="switch" :checked="toolkitSwitchOn" @change="handleToolkitToggle" />
-            <span class="overlay-switch-track" aria-hidden="true"></span>
-          </label>
+          <UiSwitch :model-value="toolkitSwitchOn" :aria-label="t('overlay.toolkit')" @update:model-value="handleToolkitToggle" />
         </div>
       </div>
       <div v-if="false && canUninstall" class="overlay-config-uninstall">
@@ -245,6 +188,8 @@ import { computed, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
+import UiCheckbox from '@/components/ui/Checkbox';
+import UiSwitch from '@/components/ui/Switch';
 import OverlayCornerDelete from './OverlayCornerDelete.vue';
 import OverlayDialog from './OverlayDialog.vue';
 import type { OverlayBackgroundEffect, OverlayPrefs } from '../composables/useOverlayPrefs';
@@ -409,10 +354,8 @@ function triggerImport() {
   importFileInput.value?.click();
 }
 
-function handleToolkitToggle(event: Event) {
-  const target = event.target as HTMLInputElement | null;
-  if (!target) return;
-  emit('openToolkit', target.checked);
+function handleToolkitToggle(enabled: boolean) {
+  emit('openToolkit', enabled);
 }
 
 function handleImportChange(event: Event) {

@@ -6,7 +6,7 @@ use tauri::{AppHandle, Manager, State};
 
 use crate::{
     core::device_info,
-    profiler::{ensure_profile_path, ProfileStatus},
+    profiler::{ensure_profile_path, profile_output_dir, ProfileStatus},
     state::SharedState,
     types::{AppBootstrap, ScheduleShutdownRequest, ShutdownPlan},
 };
@@ -267,6 +267,13 @@ pub async fn get_profile_status(state: State<'_, SharedState>) -> CmdResult<Prof
         started_at: None,
         samples: 0,
     })
+}
+
+#[tauri::command]
+pub fn get_profile_output_dir(app: AppHandle) -> CmdResult<String> {
+    let dir = profile_output_dir(&app);
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(dir.to_string_lossy().to_string())
 }
 
 #[tauri::command]

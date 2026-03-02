@@ -106,6 +106,13 @@ html.window-toolkit body {
   min-width: 0;
 }
 
+.toolkit-profile-path-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+
 .toolkit-profile-input {
   height: 28px;
   padding: 4px 8px;
@@ -130,6 +137,11 @@ html.window-toolkit body {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.toolkit-profile-status-row {
+  display: flex;
+  align-items: center;
 }
 
 .toolkit-profile-status {

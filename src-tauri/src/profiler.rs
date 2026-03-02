@@ -283,3 +283,12 @@ pub fn ensure_profile_path(app: &AppHandle, path: &str) -> PathBuf {
 
     resolve_profile_path(&base_dir, path)
 }
+
+pub fn profile_output_dir(app: &AppHandle) -> PathBuf {
+    let base_dir = app
+        .path()
+        .app_data_dir()
+        .or_else(|_| std::env::current_dir())
+        .unwrap_or_else(|_| PathBuf::from("."));
+    base_dir.join("profile-data")
+}
