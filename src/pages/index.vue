@@ -384,6 +384,7 @@ import { useOverlayMetrics } from '../composables/useOverlayMetrics';
 import { useOverlayPrefs } from '../composables/useOverlayPrefs';
 import { useOverlayRefreshRate } from '../composables/useOverlayRefreshRate';
 import { useOverlayUptime } from '../composables/useOverlayUptime';
+import { useOverlayToolkitWindow } from '../composables/useOverlayToolkitWindow';
 import { useOverlayWindow } from '../composables/useOverlayWindow';
 import { openReminderScreensFromPayload } from '../composables/useTaskReminders';
 import { useThemeManager } from '../composables/useThemeManager';
@@ -454,9 +455,7 @@ const updateToastMessage = ref('');
 const updateToastVisible = ref(false);
 let updateToastTimer: number | null = null;
 let unlistenReminderTrigger: (() => void) | null = null;
-let unlistenToolkitDestroyed: (() => void) | null = null;
 const showConfig = ref(false);
-const toolkitState = ref<'closed' | 'open' | 'hidden'>('closed');
 const closeToTray = computed({
   get: () => store.settings.closeToTray,
   set: value => store.setCloseToTray(value)
@@ -587,111 +586,10 @@ const {
 });
 
 const { openToolkitWindow } = useToolkitLauncher();
-
-function clearToolkitDestroyedListener() {
-  if (!unlistenToolkitDestroyed) {
-    return;
-  }
-  unlistenToolkitDestroyed();
-  unlistenToolkitDestroyed = null;
-}
-
-async function ensureToolkitDestroyedListener() {
-  if (!inTauri() || unlistenToolkitDestroyed) {
-    return;
-  }
-  try {
-    const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
-    const existing = await WebviewWindow.getByLabel('toolkit');
-    if (!existing) {
-      return;
-    }
-    unlistenToolkitDestroyed = await existing.listen('tauri://destroyed', () => {
-      toolkitState.value = 'closed';
-      clearToolkitDestroyedListener();
-    });
-  } catch {}
-}
-
-async function refreshToolkitState() {
-  if (!inTauri()) {
-    toolkitState.value = 'closed';
-    return;
-  }
-  try {
-    const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
-    const existing = await WebviewWindow.getByLabel('toolkit');
-    if (!existing) {
-      clearToolkitDestroyedListener();
-      toolkitState.value = 'closed';
-      return;
-    }
-    await ensureToolkitDestroyedListener();
-    let visible = true;
-    try {
-      visible = await existing.isVisible();
-    } catch {}
-    toolkitState.value = visible ? 'open' : 'hidden';
-  } catch {
-    toolkitState.value = 'closed';
-  }
-}
-
-async function toggleToolkitWindow(forceOpen?: boolean) {
-  if (!inTauri()) {
-    return;
-  }
-  try {
-    const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
-    const existing = await WebviewWindow.getByLabel('toolkit');
-    if (existing) {
-      await ensureToolkitDestroyedListener();
-      let visible = true;
-      try {
-        visible = await existing.isVisible();
-      } catch {}
-      if (forceOpen === true) {
-        if (!visible) {
-          try {
-            await existing.show();
-          } catch {}
-        }
-        try {
-          await existing.setFocus();
-        } catch {}
-        toolkitState.value = 'open';
-        return;
-      }
-      if (forceOpen === false) {
-        try {
-          await existing.close();
-        } catch {}
-        toolkitState.value = 'closed';
-        return;
-      }
-      if (visible) {
-        try {
-          await existing.close();
-        } catch {}
-        toolkitState.value = 'closed';
-        return;
-      }
-      try {
-        await existing.show();
-        await existing.setFocus();
-      } catch {}
-      toolkitState.value = 'open';
-      return;
-    }
-  } catch {}
-  if (forceOpen === false) {
-    toolkitState.value = 'closed';
-    return;
-  }
-  await openToolkitWindow();
-  await ensureToolkitDestroyedListener();
-  await refreshToolkitState();
-}
+const { toolkitState, refreshToolkitState, toggleToolkitWindow, dispose: disposeToolkitWindow } =
+  useOverlayToolkitWindow({
+    openToolkitWindow
+  });
 
 async function handleVersionClick() {
   if (updateAvailable.value) {
@@ -792,7 +690,7 @@ onBeforeUnmount(() => {
     unlistenReminderTrigger();
     unlistenReminderTrigger = null;
   }
-  clearToolkitDestroyedListener();
+  disposeToolkitWindow();
 });
 
 function handleClose() {
