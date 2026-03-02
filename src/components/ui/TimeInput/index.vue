@@ -55,8 +55,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useFloatingPanel } from '../shared/useFloatingPanel';
 import type { TimeInputProps } from './types';
 
 const props = withDefaults(defineProps<TimeInputProps>(), {
@@ -89,6 +90,18 @@ const containerClass = computed(() => ({
   'ui-time-input--disabled': props.disabled
 }));
 
+const { closePanel, toggleOpen: toggleFloatingPanel } = useFloatingPanel({
+  rootRef,
+  triggerRef,
+  panelRef,
+  isOpen,
+  panelStyle,
+  estimatedHeight: 220,
+  minWidth: 156,
+  widthMode: 'min',
+  onAfterOpen: scrollSelectedIntoView
+});
+
 function normalizeTime(value: string): string {
   const matched = value.match(/^(\d{1,2}):(\d{1,2})$/);
   if (!matched) return '00:00';
@@ -101,13 +114,7 @@ function normalizeTime(value: string): string {
 
 function toggleOpen() {
   if (props.disabled) return;
-  isOpen.value = !isOpen.value;
-  if (isOpen.value) {
-    void nextTick(() => {
-      updatePanelPosition();
-      scrollSelectedIntoView();
-    });
-  }
+  toggleFloatingPanel();
 }
 
 function selectHour(hour: string) {
@@ -117,49 +124,7 @@ function selectHour(hour: string) {
 
 function selectMinute(minute: string) {
   emit('update:modelValue', `${selectedHour.value}:${minute}`);
-  isOpen.value = false;
-}
-
-function onDocumentPointerDown(event: PointerEvent) {
-  if (!isOpen.value) return;
-  const target = event.target as Node | null;
-  if (!target) return;
-  if (rootRef.value?.contains(target)) return;
-  if (panelRef.value?.contains(target)) return;
-  isOpen.value = false;
-}
-
-function onDocumentKeyDown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && isOpen.value) {
-    isOpen.value = false;
-  }
-}
-
-function updatePanelPosition() {
-  if (!isOpen.value) return;
-  const trigger = triggerRef.value;
-  if (!trigger) return;
-  const rect = trigger.getBoundingClientRect();
-  const panelWidth = panelRef.value?.offsetWidth ?? Math.max(156, Math.round(rect.width));
-  const panelHeight = panelRef.value?.offsetHeight ?? 220;
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-  let left = Math.round(rect.left);
-  let top = Math.round(rect.bottom + 4);
-
-  if (left + panelWidth > viewportWidth - 8) {
-    left = Math.max(8, viewportWidth - panelWidth - 8);
-  }
-  if (top + panelHeight > viewportHeight - 8) {
-    top = Math.max(8, Math.round(rect.top - panelHeight - 4));
-  }
-
-  panelStyle.value = {
-    position: 'fixed',
-    left: `${left}px`,
-    top: `${top}px`,
-    minWidth: `${Math.max(156, Math.round(rect.width))}px`
-  };
+  closePanel();
 }
 
 function scrollSelectedIntoView() {
@@ -168,28 +133,6 @@ function scrollSelectedIntoView() {
   selectedHourOption?.scrollIntoView({ block: 'center' });
   selectedMinuteOption?.scrollIntoView({ block: 'center' });
 }
-
-onMounted(() => {
-  document.addEventListener('pointerdown', onDocumentPointerDown);
-  document.addEventListener('keydown', onDocumentKeyDown);
-  window.addEventListener('resize', updatePanelPosition);
-  window.addEventListener('scroll', updatePanelPosition, true);
-});
-
-onBeforeUnmount(() => {
-  document.removeEventListener('pointerdown', onDocumentPointerDown);
-  document.removeEventListener('keydown', onDocumentKeyDown);
-  window.removeEventListener('resize', updatePanelPosition);
-  window.removeEventListener('scroll', updatePanelPosition, true);
-});
-
-watch(isOpen, open => {
-  if (!open) return;
-  void nextTick(() => {
-    updatePanelPosition();
-    scrollSelectedIntoView();
-  });
-});
 </script>
 
 <style scoped>

@@ -98,8 +98,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useFloatingPanel } from '../shared/useFloatingPanel';
 import type { DateInputProps } from './types';
 
 const props = withDefaults(defineProps<DateInputProps>(), {
@@ -169,17 +170,27 @@ const containerClass = computed(() => ({
   'ui-date-input--disabled': props.disabled
 }));
 
+const { closePanel, toggleOpen: toggleFloatingPanel } = useFloatingPanel({
+  rootRef,
+  triggerRef,
+  panelRef,
+  isOpen,
+  panelStyle,
+  estimatedHeight: 292,
+  minWidth: 268,
+  widthMode: 'min',
+  onAfterOpen: () => {
+    focusCell(ensureSelectableIso(focusedIso.value || getInitialFocusIso(), 1));
+  }
+});
+
 function toggleOpen() {
   if (props.disabled) return;
-  isOpen.value = !isOpen.value;
-  if (isOpen.value) {
+  if (!isOpen.value) {
     syncViewMonthToValue();
     focusedIso.value = getInitialFocusIso();
-    void nextTick(() => {
-      updatePanelPosition();
-      focusCell(focusedIso.value);
-    });
   }
+  toggleFloatingPanel();
 }
 
 function shiftMonth(offset: number) {
@@ -201,17 +212,17 @@ function shiftYear(offset: number) {
 function selectDate(iso: string) {
   if (!isSelectableIso(iso)) return;
   emit('update:modelValue', iso);
-  isOpen.value = false;
+  closePanel();
 }
 
 function clearDate() {
   emit('update:modelValue', '');
-  isOpen.value = false;
+  closePanel();
 }
 
 function pickToday() {
   emit('update:modelValue', todayIso.value);
-  isOpen.value = false;
+  closePanel();
 }
 
 function syncViewMonthToValue() {
@@ -223,21 +234,6 @@ function syncViewMonthToValue() {
 
 function getInitialFocusIso(): string {
   return ensureSelectableIso(normalizedValue.value || todayIso.value, 1);
-}
-
-function onDocumentPointerDown(event: PointerEvent) {
-  if (!isOpen.value) return;
-  const target = event.target as Node | null;
-  if (!target) return;
-  if (rootRef.value?.contains(target)) return;
-  if (panelRef.value?.contains(target)) return;
-  isOpen.value = false;
-}
-
-function onDocumentKeyDown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && isOpen.value) {
-    isOpen.value = false;
-  }
 }
 
 function onGridKeyDown(event: KeyboardEvent) {
@@ -267,47 +263,6 @@ function onGridKeyDown(event: KeyboardEvent) {
   void nextTick(() => focusCell(focusedIso.value));
 }
 
-function updatePanelPosition() {
-  if (!isOpen.value) return;
-  const trigger = triggerRef.value;
-  if (!trigger) return;
-  const rect = trigger.getBoundingClientRect();
-  const panelWidth = panelRef.value?.offsetWidth ?? Math.max(268, Math.round(rect.width));
-  const panelHeight = panelRef.value?.offsetHeight ?? 292;
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-  let left = Math.round(rect.left);
-  let top = Math.round(rect.bottom + 4);
-
-  if (left + panelWidth > viewportWidth - 8) {
-    left = Math.max(8, viewportWidth - panelWidth - 8);
-  }
-  if (top + panelHeight > viewportHeight - 8) {
-    top = Math.max(8, Math.round(rect.top - panelHeight - 4));
-  }
-
-  panelStyle.value = {
-    position: 'fixed',
-    left: `${left}px`,
-    top: `${top}px`,
-    minWidth: `${Math.max(268, Math.round(rect.width))}px`
-  };
-}
-
-onMounted(() => {
-  document.addEventListener('pointerdown', onDocumentPointerDown);
-  document.addEventListener('keydown', onDocumentKeyDown);
-  window.addEventListener('resize', updatePanelPosition);
-  window.addEventListener('scroll', updatePanelPosition, true);
-});
-
-onBeforeUnmount(() => {
-  document.removeEventListener('pointerdown', onDocumentPointerDown);
-  document.removeEventListener('keydown', onDocumentKeyDown);
-  window.removeEventListener('resize', updatePanelPosition);
-  window.removeEventListener('scroll', updatePanelPosition, true);
-});
-
 watch(
   () => props.modelValue,
   () => {
@@ -317,14 +272,6 @@ watch(
     void nextTick(() => focusCell(focusedIso.value));
   }
 );
-
-watch(isOpen, open => {
-  if (!open) return;
-  void nextTick(() => {
-    updatePanelPosition();
-    focusCell(ensureSelectableIso(focusedIso.value || getInitialFocusIso(), 1));
-  });
-});
 
 watch([normalizedMin, normalizedMax], () => {
   if (!isOpen.value) return;

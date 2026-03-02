@@ -62,7 +62,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useAttrs, watch } from 'vue';
+import { computed, ref, useAttrs } from 'vue';
+import { useFloatingPanel } from '../shared/useFloatingPanel';
 import type { SelectOption, SelectProps, SelectValue } from './types';
 
 defineOptions({
@@ -125,6 +126,16 @@ const containerClass = computed(() => ({
   'ui-select--selected': hasSelection.value
 }));
 
+const { closePanel, toggleOpen: toggleFloatingPanel } = useFloatingPanel({
+  rootRef,
+  triggerRef,
+  panelRef: menuRef,
+  isOpen,
+  panelStyle: menuStyle,
+  estimatedHeight: 220,
+  widthMode: 'match'
+});
+
 const containerStyle = computed(() => {
   const width = props.width;
   if (width == null || width === '') {
@@ -148,11 +159,7 @@ function isSelected(value: SelectValue): boolean {
 
 function toggleOpen() {
   if (props.disabled) return;
-  const nextOpen = !isOpen.value;
-  isOpen.value = nextOpen;
-  if (nextOpen) {
-    void nextTick(updateMenuPosition);
-  }
+  toggleFloatingPanel();
 }
 
 function selectOption(value: SelectValue) {
@@ -173,55 +180,8 @@ function selectOption(value: SelectValue) {
 
   emit('update:modelValue', value);
   emit('change', value);
-  isOpen.value = false;
+  closePanel();
 }
-
-function onDocumentPointerDown(event: PointerEvent) {
-  if (!isOpen.value) return;
-  const target = event.target as Node | null;
-  if (!target) return;
-  if (rootRef.value?.contains(target)) return;
-  if (menuRef.value?.contains(target)) return;
-  isOpen.value = false;
-}
-
-function onDocumentKeyDown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && isOpen.value) {
-    isOpen.value = false;
-  }
-}
-
-function updateMenuPosition() {
-  if (!isOpen.value) return;
-  const trigger = triggerRef.value;
-  if (!trigger) return;
-  const rect = trigger.getBoundingClientRect();
-  menuStyle.value = {
-    position: 'fixed',
-    left: `${Math.round(rect.left)}px`,
-    top: `${Math.round(rect.bottom + 4)}px`,
-    width: `${Math.round(rect.width)}px`
-  };
-}
-
-onMounted(() => {
-  document.addEventListener('pointerdown', onDocumentPointerDown);
-  document.addEventListener('keydown', onDocumentKeyDown);
-  window.addEventListener('resize', updateMenuPosition);
-  window.addEventListener('scroll', updateMenuPosition, true);
-});
-
-onBeforeUnmount(() => {
-  document.removeEventListener('pointerdown', onDocumentPointerDown);
-  document.removeEventListener('keydown', onDocumentKeyDown);
-  window.removeEventListener('resize', updateMenuPosition);
-  window.removeEventListener('scroll', updateMenuPosition, true);
-});
-
-watch(isOpen, open => {
-  if (!open) return;
-  void nextTick(updateMenuPosition);
-});
 </script>
 
 <style scoped>
