@@ -7,34 +7,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch } from 'vue';
-import { useI18n } from 'vue-i18n';
-
 import TaskbarMonitorPage from '../pages/taskbar.vue';
-import { useAppStore } from '../stores/app';
+import { useEntryBootstrap } from './useEntryBootstrap';
 
-const store = useAppStore();
-const { locale } = useI18n();
-
-onMounted(async () => {
-  if (typeof document !== 'undefined') {
-    document.documentElement.classList.add('window-taskbar');
-  }
-  await store.bootstrap();
-  locale.value = store.settings.language;
+useEntryBootstrap({
+  documentClassName: 'window-taskbar'
 });
-
-onUnmounted(() => {
-  if (typeof document !== 'undefined') {
-    document.documentElement.classList.remove('window-taskbar');
-  }
-  store.dispose();
-});
-
-watch(
-  () => store.settings.language,
-  lang => {
-    locale.value = lang;
-  }
-);
 </script>

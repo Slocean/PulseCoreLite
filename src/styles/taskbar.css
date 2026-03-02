@@ -4,7 +4,12 @@ html.window-taskbar body {
 }
 
 .overlay-shell--taskbar {
+  display: inline-flex;
+  align-items: flex-start;
+  width: fit-content;
+  height: fit-content;
   padding: 0;
+  background: transparent;
 }
 
 .taskbar-bar {
