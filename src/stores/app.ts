@@ -883,42 +883,42 @@ export const useAppStore = defineStore('app', {
       }
       try {
         const [{ TrayIcon }, { Menu }, { defaultWindowIcon }] = await Promise.all([
-        import('@tauri-apps/api/tray'),
-        import('@tauri-apps/api/menu'),
-        import('@tauri-apps/api/app')
-      ]);
-      const showWindow = async () => {
-        await this.ensureMainWindow();
-      };
-      const exitApp = async () => {
-        await this.exitApp();
-      };
-      const menu = await Menu.new({
-        items: [
-          { id: 'show', text: '显示主窗口', action: showWindow },
-          { id: 'quit', text: '退出', action: exitApp }
-        ]
-      });
-      const icon = await defaultWindowIcon();
-      const trayOptions: Parameters<typeof TrayIcon.new>[0] = {
-        menu,
-        menuOnLeftClick: true,
-        tooltip: 'PulseCoreLite',
-        action: async event => {
-          if (event.type === 'DoubleClick') {
-            await showWindow();
+          import('@tauri-apps/api/tray'),
+          import('@tauri-apps/api/menu'),
+          import('@tauri-apps/api/app')
+        ]);
+        const showWindow = async () => {
+          await this.ensureMainWindow();
+        };
+        const exitApp = async () => {
+          await this.exitApp();
+        };
+        const menu = await Menu.new({
+          items: [
+            { id: 'show', text: '显示主窗口', action: showWindow },
+            { id: 'quit', text: '退出', action: exitApp }
+          ]
+        });
+        const icon = await defaultWindowIcon();
+        const trayOptions: Parameters<typeof TrayIcon.new>[0] = {
+          menu,
+          menuOnLeftClick: true,
+          tooltip: 'PulseCoreLite',
+          action: async event => {
+            if (event.type === 'DoubleClick') {
+              await showWindow();
+            }
           }
+        };
+        if (icon) {
+          trayOptions.icon = icon;
         }
-      };
-      if (icon) {
-        trayOptions.icon = icon;
+        await TrayIcon.new(trayOptions);
+        this.trayReady = true;
+        return true;
+      } catch {
+        return false;
       }
-      await TrayIcon.new(trayOptions);
-      this.trayReady = true;
-      return true;
-    } catch {
-      return false;
-    }
     },
     async handoffTrayToOtherWindow(): Promise<boolean> {
       if (!inTauri()) {
