@@ -1,3 +1,18 @@
+## v1.6.4
+
+- 新增系统级内存整理能力，支持定时清理并可配置间隔
+- 工具箱新增性能采集功能，支持设置路径/间隔/时长并启动/停止
+- 工具箱清理页新增内存整理目标选择与布局优化
+- 硬件分析页支持雷达视图与折叠分区，新增专用标签页结构
+- UI 组件体系完善（按钮/开关/对话框/进度条等），提升一致性与可维护性
+- 支持性能采集路径解析到应用数据目录
+- Add system-wide memory trimming with configurable interval
+- Add performance capture in Toolkit Cleanup with path/interval/duration and start/stop
+- Add memory-trim target selection dialog and cleanup layout improvements
+- Enhance hardware analysis UI with radar view, collapsible sections, and dedicated tabs
+- Expand UI component system (buttons, switches, dialogs, progress bar) for consistency
+- Resolve performance capture paths against the app data directory
+
 ## v1.6.3
 
 - 新增手动触发版本更新
