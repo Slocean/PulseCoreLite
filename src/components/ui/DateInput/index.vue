@@ -72,11 +72,13 @@
           :class="{
             'ui-date-input-cell--outside': !cell.isCurrentMonth,
             'ui-date-input-cell--selected': cell.iso === normalizedValue,
-            'ui-date-input-cell--today': cell.iso === todayIso
+            'ui-date-input-cell--today': cell.iso === todayIso,
+            'ui-date-input-cell--disabled': !cell.selectable
           }"
           :data-iso="cell.iso"
           :aria-selected="cell.iso === normalizedValue"
-          :tabindex="cell.iso === focusedIso ? 0 : -1"
+          :tabindex="cell.iso === focusedIso && cell.selectable ? 0 : -1"
+          :disabled="!cell.selectable"
           @focus="focusedIso = cell.iso"
           @click="selectDate(cell.iso)">
           {{ cell.day }}
@@ -121,6 +123,8 @@ const normalizedValue = computed(() => normalizeIsoDate(props.modelValue));
 const todayIso = computed(() => formatIsoDate(new Date()));
 const triggerAriaLabel = computed(() => props.ariaLabel ?? t('ui.dateInput.triggerAria'));
 const weekStart = computed(() => (locale.value.toLowerCase().startsWith('en-us') ? 0 : 1));
+const normalizedMin = computed(() => normalizeIsoDate(props.min ?? ''));
+const normalizedMax = computed(() => normalizeIsoDate(props.max ?? ''));
 
 const displayValue = computed(() => {
   if (!normalizedValue.value) return t('ui.dateInput.placeholder');
@@ -150,10 +154,12 @@ const calendarCells = computed(() => {
   return Array.from({ length: 42 }, (_, index) => {
     const date = new Date(startDate);
     date.setDate(startDate.getDate() + index);
+    const iso = formatIsoDate(date);
     return {
-      iso: formatIsoDate(date),
+      iso,
       day: date.getDate(),
-      isCurrentMonth: date.getMonth() === first.getMonth() && date.getFullYear() === first.getFullYear()
+      isCurrentMonth: date.getMonth() === first.getMonth() && date.getFullYear() === first.getFullYear(),
+      selectable: isSelectableIso(iso)
     };
   });
 });
@@ -193,6 +199,7 @@ function shiftYear(offset: number) {
 }
 
 function selectDate(iso: string) {
+  if (!isSelectableIso(iso)) return;
   emit('update:modelValue', iso);
   isOpen.value = false;
 }
@@ -215,7 +222,7 @@ function syncViewMonthToValue() {
 }
 
 function getInitialFocusIso(): string {
-  return normalizedValue.value || todayIso.value;
+  return ensureSelectableIso(normalizedValue.value || todayIso.value, 1);
 }
 
 function onDocumentPointerDown(event: PointerEvent) {
@@ -249,13 +256,13 @@ function onGridKeyDown(event: KeyboardEvent) {
   if (event.key === 'PageDown') nextDate = event.shiftKey ? addYears(current, 1) : addMonths(current, 1);
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault();
-    selectDate(focusedIso.value || formatIsoDate(current));
+    selectDate(ensureSelectableIso(focusedIso.value || formatIsoDate(current), 1));
     return;
   }
   if (!nextDate) return;
 
   event.preventDefault();
-  focusedIso.value = formatIsoDate(nextDate);
+  focusedIso.value = ensureSelectableIso(formatIsoDate(nextDate), event.key === 'ArrowLeft' ? -1 : 1);
   viewMonth.value = startOfMonth(nextDate);
   void nextTick(() => focusCell(focusedIso.value));
 }
@@ -306,7 +313,7 @@ watch(
   () => {
     if (!isOpen.value) return;
     syncViewMonthToValue();
-    focusedIso.value = normalizedValue.value || todayIso.value;
+    focusedIso.value = ensureSelectableIso(normalizedValue.value || todayIso.value, 1);
     void nextTick(() => focusCell(focusedIso.value));
   }
 );
@@ -315,8 +322,14 @@ watch(isOpen, open => {
   if (!open) return;
   void nextTick(() => {
     updatePanelPosition();
-    focusCell(focusedIso.value || getInitialFocusIso());
+    focusCell(ensureSelectableIso(focusedIso.value || getInitialFocusIso(), 1));
   });
+});
+
+watch([normalizedMin, normalizedMax], () => {
+  if (!isOpen.value) return;
+  focusedIso.value = ensureSelectableIso(focusedIso.value || getInitialFocusIso(), 1);
+  void nextTick(() => focusCell(focusedIso.value));
 });
 
 function getWeekIndex(date: Date): number {
@@ -377,21 +390,57 @@ function daysInMonth(date: Date): number {
 function syncFocusMonth() {
   const currentFocused = parseIsoDate(focusedIso.value);
   if (!currentFocused) {
-    focusedIso.value = formatIsoDate(viewMonth.value);
+    focusedIso.value = ensureSelectableIso(formatIsoDate(viewMonth.value), 1);
     return;
   }
-  focusedIso.value = formatIsoDate(
-    new Date(
-      viewMonth.value.getFullYear(),
-      viewMonth.value.getMonth(),
-      Math.min(currentFocused.getDate(), daysInMonth(viewMonth.value))
-    )
+  focusedIso.value = ensureSelectableIso(
+    formatIsoDate(
+      new Date(
+        viewMonth.value.getFullYear(),
+        viewMonth.value.getMonth(),
+        Math.min(currentFocused.getDate(), daysInMonth(viewMonth.value))
+      )
+    ),
+    1
   );
 }
 
 function focusCell(iso: string) {
   const cell = panelRef.value?.querySelector<HTMLButtonElement>(`button[data-iso="${iso}"]`);
   cell?.focus();
+}
+
+function isSelectableIso(iso: string): boolean {
+  if (!iso) return false;
+  if (normalizedMin.value && iso < normalizedMin.value) return false;
+  if (normalizedMax.value && iso > normalizedMax.value) return false;
+  return true;
+}
+
+function ensureSelectableIso(iso: string, preferredStep: number): string {
+  if (isSelectableIso(iso)) return iso;
+  const source = parseIsoDate(iso) ?? new Date();
+  let forward = new Date(source);
+  let backward = new Date(source);
+
+  for (let index = 0; index < 370; index += 1) {
+    if (preferredStep >= 0) {
+      forward = addDays(forward, 1);
+      const forwardIso = formatIsoDate(forward);
+      if (isSelectableIso(forwardIso)) return forwardIso;
+      backward = addDays(backward, -1);
+      const backwardIso = formatIsoDate(backward);
+      if (isSelectableIso(backwardIso)) return backwardIso;
+    } else {
+      backward = addDays(backward, -1);
+      const backwardIso = formatIsoDate(backward);
+      if (isSelectableIso(backwardIso)) return backwardIso;
+      forward = addDays(forward, 1);
+      const forwardIso = formatIsoDate(forward);
+      if (isSelectableIso(forwardIso)) return forwardIso;
+    }
+  }
+  return iso;
 }
 </script>
 
@@ -561,6 +610,12 @@ function focusCell(iso: string) {
   border-color: rgba(0, 242, 255, 0.4);
   background: rgba(0, 242, 255, 0.12);
   color: rgba(0, 242, 255, 0.94);
+}
+
+.ui-date-input-cell--disabled {
+  opacity: 0.34;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .ui-date-input-footer {

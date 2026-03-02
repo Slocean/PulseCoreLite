@@ -41,7 +41,7 @@
       <div class="toolkit-field">
         <span class="toolkit-field-label">{{ t('toolkit.datetime') }}</span>
         <div class="toolkit-datetime-row">
-          <UiDateInput v-model="appointmentDate" />
+          <UiDateInput v-model="appointmentDate" :min="minAppointmentDate" />
           <UiTimeInput v-model="appointmentTime" />
         </div>
       </div>
@@ -104,6 +104,7 @@ const countdownSeconds = ref(0);
 const initialAppointment = nextQuarterHourDate();
 const appointmentDate = ref(formatDateLocal(initialAppointment));
 const appointmentTime = ref(formatTimeLocal(initialAppointment));
+const minAppointmentDate = formatDateLocal(new Date());
 const repeatMode = ref<RepeatMode>('none');
 const weeklyDay = ref(dayToWeekday(new Date()));
 const monthlyDay = ref(new Date().getDate());
