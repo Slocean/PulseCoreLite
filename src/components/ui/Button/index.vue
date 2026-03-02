@@ -41,4 +41,5 @@ const presetClass = computed(() => resolveButtonPresetClass(props.preset));
 </script>
 
 <style scoped src="./button.tokens.css"></style>
+<style scoped src="./button.presets.css"></style>
 
