@@ -207,6 +207,13 @@ html.window-toolkit body {
   color: rgba(255, 255, 255, 0.82);
 }
 
+.toolkit-datetime-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px;
+  gap: 6px;
+  align-items: center;
+}
+
 .toolkit-field input,
 .toolkit-field select {
   appearance: none;

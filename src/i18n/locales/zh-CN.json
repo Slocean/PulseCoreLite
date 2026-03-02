@@ -318,6 +318,15 @@
     "reminderScreenCloseWait": "{seconds} 秒后可关闭"
   },
   "ui": {
+    "dateInput": {
+      "triggerAria": "选择日期",
+      "panelAria": "日期选择器",
+      "placeholder": "选择日期",
+      "today": "今天",
+      "clear": "清除",
+      "prevMonth": "上个月",
+      "nextMonth": "下个月"
+    },
     "timeInput": {
       "triggerAria": "选择时间",
       "panelAria": "时间选择器",

@@ -318,6 +318,15 @@
     "reminderScreenCloseWait": "Close in {seconds}s"
   },
   "ui": {
+    "dateInput": {
+      "triggerAria": "Select date",
+      "panelAria": "Date picker",
+      "placeholder": "Select date",
+      "today": "Today",
+      "clear": "Clear",
+      "prevMonth": "Previous month",
+      "nextMonth": "Next month"
+    },
     "timeInput": {
       "triggerAria": "Select time",
       "panelAria": "Time picker",

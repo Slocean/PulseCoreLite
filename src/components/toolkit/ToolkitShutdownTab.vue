@@ -40,7 +40,10 @@
     <div class="toolkit-grid">
       <div class="toolkit-field">
         <span class="toolkit-field-label">{{ t('toolkit.datetime') }}</span>
-        <input v-model="appointmentAt" type="datetime-local" @click="openDatetimePicker" />
+        <div class="toolkit-datetime-row">
+          <UiDateInput v-model="appointmentDate" />
+          <UiTimeInput v-model="appointmentTime" />
+        </div>
       </div>
       <label class="toolkit-field">
         <span>{{ t('toolkit.repeat') }}</span>
@@ -81,7 +84,9 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
+import UiDateInput from '@/components/ui/DateInput';
 import UiSelect from '@/components/ui/Select';
+import UiTimeInput from '@/components/ui/TimeInput';
 import { api, inTauri } from '../../services/tauri';
 import type { ScheduleShutdownRequest, ShutdownPlan } from '../../types';
 
@@ -96,7 +101,9 @@ const { t } = useI18n();
 const countdownHours = ref(0);
 const countdownMinutes = ref(30);
 const countdownSeconds = ref(0);
-const appointmentAt = ref(nextQuarterHourLocal());
+const initialAppointment = nextQuarterHourDate();
+const appointmentDate = ref(formatDateLocal(initialAppointment));
+const appointmentTime = ref(formatTimeLocal(initialAppointment));
 const repeatMode = ref<RepeatMode>('none');
 const weeklyDay = ref(dayToWeekday(new Date()));
 const monthlyDay = ref(new Date().getDate());
@@ -151,8 +158,8 @@ watch(
   { immediate: true }
 );
 
-watch(appointmentAt, value => {
-  const date = parseDatetimeLocal(value);
+watch([appointmentDate, appointmentTime], ([dateValue, timeValue]) => {
+  const date = parseAppointment(dateValue, timeValue);
   if (!date) return;
   weeklyDay.value = dayToWeekday(date);
   monthlyDay.value = date.getDate();
@@ -201,7 +208,7 @@ async function scheduleByDatetime() {
   clearTips();
   if (!inTauri()) return;
 
-  const date = parseDatetimeLocal(appointmentAt.value);
+  const date = parseAppointment(appointmentDate.value, appointmentTime.value);
   if (!date) {
     errorMessage.value = t('toolkit.invalidDatetime');
     return;
@@ -264,14 +271,6 @@ async function submitSchedule(request: ScheduleShutdownRequest) {
   }
 }
 
-function openDatetimePicker(event: MouseEvent) {
-  const target = event.currentTarget as HTMLInputElement | null;
-  if (!target) return;
-  if (typeof (target as any).showPicker === 'function') {
-    (target as any).showPicker();
-  }
-}
-
 function onNumberWheel(event: WheelEvent, field: 'hours' | 'minutes' | 'seconds', min: number, max: number) {
   const el = event.currentTarget as HTMLInputElement | null;
   if (!el || document.activeElement !== el) {
@@ -285,7 +284,7 @@ function onNumberWheel(event: WheelEvent, field: 'hours' | 'minutes' | 'seconds'
   model.value = next;
 }
 
-function nextQuarterHourLocal() {
+function nextQuarterHourDate() {
   const now = new Date();
   now.setSeconds(0, 0);
   const nextMinute = Math.ceil((now.getMinutes() + 1) / 15) * 15;
@@ -294,14 +293,18 @@ function nextQuarterHourLocal() {
   } else {
     now.setMinutes(nextMinute, 0, 0);
   }
-  return formatDatetimeLocal(now);
+  return now;
 }
 
-function formatDatetimeLocal(date: Date) {
+function formatDateLocal(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(
     2,
     '0'
-  )}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  )}`;
+}
+
+function formatTimeLocal(date: Date) {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
 function formatLocalDate(iso: string) {
@@ -317,9 +320,26 @@ function formatLocalDate(iso: string) {
   ).padStart(2, '0')}`;
 }
 
-function parseDatetimeLocal(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
+function parseAppointment(dateValue: string, timeValue: string) {
+  const dateMatch = dateValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const timeMatch = timeValue.match(/^(\d{2}):(\d{2})$/);
+  if (!dateMatch || !timeMatch) return null;
+
+  const year = Number.parseInt(dateMatch[1], 10);
+  const month = Number.parseInt(dateMatch[2], 10);
+  const day = Number.parseInt(dateMatch[3], 10);
+  const hour = Number.parseInt(timeMatch[1], 10);
+  const minute = Number.parseInt(timeMatch[2], 10);
+  if ([year, month, day, hour, minute].some(item => !Number.isFinite(item))) return null;
+
+  const date = new Date(year, month - 1, day, hour, minute, 0, 0);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day ||
+    date.getHours() !== hour ||
+    date.getMinutes() !== minute
+  ) {
     return null;
   }
   return date;
