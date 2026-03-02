@@ -413,7 +413,7 @@ const {
   updateError,
   checkForUpdates,
   installUpdate
-} = useUpdater();
+} = useUpdater(appVersion);
 const updateDialogOpen = ref(false);
 const updateNotes = computed(() => updateInfo.value?.notes?.trim() ?? '');
 const updateToastMessage = ref('');
