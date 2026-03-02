@@ -1,4 +1,6 @@
 <template>
+  <UiToast :open="profileToastVisible" :message="profileToastMessage" />
+
   <div class="toolkit-card">
     <h2 class="toolkit-section-title">{{ t('toolkit.cleanupTitle') }}</h2>
     <div class="toolkit-cleanup-list">
@@ -123,6 +125,7 @@ import { useI18n } from 'vue-i18n';
 import UiButton from '@/components/ui/Button';
 import UiCheckbox from '@/components/ui/Checkbox';
 import UiSwitch from '@/components/ui/Switch';
+import UiToast from '@/components/ui/Toast';
 import OverlayDialog from '../OverlayDialog.vue';
 import { useAppStore } from '../../stores/app';
 import { api } from '../../services/tauri';
@@ -165,7 +168,10 @@ const profileStatus = ref<{ active: boolean; path: string | null; startedAt: str
   startedAt: null,
   samples: 0
 });
+const profileToastMessage = ref('');
+const profileToastVisible = ref(false);
 let profileStatusTimer: number | undefined;
+let profileToastTimer: number | undefined;
 
 const enabledTargetOptions = computed(() => {
   const options: Array<{ id: 'app' | 'system'; label: string }> = [];
@@ -250,6 +256,14 @@ async function copyProfilePath() {
   if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) return;
   try {
     await navigator.clipboard.writeText(text);
+    profileToastMessage.value = t('toolkit.copyPathSuccess');
+    profileToastVisible.value = true;
+    if (profileToastTimer != null) {
+      window.clearTimeout(profileToastTimer);
+    }
+    profileToastTimer = window.setTimeout(() => {
+      profileToastVisible.value = false;
+    }, 2000);
   } catch {
     // ignore clipboard write failures
   }
@@ -264,6 +278,9 @@ onMounted(() => {
 onUnmounted(() => {
   if (profileStatusTimer) {
     window.clearInterval(profileStatusTimer);
+  }
+  if (profileToastTimer != null) {
+    window.clearTimeout(profileToastTimer);
   }
 });
 </script>

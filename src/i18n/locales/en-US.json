@@ -140,6 +140,7 @@
     "profileDuration": "Duration (sec)",
     "profileStart": "Start capture",
     "profileStop": "Stop capture",
+    "copyPathSuccess": "Path copied",
     "profileStatusIdle": "Idle",
     "profileStatusRunning": "Running · {samples} samples",
     "hardwareScoreTitle": "Total Score",

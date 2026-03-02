@@ -10,13 +10,7 @@
       class="overlay-bg overlay-bg--liquid-highlight"
       :style="overlayLiquidGlassHighlightStyle"
       aria-hidden="true"></div>
-    <Transition name="toast">
-      <div v-if="updateToastVisible" class="overlay-toast-layer" aria-live="polite">
-        <div class="overlay-toast">
-          {{ updateToastMessage }}
-        </div>
-      </div>
-    </Transition>
+    <UiToast :open="updateToastVisible" :message="updateToastMessage" />
     <OverlayHeader
       :show-drag-handle="prefs.showDragHandle"
       :app-version="appVersion"
@@ -377,6 +371,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
+import UiToast from '@/components/ui/Toast';
 import OverlayConfigPanel from '../components/OverlayConfigPanel.vue';
 import OverlayDialog from '../components/OverlayDialog.vue';
 import OverlayHeader from '../components/OverlayHeader.vue';

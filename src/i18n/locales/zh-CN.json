@@ -140,6 +140,7 @@
     "profileDuration": "采样时长 (秒)",
     "profileStart": "开始采样",
     "profileStop": "停止采样",
+    "copyPathSuccess": "路径已复制",
     "profileStatusIdle": "未采样",
     "profileStatusRunning": "采样中 · 已写入 {samples} 条",
     "hardwareScoreTitle": "综合评分",
