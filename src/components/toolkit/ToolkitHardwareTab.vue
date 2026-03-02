@@ -1,147 +1,42 @@
 <template>
-  <UiCollapsiblePanel
-    class="toolkit-card toolkit-card--score"
-    :title="t('toolkit.hardwareScoreTitle')"
+  <HardwareScorePanel
     v-model="sections.score"
-    single-header-preset="toolkit-collapse"
-    title-class="toolkit-section-title"
-    indicator-class="toolkit-collapse-indicator"
-    @toggle="emit('contentChange')">
-    <div>
-      <div class="toolkit-score-ring" :style="scoreRingStyle">
-        <div class="toolkit-score-center">
-          <div class="toolkit-score-value">{{ totalScore }}</div>
-          <div class="toolkit-score-grade">{{ totalGrade }}</div>
-        </div>
-      </div>
-      <div class="toolkit-score-caption">{{ totalGradeLabel }}</div>
-      <p class="toolkit-score-desc">{{ totalSummary }}</p>
-    </div>
-  </UiCollapsiblePanel>
+    :total-score="totalScore"
+    :total-grade="totalGrade"
+    :total-grade-label="totalGradeLabel"
+    :total-summary="totalSummary"
+    :score-ring-style="scoreRingStyle"
+    @content-change="emit('contentChange')" />
 
-  <UiCollapsiblePanel
-    class="toolkit-card"
-    :title="t('toolkit.dimensionTitle')"
+  <HardwareDimensionPanel
     v-model="sections.dimension"
-    header-mode="split"
-    header-class="toolkit-section-header"
-    split-title-preset="toolkit-collapse-title"
-    split-toggle-preset="toolkit-collapse-icon"
-    title-class="toolkit-section-title"
-    indicator-class="toolkit-collapse-indicator"
-    :toggle-aria-label="t('toolkit.dimensionTitle')"
-    @toggle="emit('contentChange')">
-    <template #header-actions>
-      <UiButton
-        native-type="button"
-        preset="toolkit-view-toggle"
-        :aria-label="dimensionViewLabel"
-        @click="toggleDimensionView">
-        <span class="material-symbols-outlined">{{ dimensionViewIcon }}</span>
-        <span class="toolkit-view-toggle-text">{{ dimensionViewLabel }}</span>
-      </UiButton>
-    </template>
-    <div>
-      <div v-if="dimensionView === 'bars'" class="toolkit-score-list">
-        <div v-for="item in dimensionScores" :key="item.id" class="toolkit-score-item">
-          <div class="toolkit-score-item-header">
-            <span class="toolkit-score-title">{{ item.title }}</span>
-            <span class="toolkit-score-badge" :class="item.badgeClass">{{ item.level }}</span>
-            <span class="toolkit-score-number" :style="{ color: item.color }">{{ item.score }}</span>
-          </div>
-          <div class="toolkit-score-bar">
-            <span class="toolkit-score-bar-fill" :style="{ width: `${item.score}%`, background: item.color }"></span>
-          </div>
-          <p class="toolkit-score-desc">{{ item.summary }}</p>
-        </div>
-      </div>
-      <div v-else class="toolkit-radar">
-        <svg class="toolkit-radar-svg" viewBox="0 0 200 200" aria-hidden="true">
-          <g>
-            <polygon
-              v-for="ring in radarGridPolygons"
-              :key="ring.step"
-              class="toolkit-radar-grid"
-              :points="ring.points" />
-          </g>
-          <g>
-            <line
-              v-for="(axis, index) in radarAxes"
-              :key="`axis-${index}`"
-              class="toolkit-radar-axis"
-              :x1="RADAR_CENTER"
-              :y1="RADAR_CENTER"
-              :x2="axis.x"
-              :y2="axis.y" />
-          </g>
-          <polygon class="toolkit-radar-area" :points="radarValuePoints" />
-          <circle
-            v-for="(point, index) in radarValueDots"
-            :key="`dot-${index}`"
-            class="toolkit-radar-point"
-            :cx="point.x"
-            :cy="point.y"
-            r="2.4" />
-          <text
-            v-for="(axis, index) in radarAxes"
-            :key="`label-${index}`"
-            class="toolkit-radar-label"
-            :x="axis.labelX"
-            :y="axis.labelY"
-            :text-anchor="axis.anchor"
-            :dominant-baseline="axis.baseline">
-            {{ axis.label }}
-          </text>
-        </svg>
-        <div class="toolkit-radar-legend">
-          <div v-for="item in dimensionScores" :key="`legend-${item.id}`" class="toolkit-radar-legend-item">
-            <span class="toolkit-radar-dot" :style="{ background: item.color }"></span>
-            <span class="toolkit-radar-label-text">{{ item.title }}</span>
-            <span class="toolkit-radar-value">{{ item.score }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </UiCollapsiblePanel>
+    :dimension-view="dimensionView"
+    :dimension-view-label="dimensionViewLabel"
+    :dimension-view-icon="dimensionViewIcon"
+    :dimension-scores="dimensionScores"
+    :radar-axes="radarAxes"
+    :radar-grid-polygons="radarGridPolygons"
+    :radar-value-points="radarValuePoints"
+    :radar-value-dots="radarValueDots"
+    @toggle-view="toggleDimensionView"
+    @content-change="emit('contentChange')" />
 
-  <UiCollapsiblePanel
-    class="toolkit-card"
-    :title="t('toolkit.hardwareSummaryTitle')"
+  <HardwareSummaryPanel
     v-model="sections.summary"
-    single-header-preset="toolkit-collapse"
-    title-class="toolkit-section-title"
-    indicator-class="toolkit-collapse-indicator"
-    @toggle="emit('contentChange')">
-    <div class="toolkit-summary-grid">
-      <div v-for="row in hardwareSummaryRows" :key="row.id" class="toolkit-summary-item">
-        <span class="toolkit-summary-label">{{ row.label }}</span>
-        <span class="toolkit-summary-value">{{ row.value }}</span>
-      </div>
-    </div>
-  </UiCollapsiblePanel>
+    :rows="hardwareSummaryRows"
+    @content-change="emit('contentChange')" />
 
-  <UiCollapsiblePanel
-    class="toolkit-card"
-    :title="t('toolkit.hardwareAdviceTitle')"
+  <HardwareAdvicePanel
     v-model="sections.advice"
-    single-header-preset="toolkit-collapse"
-    title-class="toolkit-section-title"
-    indicator-class="toolkit-collapse-indicator"
-    @toggle="emit('contentChange')">
-    <ul class="toolkit-advice-list">
-      <li v-for="(item, index) in adviceList" :key="index" class="toolkit-advice-item">{{ item }}</li>
-    </ul>
-  </UiCollapsiblePanel>
+    :advice-list="adviceList"
+    @content-change="emit('contentChange')" />
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import UiButton from '@/components/ui/Button';
-import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import {
-  RADAR_CENTER,
   badgeClassForScore,
   buildRamLabel,
   calcBalanceScore,
@@ -166,6 +61,10 @@ import {
   parseRamSpec,
   totalSummaryText
 } from './hardware/hardwareScoring';
+import HardwareAdvicePanel from './hardware/HardwareAdvicePanel.vue';
+import HardwareDimensionPanel from './hardware/HardwareDimensionPanel.vue';
+import HardwareScorePanel from './hardware/HardwareScorePanel.vue';
+import HardwareSummaryPanel from './hardware/HardwareSummaryPanel.vue';
 import { useAppStore } from '../../stores/app';
 
 const emit = defineEmits<{
