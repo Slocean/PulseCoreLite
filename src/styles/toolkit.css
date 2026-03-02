@@ -618,6 +618,10 @@ html.window-toolkit body {
   grid-template-columns: minmax(0, 1fr) 76px auto;
 }
 
+.toolkit-reminder-inline--monthly {
+  grid-template-columns: minmax(0, 1fr) 76px auto;
+}
+
 .toolkit-reminder-time-input {
   width: 76px;
   min-width: 76px;

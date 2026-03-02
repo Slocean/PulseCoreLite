@@ -95,8 +95,8 @@
 
     <div v-if="sections.schedule" class="toolkit-reminder-block">
       <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatMonthly') }}</div>
-      <div class="toolkit-reminder-inline toolkit-reminder-inline--triple">
-        <input v-model.number="monthlyInputDay" type="number" min="1" max="31" />
+      <div class="toolkit-reminder-inline toolkit-reminder-inline--monthly">
+        <UiSelect v-model="monthlyInputDays" :options="monthlyDayOptions" multiple />
         <UiTimeInput v-model="monthlyInputTime" />
         <UiButton native-type="button" preset="overlay-primary" @click="addMonthlySlot">
           {{ t('toolkit.reminderAddSlot') }}
@@ -298,7 +298,7 @@ const form = reactive({
 const dailyInputTime = ref('09:00');
 const weeklyInputDays = ref<number[]>([1]);
 const weeklyInputTime = ref('09:00');
-const monthlyInputDay = ref(1);
+const monthlyInputDays = ref<number[]>([new Date().getDate()]);
 const monthlyInputTime = ref('09:00');
 const smtpTestTo = ref('');
 const smtpForm = reactive<SmtpEmailConfig>({
@@ -338,6 +338,16 @@ const smtpSecurityOptions = computed(() => [
   { value: 'starttls', label: t('toolkit.reminderSmtpSecurityStarttls') },
   { value: 'tls', label: t('toolkit.reminderSmtpSecurityTls') }
 ]);
+
+const monthlyDayOptions = computed(() =>
+  Array.from({ length: 31 }, (_, index) => {
+    const day = index + 1;
+    return {
+      value: day,
+      label: t('toolkit.reminderDayOfMonth', { day })
+    };
+  })
+);
 
 watch(
   [reminders, statusMessage, errorMessage, sections],
@@ -404,12 +414,22 @@ function removeWeeklySlot(weekday: number, time: string) {
 
 function addMonthlySlot() {
   clearTip();
-  const slot = { day: monthlyInputDay.value, time: monthlyInputTime.value };
-  if (!slot.time) return;
-  if (form.monthlySlots.some(item => item.day === slot.day && item.time === slot.time)) {
-    return;
+  if (!monthlyInputTime.value) return;
+  const days = [...new Set(monthlyInputDays.value)]
+    .map(value => Math.round(value))
+    .filter(value => value >= 1 && value <= 31);
+  if (!days.length) return;
+
+  let changed = false;
+  for (const day of days) {
+    if (form.monthlySlots.some(item => item.day === day && item.time === monthlyInputTime.value)) {
+      continue;
+    }
+    form.monthlySlots.push({ day, time: monthlyInputTime.value });
+    changed = true;
   }
-  form.monthlySlots.push(slot);
+  if (!changed) return;
+
   form.monthlySlots.sort((a, b) => (a.day === b.day ? a.time.localeCompare(b.time) : a.day - b.day));
 }
 
@@ -431,6 +451,7 @@ function resetForm() {
   form.contentType = 'text';
   form.content = '';
   weeklyInputDays.value = [1];
+  monthlyInputDays.value = [new Date().getDate()];
 }
 
 function openSmtpDialog() {
@@ -505,6 +526,11 @@ function editReminder(item: TaskReminder) {
     .filter(value => value >= 1 && value <= 7)
     .sort((a, b) => a - b);
   weeklyInputDays.value = editDays.length ? editDays : [1];
+  const editMonthDays = [...new Set(item.monthlySlots.map(slot => slot.day))]
+    .map(value => Math.round(value))
+    .filter(value => value >= 1 && value <= 31)
+    .sort((a, b) => a - b);
+  monthlyInputDays.value = editMonthDays.length ? editMonthDays : [new Date().getDate()];
 }
 
 async function deleteReminder(id: string) {
