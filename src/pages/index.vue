@@ -225,71 +225,14 @@
     @confirm="confirmDeleteTheme"
     @cancel="closeDeleteThemeDialog" />
 
-  <UiDialog
+  <OverlayThemeEditDialog
     v-model:open="themeEditDialogOpen"
-    :title="t('overlay.themeEditTitle')"
-    :confirm-text="t('overlay.dialogConfirm')"
-    :cancel-text="t('overlay.dialogCancel')"
-    :close-label="t('overlay.dialogClose')"
-    :autofocus-confirm="false"
+    v-model:effect="themeEditEffect"
+    v-model:blurPx="themeEditBlurPx"
+    v-model:glassStrength="themeEditGlassStrength"
+    :can-confirm-theme-edit="canConfirmThemeEdit"
     @confirm="confirmEditTheme"
-    @cancel="closeEditThemeDialog">
-    <template #body>
-      <div class="overlay-dialog-input-wrap">
-        <!-- <div class="overlay-dialog-message">{{ t('overlay.themeEditHint') }}</div> -->
-        <input
-          v-if="false"
-          v-model="themeEditNameInput"
-          class="overlay-dialog-input"
-          type="text"
-          :placeholder="t('overlay.themeNamePlaceholder')"
-          maxlength="3" />
-        <div class="overlay-config-language overlay-config-effect" style="margin-top: 10px">
-          <span class="overlay-config-label">{{ t('overlay.backgroundEffect') }}</span>
-          <div class="overlay-lang-buttons overlay-config-effect-buttons">
-            <UiButton
-              native-type="button"
-              preset="overlay-chip-soft"
-              :active="themeEditEffect === 'gaussian'"
-              @click="themeEditEffect = 'gaussian'">
-              {{ t('overlay.effectGaussian') }}
-            </UiButton>
-            <UiButton
-              native-type="button"
-              preset="overlay-chip-soft"
-              :active="themeEditEffect === 'liquidGlass'"
-              @click="themeEditEffect = 'liquidGlass'">
-              {{ t('overlay.effectLiquidGlass') }}
-            </UiButton>
-          </div>
-        </div>
-        <div class="overlay-config-range" style="margin-top: 10px">
-          <span class="overlay-config-label">
-            {{ themeEditEffect === 'gaussian' ? t('overlay.backgroundBlur') : t('overlay.backgroundGlassBlur') }}
-          </span>
-          <span class="overlay-config-value">{{ themeEditBlurPx }}px</span>
-          <input type="range" min="0" max="24" step="1" v-model.number="themeEditBlurPx" />
-        </div>
-        <div v-if="themeEditEffect === 'liquidGlass'" class="overlay-config-range">
-          <span class="overlay-config-label">{{ t('overlay.backgroundGlassStrength') }}</span>
-          <span class="overlay-config-value">{{ themeEditGlassStrength }}%</span>
-          <input type="range" min="0" max="100" step="5" v-model.number="themeEditGlassStrength" />
-        </div>
-      </div>
-    </template>
-    <template #actions>
-      <UiButton native-type="button" preset="overlay-chip" @click="closeEditThemeDialog">
-        {{ t('overlay.dialogCancel') }}
-      </UiButton>
-      <UiButton
-        native-type="button"
-        preset="overlay-primary"
-        :disabled="!canConfirmThemeEdit"
-        @click="confirmEditTheme">
-        {{ t('overlay.dialogConfirm') }}
-      </UiButton>
-    </template>
-  </UiDialog>
+    @cancel="closeEditThemeDialog" />
 
   <UiDialog
     v-model:open="importConfirmDialogOpen"
@@ -323,56 +266,27 @@
     @confirm="closeExportSuccessDialog"
     @cancel="closeExportSuccessDialog" />
 
-  <UiDialog
+  <OverlayUpdateDialog
     v-model:open="updateDialogOpen"
-    :title="t('overlay.updateTitle')"
-    :close-label="t('overlay.dialogClose')"
+    :app-version="appVersion"
+    :update-version="updateInfo?.version"
+    :update-notes="updateNotes"
+    :update-notes-footer-text="updateNotesFooterText"
+    :update-error="updateError"
+    :installing-update="installingUpdate"
     @cancel="closeUpdateDialog"
-    @confirm="handleInstallUpdate">
-    <template #body>
-      <div class="overlay-dialog-message overlay-dialog-message--muted">
-        {{ t('overlay.updateVersionLabel', { version: updateInfo?.version ?? appVersion }) }}
-      </div>
-      <div class="overlay-update-notes-scroll">
-        <div
-          class="overlay-dialog-message overlay-dialog-message--pre"
-          :class="{ 'overlay-dialog-message--muted': !updateNotes }">
-          {{ updateNotes || t('overlay.updateNotesEmpty') }}
-        </div>
-      </div>
-      <div class="overlay-update-notes-footer overlay-dialog-message overlay-dialog-message--muted">
-        {{ updateNotesFooterText }}
-      </div>
-      <div v-if="updateError" class="overlay-dialog-message overlay-dialog-message--error">
-        {{ updateError }}
-      </div>
-    </template>
-    <template #actions>
-      <UiButton
-        native-type="button"
-        preset="overlay-chip"
-        :disabled="installingUpdate"
-        @click="closeUpdateDialog">
-        {{ t('overlay.dialogCancel') }}
-      </UiButton>
-      <UiButton
-        native-type="button"
-        preset="overlay-primary"
-        :disabled="installingUpdate"
-        @click="handleInstallUpdate">
-        {{ installingUpdate ? t('overlay.updateInstalling') : t('overlay.updateNow') }}
-      </UiButton>
-    </template>
-  </UiDialog>
+    @confirm="handleInstallUpdate" />
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
 import UiToast from '@/components/ui/Toast';
 import OverlayConfigPanel from '../components/OverlayConfigPanel.vue';
+import OverlayThemeEditDialog from '../components/overlay/OverlayThemeEditDialog.vue';
+import OverlayUpdateDialog from '../components/overlay/OverlayUpdateDialog.vue';
 import UiDialog from '@/components/ui/Dialog';
 import OverlayHeader from '../components/OverlayHeader.vue';
 import OverlayMetricsPanel from '../components/OverlayMetricsPanel.vue';
@@ -381,6 +295,7 @@ import OverlayStatusBar from '../components/OverlayStatusBar.vue';
 import { useConfigTransfer } from '../composables/useConfigTransfer';
 import { useFactoryReset } from '../composables/useFactoryReset';
 import { useOverlayMetrics } from '../composables/useOverlayMetrics';
+import { useOverlayPageController } from '../composables/useOverlayPageController';
 import { useOverlayPrefs } from '../composables/useOverlayPrefs';
 import { useOverlayRefreshRate } from '../composables/useOverlayRefreshRate';
 import { useOverlayUptime } from '../composables/useOverlayUptime';
@@ -392,8 +307,6 @@ import { useToolkitLauncher } from '../composables/useToolkitLauncher';
 import { useUpdater } from '../composables/useUpdater';
 import packageJson from '../../package.json';
 import { useAppStore } from '../stores/app';
-import { api, inTauri, listenEvent } from '../services/tauri';
-import type { ReminderScreenEventPayload } from '../types';
 
 const store = useAppStore();
 const { t } = useI18n();
@@ -407,95 +320,9 @@ const {
   checkForUpdates,
   installUpdate
 } = useUpdater(appVersion);
-const updateDialogOpen = ref(false);
-const releaseNotesUrl = 'https://github.com/Slocean/PulseCoreLite/releases';
-const updateNotesFooterText = computed(() =>
-  store.settings.language === 'zh-CN' ? `完整更新公告：${releaseNotesUrl}` : `Full release notes: ${releaseNotesUrl}`
-);
-
-function filterUpdateNotesByLanguage(notes: string, language: string): string {
-  const lines = notes.split(/\r?\n/);
-  const releaseLinePattern = /github\.com\/Slocean\/PulseCoreLite\/releases/i;
-  const skipInlineLinkLine = (line: string) => releaseLinePattern.test(line);
-  const hasCjk = (line: string) => /[\u4E00-\u9FFF]/.test(line);
-  const hasLatin = (line: string) => /[A-Za-z]/.test(line);
-  const kept = lines.filter(line => {
-    const trimmed = line.trim();
-    if (!trimmed) return true;
-    if (skipInlineLinkLine(trimmed)) return false;
-    const cjk = hasCjk(trimmed);
-    if (language === 'zh-CN') {
-      return cjk;
-    }
-    return !cjk && hasLatin(trimmed);
-  });
-
-  const collapsed: string[] = [];
-  for (const line of kept) {
-    const trimmed = line.trim();
-    if (!trimmed) {
-      if (collapsed.length > 0 && collapsed[collapsed.length - 1] !== '') {
-        collapsed.push('');
-      }
-      continue;
-    }
-    collapsed.push(line);
-  }
-
-  const filtered = collapsed.join('\n').trim();
-  return filtered || notes;
-}
-
-const updateNotes = computed(() => {
-  const raw = updateInfo.value?.notes?.trim() ?? '';
-  if (!raw) return '';
-  return filterUpdateNotesByLanguage(raw, store.settings.language);
-});
-const updateToastMessage = ref('');
-const updateToastVisible = ref(false);
-let updateToastTimer: number | null = null;
-let unlistenReminderTrigger: (() => void) | null = null;
-const showConfig = ref(false);
-const closeToTray = computed({
-  get: () => store.settings.closeToTray,
-  set: value => store.setCloseToTray(value)
-});
-const autoStartEnabled = computed({
-  get: () => store.settings.autoStartEnabled,
-  set: value => void store.setAutoStartEnabled(value)
-});
-const memoryTrimEnabled = computed({
-  get: () => store.settings.memoryTrimEnabled,
-  set: value => void store.setMemoryTrimEnabled(value)
-});
-const rememberOverlayPosition = computed({
-  get: () => store.settings.rememberOverlayPosition,
-  set: value => store.setRememberOverlayPosition(value)
-});
-const overlayAlwaysOnTop = computed({
-  get: () => store.settings.overlayAlwaysOnTop,
-  set: value => store.setOverlayAlwaysOnTop(value)
-});
-const taskbarMonitorEnabled = computed({
-  get: () => store.settings.taskbarMonitorEnabled,
-  set: value => void store.setTaskbarMonitorEnabled(value)
-});
-const factoryResetHotkey = computed({
-  get: () => store.settings.factoryResetHotkey,
-  set: value => store.setFactoryResetHotkey(value)
-});
 const { prefs } = useOverlayPrefs();
 const { refreshRate, handleRefreshRateChange } = useOverlayRefreshRate(store);
 const { uptimeLabel } = useOverlayUptime();
-const appUsageLabel = computed(() => {
-  const snap = store.snapshot;
-  const cpu = snap.appCpuUsagePct ?? 0;
-  const mem = snap.appMemoryMb;
-  const parts: string[] = [];
-  parts.push(`${cpu.toFixed(1)}%`);
-  if (mem != null) parts.push(`${mem.toFixed(0)}MB`);
-  return parts.join(' · ');
-});
 const {
   metrics,
   getUsageClass,
@@ -533,7 +360,6 @@ const {
   canConfirmThemeName,
   themeDeleteDialogOpen,
   themeEditDialogOpen,
-  themeEditNameInput,
   themeEditEffect,
   themeEditBlurPx,
   themeEditGlassStrength,
@@ -590,128 +416,43 @@ const { toolkitState, refreshToolkitState, toggleToolkitWindow, dispose: dispose
   useOverlayToolkitWindow({
     openToolkitWindow
   });
-
-async function handleVersionClick() {
-  if (updateAvailable.value) {
-    openUpdateDialog();
-    return;
-  }
-  await triggerUpdateCheck();
-}
-
-async function handleCheckUpdate() {
-  if (updateAvailable.value) {
-    openUpdateDialog();
-    return;
-  }
-  await triggerUpdateCheck();
-}
-
-function openUpdateDialog() {
-  updateDialogOpen.value = true;
-}
-
-function showUpdateToast(message: string) {
-  updateToastMessage.value = message;
-  updateToastVisible.value = true;
-  if (updateToastTimer != null) {
-    window.clearTimeout(updateToastTimer);
-  }
-  updateToastTimer = window.setTimeout(() => {
-    updateToastVisible.value = false;
-  }, 2000);
-}
-
-async function triggerUpdateCheck() {
-  if (checkingUpdate.value) {
-    return;
-  }
-  await checkForUpdates();
-  if (updateAvailable.value) {
-    openUpdateDialog();
-    return;
-  }
-  if (!updateError.value) {
-    showUpdateToast(t('overlay.updateUpToDate'));
-  }
-}
-
-function closeUpdateDialog() {
-  updateDialogOpen.value = false;
-}
-
-async function handleInstallUpdate() {
-  await installUpdate();
-}
-
-async function applyOverlayTopmost(enabled: boolean) {
-  if (!inTauri()) {
-    return;
-  }
-  try {
-    await api.setWindowSystemTopmost('main', enabled);
-  } catch {
-    try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      await getCurrentWindow().setAlwaysOnTop(enabled);
-    } catch {}
-  }
-}
-
-watch(
-  overlayAlwaysOnTop,
-  enabled => {
-    if (!inTauri()) return;
-    void applyOverlayTopmost(enabled);
-  },
-  { immediate: true }
-);
-
-watch(
+const {
   showConfig,
-  value => {
-    if (!value) return;
-    void refreshToolkitState();
-  },
-  { immediate: true }
-);
-
-onMounted(() => {
-  void refreshToolkitState();
-  void checkForUpdates();
-  void setupReminderTriggerListener();
-});
-
-onBeforeUnmount(() => {
-  if (updateToastTimer != null) {
-    window.clearTimeout(updateToastTimer);
-  }
-  if (unlistenReminderTrigger) {
-    unlistenReminderTrigger();
-    unlistenReminderTrigger = null;
-  }
-  disposeToolkitWindow();
-});
-
-function handleClose() {
-  void store.exitApp();
-}
-
-function minimizeOverlay() {
-  void store.minimizeOverlay();
-}
-
-function setLanguage(language: 'zh-CN' | 'en-US') {
-  store.setLanguage(language);
-}
-
-async function setupReminderTriggerListener() {
-  if (!inTauri()) return;
-  if (unlistenReminderTrigger) return;
-  unlistenReminderTrigger = await listenEvent<ReminderScreenEventPayload>('reminder://trigger', payload => {
+  closeToTray,
+  autoStartEnabled,
+  memoryTrimEnabled,
+  rememberOverlayPosition,
+  overlayAlwaysOnTop,
+  taskbarMonitorEnabled,
+  factoryResetHotkey,
+  appUsageLabel,
+  updateDialogOpen,
+  updateNotesFooterText,
+  updateNotes,
+  updateToastMessage,
+  updateToastVisible,
+  handleVersionClick,
+  handleCheckUpdate,
+  closeUpdateDialog,
+  handleInstallUpdate,
+  handleClose,
+  minimizeOverlay,
+  setLanguage
+} = useOverlayPageController({
+  store,
+  t,
+  updateAvailable,
+  updateInfo,
+  checkingUpdate,
+  updateError,
+  checkForUpdates,
+  installUpdate,
+  refreshToolkitState,
+  disposeToolkitWindow,
+  onReminderTrigger: payload => {
     void openReminderScreensFromPayload(payload);
-  });
-}
+  }
+});
 </script>
 
 

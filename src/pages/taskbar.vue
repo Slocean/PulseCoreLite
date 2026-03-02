@@ -63,7 +63,9 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import { useFullscreenAutoHide } from '../composables/useFullscreenAutoHide';
 import { useTaskbarPrefs } from '../composables/useTaskbarPrefs';
+import { useTopmostGuard } from '../composables/useTopmostGuard';
 import { useTaskbarWindow } from '../composables/useTaskbarWindow';
 import { api, inTauri } from '../services/tauri';
 import { useAppStore } from '../stores/app';
@@ -295,155 +297,17 @@ async function applyTaskbarTopmost(enabled: boolean) {
   }
 }
 
-let topmostRepairTimer: number | null = null;
-let topmostHeartbeatTimer: number | null = null;
-let unlistenFocusChanged: (() => void) | null = null;
-let topmostGuardPauseDepth = 0;
-let fullscreenPollTimer: number | null = null;
-let fullscreenCheckInFlight = false;
-let fullscreenSuppressed = false;
-let fullscreenWindowHidden = false;
-
-function isTopmostGuardPaused() {
-  return topmostGuardPauseDepth > 0;
-}
-
-function pauseTopmostGuard() {
-  topmostGuardPauseDepth += 1;
-  stopTopmostGuard();
-}
-
-function resumeTopmostGuard() {
-  if (topmostGuardPauseDepth === 0) return;
-  topmostGuardPauseDepth -= 1;
-  if (topmostGuardPauseDepth === 0 && alwaysOnTop.value) {
-    void startTopmostGuard();
-  }
-}
-
-function clearTopmostRepairTimer() {
-  if (topmostRepairTimer != null) {
-    window.clearTimeout(topmostRepairTimer);
-    topmostRepairTimer = null;
-  }
-}
-
-function scheduleTopmostRepair(delayMs = 0) {
-  if (!inTauri() || !alwaysOnTop.value || isTopmostGuardPaused()) {
-    return;
-  }
-  clearTopmostRepairTimer();
-  topmostRepairTimer = window.setTimeout(() => {
-    topmostRepairTimer = null;
-    void applyTaskbarTopmost(true);
-  }, delayMs);
-}
-
-async function startTopmostGuard() {
-  if (!inTauri() || isTopmostGuardPaused()) {
-    return;
-  }
-  scheduleTopmostRepair(0);
-  if (topmostHeartbeatTimer == null) {
-    // Keep the monitor on the front of the TOPMOST band.
-    topmostHeartbeatTimer = window.setInterval(() => {
-      scheduleTopmostRepair(0);
-    }, 1500);
-  }
-  if (!unlistenFocusChanged) {
-    try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      unlistenFocusChanged = await getCurrentWindow().onFocusChanged(({ payload: focused }) => {
-        if (!focused) {
-          scheduleTopmostRepair(60);
-        }
-      });
-    } catch {
-      // ignore
-    }
-  }
-}
-
-function stopTopmostGuard() {
-  clearTopmostRepairTimer();
-  if (topmostHeartbeatTimer != null) {
-    window.clearInterval(topmostHeartbeatTimer);
-    topmostHeartbeatTimer = null;
-  }
-  if (unlistenFocusChanged) {
-    unlistenFocusChanged();
-    unlistenFocusChanged = null;
-  }
-}
-
-async function setFullscreenSuppressed(suppressed: boolean) {
-  if (!inTauri() || fullscreenSuppressed === suppressed) {
-    return;
-  }
-  fullscreenSuppressed = suppressed;
-  if (suppressed) {
-    pauseTopmostGuard();
-    if (!fullscreenWindowHidden) {
-      try {
-        const { getCurrentWindow } = await import('@tauri-apps/api/window');
-        await getCurrentWindow().hide();
-        fullscreenWindowHidden = true;
-      } catch {
-        // ignore
-      }
-    }
-    return;
-  }
-  if (fullscreenWindowHidden) {
-    try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      await getCurrentWindow().show();
-      fullscreenWindowHidden = false;
-    } catch {
-      // ignore
-    }
-  }
-  resumeTopmostGuard();
-  await applyTaskbarTopmost(alwaysOnTop.value);
-}
-
-function stopFullscreenAutoHideMonitor() {
-  if (fullscreenPollTimer != null) {
-    window.clearInterval(fullscreenPollTimer);
-    fullscreenPollTimer = null;
-  }
-  fullscreenCheckInFlight = false;
-  void setFullscreenSuppressed(false);
-}
-
-function startFullscreenAutoHideMonitor() {
-  if (!inTauri() || fullscreenPollTimer != null) {
-    return;
-  }
-  const poll = async () => {
-    if (fullscreenCheckInFlight) {
-      return;
-    }
-    fullscreenCheckInFlight = true;
-    try {
-      const shouldAutoHide = autoHideOnFullscreen.value;
-      if (!shouldAutoHide) {
-        await setFullscreenSuppressed(false);
-        return;
-      }
-      const isFullscreen = await api.isFullscreenWindowActive();
-      await setFullscreenSuppressed(isFullscreen);
-    } catch {
-      // ignore
-    } finally {
-      fullscreenCheckInFlight = false;
-    }
-  };
-  fullscreenPollTimer = window.setInterval(() => {
-    void poll();
-  }, 250);
-  void poll();
-}
+const { pauseTopmostGuard, resumeTopmostGuard, startTopmostGuard, stopTopmostGuard } = useTopmostGuard({
+  alwaysOnTop,
+  applyTopmost: applyTaskbarTopmost
+});
+const { fullscreenSuppressed } = useFullscreenAutoHide({
+  autoHideOnFullscreen,
+  alwaysOnTop,
+  applyTopmost: applyTaskbarTopmost,
+  pauseTopmostGuard,
+  resumeTopmostGuard
+});
 
 async function syncTaskbarHeightVar() {
   if (!inTauri() || typeof document === 'undefined') {
@@ -468,7 +332,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  stopFullscreenAutoHideMonitor();
   stopTopmostGuard();
 });
 
@@ -476,7 +339,7 @@ watch(
   alwaysOnTop,
   enabled => {
     if (!inTauri()) return;
-    if (fullscreenSuppressed) {
+    if (fullscreenSuppressed.value) {
       return;
     }
     void applyTaskbarTopmost(enabled);
@@ -484,19 +347,6 @@ watch(
       void startTopmostGuard();
     } else {
       stopTopmostGuard();
-    }
-  },
-  { immediate: true }
-);
-
-watch(
-  autoHideOnFullscreen,
-  enabled => {
-    if (!inTauri()) return;
-    if (enabled) {
-      startFullscreenAutoHideMonitor();
-    } else {
-      stopFullscreenAutoHideMonitor();
     }
   },
   { immediate: true }

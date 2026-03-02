@@ -317,7 +317,9 @@
     "reminderScreenBadge": "TASK REMINDER",
     "reminderScreenLockedHint": "This reminder is locked by policy.",
     "reminderScreenCloseReady": "Close Reminder",
-    "reminderScreenCloseWait": "Close in {seconds}s"
+    "reminderScreenCloseWait": "Close in {seconds}s",
+    "reminderScreenWebBlocked": "This URL is not in the safe iframe whitelist and has been blocked.",
+    "reminderScreenImageBlocked": "This image URL violates the safety policy and has been blocked."
   },
   "ui": {
     "dateInput": {
