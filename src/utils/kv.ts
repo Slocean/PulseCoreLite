@@ -6,11 +6,44 @@
 
 const DB_NAME = 'pulsecorelite';
 const STORE_NAME = 'kv';
+const KV_NAMESPACE_PREFIX = 'pulsecorelite.';
+const KV_SCHEMA_VERSION = 1;
+const KV_SCHEMA_VERSION_KEY = `${KV_NAMESPACE_PREFIX}kv_schema_version`;
 
 let dbPromise: Promise<IDBDatabase> | null = null;
+let schemaReadyPromise: Promise<void> | null = null;
 
 function canUseIndexedDb(): boolean {
   return typeof window !== 'undefined' && typeof indexedDB !== 'undefined';
+}
+
+function normalizeKey(key: string): string {
+  if (key.startsWith(KV_NAMESPACE_PREFIX)) {
+    return key;
+  }
+  return `${KV_NAMESPACE_PREFIX}${key}`;
+}
+
+function localStorageSafe(): Storage | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function parseVersion(raw: string | null | undefined): number | null {
+  if (!raw) {
+    return null;
+  }
+  const next = Number(raw);
+  if (!Number.isFinite(next)) {
+    return null;
+  }
+  return Math.max(0, Math.floor(next));
 }
 
 function openDb(): Promise<IDBDatabase> {
@@ -69,36 +102,113 @@ async function idbDelRaw(key: string): Promise<void> {
   });
 }
 
+async function ensureKvSchemaVersion(): Promise<void> {
+  if (schemaReadyPromise) {
+    return schemaReadyPromise;
+  }
+
+  schemaReadyPromise = (async () => {
+    const storage = localStorageSafe();
+    const localVersion = parseVersion(storage?.getItem(KV_SCHEMA_VERSION_KEY));
+    if (localVersion != null && localVersion >= KV_SCHEMA_VERSION) {
+      return;
+    }
+
+    let storedVersion: number | null = null;
+    try {
+      const raw = await idbGetRaw(KV_SCHEMA_VERSION_KEY);
+      storedVersion = parseVersion(raw);
+    } catch {
+      storedVersion = null;
+    }
+
+    const nextVersion = storedVersion != null ? Math.max(storedVersion, KV_SCHEMA_VERSION) : KV_SCHEMA_VERSION;
+    try {
+      await idbSetRaw(KV_SCHEMA_VERSION_KEY, JSON.stringify(nextVersion));
+    } catch {
+      // ignore
+    }
+    try {
+      storage?.setItem(KV_SCHEMA_VERSION_KEY, String(nextVersion));
+    } catch {
+      // ignore
+    }
+  })();
+
+  return schemaReadyPromise;
+}
+
 export async function kvGet<T>(key: string): Promise<T | undefined> {
   if (typeof window === 'undefined') return undefined;
+  await ensureKvSchemaVersion();
+  const normalizedKey = normalizeKey(key);
 
   try {
-    const raw = await idbGetRaw(key);
-    if (!raw) return undefined;
-    return JSON.parse(raw) as T;
-  } catch {
-    // Fallback to localStorage (legacy).
-    try {
-      const raw = localStorage.getItem(key);
-      if (!raw) return undefined;
+    const raw = await idbGetRaw(normalizedKey);
+    if (raw) {
       return JSON.parse(raw) as T;
-    } catch {
+    }
+    if (normalizedKey !== key) {
+      const legacyRaw = await idbGetRaw(key);
+      if (legacyRaw) {
+        try {
+          await idbSetRaw(normalizedKey, legacyRaw);
+          await idbDelRaw(key);
+        } catch {
+          // ignore migration errors
+        }
+        return JSON.parse(legacyRaw) as T;
+      }
+    }
+  } catch {
+    // ignore and fallback to localStorage
+  }
+
+  try {
+    const storage = localStorageSafe();
+    if (!storage) {
       return undefined;
     }
+    const raw = storage.getItem(normalizedKey) ?? (normalizedKey !== key ? storage.getItem(key) : null);
+    if (!raw) {
+      return undefined;
+    }
+    if (normalizedKey !== key && storage.getItem(normalizedKey) == null) {
+      storage.setItem(normalizedKey, raw);
+      storage.removeItem(key);
+    }
+    return JSON.parse(raw) as T;
+  } catch {
+    return undefined;
   }
 }
 
 export async function kvSet<T>(key: string, value: T): Promise<void> {
   if (typeof window === 'undefined') return;
-
+  await ensureKvSchemaVersion();
+  const normalizedKey = normalizeKey(key);
   const raw = JSON.stringify(value);
 
   try {
-    await idbSetRaw(key, raw);
+    await idbSetRaw(normalizedKey, raw);
+    if (normalizedKey !== key) {
+      try {
+        await idbDelRaw(key);
+      } catch {
+        // ignore
+      }
+    }
   } catch {
     // Fallback to localStorage (may still fail if quota is exceeded).
     try {
-      localStorage.setItem(key, raw);
+      const storage = localStorageSafe();
+      if (!storage) {
+        return;
+      }
+      storage.setItem(normalizedKey, raw);
+      if (normalizedKey !== key) {
+        storage.removeItem(key);
+      }
     } catch {
       // Swallow: callers should never crash on persistence failures.
     }
@@ -107,12 +217,24 @@ export async function kvSet<T>(key: string, value: T): Promise<void> {
 
 export async function kvDel(key: string): Promise<void> {
   if (typeof window === 'undefined') return;
+  await ensureKvSchemaVersion();
+  const normalizedKey = normalizeKey(key);
 
   try {
-    await idbDelRaw(key);
+    await idbDelRaw(normalizedKey);
+    if (normalizedKey !== key) {
+      await idbDelRaw(key);
+    }
   } catch {
     try {
-      localStorage.removeItem(key);
+      const storage = localStorageSafe();
+      if (!storage) {
+        return;
+      }
+      storage.removeItem(normalizedKey);
+      if (normalizedKey !== key) {
+        storage.removeItem(key);
+      }
     } catch {
       // ignore
     }
@@ -123,7 +245,6 @@ export async function kvResetAll(): Promise<void> {
   if (typeof window === 'undefined') return;
   if (!canUseIndexedDb()) return;
 
-  // Close cached handle so the delete can proceed.
   try {
     const db = await dbPromise;
     db?.close?.();
@@ -131,8 +252,9 @@ export async function kvResetAll(): Promise<void> {
     // ignore
   }
   dbPromise = null;
+  schemaReadyPromise = null;
 
-  await new Promise<void>((resolve) => {
+  await new Promise<void>(resolve => {
     const req = indexedDB.deleteDatabase(DB_NAME);
     req.onsuccess = () => resolve();
     req.onerror = () => resolve();

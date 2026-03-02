@@ -107,6 +107,8 @@
     "cpuFreq": "CPU Frequency",
     "gpuTemp": "GPU Temperature",
     "app": "APP",
+    "systemStable": "SYSTEM STABLE",
+    "uptimePrefix": "Uptime:",
     "openMainWindow": "Show Main Window",
     "hideMainWindow": "Hide Main Window",
     "taskbarTwoLine": "Two-line mode",

@@ -107,6 +107,8 @@
     "cpuFreq": "CPU 频率",
     "gpuTemp": "GPU 温度",
     "app": "APP",
+    "systemStable": "系统稳定",
+    "uptimePrefix": "运行时长：",
     "openMainWindow": "显示主窗口",
     "hideMainWindow": "隐藏主窗口",
     "taskbarTwoLine": "两行模式",

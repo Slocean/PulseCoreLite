@@ -1,6 +1,6 @@
 import { onMounted, onUnmounted, watch } from 'vue';
-import { useI18n } from 'vue-i18n';
 
+import { setI18nLanguage } from '../i18n';
 import { useAppStore } from '../stores/app';
 import type { AppSettings } from '../types';
 
@@ -26,7 +26,6 @@ export function useEntryBootstrap(options: UseEntryBootstrapOptions = {}) {
   const shouldDisposeStore = options.shouldDisposeStore ?? true;
   const needsStore = bootstrapStore || shouldDisposeStore;
   const store = needsStore ? useAppStore() : null;
-  const { locale } = useI18n();
   let contextMenuHandler: ((event: MouseEvent) => void) | null = null;
   let stopLanguageWatch: (() => void) | null = null;
 
@@ -42,11 +41,11 @@ export function useEntryBootstrap(options: UseEntryBootstrapOptions = {}) {
 
     if (bootstrapStore && store) {
       await store.bootstrap();
-      locale.value = store.settings.language;
+      await setI18nLanguage(store.settings.language);
       stopLanguageWatch = watch(
         () => store.settings.language,
         language => {
-          locale.value = language;
+          void setI18nLanguage(language);
         }
       );
       await options.afterBootstrap?.();
@@ -55,7 +54,7 @@ export function useEntryBootstrap(options: UseEntryBootstrapOptions = {}) {
 
     const language = options.resolveStaticLanguage?.();
     if (isEntryLanguage(language)) {
-      locale.value = language;
+      await setI18nLanguage(language);
     }
   });
 
