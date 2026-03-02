@@ -74,9 +74,9 @@
 
     <div v-if="sections.schedule" class="toolkit-reminder-block">
       <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatWeekly') }}</div>
-      <div class="toolkit-reminder-inline toolkit-reminder-inline--triple">
-        <UiSelect v-model="weeklyInputDay" :options="weekdayOptions" />
-        <input v-model="weeklyInputTime" type="time" />
+      <div class="toolkit-reminder-inline toolkit-reminder-inline--weekly">
+        <UiSelect v-model="weeklyInputDays" :options="weekdayOptions" multiple />
+        <input v-model="weeklyInputTime" type="time" class="toolkit-reminder-time-input" />
         <UiButton native-type="button" preset="overlay-primary" @click="addWeeklySlot">
           {{ t('toolkit.reminderAddSlot') }}
         </UiButton>
@@ -295,7 +295,7 @@ const form = reactive({
 });
 
 const dailyInputTime = ref('09:00');
-const weeklyInputDay = ref(1);
+const weeklyInputDays = ref<number[]>([1]);
 const weeklyInputTime = ref('09:00');
 const monthlyInputDay = ref(1);
 const monthlyInputTime = ref('09:00');
@@ -379,12 +379,21 @@ function removeDailyTime(time: string) {
 
 function addWeeklySlot() {
   clearTip();
-  const slot = { weekday: weeklyInputDay.value, time: weeklyInputTime.value };
-  if (!slot.time) return;
-  if (form.weeklySlots.some(item => item.weekday === slot.weekday && item.time === slot.time)) {
-    return;
+  if (!weeklyInputTime.value) return;
+  const days = [...new Set(weeklyInputDays.value)]
+    .map(value => Math.round(value))
+    .filter(value => value >= 1 && value <= 7);
+  if (!days.length) return;
+
+  let changed = false;
+  for (const weekday of days) {
+    if (form.weeklySlots.some(item => item.weekday === weekday && item.time === weeklyInputTime.value)) {
+      continue;
+    }
+    form.weeklySlots.push({ weekday, time: weeklyInputTime.value });
+    changed = true;
   }
-  form.weeklySlots.push(slot);
+  if (!changed) return;
   form.weeklySlots.sort((a, b) => (a.weekday === b.weekday ? a.time.localeCompare(b.time) : a.weekday - b.weekday));
 }
 
@@ -420,6 +429,7 @@ function resetForm() {
   form.monthlySlots = [];
   form.contentType = 'text';
   form.content = '';
+  weeklyInputDays.value = [1];
 }
 
 function openSmtpDialog() {
@@ -489,6 +499,11 @@ function editReminder(item: TaskReminder) {
   form.monthlySlots = [...item.monthlySlots];
   form.contentType = item.contentType;
   form.content = item.content;
+  const editDays = [...new Set(item.weeklySlots.map(slot => slot.weekday))]
+    .map(value => Math.round(value))
+    .filter(value => value >= 1 && value <= 7)
+    .sort((a, b) => a - b);
+  weeklyInputDays.value = editDays.length ? editDays : [1];
 }
 
 async function deleteReminder(id: string) {

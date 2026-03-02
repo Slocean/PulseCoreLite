@@ -607,6 +607,19 @@ html.window-toolkit body {
   grid-template-columns: 56px minmax(0, 1fr) auto;
 }
 
+.toolkit-reminder-inline--weekly {
+  grid-template-columns: minmax(0, 1fr) 76px auto;
+}
+
+.toolkit-reminder-time-input {
+  width: 76px;
+  min-width: 76px;
+  max-width: 76px;
+  justify-self: end;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
 .toolkit-reminder-inline input,
 .toolkit-reminder-inline select {
   appearance: none;
