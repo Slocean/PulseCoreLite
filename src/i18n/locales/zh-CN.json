@@ -142,6 +142,7 @@
     "profileDuration": "采样时长 (秒)",
     "profileStart": "开始采样",
     "profileStop": "停止采样",
+    "copyPath": "复制路径",
     "copyPathSuccess": "路径已复制",
     "openPath": "打开目录",
     "profileStatusIdle": "未采样",

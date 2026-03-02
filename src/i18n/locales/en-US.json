@@ -143,6 +143,7 @@
     "profileDuration": "Duration (sec)",
     "profileStart": "Start capture",
     "profileStop": "Stop capture",
+    "copyPath": "Copy path",
     "copyPathSuccess": "Path copied",
     "openPath": "Open folder",
     "profileStatusIdle": "Idle",

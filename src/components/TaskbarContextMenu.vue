@@ -3,6 +3,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 
+import { buildTaskbarMenuItems, type TaskbarMenuItemDescriptor } from '@/components/taskbar/buildTaskbarMenuItems';
 import type { TaskbarPrefs } from '../composables/useTaskbarPrefs';
 import { inTauri } from '../services/tauri';
 import { useAppStore } from '../stores/app';
@@ -22,6 +23,40 @@ const props = defineProps<{
 
 const store = useAppStore();
 const { t } = useI18n();
+
+async function createNativeMenuItems(
+  descriptors: TaskbarMenuItemDescriptor[],
+  input: {
+    MenuItem: { new: (options: { text: string; action: () => void }) => Promise<any> };
+    CheckMenuItem: { new: (options: { text: string; checked: boolean; action: () => void }) => Promise<any> };
+    PredefinedMenuItem: { new: (options: { item: 'Separator' }) => Promise<any> };
+  }
+) {
+  const items: any[] = [];
+  for (const descriptor of descriptors) {
+    if (descriptor.kind === 'separator') {
+      items.push(await input.PredefinedMenuItem.new({ item: 'Separator' }));
+      continue;
+    }
+    if (descriptor.kind === 'check') {
+      items.push(
+        await input.CheckMenuItem.new({
+          text: descriptor.text,
+          checked: descriptor.checked,
+          action: () => void descriptor.onTrigger()
+        })
+      );
+      continue;
+    }
+    items.push(
+      await input.MenuItem.new({
+        text: descriptor.text,
+        action: () => void descriptor.onTrigger()
+      })
+    );
+  }
+  return items;
+}
 
 async function open(event: MouseEvent) {
   if (!inTauri()) {
@@ -52,85 +87,72 @@ async function open(event: MouseEvent) {
       mainVisible = false;
     }
 
-    const items = [
-      await MenuItem.new({
-        text: mainVisible ? t('overlay.hideMainWindow') : t('overlay.openMainWindow'),
-        action: () => void (mainVisible ? props.hideMainWindow() : props.showMainWindow())
-      }),
-      await PredefinedMenuItem.new({ item: 'Separator' }),
-      await CheckMenuItem.new({
-        text: t('overlay.alwaysOnTop'),
-        checked: props.alwaysOnTop,
-        action: async () => {
-          const next = !props.alwaysOnTop;
+    const descriptors = buildTaskbarMenuItems({
+      mainVisible,
+      alwaysOnTop: props.alwaysOnTop,
+      autoHideOnFullscreen: props.autoHideOnFullscreen,
+      rememberPosition: props.rememberPosition,
+      positionLocked: props.positionLocked,
+      prefs: props.prefs,
+      labels: {
+        openMainWindow: t('overlay.openMainWindow'),
+        hideMainWindow: t('overlay.hideMainWindow'),
+        alwaysOnTop: t('overlay.alwaysOnTop'),
+        taskbarFullscreenAutoHide: t('overlay.taskbarFullscreenAutoHide'),
+        rememberPosition: t('overlay.rememberPosition'),
+        lockTaskbarPosition: t('overlay.lockTaskbarPosition'),
+        unlockTaskbarPosition: t('overlay.unlockTaskbarPosition'),
+        taskbarTwoLine: t('overlay.taskbarTwoLine'),
+        cpu: t('overlay.cpu'),
+        gpu: t('overlay.gpu'),
+        memory: t('overlay.memory'),
+        app: t('overlay.app'),
+        down: t('overlay.down'),
+        up: t('overlay.up'),
+        closeTaskbarMonitor: t('overlay.closeTaskbarMonitor')
+      },
+      actions: {
+        toggleMainWindow: isMainVisible => (isMainVisible ? props.hideMainWindow() : props.showMainWindow()),
+        toggleAlwaysOnTop: async next => {
           store.setTaskbarAlwaysOnTop(next);
           await props.applyTaskbarTopmost(next);
-        }
-      }),
-      await CheckMenuItem.new({
-        text: t('overlay.taskbarFullscreenAutoHide'),
-        checked: props.autoHideOnFullscreen,
-        action: () => store.setTaskbarAutoHideOnFullscreen(!props.autoHideOnFullscreen)
-      }),
-      await CheckMenuItem.new({
-        text: t('overlay.rememberPosition'),
-        checked: props.rememberPosition,
-        action: () => store.setRememberOverlayPosition(!props.rememberPosition)
-      }),
-      await MenuItem.new({
-        text: props.positionLocked ? t('overlay.unlockTaskbarPosition') : t('overlay.lockTaskbarPosition'),
-        action: () => store.setTaskbarPositionLocked(!props.positionLocked)
-      }),
-      await PredefinedMenuItem.new({ item: 'Separator' }),
-      await CheckMenuItem.new({
-        text: t('overlay.taskbarTwoLine'),
-        checked: props.prefs.twoLineMode,
-        action: () => (props.prefs.twoLineMode = !props.prefs.twoLineMode)
-      }),
-      await PredefinedMenuItem.new({ item: 'Separator' }),
-      await CheckMenuItem.new({
-        text: t('overlay.cpu'),
-        checked: props.prefs.showCpu,
-        action: () => (props.prefs.showCpu = !props.prefs.showCpu)
-      }),
-      await PredefinedMenuItem.new({ item: 'Separator' }),
-      await CheckMenuItem.new({
-        text: t('overlay.gpu'),
-        checked: props.prefs.showGpu,
-        action: () => (props.prefs.showGpu = !props.prefs.showGpu)
-      }),
-      await CheckMenuItem.new({
-        text: t('overlay.memory'),
-        checked: props.prefs.showMemory,
-        action: () => (props.prefs.showMemory = !props.prefs.showMemory)
-      }),
-      await CheckMenuItem.new({
-        text: t('overlay.app'),
-        checked: props.prefs.showApp,
-        action: () => (props.prefs.showApp = !props.prefs.showApp)
-      }),
-      await PredefinedMenuItem.new({ item: 'Separator' }),
-      await CheckMenuItem.new({
-        text: t('overlay.down'),
-        checked: props.prefs.showDown,
-        action: () => (props.prefs.showDown = !props.prefs.showDown)
-      }),
-      await CheckMenuItem.new({
-        text: t('overlay.up'),
-        checked: props.prefs.showUp,
-        action: () => (props.prefs.showUp = !props.prefs.showUp)
-      }),
-      await PredefinedMenuItem.new({ item: 'Separator' }),
-      await MenuItem.new({
-        text: t('overlay.closeTaskbarMonitor'),
-        action: async () => {
+        },
+        toggleAutoHideOnFullscreen: next => store.setTaskbarAutoHideOnFullscreen(next),
+        toggleRememberPosition: next => store.setRememberOverlayPosition(next),
+        togglePositionLocked: next => store.setTaskbarPositionLocked(next),
+        toggleTwoLineMode: next => {
+          props.prefs.twoLineMode = next;
+        },
+        toggleShowCpu: next => {
+          props.prefs.showCpu = next;
+        },
+        toggleShowGpu: next => {
+          props.prefs.showGpu = next;
+        },
+        toggleShowMemory: next => {
+          props.prefs.showMemory = next;
+        },
+        toggleShowApp: next => {
+          props.prefs.showApp = next;
+        },
+        toggleShowDown: next => {
+          props.prefs.showDown = next;
+        },
+        toggleShowUp: next => {
+          props.prefs.showUp = next;
+        },
+        closeTaskbarMonitor: async () => {
           await store.setTaskbarMonitorEnabled(false);
           try {
             await getCurrentWindow().close();
-          } catch {}
+          } catch {
+            // ignore
+          }
         }
-      })
-    ];
+      }
+    });
+
+    const items = await createNativeMenuItems(descriptors, { MenuItem, CheckMenuItem, PredefinedMenuItem });
 
     const menu = await Menu.new({ items });
     await menu.popup(new LogicalPosition(event.clientX, event.clientY), getCurrentWindow());
