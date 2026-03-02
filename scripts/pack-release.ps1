@@ -103,7 +103,7 @@ function Get-ReleaseNotes {
     [Parameter(Mandatory = $true)][string]$Version
   )
 
-  $notesPath = Join-Path $projectRoot "version.md"
+  $notesPath = Join-Path $projectRoot "docs\version.md"
   if (-not (Test-Path -LiteralPath $notesPath -PathType Leaf)) {
     return ""
   }
