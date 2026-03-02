@@ -5,6 +5,8 @@ import type {
   SendReminderEmailRequest,
   ScheduleShutdownRequest,
   ShutdownPlan,
+  TaskReminder,
+  TaskReminderStore,
   TaskbarInfo
 } from "../types";
 
@@ -79,5 +81,9 @@ export const api = {
   getProfileOutputDir: () => tauriInvoke<string>("get_profile_output_dir"),
   openProfileOutputPath: (path: string) => tauriInvoke<void>("open_profile_output_path", { path }),
   sendReminderEmail: (request: SendReminderEmailRequest) => tauriInvoke<void>("send_reminder_email", { request }),
-  forceCloseReminderScreens: (token: string) => tauriInvoke<number>("force_close_reminder_screens", { token })
+  forceCloseReminderScreens: (token: string) => tauriInvoke<number>("force_close_reminder_screens", { token }),
+  getTaskReminderStore: () => tauriInvoke<TaskReminderStore>("get_task_reminder_store"),
+  saveTaskReminderStore: (store: TaskReminderStore) =>
+    tauriInvoke<TaskReminderStore>("save_task_reminder_store", { store }),
+  triggerTaskReminderNow: (reminder: TaskReminder) => tauriInvoke<void>("trigger_task_reminder_now", { reminder })
 };

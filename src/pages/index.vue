@@ -385,12 +385,14 @@ import { useOverlayPrefs } from '../composables/useOverlayPrefs';
 import { useOverlayRefreshRate } from '../composables/useOverlayRefreshRate';
 import { useOverlayUptime } from '../composables/useOverlayUptime';
 import { useOverlayWindow } from '../composables/useOverlayWindow';
+import { openReminderScreensFromPayload } from '../composables/useTaskReminders';
 import { useThemeManager } from '../composables/useThemeManager';
 import { useToolkitLauncher } from '../composables/useToolkitLauncher';
 import { useUpdater } from '../composables/useUpdater';
 import packageJson from '../../package.json';
 import { useAppStore } from '../stores/app';
-import { api, inTauri } from '../services/tauri';
+import { api, inTauri, listenEvent } from '../services/tauri';
+import type { ReminderScreenEventPayload } from '../types';
 
 const store = useAppStore();
 const { t } = useI18n();
@@ -451,6 +453,7 @@ const updateNotes = computed(() => {
 const updateToastMessage = ref('');
 const updateToastVisible = ref(false);
 let updateToastTimer: number | null = null;
+let unlistenReminderTrigger: (() => void) | null = null;
 const showConfig = ref(false);
 const toolkitState = ref<'closed' | 'open' | 'hidden'>('closed');
 const closeToTray = computed({
@@ -748,11 +751,16 @@ watch(
 onMounted(() => {
   void refreshToolkitState();
   void checkForUpdates();
+  void setupReminderTriggerListener();
 });
 
 onBeforeUnmount(() => {
   if (updateToastTimer != null) {
     window.clearTimeout(updateToastTimer);
+  }
+  if (unlistenReminderTrigger) {
+    unlistenReminderTrigger();
+    unlistenReminderTrigger = null;
   }
 });
 
@@ -766,6 +774,14 @@ function minimizeOverlay() {
 
 function setLanguage(language: 'zh-CN' | 'en-US') {
   store.setLanguage(language);
+}
+
+async function setupReminderTriggerListener() {
+  if (!inTauri()) return;
+  if (unlistenReminderTrigger) return;
+  unlistenReminderTrigger = await listenEvent<ReminderScreenEventPayload>('reminder://trigger', payload => {
+    void openReminderScreensFromPayload(payload);
+  });
 }
 </script>
 

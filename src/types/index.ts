@@ -159,3 +159,14 @@ export interface SendReminderEmailRequest {
   subject: string;
   body: string;
 }
+
+export interface TaskReminderStore {
+  reminders: TaskReminder[];
+  smtpConfig: SmtpEmailConfig | null;
+}
+
+export interface ReminderScreenEventPayload {
+  title: string;
+  content: string;
+  contentType: ReminderContentType;
+}

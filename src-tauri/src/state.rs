@@ -3,12 +3,13 @@ use std::sync::{
     Arc,
 };
 
+use std::collections::HashMap;
 use tokio::sync::{Mutex, RwLock};
 
 use crate::{
     core::collectors::system_collector::SystemCollector,
     profiler::ProfilerHandle,
-    types::{AppSettings, HardwareInfo, TelemetrySnapshot},
+    types::{AppSettings, HardwareInfo, SmtpEmailConfig, TaskReminder, TelemetrySnapshot},
 };
 
 pub struct AppState {
@@ -21,6 +22,9 @@ pub struct AppState {
     pub memory_trim_interval_ms: AtomicU64,
     pub memory_trim_enabled: AtomicBool,
     pub memory_trim_system_enabled: AtomicBool,
+    pub task_reminders: RwLock<Vec<TaskReminder>>,
+    pub reminder_smtp_config: RwLock<Option<SmtpEmailConfig>>,
+    pub reminder_last_fired: Mutex<HashMap<String, String>>,
 }
 
 pub type SharedState = Arc<AppState>;
@@ -45,6 +49,9 @@ impl AppState {
             memory_trim_interval_ms: AtomicU64::new(trim_interval_ms),
             memory_trim_enabled: AtomicBool::new(trim_enabled),
             memory_trim_system_enabled: AtomicBool::new(trim_system_enabled),
+            task_reminders: RwLock::new(Vec::new()),
+            reminder_smtp_config: RwLock::new(None),
+            reminder_last_fired: Mutex::new(HashMap::new()),
         }))
     }
 

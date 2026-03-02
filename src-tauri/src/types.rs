@@ -189,3 +189,55 @@ pub struct SendReminderEmailRequest {
     pub subject: String,
     pub body: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WeeklyReminderSlot {
+    /// 1=Monday ... 7=Sunday
+    pub weekday: u8,
+    /// HH:mm
+    pub time: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MonthlyReminderSlot {
+    /// 1..31
+    pub day: u8,
+    /// HH:mm
+    pub time: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskReminder {
+    pub id: String,
+    pub enabled: bool,
+    pub title: String,
+    /// email | fullscreen
+    pub channel: String,
+    pub email: String,
+    pub daily_times: Vec<String>,
+    pub weekly_slots: Vec<WeeklyReminderSlot>,
+    pub monthly_slots: Vec<MonthlyReminderSlot>,
+    /// text | markdown | web | image
+    pub content_type: String,
+    pub content: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskReminderStore {
+    pub reminders: Vec<TaskReminder>,
+    pub smtp_config: Option<SmtpEmailConfig>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReminderScreenEventPayload {
+    pub title: String,
+    pub content: String,
+    pub content_type: String,
+}

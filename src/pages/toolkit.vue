@@ -51,8 +51,10 @@ import ToolkitHardwareTab from '../components/toolkit/ToolkitHardwareTab.vue';
 import ToolkitReminderTab from '../components/toolkit/ToolkitReminderTab.vue';
 import ToolkitShutdownTab from '../components/toolkit/ToolkitShutdownTab.vue';
 import ToolkitTabs from '../components/toolkit/ToolkitTabs.vue';
+import { openReminderScreensFromPayload } from '../composables/useTaskReminders';
 import { useOverlayPrefs, type OverlayBackgroundEffect } from '../composables/useOverlayPrefs';
-import { inTauri } from '../services/tauri';
+import { inTauri, listenEvent } from '../services/tauri';
+import type { ReminderScreenEventPayload } from '../types';
 import { acquireImageUrl, normalizeImageRef, releaseImageRef } from '../utils/imageStore';
 
 type ToolkitTab = 'shutdown' | 'cleanup' | 'hardware' | 'reminder';
@@ -66,6 +68,7 @@ let resizeObserver: ResizeObserver | undefined;
 let resizeFrame: number | undefined;
 let lastHeight = 0;
 let windowApiPromise: Promise<typeof import('@tauri-apps/api/window')> | undefined;
+let unlistenReminderTrigger: (() => void) | null = null;
 const backgroundImageUrl = ref<string | null>(null);
 let backgroundImageRef: string | null = null;
 let backgroundResolveToken = 0;
@@ -161,6 +164,7 @@ onMounted(() => {
     }
   }
   setTimeout(scheduleResize, 100);
+  void setupReminderTriggerListener();
 });
 
 onUnmounted(() => {
@@ -174,6 +178,10 @@ onUnmounted(() => {
   }
   if (resizeFrame != null) {
     window.cancelAnimationFrame(resizeFrame);
+  }
+  if (unlistenReminderTrigger) {
+    unlistenReminderTrigger();
+    unlistenReminderTrigger = null;
   }
 });
 
@@ -273,6 +281,14 @@ function getBackgroundFilter(effect: OverlayBackgroundEffect, blurPx: number, gl
     return `blur(${blur}px) saturate(${saturate}%) brightness(${brightness}%)`;
   }
   return safeBlur > 0 ? `blur(${safeBlur}px)` : 'none';
+}
+
+async function setupReminderTriggerListener() {
+  if (!inTauri()) return;
+  if (unlistenReminderTrigger) return;
+  unlistenReminderTrigger = await listenEvent<ReminderScreenEventPayload>('reminder://trigger', payload => {
+    void openReminderScreensFromPayload(payload);
+  });
 }
 </script>
 

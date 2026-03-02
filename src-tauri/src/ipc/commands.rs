@@ -6,14 +6,18 @@ use lettre::{
 };
 #[cfg(windows)]
 use std::process::Command;
-use std::{fs, path::PathBuf};
-use tauri::{AppHandle, Manager, State};
+use std::{collections::HashSet, fs, path::PathBuf};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::{
     core::device_info,
     profiler::{ensure_profile_path, profile_output_dir, ProfileStatus},
     state::SharedState,
-    types::{AppBootstrap, ScheduleShutdownRequest, SendReminderEmailRequest, ShutdownPlan},
+    types::{
+        AppBootstrap, MonthlyReminderSlot, ReminderScreenEventPayload, ScheduleShutdownRequest,
+        SendReminderEmailRequest, ShutdownPlan, SmtpEmailConfig, TaskReminder, TaskReminderStore,
+        WeeklyReminderSlot,
+    },
 };
 
 type CmdResult<T> = Result<T, String>;
@@ -22,6 +26,7 @@ const AUTOSTART_KEY: &str = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 const AUTOSTART_VALUE: &str = "PulseCoreLite";
 const SHUTDOWN_TASK_NAME: &str = "PulseCoreLite_Shutdown";
 const SHUTDOWN_PLAN_FILE: &str = "shutdown-plan.json";
+const TASK_REMINDER_FILE: &str = "task-reminders.json";
 
 fn shutdown_plan_path(app: &AppHandle) -> CmdResult<PathBuf> {
     let mut dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
@@ -274,6 +279,25 @@ pub async fn get_profile_status(state: State<'_, SharedState>) -> CmdResult<Prof
     })
 }
 
+fn task_reminder_store_path(app: &AppHandle) -> CmdResult<PathBuf> {
+    let mut dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    dir.push(TASK_REMINDER_FILE);
+    Ok(dir)
+}
+
+fn write_task_reminder_store_file(app: &AppHandle, store: &TaskReminderStore) -> CmdResult<()> {
+    let path = task_reminder_store_path(app)?;
+    let json = serde_json::to_string_pretty(store).map_err(|e| e.to_string())?;
+    fs::write(path, json).map_err(|e| e.to_string())
+}
+
+pub(crate) fn read_task_reminder_store_file(app: &AppHandle) -> Option<TaskReminderStore> {
+    let path = task_reminder_store_path(app).ok()?;
+    let text = fs::read_to_string(path).ok()?;
+    serde_json::from_str::<TaskReminderStore>(&text).ok()
+}
+
 #[tauri::command]
 pub fn get_profile_output_dir(app: AppHandle) -> CmdResult<String> {
     let dir = profile_output_dir(&app);
@@ -313,8 +337,131 @@ pub fn open_profile_output_path(path: String) -> CmdResult<()> {
     }
 }
 
-#[tauri::command]
-pub async fn send_reminder_email(request: SendReminderEmailRequest) -> CmdResult<()> {
+fn parse_hhmm_generic(value: &str) -> Option<String> {
+    let parts: Vec<&str> = value.trim().split(':').collect();
+    if parts.len() != 2 {
+        return None;
+    }
+    let hour = parts[0].parse::<u8>().ok()?;
+    let minute = parts[1].parse::<u8>().ok()?;
+    if hour > 23 || minute > 59 {
+        return None;
+    }
+    Some(format!("{hour:02}:{minute:02}"))
+}
+
+fn normalize_smtp_config(input: Option<SmtpEmailConfig>) -> Option<SmtpEmailConfig> {
+    input.map(|cfg| {
+        let security = cfg.security.to_ascii_lowercase();
+        let normalized_security = if security == "tls" || security == "starttls" {
+            security
+        } else {
+            "none".to_string()
+        };
+        SmtpEmailConfig {
+            host: cfg.host.trim().to_string(),
+            port: cfg.port,
+            username: cfg.username,
+            password: cfg.password,
+            from_email: cfg.from_email.trim().to_string(),
+            from_name: cfg.from_name,
+            security: normalized_security,
+        }
+    })
+}
+
+fn normalize_task_reminder(input: TaskReminder) -> TaskReminder {
+    let channel = if input.channel.eq_ignore_ascii_case("fullscreen") {
+        "fullscreen".to_string()
+    } else {
+        "email".to_string()
+    };
+    let content_type = match input.content_type.as_str() {
+        "text" | "markdown" | "web" | "image" => input.content_type,
+        _ => "text".to_string(),
+    };
+    let title = {
+        let trimmed = input.title.trim();
+        if trimmed.is_empty() {
+            "Untitled Reminder".to_string()
+        } else {
+            trimmed.to_string()
+        }
+    };
+
+    let mut daily_seen = HashSet::new();
+    let mut daily_times = Vec::new();
+    for value in input.daily_times {
+        if let Some(time) = parse_hhmm_generic(&value) {
+            if daily_seen.insert(time.clone()) {
+                daily_times.push(time);
+            }
+        }
+    }
+
+    let mut weekly_seen = HashSet::new();
+    let mut weekly_slots = Vec::new();
+    for slot in input.weekly_slots {
+        let weekday = slot.weekday.clamp(1, 7);
+        if let Some(time) = parse_hhmm_generic(&slot.time) {
+            let key = format!("{weekday}-{time}");
+            if weekly_seen.insert(key) {
+                weekly_slots.push(WeeklyReminderSlot { weekday, time });
+            }
+        }
+    }
+
+    let mut monthly_seen = HashSet::new();
+    let mut monthly_slots = Vec::new();
+    for slot in input.monthly_slots {
+        let day = slot.day.clamp(1, 31);
+        if let Some(time) = parse_hhmm_generic(&slot.time) {
+            let key = format!("{day}-{time}");
+            if monthly_seen.insert(key) {
+                monthly_slots.push(MonthlyReminderSlot { day, time });
+            }
+        }
+    }
+
+    let created_at = if input.created_at.trim().is_empty() {
+        Utc::now().to_rfc3339()
+    } else {
+        input.created_at
+    };
+    let updated_at = Utc::now().to_rfc3339();
+
+    TaskReminder {
+        id: input.id.trim().to_string(),
+        enabled: input.enabled,
+        title,
+        channel,
+        email: input.email.trim().to_string(),
+        daily_times,
+        weekly_slots,
+        monthly_slots,
+        content_type,
+        content: input.content,
+        created_at,
+        updated_at,
+    }
+}
+
+pub(crate) fn normalize_task_reminder_store(input: TaskReminderStore) -> TaskReminderStore {
+    let mut normalized = Vec::with_capacity(input.reminders.len());
+    for reminder in input.reminders {
+        let mut item = normalize_task_reminder(reminder);
+        if item.id.is_empty() {
+            item.id = format!("rem-{}", Utc::now().timestamp_millis());
+        }
+        normalized.push(item);
+    }
+    TaskReminderStore {
+        reminders: normalized,
+        smtp_config: normalize_smtp_config(input.smtp_config),
+    }
+}
+
+async fn send_reminder_email_internal(request: SendReminderEmailRequest) -> CmdResult<()> {
     let smtp = request.smtp;
     if smtp.host.trim().is_empty() {
         return Err("smtp host is empty".to_string());
@@ -384,6 +531,113 @@ pub async fn send_reminder_email(request: SendReminderEmailRequest) -> CmdResult
         .await
         .map_err(|e| format!("failed to send email: {e}"))?;
     Ok(())
+}
+
+#[tauri::command]
+pub async fn send_reminder_email(request: SendReminderEmailRequest) -> CmdResult<()> {
+    send_reminder_email_internal(request).await
+}
+
+#[tauri::command]
+pub async fn get_task_reminder_store(
+    app: AppHandle,
+    state: State<'_, SharedState>,
+) -> CmdResult<TaskReminderStore> {
+    let disk = read_task_reminder_store_file(&app).unwrap_or(TaskReminderStore {
+        reminders: Vec::new(),
+        smtp_config: None,
+    });
+    let normalized = normalize_task_reminder_store(disk);
+
+    {
+        let mut lock = state.task_reminders.write().await;
+        *lock = normalized.reminders.clone();
+    }
+    {
+        let mut lock = state.reminder_smtp_config.write().await;
+        *lock = normalized.smtp_config.clone();
+    }
+
+    Ok(normalized)
+}
+
+#[tauri::command]
+pub async fn save_task_reminder_store(
+    app: AppHandle,
+    state: State<'_, SharedState>,
+    store: TaskReminderStore,
+) -> CmdResult<TaskReminderStore> {
+    let normalized = normalize_task_reminder_store(store);
+    write_task_reminder_store_file(&app, &normalized)?;
+
+    {
+        let mut lock = state.task_reminders.write().await;
+        *lock = normalized.reminders.clone();
+    }
+    {
+        let mut lock = state.reminder_smtp_config.write().await;
+        *lock = normalized.smtp_config.clone();
+    }
+    state.reminder_last_fired.lock().await.clear();
+
+    Ok(normalized)
+}
+
+pub(crate) async fn trigger_task_reminder_backend(
+    app: &AppHandle,
+    smtp_config: Option<SmtpEmailConfig>,
+    reminder: &TaskReminder,
+) -> CmdResult<()> {
+    if reminder.channel.eq_ignore_ascii_case("fullscreen") {
+        let payload = ReminderScreenEventPayload {
+            title: reminder.title.clone(),
+            content: reminder.content.clone(),
+            content_type: reminder.content_type.clone(),
+        };
+        if app.get_webview_window("main").is_some() {
+            app.emit_to("main", "reminder://trigger", payload)
+                .map_err(|e| e.to_string())?;
+            return Ok(());
+        }
+        if app.get_webview_window("toolkit").is_some() {
+            app.emit_to("toolkit", "reminder://trigger", payload)
+                .map_err(|e| e.to_string())?;
+            return Ok(());
+        }
+        if app.get_webview_window("taskbar").is_some() {
+            app.emit_to("taskbar", "reminder://trigger", payload)
+                .map_err(|e| e.to_string())?;
+        }
+        return Ok(());
+    }
+
+    let target = reminder.email.trim();
+    if target.is_empty() {
+        return Err("email is required for email reminder".to_string());
+    }
+    let smtp = smtp_config.ok_or_else(|| "SMTP config is required.".to_string())?;
+    let request = SendReminderEmailRequest {
+        smtp,
+        to: target.to_string(),
+        subject: format!("[PulseCore] {}", reminder.title),
+        body: if reminder.content.trim().is_empty() {
+            reminder.title.clone()
+        } else {
+            reminder.content.clone()
+        },
+    };
+    send_reminder_email_internal(request).await
+}
+
+#[tauri::command]
+pub async fn trigger_task_reminder_now(
+    app: AppHandle,
+    state: State<'_, SharedState>,
+    reminder: TaskReminder,
+) -> CmdResult<()> {
+    let normalized = normalize_task_reminder(reminder);
+    let smtp = state.reminder_smtp_config.read().await.clone();
+    trigger_task_reminder_backend(&app, smtp, &normalized).await
 }
 
 #[tauri::command]

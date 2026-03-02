@@ -6,8 +6,10 @@ import type {
   MonthlyReminderSlot,
   ReminderChannel,
   ReminderContentType,
+  ReminderScreenEventPayload,
   SmtpEmailConfig,
   TaskReminder,
+  TaskReminderStore,
   WeeklyReminderSlot
 } from '../types';
 
@@ -17,15 +19,8 @@ const REMINDER_SCREEN_KEY_PREFIX = 'pulsecorelite.reminder-screen.';
 
 const reminders = ref<TaskReminder[]>([]);
 const loaded = ref(false);
-const running = ref(false);
+const running = ref(true);
 const smtpConfig = ref<SmtpEmailConfig | null>(null);
-const lastFiredMap = new Map<string, string>();
-let timer: number | null = null;
-
-type ReminderTriggerMeta = {
-  channel: ReminderChannel;
-  slotLabel: string;
-};
 
 function nowIso() {
   return new Date().toISOString();
@@ -115,42 +110,20 @@ function normalizeReminder(input: TaskReminder): TaskReminder {
   };
 }
 
-function formatWeekday(weekday: number) {
+function toStorePayload(): TaskReminderStore {
+  return {
+    reminders: reminders.value,
+    smtpConfig: smtpConfig.value
+  };
+}
+
+export function formatWeekday(weekday: number) {
   const list = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const idx = Math.max(1, Math.min(7, weekday)) - 1;
   return list[idx];
 }
 
-function dayMarker(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-function checkDueSlots(reminder: TaskReminder, now: Date) {
-  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  const weekday = now.getDay() === 0 ? 7 : now.getDay();
-  const dayOfMonth = now.getDate();
-  const marker = dayMarker(now);
-  const due: string[] = [];
-
-  for (const time of reminder.dailyTimes) {
-    if (time === currentTime) {
-      due.push(`daily@${time}@${marker}`);
-    }
-  }
-  for (const slot of reminder.weeklySlots) {
-    if (slot.weekday === weekday && slot.time === currentTime) {
-      due.push(`weekly@${slot.weekday}-${slot.time}@${marker}`);
-    }
-  }
-  for (const slot of reminder.monthlySlots) {
-    if (slot.day === dayOfMonth && slot.time === currentTime) {
-      due.push(`monthly@${slot.day}-${slot.time}@${marker}`);
-    }
-  }
-  return due;
-}
-
-async function openReminderScreens(reminder: TaskReminder) {
+export async function openReminderScreensFromPayload(payload: ReminderScreenEventPayload) {
   if (!inTauri()) {
     return;
   }
@@ -171,14 +144,14 @@ async function openReminderScreens(reminder: TaskReminder) {
     }
 
     const token = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const payload = {
+    const storagePayload = {
       token,
-      title: reminder.title,
-      content: reminder.content,
-      contentType: reminder.contentType,
+      title: payload.title ?? 'Task Reminder',
+      content: payload.content ?? '',
+      contentType: payload.contentType ?? 'text',
       timestamp: nowIso()
     };
-    window.localStorage.setItem(`${REMINDER_SCREEN_KEY_PREFIX}${token}`, JSON.stringify(payload));
+    window.localStorage.setItem(`${REMINDER_SCREEN_KEY_PREFIX}${token}`, JSON.stringify(storagePayload));
 
     const monitors = await windowApi.availableMonitors();
     const fallback = await windowApi.primaryMonitor();
@@ -209,93 +182,6 @@ async function openReminderScreens(reminder: TaskReminder) {
   }
 }
 
-async function sendReminderMail(reminder: TaskReminder) {
-  if (!inTauri()) {
-    throw new Error('Direct SMTP send requires Tauri runtime.');
-  }
-  const target = reminder.email.trim();
-  if (!target) {
-    throw new Error('Email is required for email reminder.');
-  }
-  const config = smtpConfig.value;
-  if (!config) {
-    throw new Error('SMTP config is required.');
-  }
-  if (!config.host || !config.username || !config.password || !config.fromEmail) {
-    throw new Error('SMTP config is incomplete.');
-  }
-  await api.sendReminderEmail({
-    smtp: config,
-    to: target,
-    subject: `[PulseCore] ${reminder.title}`,
-    body: reminder.content || reminder.title
-  });
-}
-
-async function triggerReminder(reminder: TaskReminder, meta: ReminderTriggerMeta) {
-  if (meta.channel === 'fullscreen') {
-    await openReminderScreens(reminder);
-    return;
-  }
-  await sendReminderMail(reminder);
-}
-
-async function tick() {
-  const now = new Date();
-  for (const reminder of reminders.value) {
-    if (!reminder.enabled) continue;
-    const dueSlots = checkDueSlots(reminder, now);
-    if (!dueSlots.length) continue;
-    for (const slot of dueSlots) {
-      const fireKey = `${reminder.id}|${slot}`;
-      if (lastFiredMap.has(fireKey)) {
-        continue;
-      }
-      lastFiredMap.set(fireKey, nowIso());
-      const slotLabel = slot.split('@').slice(0, 2).join(' ');
-      try {
-        await triggerReminder(reminder, { channel: reminder.channel, slotLabel });
-      } catch {
-        // ignore
-      }
-    }
-  }
-}
-
-function start() {
-  if (timer != null) return;
-  timer = window.setInterval(() => {
-    void tick();
-  }, 15_000);
-  running.value = true;
-  void tick();
-}
-
-function stop() {
-  if (timer != null) {
-    window.clearInterval(timer);
-    timer = null;
-  }
-  running.value = false;
-}
-
-async function load() {
-  if (loaded.value) return;
-  const saved = await kvGet<TaskReminder[]>(REMINDER_KEY);
-  reminders.value = Array.isArray(saved) ? saved.map(normalizeReminder) : [];
-  smtpConfig.value = normalizeSmtpConfig(await kvGet<SmtpEmailConfig>(SMTP_CONFIG_KEY));
-  loaded.value = true;
-  start();
-}
-
-async function persist() {
-  await kvSet(REMINDER_KEY, reminders.value);
-}
-
-function hasAnySchedule(reminder: TaskReminder) {
-  return reminder.dailyTimes.length > 0 || reminder.weeklySlots.length > 0 || reminder.monthlySlots.length > 0;
-}
-
 export function readReminderScreenPayload(token: string | null) {
   if (!token || typeof window === 'undefined') return null;
   try {
@@ -316,6 +202,36 @@ export function readReminderScreenPayload(token: string | null) {
 export function useTaskReminders() {
   const reminderCount = computed(() => reminders.value.length);
   const enabledCount = computed(() => reminders.value.filter(item => item.enabled).length);
+
+  async function load() {
+    if (loaded.value) return;
+    if (inTauri()) {
+      const store = await api.getTaskReminderStore();
+      reminders.value = Array.isArray(store.reminders) ? store.reminders.map(normalizeReminder) : [];
+      smtpConfig.value = normalizeSmtpConfig(store.smtpConfig);
+      loaded.value = true;
+      return;
+    }
+    const saved = await kvGet<TaskReminder[]>(REMINDER_KEY);
+    reminders.value = Array.isArray(saved) ? saved.map(normalizeReminder) : [];
+    smtpConfig.value = normalizeSmtpConfig(await kvGet<SmtpEmailConfig>(SMTP_CONFIG_KEY));
+    loaded.value = true;
+  }
+
+  async function persist() {
+    if (inTauri()) {
+      const store = await api.saveTaskReminderStore(toStorePayload());
+      reminders.value = Array.isArray(store.reminders) ? store.reminders.map(normalizeReminder) : [];
+      smtpConfig.value = normalizeSmtpConfig(store.smtpConfig);
+      return;
+    }
+    await kvSet(REMINDER_KEY, reminders.value);
+    await kvSet(SMTP_CONFIG_KEY, smtpConfig.value);
+  }
+
+  function hasAnySchedule(reminder: TaskReminder) {
+    return reminder.dailyTimes.length > 0 || reminder.weeklySlots.length > 0 || reminder.monthlySlots.length > 0;
+  }
 
   async function upsertReminder(input: TaskReminder) {
     const normalized = normalizeReminder(input);
@@ -350,7 +266,17 @@ export function useTaskReminders() {
 
   async function runReminderNow(reminder: TaskReminder) {
     const normalized = normalizeReminder(reminder);
-    await triggerReminder(normalized, { channel: normalized.channel, slotLabel: 'manual' });
+    if (inTauri()) {
+      await api.triggerTaskReminderNow(normalized);
+      return;
+    }
+    if (normalized.channel === 'fullscreen') {
+      await openReminderScreensFromPayload({
+        title: normalized.title,
+        content: normalized.content,
+        contentType: normalized.contentType
+      });
+    }
   }
 
   async function saveSmtpConfig(config: SmtpEmailConfig) {
@@ -362,7 +288,7 @@ export function useTaskReminders() {
       throw new Error('SMTP config is incomplete.');
     }
     smtpConfig.value = normalized;
-    await kvSet(SMTP_CONFIG_KEY, normalized);
+    await persist();
   }
 
   async function testSmtpConfig(config: SmtpEmailConfig, testTo?: string) {
@@ -380,6 +306,10 @@ export function useTaskReminders() {
       subject: '[PulseCore] SMTP Test',
       body: 'This is a test email from PulseCore reminder module.'
     });
+  }
+
+  function stop() {
+    running.value = false;
   }
 
   return {

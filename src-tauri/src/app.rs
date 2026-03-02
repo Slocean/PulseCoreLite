@@ -1,8 +1,9 @@
 use std::time::Duration;
 
+use chrono::{Datelike, Local, Timelike};
 use tauri::{AppHandle, Emitter, Manager};
 
-use crate::{ipc::commands, state::SharedState};
+use crate::{ipc::commands, state::SharedState, types::TaskReminder};
 
 pub fn start_telemetry_loop(app: AppHandle, state: SharedState) {
     tauri::async_runtime::spawn(async move {
@@ -96,6 +97,105 @@ pub fn start_memory_trim_loop(state: SharedState) {
             }
         }
     });
+}
+
+pub fn start_task_reminder_loop(app: AppHandle, state: SharedState) {
+    tauri::async_runtime::spawn(async move {
+        if let Some(store) = commands::read_task_reminder_store_file(&app) {
+            let normalized = commands::normalize_task_reminder_store(store);
+            *state.task_reminders.write().await = normalized.reminders;
+            *state.reminder_smtp_config.write().await = normalized.smtp_config;
+            state.reminder_last_fired.lock().await.clear();
+        }
+
+        let mut ticker = tokio::time::interval(Duration::from_millis(15_000));
+        ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+
+        loop {
+            ticker.tick().await;
+            if let Err(err) = tick_task_reminders(&app, &state).await {
+                tracing::warn!("task reminder tick failed: {err}");
+            }
+        }
+    });
+}
+
+async fn tick_task_reminders(app: &AppHandle, state: &SharedState) -> Result<(), String> {
+    let now = Local::now();
+    let current_time = format!("{:02}:{:02}", now.hour(), now.minute());
+    let weekday = now.weekday().number_from_monday() as u8;
+    let day_of_month = now.day() as u8;
+    let marker = format!("{:04}-{:02}-{:02}", now.year(), now.month(), now.day());
+
+    {
+        let mut fired = state.reminder_last_fired.lock().await;
+        let suffix = format!("@{marker}");
+        fired.retain(|key, _| key.ends_with(&suffix));
+    }
+
+    let reminders = state.task_reminders.read().await.clone();
+    let smtp = state.reminder_smtp_config.read().await.clone();
+
+    for reminder in reminders {
+        if !reminder.enabled {
+            continue;
+        }
+        let due_slots = collect_due_slots(&reminder, &current_time, weekday, day_of_month, &marker);
+        if due_slots.is_empty() {
+            continue;
+        }
+
+        for slot in due_slots {
+            let fire_key = format!("{}|{}", reminder.id, slot);
+            let should_fire = {
+                let mut fired = state.reminder_last_fired.lock().await;
+                if fired.contains_key(&fire_key) {
+                    false
+                } else {
+                    fired.insert(fire_key.clone(), now.to_rfc3339());
+                    true
+                }
+            };
+            if !should_fire {
+                continue;
+            }
+
+            if let Err(err) = commands::trigger_task_reminder_backend(app, smtp.clone(), &reminder).await {
+                tracing::warn!("trigger reminder failed ({}): {err}", reminder.id);
+                state.reminder_last_fired.lock().await.remove(&fire_key);
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn collect_due_slots(
+    reminder: &TaskReminder,
+    current_time: &str,
+    weekday: u8,
+    day_of_month: u8,
+    marker: &str,
+) -> Vec<String> {
+    let mut due = Vec::new();
+
+    for time in &reminder.daily_times {
+        if time == current_time {
+            due.push(format!("daily@{time}@{marker}"));
+        }
+    }
+    for slot in &reminder.weekly_slots {
+        if slot.weekday == weekday && slot.time == current_time {
+            due.push(format!("weekly@{}-{}@{marker}", slot.weekday, slot.time));
+        }
+    }
+    for slot in &reminder.monthly_slots {
+        if slot.day == day_of_month && slot.time == current_time {
+            due.push(format!("monthly@{}-{}@{marker}", slot.day, slot.time));
+        }
+    }
+
+    due
 }
 
 #[cfg(windows)]
@@ -210,6 +310,9 @@ pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Bu
         commands::get_profile_output_dir,
         commands::open_profile_output_path,
         commands::send_reminder_email,
-        commands::force_close_reminder_screens
+        commands::force_close_reminder_screens,
+        commands::get_task_reminder_store,
+        commands::save_task_reminder_store,
+        commands::trigger_task_reminder_now
     ])
 }
