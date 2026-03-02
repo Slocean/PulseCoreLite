@@ -7,8 +7,7 @@
             <div class="ui-dialog-title">{{ props.title }}</div>
             <UiButton
               native-type="button"
-              class="ui-dialog-close"
-              variant="icon"
+              preset="ui-dialog-close"
               :aria-label="props.closeLabel"
               @click="handleCancel">
               <span class="material-symbols-outlined">close</span>
@@ -23,15 +22,13 @@
             <slot name="actions">
               <UiButton
                 native-type="button"
-                class="ui-dialog-btn ui-dialog-btn--cancel"
-                variant="text"
+                preset="ui-dialog-cancel"
                 @click="handleCancel">
                 {{ props.cancelText }}
               </UiButton>
               <UiButton
                 native-type="button"
-                class="ui-dialog-btn ui-dialog-btn--confirm"
-                variant="text"
+                preset="ui-dialog-confirm"
                 :autofocus="props.autofocusConfirm"
                 @click="handleConfirm">
                 {{ props.confirmText }}
@@ -151,27 +148,7 @@ onUnmounted(() => {
   color: rgba(255, 255, 255, 0.92);
 }
 
-.ui-dialog-close {
-  border: none;
-  background: transparent;
-  padding: 0;
-  width: 24px;
-  height: 24px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  color: rgba(255, 255, 255, 0.5);
-  cursor: pointer;
-  transition: color 160ms ease, background 160ms ease;
-}
-
-.ui-dialog-close:hover {
-  color: rgba(255, 255, 255, 0.85);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.ui-dialog-close .material-symbols-outlined {
+.ui-button--preset-ui-dialog-close .material-symbols-outlined {
   font-size: 18px;
   line-height: 1;
 }
@@ -193,38 +170,6 @@ onUnmounted(() => {
   gap: 8px;
   padding: 10px 16px 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.ui-dialog-btn {
-  border-radius: 8px;
-  padding: 5px 12px;
-  font-size: 12px;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-  transition: all 160ms ease;
-  min-height: 28px;
-}
-
-.ui-dialog-btn--cancel {
-  border: 1px dashed rgba(255, 255, 255, 0.18);
-  background: transparent;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.ui-dialog-btn--cancel:hover {
-  border-color: rgba(255, 255, 255, 0.32);
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.ui-dialog-btn--confirm {
-  border: 1px dashed rgba(255, 59, 59, 0.45);
-  background: rgba(255, 59, 59, 0.08);
-  color: #ff9a9a;
-}
-
-.ui-dialog-btn--confirm:hover {
-  border-color: rgba(255, 59, 59, 0.7);
-  color: #ffd2d2;
 }
 
 .ui-dialog-enter-active,

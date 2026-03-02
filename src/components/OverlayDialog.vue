@@ -7,8 +7,7 @@
             <div class="overlay-dialog-title">{{ title }}</div>
             <UiButton
               native-type="button"
-              class="overlay-dialog-close"
-              variant="icon"
+              preset="overlay-dialog-close"
               :aria-label="closeLabel"
               @click="handleCancel">
               <span class="material-symbols-outlined">close</span>
@@ -21,13 +20,12 @@
           </div>
           <div v-if="showActions" class="overlay-dialog-actions">
             <slot name="actions">
-              <UiButton native-type="button" class="overlay-lang-button" variant="text" @click="handleCancel">
+              <UiButton native-type="button" preset="overlay-chip" @click="handleCancel">
                 {{ cancelText }}
               </UiButton>
               <UiButton
                 native-type="button"
-                class="overlay-config-danger"
-                variant="text"
+                preset="overlay-danger"
                 :autofocus="autofocusConfirm"
                 @click="handleConfirm">
                 {{ confirmText }}

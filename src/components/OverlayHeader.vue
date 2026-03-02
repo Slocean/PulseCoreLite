@@ -13,27 +13,24 @@
         <span class="material-symbols-outlined">drag_handle</span>
       </div>
       <UiButton
-        class="overlay-action overlay-action--info"
         native-type="button"
-        variant="icon"
+        preset="overlay-action-info"
         @mousedown.stop
         @click="emit('minimize')"
         :title="t('overlay.minimizeToTray')">
         <span class="material-symbols-outlined">remove</span>
       </UiButton>
       <UiButton
-        class="overlay-action overlay-action--primary"
         native-type="button"
-        variant="icon"
+        preset="overlay-action-primary"
         @mousedown.stop
         @click="emit('toggleConfig')"
         :title="t('overlay.configure')">
         <span class="material-symbols-outlined">settings</span>
       </UiButton>
       <UiButton
-        class="overlay-action overlay-action--danger"
         native-type="button"
-        variant="icon"
+        preset="overlay-action-danger"
         @mousedown.stop
         @click="emit('close')"
         :title="t('overlay.close')">
@@ -43,9 +40,8 @@
     <div class="overlay-meta">
       <UiButton
         native-type="button"
-        class="version"
-        variant="text"
-        :class="{ 'version--update': updateAvailable }"
+        preset="overlay-version"
+        :active="Boolean(updateAvailable)"
         :title="updateAvailable ? updateLabel : undefined"
         @click="handleVersionClick">
         v{{ appVersion }}

@@ -126,17 +126,15 @@
           <div class="overlay-lang-buttons overlay-config-effect-buttons">
             <UiButton
               native-type="button"
-              class="overlay-lang-button"
-              variant="text"
-              :class="{ 'overlay-lang-button--active': backgroundEffect === 'gaussian' }"
+              preset="overlay-chip-soft"
+              :active="backgroundEffect === 'gaussian'"
               @click="setBackgroundEffect('gaussian')">
               {{ t('overlay.effectGaussian') }}
             </UiButton>
             <UiButton
               native-type="button"
-              class="overlay-lang-button"
-              variant="text"
-              :class="{ 'overlay-lang-button--active': backgroundEffect === 'liquidGlass' }"
+              preset="overlay-chip-soft"
+              :active="backgroundEffect === 'liquidGlass'"
               @click="setBackgroundEffect('liquidGlass')">
               {{ t('overlay.effectLiquidGlass') }}
             </UiButton>
@@ -169,21 +167,19 @@
       </div>
     </template>
     <template #actions>
-      <UiButton native-type="button" class="overlay-lang-button" variant="text" @click="closeBackgroundDialog">
+      <UiButton native-type="button" preset="overlay-chip" @click="closeBackgroundDialog">
         {{ t('overlay.dialogCancel') }}
       </UiButton>
       <UiButton
         native-type="button"
-        class="overlay-config-primary"
-        variant="text"
+        preset="overlay-primary"
         :disabled="!canApplyBackground"
         @click="applyBackgroundCrop">
         {{ t('overlay.backgroundApply') }}
       </UiButton>
       <UiButton
         native-type="button"
-        class="overlay-config-primary"
-        variant="text"
+        preset="overlay-primary"
         :disabled="!canApplyBackground || !canSaveTheme"
         @click="applyBackgroundAndSave">
         {{ t('overlay.backgroundApplySave') }}
@@ -212,13 +208,12 @@
       </div>
     </template>
     <template #actions>
-      <UiButton native-type="button" class="overlay-lang-button" variant="text" @click="closeThemeNameDialog">
+      <UiButton native-type="button" preset="overlay-chip" @click="closeThemeNameDialog">
         {{ t('overlay.dialogCancel') }}
       </UiButton>
       <UiButton
         native-type="button"
-        class="overlay-config-primary"
-        variant="text"
+        preset="overlay-primary"
         :disabled="!canConfirmThemeName"
         @click="confirmSaveTheme">
         {{ t('overlay.dialogConfirm') }}
@@ -260,17 +255,15 @@
           <div class="overlay-lang-buttons overlay-config-effect-buttons">
             <UiButton
               native-type="button"
-              class="overlay-lang-button"
-              variant="text"
-              :class="{ 'overlay-lang-button--active': themeEditEffect === 'gaussian' }"
+              preset="overlay-chip-soft"
+              :active="themeEditEffect === 'gaussian'"
               @click="themeEditEffect = 'gaussian'">
               {{ t('overlay.effectGaussian') }}
             </UiButton>
             <UiButton
               native-type="button"
-              class="overlay-lang-button"
-              variant="text"
-              :class="{ 'overlay-lang-button--active': themeEditEffect === 'liquidGlass' }"
+              preset="overlay-chip-soft"
+              :active="themeEditEffect === 'liquidGlass'"
               @click="themeEditEffect = 'liquidGlass'">
               {{ t('overlay.effectLiquidGlass') }}
             </UiButton>
@@ -291,13 +284,12 @@
       </div>
     </template>
     <template #actions>
-      <UiButton native-type="button" class="overlay-lang-button" variant="text" @click="closeEditThemeDialog">
+      <UiButton native-type="button" preset="overlay-chip" @click="closeEditThemeDialog">
         {{ t('overlay.dialogCancel') }}
       </UiButton>
       <UiButton
         native-type="button"
-        class="overlay-config-primary"
-        variant="text"
+        preset="overlay-primary"
         :disabled="!canConfirmThemeEdit"
         @click="confirmEditTheme">
         {{ t('overlay.dialogConfirm') }}
@@ -364,16 +356,14 @@
     <template #actions>
       <UiButton
         native-type="button"
-        class="overlay-lang-button"
-        variant="text"
+        preset="overlay-chip"
         :disabled="installingUpdate"
         @click="closeUpdateDialog">
         {{ t('overlay.dialogCancel') }}
       </UiButton>
       <UiButton
         native-type="button"
-        class="overlay-config-primary"
-        variant="text"
+        preset="overlay-primary"
         :disabled="installingUpdate"
         @click="handleInstallUpdate">
         {{ installingUpdate ? t('overlay.updateInstalling') : t('overlay.updateNow') }}

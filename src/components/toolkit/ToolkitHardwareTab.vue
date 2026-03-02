@@ -1,6 +1,6 @@
 <template>
   <div class="toolkit-card toolkit-card--score">
-    <UiButton native-type="button" class="toolkit-collapse-toggle" variant="text" @click="toggleSection('score')">
+    <UiButton native-type="button" preset="toolkit-collapse" @click="toggleSection('score')">
       <span class="toolkit-section-title">{{ t('toolkit.hardwareScoreTitle') }}</span>
       <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.score }">
         expand_more
@@ -22,15 +22,13 @@
     <div class="toolkit-section-header">
       <UiButton
         native-type="button"
-        class="toolkit-collapse-toggle toolkit-collapse-toggle--title"
-        variant="text"
+        preset="toolkit-collapse-title"
         @click="toggleSection('dimension')">
         <span class="toolkit-section-title">{{ t('toolkit.dimensionTitle') }}</span>
       </UiButton>
       <UiButton
         native-type="button"
-        class="toolkit-view-toggle"
-        variant="text"
+        preset="toolkit-view-toggle"
         :aria-label="dimensionViewLabel"
         @click="toggleDimensionView">
         <span class="material-symbols-outlined">{{ dimensionViewIcon }}</span>
@@ -38,8 +36,7 @@
       </UiButton>
       <UiButton
         native-type="button"
-        class="toolkit-collapse-toggle toolkit-collapse-toggle--icon"
-        variant="text"
+        preset="toolkit-collapse-icon"
         @click="toggleSection('dimension')"
         :aria-label="t('toolkit.dimensionTitle')">
         <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.dimension }">
@@ -111,7 +108,7 @@
   </div>
 
   <div class="toolkit-card">
-    <UiButton native-type="button" class="toolkit-collapse-toggle" variant="text" @click="toggleSection('summary')">
+    <UiButton native-type="button" preset="toolkit-collapse" @click="toggleSection('summary')">
       <span class="toolkit-section-title">{{ t('toolkit.hardwareSummaryTitle') }}</span>
       <span
         class="toolkit-collapse-indicator material-symbols-outlined"
@@ -128,7 +125,7 @@
   </div>
 
   <div class="toolkit-card">
-    <UiButton native-type="button" class="toolkit-collapse-toggle" variant="text" @click="toggleSection('advice')">
+    <UiButton native-type="button" preset="toolkit-collapse" @click="toggleSection('advice')">
       <span class="toolkit-section-title">{{ t('toolkit.hardwareAdviceTitle') }}</span>
       <span class="toolkit-collapse-indicator material-symbols-outlined" :class="{ 'is-open': sections.advice }">
         expand_more

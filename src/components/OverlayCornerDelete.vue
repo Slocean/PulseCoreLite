@@ -1,8 +1,7 @@
 <template>
   <UiButton
     native-type="button"
-    class="overlay-corner-delete"
-    variant="icon"
+    preset="overlay-corner-danger"
     :aria-label="ariaLabel"
     @click.stop="emit('click')"
     @contextmenu.prevent.stop>

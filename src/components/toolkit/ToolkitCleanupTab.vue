@@ -18,7 +18,7 @@
       </div>
     </div>
     <div class="overlay-config-range">
-      <UiButton native-type="button" class="toolkit-link-label" variant="text" @click="openTargetsDialog">
+      <UiButton native-type="button" preset="toolkit-link" @click="openTargetsDialog">
         {{ t('toolkit.cleanupInterval') }}
       </UiButton>
       <span class="overlay-config-value">{{ memoryTrimIntervalMinutes }}{{ t('toolkit.minutes') }}</span>
@@ -70,16 +70,14 @@
     <div class="toolkit-profile-actions">
       <UiButton
         native-type="button"
-        class="overlay-config-primary"
-        variant="text"
+        preset="overlay-primary"
         :disabled="profileStatus.active"
         @click="startProfile">
         {{ t('toolkit.profileStart') }}
       </UiButton>
       <UiButton
         native-type="button"
-        class="overlay-config-danger"
-        variant="text"
+        preset="overlay-danger"
         :disabled="!profileStatus.active"
         @click="stopProfile">
         {{ t('toolkit.profileStop') }}

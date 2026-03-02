@@ -43,29 +43,6 @@
   user-select: none;
 }
 
-.overlay-dialog-close {
-  border: none;
-  background: transparent;
-  border-radius: 10px;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 160ms ease;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.overlay-dialog-close:hover {
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.overlay-dialog-close .material-symbols-outlined {
-  font-size: 18px;
-  line-height: 1;
-}
-
 .overlay-dialog-body {
   padding: 10px 12px 12px;
 }

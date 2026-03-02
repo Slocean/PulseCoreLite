@@ -17,16 +17,14 @@
         </div>
         <UiButton
           native-type="button"
-          class="overlay-action overlay-action--primary"
-          variant="icon"
+          preset="overlay-action-primary"
           :aria-label="t('overlay.minimizeToTray')"
           @click="minimizeToolkitWindow">
           <span class="material-symbols-outlined">remove</span>
         </UiButton>
         <UiButton
           native-type="button"
-          class="overlay-action overlay-action--danger"
-          variant="icon"
+          preset="overlay-action-danger"
           :aria-label="t('overlay.close')"
           @click="closeToolkitWindow">
           <span class="material-symbols-outlined">close</span>

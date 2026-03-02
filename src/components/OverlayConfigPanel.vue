@@ -86,17 +86,15 @@
         <div class="overlay-lang-buttons">
           <UiButton
             native-type="button"
-            class="overlay-lang-button"
-            variant="text"
-            :class="{ 'overlay-lang-button--active': language === 'zh-CN' }"
+            preset="overlay-chip"
+            :active="language === 'zh-CN'"
             @click="emit('setLanguage', 'zh-CN')">
             {{ t('overlay.langZh') }}
           </UiButton>
           <UiButton
             native-type="button"
-            class="overlay-lang-button"
-            variant="text"
-            :class="{ 'overlay-lang-button--active': language === 'en-US' }"
+            preset="overlay-chip"
+            :active="language === 'en-US'"
             @click="emit('setLanguage', 'en-US')">
             {{ t('overlay.langEn') }}
           </UiButton>
@@ -124,9 +122,8 @@
           <div class="overlay-lang-buttons overlay-config-theme-tabs">
             <UiButton
               native-type="button"
-              class="overlay-lang-button"
-              variant="text"
-              :class="{ 'overlay-lang-button--active': isDefaultTheme }"
+              preset="overlay-chip-tab"
+              :active="isDefaultTheme"
               @click="selectDefaultTheme">
               {{ t('overlay.themeDefault') }}
             </UiButton>
@@ -148,8 +145,7 @@
                   @click="emit('deleteTheme', theme.id)" />
                 <UiButton
                   native-type="button"
-                  class="overlay-corner-edit"
-                  variant="icon"
+                  preset="overlay-corner-primary"
                   :aria-label="t('overlay.themeEditTitle')"
                   @click.stop="emit('editTheme', theme.id)"
                   @contextmenu.prevent.stop>
@@ -161,8 +157,7 @@
         </div>
         <UiButton
           native-type="button"
-          class="overlay-lang-button"
-          variant="text"
+          preset="overlay-chip-action"
           :disabled="!canAddTheme"
           @click="emit('openBackgroundDialog')">
           {{ t('overlay.backgroundImageButton') }}
@@ -174,8 +169,7 @@
           <div class="overlay-lang-buttons">
             <UiButton
               native-type="button"
-              class="overlay-lang-button"
-              variant="text"
+              preset="overlay-chip"
               :disabled="checkingUpdate"
               @click="emit('checkUpdate')">
               {{ checkingUpdate ? t('overlay.updateChecking') : t('overlay.checkUpdate') }}
@@ -185,10 +179,10 @@
         <div class="overlay-config-language">
           <span class="overlay-config-label">{{ t('overlay.configTransfer') }}</span>
           <div class="overlay-lang-buttons">
-            <UiButton native-type="button" class="overlay-lang-button" variant="text" @click="emit('exportConfig')">
+            <UiButton native-type="button" preset="overlay-chip" @click="emit('exportConfig')">
               {{ t('overlay.exportConfig') }}
             </UiButton>
-            <UiButton native-type="button" class="overlay-lang-button" variant="text" @click="triggerImport">
+            <UiButton native-type="button" preset="overlay-chip" @click="triggerImport">
               {{ t('overlay.importConfig') }}
             </UiButton>
           </div>
@@ -205,7 +199,7 @@
           <span class="overlay-config-label">{{ t('overlay.factoryResetHotkey') }}</span>
           <div class="overlay-config-hotkey-controls">
             <div class="overlay-hotkey-chip">
-              <UiButton native-type="button" class="overlay-lang-button" variant="text" @click="beginHotkeyCapture">
+              <UiButton native-type="button" preset="overlay-chip" @click="beginHotkeyCapture">
                 {{ recordingHotkey ? t('overlay.hotkeyRecording') : hotkeyLabel }}
               </UiButton>
               <OverlayCornerDelete
@@ -213,7 +207,7 @@
                 :ariaLabel="t('overlay.hotkeyClear')"
                 @click="requestClearHotkey" />
             </div>
-            <UiButton native-type="button" class="overlay-config-danger" variant="text" @click="confirmFactoryReset">
+            <UiButton native-type="button" preset="overlay-danger" @click="confirmFactoryReset">
               {{ t('overlay.factoryReset') }}
             </UiButton>
           </div>
@@ -227,7 +221,7 @@
         </div>
       </div>
       <div v-if="false && canUninstall" class="overlay-config-uninstall">
-        <UiButton native-type="button" class="overlay-config-danger" variant="text" @click="emit('uninstall')">
+        <UiButton native-type="button" preset="overlay-danger" @click="emit('uninstall')">
           {{ t('overlay.uninstall') }}
         </UiButton>
       </div>

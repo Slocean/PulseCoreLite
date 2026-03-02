@@ -4,9 +4,8 @@
       v-for="tab in tabs"
       :key="tab.id"
       native-type="button"
-      class="toolkit-tab"
-      variant="text"
-      :class="{ 'toolkit-tab--active': modelValue === tab.id }"
+      preset="toolkit-tab"
+      :active="modelValue === tab.id"
       @click="setActive(tab.id)">
       {{ tab.label }}
     </UiButton>

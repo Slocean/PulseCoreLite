@@ -75,11 +75,6 @@
   justify-content: flex-end;
 }
 
-.overlay-config-effect-buttons .overlay-lang-button {
-  text-transform: none;
-  letter-spacing: 0.05em;
-}
-
 .overlay-config-taskbar {
   grid-column: 1 / -1;
   display: flex;
@@ -176,36 +171,6 @@
   gap: 6px;
 }
 
-.overlay-lang-button {
-  border: 1px dashed rgba(255, 255, 255, 0.18);
-  background: transparent;
-  border-radius: 8px;
-  padding: 4px 5px;
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.6);
-  cursor: pointer;
-  transition: all 160ms ease;
-}
-
-.overlay-lang-button:hover {
-  border-color: rgba(255, 255, 255, 0.32);
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.overlay-lang-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  border-color: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.35);
-}
-
-.overlay-lang-button--active {
-  border-color: var(--cyan);
-  color: var(--cyan);
-}
-
 .overlay-config-range {
   grid-column: 1 / -1;
   display: flex;
@@ -240,14 +205,6 @@
   flex: 1 1 auto;
   min-width: 0;
   overflow-x: auto;
-}
-
-.overlay-config-theme-tabs .overlay-lang-button {
-  padding: 3px 6px;
-}
-
-.overlay-config-action > .overlay-lang-button {
-  padding: 3px 8px;
 }
 
 .overlay-theme-list {
@@ -334,67 +291,13 @@
   line-height: 1.2;
 }
 
-.overlay-corner-delete {
-  position: absolute;
-  top: 50%;
-  left: -6px;
-  transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
-  padding: 0;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 59, 59, 0.5);
-  background: rgba(0, 0, 0, 0.72);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  cursor: pointer;
-  transition: all 160ms ease;
-}
-
-.overlay-corner-edit {
-  position: absolute;
-  top: 50%;
-  right: -6px;
-  transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
-  padding: 0;
-  border-radius: 999px;
-  border: 1px solid rgba(59, 130, 246, 0.5);
-  background: rgba(0, 0, 0, 0.72);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  cursor: pointer;
-  transition: all 160ms ease;
-}
-
-.overlay-corner-edit .material-symbols-outlined {
-  font-size: 12px;
-  line-height: 1;
-  color: rgba(147, 197, 253, 0.95);
-}
-
-.overlay-corner-delete .material-symbols-outlined {
-  font-size: 12px;
-  line-height: 1;
-  color: rgba(255, 59, 59, 0.95);
-}
-
-.overlay-theme-chip:hover .overlay-corner-delete {
+.overlay-theme-chip:hover .ui-button--preset-overlay-corner-danger {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
 }
 
-.overlay-theme-chip:hover .overlay-corner-edit {
+.overlay-theme-chip:hover .ui-button--preset-overlay-corner-primary {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
@@ -405,7 +308,7 @@
   display: inline-flex;
 }
 
-.overlay-hotkey-chip:hover .overlay-corner-delete {
+.overlay-hotkey-chip:hover .ui-button--preset-overlay-corner-danger {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
@@ -453,7 +356,7 @@
   justify-content: flex-end;
 }
 
-.overlay-config-hotkey-controls .overlay-lang-button:disabled {
+.overlay-config-hotkey-controls .ui-button--preset-overlay-chip:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -465,49 +368,6 @@
   margin-top: 2px;
 }
 
-.overlay-config-danger {
-  border: 1px dashed rgba(255, 59, 59, 0.45);
-  background: rgba(255, 59, 59, 0.08);
-  border-radius: 8px;
-  padding: 4px 5px;
-  font-size: 11px;
-  letter-spacing: 0.05em;
-  color: #ff9a9a;
-  cursor: pointer;
-  transition: all 160ms ease;
-}
-
-.overlay-config-danger:hover {
-  border-color: rgba(255, 59, 59, 0.7);
-  color: #ffd2d2;
-}
-
-.overlay-config-danger:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.overlay-config-primary {
-  border: 1px dashed rgba(59, 130, 246, 0.6);
-  background: rgba(59, 130, 246, 0.12);
-  border-radius: 8px;
-  padding: 4px 10px;
-  font-size: 11px;
-  letter-spacing: 0.05em;
-  color: #93c5fd;
-  cursor: pointer;
-  transition: all 160ms ease;
-}
-
-.overlay-config-primary:hover {
-  border-color: rgba(59, 130, 246, 0.85);
-  color: #dbeafe;
-}
-
-.overlay-config-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 
 .overlay-background-body {
   display: grid;

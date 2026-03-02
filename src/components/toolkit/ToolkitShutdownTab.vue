@@ -30,7 +30,7 @@
           @wheel="onNumberWheel($event, 'seconds', 0, 59)" />
       </label>
     </div>
-    <UiButton native-type="button" class="overlay-config-primary" variant="text" @click="scheduleCountdown">
+    <UiButton native-type="button" preset="overlay-primary" @click="scheduleCountdown">
       {{ t('toolkit.scheduleCountdown') }}
     </UiButton>
   </div>
@@ -62,7 +62,7 @@
         <input v-model.number="monthlyDay" type="number" min="1" max="31" />
       </label>
     </div>
-    <UiButton native-type="button" class="overlay-config-primary" variant="text" @click="scheduleByDatetime">
+    <UiButton native-type="button" preset="overlay-primary" @click="scheduleByDatetime">
       {{ t('toolkit.scheduleDatetime') }}
     </UiButton>
   </div>
@@ -73,7 +73,7 @@
       {{ planText }}
     </p>
     <div class="toolkit-actions">
-      <UiButton native-type="button" class="overlay-config-danger" variant="text" @click="cancelPlan">
+      <UiButton native-type="button" preset="overlay-danger" @click="cancelPlan">
         {{ t('toolkit.cancelPlan') }}
       </UiButton>
     </div>

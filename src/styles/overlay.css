@@ -119,25 +119,6 @@
   gap: 10px;
 }
 
-.overlay-meta .version {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0;
-  padding-left: 2px;
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.38);
-  letter-spacing: 0.12em;
-}
-
-.overlay-meta .version--update {
-  color: rgba(255, 107, 107, 0.95);
-  text-shadow: 0 0 8px rgba(255, 107, 107, 0.35);
-}
-
 .overlay-meta .version-dot {
   width: 6px;
   height: 6px;
@@ -158,42 +139,6 @@
   font-feature-settings: 'tnum';
 
   text-shadow: 0 0 10px rgba(0, 242, 255, 0.7);
-}
-
-.overlay-action {
-  border: none;
-  background: transparent;
-  border-radius: 10px;
-  width: 20px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 160ms ease;
-  color: rgba(255, 255, 255, 0.5);
-  line-height: 1;
-  outline: none;
-}
-
-.overlay-action:hover {
-  border-color: rgba(255, 255, 255, 0.32);
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.overlay-action--primary:hover {
-  border-color: rgba(255, 255, 255, 0.32);
-  color: var(--cyan);
-}
-
-.overlay-action--info:hover {
-  border-color: rgba(255, 255, 255, 0.32);
-  color: var(--pink);
-}
-
-.overlay-action--danger:hover {
-  border-color: rgba(255, 59, 59, 0.55);
-  color: #ff6b6b;
 }
 
 .overlay-header-actions {
@@ -217,12 +162,6 @@
 
 .overlay-drag .material-symbols-outlined {
   font-size: 18px;
-}
-
-.overlay-action .material-symbols-outlined {
-  font-size: 18px;
-  line-height: 1;
-  display: block;
 }
 
 .overlay-metrics {
