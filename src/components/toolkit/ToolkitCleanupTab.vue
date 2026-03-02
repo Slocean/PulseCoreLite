@@ -1,7 +1,7 @@
 <template>
   <UiToast :open="profileToastVisible" :message="profileToastMessage" />
 
-  <UiToolkitPanel :title="t('toolkit.cleanupTitle')" :collapsible="false">
+  <UiCollapsiblePanel class="toolkit-card" :title="t('toolkit.cleanupTitle')" :collapsible="false" title-class="toolkit-section-title">
     <div class="toolkit-cleanup-list">
       <div class="overlay-config-row">
         <span class="overlay-config-label">{{ t('toolkit.cleanupEnable') }}</span>
@@ -32,9 +32,9 @@
         :empty-text="t('toolkit.cleanupTargetsEmpty')"
         multiple />
     </div>
-  </UiToolkitPanel>
+  </UiCollapsiblePanel>
 
-  <UiToolkitPanel :title="t('toolkit.profileTitle')" :collapsible="false">
+  <UiCollapsiblePanel class="toolkit-card" :title="t('toolkit.profileTitle')" :collapsible="false" title-class="toolkit-section-title">
     <p class="toolkit-profile-hint">{{ t('toolkit.profileHint') }}</p>
     <div class="toolkit-profile-grid">
       <div class="toolkit-profile-row">
@@ -108,7 +108,7 @@
         {{ profileStatusText }}
       </span>
     </div>
-  </UiToolkitPanel>
+  </UiCollapsiblePanel>
 </template>
 
 <script setup lang="ts">
@@ -118,7 +118,7 @@ import { useI18n } from 'vue-i18n';
 import UiButton from '@/components/ui/Button';
 import UiSelect from '@/components/ui/Select';
 import UiSwitch from '@/components/ui/Switch';
-import UiToolkitPanel from '@/components/ui/ToolkitPanel';
+import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiToast from '@/components/ui/Toast';
 import { useAppStore } from '../../stores/app';
 import { api } from '../../services/tauri';

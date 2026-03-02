@@ -1,8 +1,11 @@
 <template>
-  <UiToolkitPanel
+  <UiCollapsiblePanel
+    class="toolkit-card toolkit-card--score"
     :title="t('toolkit.hardwareScoreTitle')"
     v-model="sections.score"
-    card-class="toolkit-card--score"
+    single-header-preset="toolkit-collapse"
+    title-class="toolkit-section-title"
+    indicator-class="toolkit-collapse-indicator"
     @toggle="emit('contentChange')">
     <div>
       <div class="toolkit-score-ring" :style="scoreRingStyle">
@@ -14,12 +17,18 @@
       <div class="toolkit-score-caption">{{ totalGradeLabel }}</div>
       <p class="toolkit-score-desc">{{ totalSummary }}</p>
     </div>
-  </UiToolkitPanel>
+  </UiCollapsiblePanel>
 
-  <UiToolkitPanel
+  <UiCollapsiblePanel
+    class="toolkit-card"
     :title="t('toolkit.dimensionTitle')"
     v-model="sections.dimension"
     header-mode="split"
+    header-class="toolkit-section-header"
+    split-title-preset="toolkit-collapse-title"
+    split-toggle-preset="toolkit-collapse-icon"
+    title-class="toolkit-section-title"
+    indicator-class="toolkit-collapse-indicator"
     :toggle-aria-label="t('toolkit.dimensionTitle')"
     @toggle="emit('contentChange')">
     <template #header-actions>
@@ -93,11 +102,15 @@
         </div>
       </div>
     </div>
-  </UiToolkitPanel>
+  </UiCollapsiblePanel>
 
-  <UiToolkitPanel
+  <UiCollapsiblePanel
+    class="toolkit-card"
     :title="t('toolkit.hardwareSummaryTitle')"
     v-model="sections.summary"
+    single-header-preset="toolkit-collapse"
+    title-class="toolkit-section-title"
+    indicator-class="toolkit-collapse-indicator"
     @toggle="emit('contentChange')">
     <div class="toolkit-summary-grid">
       <div v-for="row in hardwareSummaryRows" :key="row.id" class="toolkit-summary-item">
@@ -105,16 +118,20 @@
         <span class="toolkit-summary-value">{{ row.value }}</span>
       </div>
     </div>
-  </UiToolkitPanel>
+  </UiCollapsiblePanel>
 
-  <UiToolkitPanel
+  <UiCollapsiblePanel
+    class="toolkit-card"
     :title="t('toolkit.hardwareAdviceTitle')"
     v-model="sections.advice"
+    single-header-preset="toolkit-collapse"
+    title-class="toolkit-section-title"
+    indicator-class="toolkit-collapse-indicator"
     @toggle="emit('contentChange')">
     <ul class="toolkit-advice-list">
       <li v-for="(item, index) in adviceList" :key="index" class="toolkit-advice-item">{{ item }}</li>
     </ul>
-  </UiToolkitPanel>
+  </UiCollapsiblePanel>
 </template>
 
 <script setup lang="ts">
@@ -122,7 +139,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
-import UiToolkitPanel from '@/components/ui/ToolkitPanel';
+import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import { useAppStore } from '../../stores/app';
 
 type Grade = 'S' | 'A' | 'B' | 'C' | 'D';

@@ -1,5 +1,5 @@
 <template>
-  <UiToolkitPanel :title="t('toolkit.countdownTitle')" :collapsible="false">
+  <UiCollapsiblePanel class="toolkit-card" :title="t('toolkit.countdownTitle')" :collapsible="false" title-class="toolkit-section-title">
     <div class="toolkit-grid toolkit-grid--3">
       <label class="toolkit-field">
         <span>{{ t('toolkit.hours') }}</span>
@@ -32,9 +32,9 @@
     <UiButton native-type="button" preset="overlay-primary" @click="scheduleCountdown">
       {{ t('toolkit.scheduleCountdown') }}
     </UiButton>
-  </UiToolkitPanel>
+  </UiCollapsiblePanel>
 
-  <UiToolkitPanel :title="t('toolkit.datetimeTitle')" :collapsible="false">
+  <UiCollapsiblePanel class="toolkit-card" :title="t('toolkit.datetimeTitle')" :collapsible="false" title-class="toolkit-section-title">
     <div class="toolkit-grid">
       <div class="toolkit-field">
         <span class="toolkit-field-label">{{ t('toolkit.datetime') }}</span>
@@ -59,9 +59,9 @@
     <UiButton native-type="button" preset="overlay-primary" @click="scheduleByDatetime">
       {{ t('toolkit.scheduleDatetime') }}
     </UiButton>
-  </UiToolkitPanel>
+  </UiCollapsiblePanel>
 
-  <UiToolkitPanel :title="t('toolkit.currentPlan')" :collapsible="false">
+  <UiCollapsiblePanel class="toolkit-card" :title="t('toolkit.currentPlan')" :collapsible="false" title-class="toolkit-section-title">
     <p class="toolkit-plan" :class="{ 'toolkit-plan--muted': !plan }">
       {{ planText }}
     </p>
@@ -70,7 +70,7 @@
         {{ t('toolkit.cancelPlan') }}
       </UiButton>
     </div>
-  </UiToolkitPanel>
+  </UiCollapsiblePanel>
 
   <p v-if="statusMessage" class="toolkit-status">{{ statusMessage }}</p>
   <p v-if="errorMessage" class="toolkit-error">{{ errorMessage }}</p>
@@ -83,7 +83,7 @@ import { useI18n } from 'vue-i18n';
 import UiButton from '@/components/ui/Button';
 import UiDateInput from '@/components/ui/DateInput';
 import UiSelect from '@/components/ui/Select';
-import UiToolkitPanel from '@/components/ui/ToolkitPanel';
+import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiTimeInput from '@/components/ui/TimeInput';
 import { api, inTauri } from '../../services/tauri';
 import type { ScheduleShutdownRequest, ShutdownPlan } from '../../types';

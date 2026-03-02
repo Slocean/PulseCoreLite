@@ -1,17 +1,27 @@
 <template>
-  <UiToolkitPanel
+  <UiCollapsiblePanel
+    class="toolkit-card"
     :title="t('toolkit.reminderTitle')"
     v-model="sections.summary"
+    single-header-preset="toolkit-collapse"
+    title-class="toolkit-section-title"
+    indicator-class="toolkit-collapse-indicator"
     @toggle="emit('contentChange')">
     <div class="toolkit-reminder-count">
       <span>{{ t('toolkit.reminderSummary', { total: reminderCount, enabled: enabledCount }) }}</span>
     </div>
-  </UiToolkitPanel>
+  </UiCollapsiblePanel>
 
-  <UiToolkitPanel
+  <UiCollapsiblePanel
+    class="toolkit-card"
     :title="editingId ? t('toolkit.reminderEdit') : t('toolkit.reminderCreate')"
     v-model="sections.task"
     header-mode="split"
+    header-class="toolkit-section-header"
+    split-title-preset="toolkit-collapse-title"
+    split-toggle-preset="toolkit-collapse-icon"
+    title-class="toolkit-section-title"
+    indicator-class="toolkit-collapse-indicator"
     @toggle="emit('contentChange')">
     <template #header-actions>
       <UiButton native-type="button" preset="toolkit-link" :aria-label="t('toolkit.reminderSmtpConfig')" @click="openSmtpDialog">
@@ -37,11 +47,15 @@
         <UiSwitch v-model="form.enabled" :aria-label="t('toolkit.reminderEnabled')" />
       </div>
     </div>
-  </UiToolkitPanel>
+  </UiCollapsiblePanel>
 
-  <UiToolkitPanel
+  <UiCollapsiblePanel
+    class="toolkit-card"
     :title="t('toolkit.reminderSchedule')"
     v-model="sections.schedule"
+    single-header-preset="toolkit-collapse"
+    title-class="toolkit-section-title"
+    indicator-class="toolkit-collapse-indicator"
     @toggle="emit('contentChange')">
     <div class="toolkit-reminder-block">
       <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatDaily') }}</div>
@@ -104,11 +118,15 @@
         </button>
       </div>
     </div>
-  </UiToolkitPanel>
+  </UiCollapsiblePanel>
 
-  <UiToolkitPanel
+  <UiCollapsiblePanel
+    class="toolkit-card"
     :title="t('toolkit.reminderContent')"
     v-model="sections.content"
+    single-header-preset="toolkit-collapse"
+    title-class="toolkit-section-title"
+    indicator-class="toolkit-collapse-indicator"
     @toggle="emit('contentChange')">
     <div class="toolkit-grid">
       <label class="toolkit-field">
@@ -131,11 +149,15 @@
         {{ t('toolkit.reminderReset') }}
       </UiButton>
     </div>
-  </UiToolkitPanel>
+  </UiCollapsiblePanel>
 
-  <UiToolkitPanel
+  <UiCollapsiblePanel
+    class="toolkit-card"
     :title="t('toolkit.reminderList')"
     v-model="sections.list"
+    single-header-preset="toolkit-collapse"
+    title-class="toolkit-section-title"
+    indicator-class="toolkit-collapse-indicator"
     @toggle="emit('contentChange')">
     <div v-if="!reminders.length" class="toolkit-plan toolkit-plan--muted">
       {{ t('toolkit.reminderListEmpty') }}
@@ -166,7 +188,7 @@
         </div>
       </div>
     </div>
-  </UiToolkitPanel>
+  </UiCollapsiblePanel>
 
   <p v-if="statusMessage" class="toolkit-status">{{ statusMessage }}</p>
   <p v-if="errorMessage" class="toolkit-error">{{ errorMessage }}</p>
@@ -230,7 +252,7 @@ import { useI18n } from 'vue-i18n';
 import UiButton from '@/components/ui/Button';
 import UiSelect from '@/components/ui/Select';
 import UiSwitch from '@/components/ui/Switch';
-import UiToolkitPanel from '@/components/ui/ToolkitPanel';
+import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiTimeInput from '@/components/ui/TimeInput';
 import OverlayDialog from '../OverlayDialog.vue';
 import { useTaskReminders } from '../../composables/useTaskReminders';

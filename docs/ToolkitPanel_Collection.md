@@ -1,8 +1,8 @@
 # Toolkit 面板收集与封装映射
 
 ## 封装组件
-- 组件路径：`src/components/ui/ToolkitPanel`
-- 目标：统一 `toolkit-card` 面板结构，支持折叠与非折叠、标准头部与带操作区头部。
+- 组件路径：`src/components/ui/CollapsiblePanel`
+- 目标：统一“可折叠面板”交互结构，组件不内置业务样式（如 `toolkit-*`），由调用方注入样式与按钮 preset。
 
 ## 组件属性与插槽
 - `title: string`：面板标题。
@@ -14,7 +14,13 @@
 - `toggleAriaLabel?: string`：右侧折叠按钮无障碍文案。
 - `titleAriaLabel?: string`：标题无障碍文案（备用）。
 - `contentClass?: string`：内容区 class。
-- `cardClass?: string`：卡片附加 class。
+- `headerClass?: string`：头部容器 class。
+- `titleClass?: string`：标题 class。
+- `indicatorClass?: string`：折叠图标 class。
+- `singleHeaderPreset?: ButtonPreset`：单行头部按钮样式。
+- `splitTitlePreset?: ButtonPreset`：分栏头部标题按钮样式。
+- `splitTogglePreset?: ButtonPreset`：分栏头部折叠按钮样式。
+- `toggleIcon?: string`：折叠图标文本（默认 `expand_more`）。
 - `#header-actions`：`split` 模式中部操作区插槽。
 - 默认插槽：面板内容区。
 
@@ -27,7 +33,7 @@
 - `reminderList`：提醒列表；折叠；空态和列表态，含启用切换、编辑、立即触发、删除。
 
 ### Hardware Tab (`src/components/toolkit/ToolkitHardwareTab.vue`)
-- `hardwareScoreTitle`：总分面板；折叠；附加 `cardClass='toolkit-card--score'`。
+- `hardwareScoreTitle`：总分面板；折叠；通过 `class="toolkit-card toolkit-card--score"` 注入样式。
 - `dimensionTitle`：维度分析；折叠；`split` 头部；中部操作为“雷达/条形视图切换”。
 - `hardwareSummaryTitle`：硬件摘要；折叠；键值展示。
 - `hardwareAdviceTitle`：优化建议；折叠；建议列表。
