@@ -1,6 +1,7 @@
 import { ref, type Ref } from 'vue';
 
 import { api, inTauri } from '../services/tauri';
+import { storageKeys, storageRepository } from '../services/storageRepository';
 import type { OverlayPrefs } from './useOverlayPrefs';
 import type { OverlayTheme } from './useThemeManager';
 import { clampBlurPx, clampGlassStrength, normalizeBackgroundEffect, sanitizeThemes } from './useThemeManager';
@@ -58,15 +59,6 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
   const importErrorDialogOpen = ref(false);
   const importErrorMessage = ref('');
 
-  function safeJsonParse<T>(raw: string | null): T | null {
-    if (!raw) return null;
-    try {
-      return JSON.parse(raw) as T;
-    } catch {
-      return null;
-    }
-  }
-
   async function exportConfig() {
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
@@ -95,9 +87,9 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
       refreshRateMs: refreshRate.value,
       overlayPrefs,
       overlayThemes,
-      taskbarPrefs: safeJsonParse<unknown>(localStorage.getItem('pulsecorelite.taskbar_prefs')),
-      overlayPosition: safeJsonParse<unknown>(localStorage.getItem('pulsecorelite.overlay_pos')),
-      taskbarPosition: safeJsonParse<unknown>(localStorage.getItem('pulsecorelite.taskbar_pos'))
+      taskbarPrefs: storageRepository.getJsonSync<unknown>(storageKeys.taskbarPrefs) ?? null,
+      overlayPosition: storageRepository.getJsonSync<unknown>(storageKeys.overlayPosition) ?? null,
+      taskbarPosition: storageRepository.getJsonSync<unknown>(storageKeys.taskbarPosition) ?? null
     };
 
     const json = JSON.stringify(payload, null, 2);
@@ -282,19 +274,19 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
         const nextRate = Math.max(10, Math.min(2000, Math.round(candidate.refreshRateMs)));
         refreshRate.value = nextRate;
         store.setRefreshRate(nextRate);
-        localStorage.setItem('pulsecorelite.refresh_rate', String(nextRate));
+        void storageRepository.setString(storageKeys.refreshRate, String(nextRate));
       }
 
       if (candidate.taskbarPrefs) {
         const next = sanitizeImportedTaskbarPrefs(candidate.taskbarPrefs);
-        localStorage.setItem('pulsecorelite.taskbar_prefs', JSON.stringify(next));
+        storageRepository.setJsonSync(storageKeys.taskbarPrefs, next);
       }
 
       if (isPositionLike(candidate.overlayPosition)) {
-        localStorage.setItem('pulsecorelite.overlay_pos', JSON.stringify(candidate.overlayPosition));
+        storageRepository.setJsonSync(storageKeys.overlayPosition, candidate.overlayPosition);
       }
       if (isPositionLike(candidate.taskbarPosition)) {
-        localStorage.setItem('pulsecorelite.taskbar_pos', JSON.stringify(candidate.taskbarPosition));
+        storageRepository.setJsonSync(storageKeys.taskbarPosition, candidate.taskbarPosition);
       }
 
       if (store.settings.taskbarMonitorEnabled) {

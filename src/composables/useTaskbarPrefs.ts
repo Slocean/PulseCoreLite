@@ -1,6 +1,6 @@
 import { reactive, watch } from 'vue';
 
-const TASKBAR_PREF_KEY = 'pulsecorelite.taskbar_prefs';
+import { storageKeys, storageRepository } from '../services/storageRepository';
 
 export interface TaskbarPrefs {
   showCpu: boolean;
@@ -31,28 +31,20 @@ const fallbackPrefs: TaskbarPrefs = {
 };
 
 function loadPrefs(): TaskbarPrefs {
-  try {
-    const raw = localStorage.getItem(TASKBAR_PREF_KEY);
-    if (!raw) {
-      return fallbackPrefs;
-    }
-    const parsed = JSON.parse(raw) as Partial<TaskbarPrefs>;
-    return {
-      showCpu: parsed.showCpu ?? fallbackPrefs.showCpu,
-      showCpuFreq: parsed.showCpuFreq ?? fallbackPrefs.showCpuFreq,
-      showCpuTemp: parsed.showCpuTemp ?? fallbackPrefs.showCpuTemp,
-      showGpu: parsed.showGpu ?? fallbackPrefs.showGpu,
-      showGpuTemp: parsed.showGpuTemp ?? fallbackPrefs.showGpuTemp,
-      showMemory: parsed.showMemory ?? fallbackPrefs.showMemory,
-      showApp: parsed.showApp ?? fallbackPrefs.showApp,
-      showDown: parsed.showDown ?? fallbackPrefs.showDown,
-      showUp: parsed.showUp ?? fallbackPrefs.showUp,
-      showLatency: parsed.showLatency ?? fallbackPrefs.showLatency,
-      twoLineMode: parsed.twoLineMode ?? fallbackPrefs.twoLineMode
-    };
-  } catch {
-    return fallbackPrefs;
-  }
+  const parsed = storageRepository.getJsonSync<Partial<TaskbarPrefs>>(storageKeys.taskbarPrefs) ?? {};
+  return {
+    showCpu: parsed.showCpu ?? fallbackPrefs.showCpu,
+    showCpuFreq: parsed.showCpuFreq ?? fallbackPrefs.showCpuFreq,
+    showCpuTemp: parsed.showCpuTemp ?? fallbackPrefs.showCpuTemp,
+    showGpu: parsed.showGpu ?? fallbackPrefs.showGpu,
+    showGpuTemp: parsed.showGpuTemp ?? fallbackPrefs.showGpuTemp,
+    showMemory: parsed.showMemory ?? fallbackPrefs.showMemory,
+    showApp: parsed.showApp ?? fallbackPrefs.showApp,
+    showDown: parsed.showDown ?? fallbackPrefs.showDown,
+    showUp: parsed.showUp ?? fallbackPrefs.showUp,
+    showLatency: parsed.showLatency ?? fallbackPrefs.showLatency,
+    twoLineMode: parsed.twoLineMode ?? fallbackPrefs.twoLineMode
+  };
 }
 
 export function useTaskbarPrefs() {
@@ -61,7 +53,7 @@ export function useTaskbarPrefs() {
   watch(
     prefs,
     next => {
-      localStorage.setItem(TASKBAR_PREF_KEY, JSON.stringify(next));
+      void storageRepository.setJson(storageKeys.taskbarPrefs, next);
     },
     { deep: true }
   );

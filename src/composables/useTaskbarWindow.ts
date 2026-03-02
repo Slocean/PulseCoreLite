@@ -1,8 +1,7 @@
 import { onMounted, onUnmounted, ref, watch, type Ref } from 'vue';
 
 import { inTauri } from '../services/tauri';
-
-const TASKBAR_POS_KEY = 'pulsecorelite.taskbar_pos';
+import { storageKeys, storageRepository } from '../services/storageRepository';
 
 interface UseTaskbarWindowOptions {
   rememberPosition: Ref<boolean>;
@@ -35,22 +34,21 @@ export function useTaskbarWindow({ rememberPosition, positionLocked }: UseTaskba
     if (!rememberPosition.value) {
       return null;
     }
-    try {
-      const raw = localStorage.getItem(TASKBAR_POS_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as { x?: number; y?: number };
-      if (typeof parsed.x !== 'number' || typeof parsed.y !== 'number') return null;
-      return { x: parsed.x, y: parsed.y };
-    } catch {
+    const parsed = storageRepository.getJsonSync<{ x?: number; y?: number }>(storageKeys.taskbarPosition);
+    if (!parsed) {
       return null;
     }
+    if (typeof parsed.x !== 'number' || typeof parsed.y !== 'number') {
+      return null;
+    }
+    return { x: parsed.x, y: parsed.y };
   };
 
   const savePosition = (next: { x: number; y: number }) => {
     if (!rememberPosition.value) return;
     if (lastPosition && next.x === lastPosition.x && next.y === lastPosition.y) return;
     lastPosition = next;
-    localStorage.setItem(TASKBAR_POS_KEY, JSON.stringify(next));
+    storageRepository.setJsonSync(storageKeys.taskbarPosition, next);
   };
 
   type Rect = { left: number; top: number; right: number; bottom: number };
@@ -280,7 +278,7 @@ export function useTaskbarWindow({ rememberPosition, positionLocked }: UseTaskba
     enabled => {
       lastPosition = null;
       if (!enabled) {
-        localStorage.removeItem(TASKBAR_POS_KEY);
+        storageRepository.removeSync(storageKeys.taskbarPosition);
         rememberInit = true;
         return;
       }

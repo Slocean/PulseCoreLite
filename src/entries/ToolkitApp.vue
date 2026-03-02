@@ -13,6 +13,7 @@ import { useI18n } from 'vue-i18n';
 
 import ReminderScreenPage from '../pages/ReminderScreenPage.vue';
 import ToolkitPage from '../pages/toolkit.vue';
+import { storageKeys, storageRepository } from '../services/storageRepository';
 import { useAppStore } from '../stores/app';
 
 const store = useAppStore();
@@ -32,16 +33,9 @@ onMounted(async () => {
     await store.bootstrap();
     locale.value = store.settings.language;
   } else if (typeof window !== 'undefined') {
-    try {
-      const raw = window.localStorage.getItem('pulsecorelite.settings');
-      if (raw) {
-        const parsed = JSON.parse(raw) as { language?: 'zh-CN' | 'en-US' };
-        if (parsed.language === 'en-US' || parsed.language === 'zh-CN') {
-          locale.value = parsed.language;
-        }
-      }
-    } catch {
-      // ignore
+    const parsed = storageRepository.getJsonSync<{ language?: 'zh-CN' | 'en-US' }>(storageKeys.settings);
+    if (parsed?.language === 'en-US' || parsed?.language === 'zh-CN') {
+      locale.value = parsed.language;
     }
   }
 });

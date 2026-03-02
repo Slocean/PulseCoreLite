@@ -1,8 +1,7 @@
 import { onMounted, onUnmounted, ref, watch, type Ref } from 'vue';
 
 import { inTauri } from '../services/tauri';
-
-const OVERLAY_POS_KEY = 'pulsecorelite.overlay_pos';
+import { storageKeys, storageRepository } from '../services/storageRepository';
 
 interface UseOverlayWindowOptions {
   allowDrag: Ref<boolean>;
@@ -23,19 +22,14 @@ export function useOverlayWindow({ allowDrag, rememberPosition }: UseOverlayWind
     if (!rememberPosition.value) {
       return null;
     }
-    try {
-      const raw = localStorage.getItem(OVERLAY_POS_KEY);
-      if (!raw) {
-        return null;
-      }
-      const parsed = JSON.parse(raw) as { x?: number; y?: number };
-      if (typeof parsed.x !== 'number' || typeof parsed.y !== 'number') {
-        return null;
-      }
-      return { x: parsed.x, y: parsed.y };
-    } catch {
+    const parsed = storageRepository.getJsonSync<{ x?: number; y?: number }>(storageKeys.overlayPosition);
+    if (!parsed) {
       return null;
     }
+    if (typeof parsed.x !== 'number' || typeof parsed.y !== 'number') {
+      return null;
+    }
+    return { x: parsed.x, y: parsed.y };
   };
 
   const savePosition = (next: { x: number; y: number }) => {
@@ -46,7 +40,7 @@ export function useOverlayWindow({ allowDrag, rememberPosition }: UseOverlayWind
       return;
     }
     lastPosition = next;
-    localStorage.setItem(OVERLAY_POS_KEY, JSON.stringify(next));
+    storageRepository.setJsonSync(storageKeys.overlayPosition, next);
   };
 
   const getWindowApi = async () => {
@@ -182,7 +176,7 @@ export function useOverlayWindow({ allowDrag, rememberPosition }: UseOverlayWind
     enabled => {
       lastPosition = null;
       if (!enabled) {
-        localStorage.removeItem(OVERLAY_POS_KEY);
+        storageRepository.removeSync(storageKeys.overlayPosition);
       }
     },
     { immediate: true }

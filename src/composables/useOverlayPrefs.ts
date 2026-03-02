@@ -1,10 +1,9 @@
 import { onMounted, onUnmounted, reactive, watch } from 'vue';
 
 import { inTauri, listenEvent } from '../services/tauri';
-import { kvGet, kvSet } from '../utils/kv';
+import { storageKeys, storageRepository } from '../services/storageRepository';
 import { normalizeImageRef } from '../utils/imageStore';
 
-const OVERLAY_PREF_KEY = 'pulsecorelite.overlay_prefs';
 const PREFS_SYNC_EVENT = 'pulsecorelite://prefs-sync';
 
 export type OverlayBackgroundEffect = 'gaussian' | 'liquidGlass';
@@ -123,16 +122,8 @@ async function broadcastPrefsSync() {
 }
 
 function loadPrefsFromLocalStorage(): OverlayPrefs {
-  try {
-    const raw = localStorage.getItem(OVERLAY_PREF_KEY);
-    if (!raw) {
-      return fallbackPrefs;
-    }
-    const parsed = JSON.parse(raw) as Partial<OverlayPrefs>;
-    return sanitizePrefs(parsed);
-  } catch {
-    return fallbackPrefs;
-  }
+  const parsed = storageRepository.getJsonSync<Partial<OverlayPrefs>>(storageKeys.overlayPrefs);
+  return sanitizePrefs(parsed);
 }
 
 export function useOverlayPrefs() {
@@ -148,20 +139,22 @@ export function useOverlayPrefs() {
 
       // Avoid IndexedDB structured-clone issues with Vue proxies by persisting a JSON snapshot.
       const snapshot = JSON.parse(JSON.stringify(next)) as OverlayPrefs;
-      void kvSet(OVERLAY_PREF_KEY, snapshot);
+      void storageRepository.setJson(storageKeys.overlayPrefs, snapshot);
       void broadcastPrefsSync();
     },
     { deep: true }
   );
 
   onMounted(async () => {
-    const fromKv = await kvGet<Partial<OverlayPrefs>>(OVERLAY_PREF_KEY);
+    const fromKv = await storageRepository.getJson<Partial<OverlayPrefs>>(storageKeys.overlayPrefs, {
+      migrateFromLocal: true
+    });
     if (fromKv && typeof fromKv === 'object') {
       const sanitized = sanitizePrefs(fromKv);
       const normalizedImage = await normalizeImageRef(sanitized.backgroundImage);
       if (normalizedImage !== sanitized.backgroundImage) {
         sanitized.backgroundImage = normalizedImage;
-        await kvSet(OVERLAY_PREF_KEY, sanitized);
+        await storageRepository.setJson(storageKeys.overlayPrefs, sanitized);
       }
       Object.assign(prefs, sanitized);
     } else {
@@ -171,14 +164,7 @@ export function useOverlayPrefs() {
         snapshot.backgroundImage = normalizedImage;
         Object.assign(prefs, snapshot);
       }
-      await kvSet(OVERLAY_PREF_KEY, snapshot);
-    }
-
-    // Legacy cleanup: stop consuming localStorage quota once migrated to IndexedDB.
-    try {
-      localStorage.removeItem(OVERLAY_PREF_KEY);
-    } catch {
-      // ignore
+      await storageRepository.setJson(storageKeys.overlayPrefs, snapshot);
     }
 
     // Listen for prefs sync events from other windows
@@ -187,7 +173,7 @@ export function useOverlayPrefs() {
         if (isSyncing) return;
         isSyncing = true;
         try {
-          const synced = await kvGet<Partial<OverlayPrefs>>(OVERLAY_PREF_KEY);
+          const synced = await storageRepository.getJson<Partial<OverlayPrefs>>(storageKeys.overlayPrefs);
           if (synced && typeof synced === 'object') {
             const sanitized = sanitizePrefs(synced);
             // Only update values that are different to avoid unnecessary reactivity triggers
