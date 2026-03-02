@@ -169,7 +169,7 @@ const sections = ref({
   advice: false
 });
 
-const dimensionView = ref<'bars' | 'radar'>('bars');
+const dimensionView = ref<'bars' | 'radar'>('radar');
 
 const hardwareInfo = computed(() => store.hardwareInfo);
 const snapshot = computed(() => store.snapshot);

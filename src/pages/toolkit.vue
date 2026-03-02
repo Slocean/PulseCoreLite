@@ -53,6 +53,7 @@ import ToolkitShutdownTab from '../components/toolkit/ToolkitShutdownTab.vue';
 import ToolkitTabs from '../components/toolkit/ToolkitTabs.vue';
 import { useOverlayPrefs, type OverlayBackgroundEffect } from '../composables/useOverlayPrefs';
 import { inTauri } from '../services/tauri';
+import { acquireImageUrl, normalizeImageRef, releaseImageRef } from '../utils/imageStore';
 
 type ToolkitTab = 'shutdown' | 'cleanup' | 'hardware';
 
@@ -64,6 +65,9 @@ let resizeObserver: ResizeObserver | undefined;
 let resizeFrame: number | undefined;
 let lastHeight = 0;
 let windowApiPromise: Promise<typeof import('@tauri-apps/api/window')> | undefined;
+const backgroundImageUrl = ref<string | null>(null);
+let backgroundImageRef: string | null = null;
+let backgroundResolveToken = 0;
 
 const tabs = computed(() => [
   { id: 'shutdown' as const, label: t('toolkit.tabShutdown') },
@@ -72,17 +76,17 @@ const tabs = computed(() => [
 ]);
 
 const overlayBackgroundStyle = computed(() => {
-  const image = prefs.backgroundImage;
-  if (!image) {
+  if (!backgroundImageUrl.value) {
     return {};
   }
   const effect = normalizeBackgroundEffect(prefs.backgroundEffect);
   const blurPx = clampBlurPx(prefs.backgroundBlurPx);
   const glassStrength = clampGlassStrength(prefs.backgroundGlassStrength);
   return {
-    backgroundImage: `url(${image})`,
+    backgroundImage: `url(${backgroundImageUrl.value})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
     filter: getBackgroundFilter(effect, blurPx, glassStrength),
     transform: effect === 'liquidGlass' ? 'scale(1.03)' : 'none'
   };
@@ -101,6 +105,33 @@ const overlayLiquidGlassHighlightStyle = computed(() => {
     opacity: opacity.toFixed(3)
   };
 });
+
+watch(
+  () => prefs.backgroundImage,
+  async value => {
+    const token = ++backgroundResolveToken;
+    if (backgroundImageRef) {
+      releaseImageRef(backgroundImageRef);
+      backgroundImageRef = null;
+    }
+    if (!value) {
+      backgroundImageUrl.value = null;
+      return;
+    }
+    const normalized = await normalizeImageRef(value);
+    if (normalized && normalized !== value) {
+      prefs.backgroundImage = normalized;
+    }
+    const { url, ref } = await acquireImageUrl(normalized ?? value);
+    if (token !== backgroundResolveToken) {
+      releaseImageRef(ref);
+      return;
+    }
+    backgroundImageRef = ref ?? null;
+    backgroundImageUrl.value = url || null;
+  },
+  { immediate: true }
+);
 
 watch(
   () => prefs.backgroundOpacity,
@@ -135,6 +166,10 @@ onUnmounted(() => {
     resizeObserver.unobserve(pageRef.value);
   }
   resizeObserver = undefined;
+  if (backgroundImageRef) {
+    releaseImageRef(backgroundImageRef);
+    backgroundImageRef = null;
+  }
   if (resizeFrame != null) {
     window.cancelAnimationFrame(resizeFrame);
   }
