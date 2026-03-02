@@ -139,9 +139,19 @@ html.window-toolkit body {
   gap: 8px;
 }
 
+.toolkit-profile-actions .ui-button {
+  flex: 1 1 0;
+  min-width: 88px;
+}
+
+.toolkit-profile-actions .ui-button .ui-button__content {
+  white-space: nowrap;
+}
+
 .toolkit-profile-status-row {
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 .toolkit-profile-status {
