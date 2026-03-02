@@ -1,76 +1,57 @@
-:where(.ui-button--preset-overlay-chip) {
+:where(.ui-button--preset-overlay-chip),
+:where(.ui-button--preset-overlay-chip-soft),
+:where(.ui-button--preset-overlay-chip-tab),
+:where(.ui-button--preset-overlay-chip-action),
+:where(.ui-button--preset-overlay-primary),
+:where(.ui-button--preset-overlay-danger) {
   --btn-height: auto;
   --btn-min-height: 24px;
-  --btn-padding: 4px 5px;
   --btn-radius: 8px;
   --btn-border-style: dashed;
+  --btn-font-size: 11px;
+}
+
+:where(.ui-button--preset-overlay-chip),
+:where(.ui-button--preset-overlay-chip-soft),
+:where(.ui-button--preset-overlay-chip-tab),
+:where(.ui-button--preset-overlay-chip-action) {
   --btn-border-color: rgba(255, 255, 255, 0.18);
   --btn-bg: transparent;
-  --btn-font-size: 11px;
-  --btn-letter-spacing: 0.1em;
-  --btn-text-transform: uppercase;
   --btn-color: rgba(255, 255, 255, 0.6);
   --btn-hover-border-color: rgba(255, 255, 255, 0.32);
   --btn-hover-color: rgba(255, 255, 255, 0.85);
+}
+
+:where(.ui-button--preset-overlay-chip),
+:where(.ui-button--preset-overlay-chip-tab),
+:where(.ui-button--preset-overlay-chip-action) {
+  --btn-letter-spacing: 0.1em;
+  --btn-text-transform: uppercase;
+}
+
+:where(.ui-button--preset-overlay-chip),
+:where(.ui-button--preset-overlay-chip-soft),
+:where(.ui-button--preset-overlay-danger) {
+  --btn-padding: 4px 5px;
 }
 
 :where(.ui-button--preset-overlay-chip-soft) {
-  --btn-height: auto;
-  --btn-min-height: 24px;
-  --btn-padding: 4px 5px;
-  --btn-radius: 8px;
-  --btn-border-style: dashed;
-  --btn-border-color: rgba(255, 255, 255, 0.18);
-  --btn-bg: transparent;
-  --btn-font-size: 11px;
   --btn-letter-spacing: 0.05em;
   --btn-text-transform: none;
-  --btn-color: rgba(255, 255, 255, 0.6);
-  --btn-hover-border-color: rgba(255, 255, 255, 0.32);
-  --btn-hover-color: rgba(255, 255, 255, 0.85);
 }
 
 :where(.ui-button--preset-overlay-chip-tab) {
-  --btn-height: auto;
-  --btn-min-height: 24px;
   --btn-padding: 3px 6px;
-  --btn-radius: 8px;
-  --btn-border-style: dashed;
-  --btn-border-color: rgba(255, 255, 255, 0.18);
-  --btn-bg: transparent;
-  --btn-font-size: 11px;
-  --btn-letter-spacing: 0.1em;
-  --btn-text-transform: uppercase;
-  --btn-color: rgba(255, 255, 255, 0.6);
-  --btn-hover-border-color: rgba(255, 255, 255, 0.32);
-  --btn-hover-color: rgba(255, 255, 255, 0.85);
 }
 
 :where(.ui-button--preset-overlay-chip-action) {
-  --btn-height: auto;
-  --btn-min-height: 24px;
   --btn-padding: 3px 8px;
-  --btn-radius: 8px;
-  --btn-border-style: dashed;
-  --btn-border-color: rgba(255, 255, 255, 0.18);
-  --btn-bg: transparent;
-  --btn-font-size: 11px;
-  --btn-letter-spacing: 0.1em;
-  --btn-text-transform: uppercase;
-  --btn-color: rgba(255, 255, 255, 0.6);
-  --btn-hover-border-color: rgba(255, 255, 255, 0.32);
-  --btn-hover-color: rgba(255, 255, 255, 0.85);
 }
 
 :where(.ui-button--preset-overlay-primary) {
-  --btn-height: auto;
-  --btn-min-height: 24px;
   --btn-padding: 4px 10px;
-  --btn-radius: 8px;
-  --btn-border-style: dashed;
   --btn-border-color: rgba(59, 130, 246, 0.6);
   --btn-bg: rgba(59, 130, 246, 0.12);
-  --btn-font-size: 11px;
   --btn-letter-spacing: 0.05em;
   --btn-color: #93c5fd;
   --btn-hover-border-color: rgba(59, 130, 246, 0.85);
@@ -78,14 +59,8 @@
 }
 
 :where(.ui-button--preset-overlay-danger) {
-  --btn-height: auto;
-  --btn-min-height: 24px;
-  --btn-padding: 4px 5px;
-  --btn-radius: 8px;
-  --btn-border-style: dashed;
   --btn-border-color: rgba(255, 59, 59, 0.45);
   --btn-bg: rgba(255, 59, 59, 0.08);
-  --btn-font-size: 11px;
   --btn-letter-spacing: 0.05em;
   --btn-color: #ff9a9a;
   --btn-hover-border-color: rgba(255, 59, 59, 0.7);
@@ -279,29 +254,27 @@
   -webkit-app-region: no-drag;
 }
 
-:where(.ui-button--preset-ui-dialog-cancel) {
+:where(.ui-button--preset-ui-dialog-cancel),
+:where(.ui-button--preset-ui-dialog-confirm) {
   --btn-height: auto;
   --btn-min-height: 28px;
   --btn-padding: 5px 12px;
   --btn-border-style: dashed;
-  --btn-border-color: rgba(255, 255, 255, 0.18);
-  --btn-bg: transparent;
   --btn-font-size: 12px;
   --btn-letter-spacing: 0.05em;
+}
+
+:where(.ui-button--preset-ui-dialog-cancel) {
+  --btn-border-color: rgba(255, 255, 255, 0.18);
+  --btn-bg: transparent;
   --btn-color: rgba(255, 255, 255, 0.6);
   --btn-hover-border-color: rgba(255, 255, 255, 0.32);
   --btn-hover-color: rgba(255, 255, 255, 0.85);
 }
 
 :where(.ui-button--preset-ui-dialog-confirm) {
-  --btn-height: auto;
-  --btn-min-height: 28px;
-  --btn-padding: 5px 12px;
-  --btn-border-style: dashed;
   --btn-border-color: rgba(255, 59, 59, 0.45);
   --btn-bg: rgba(255, 59, 59, 0.08);
-  --btn-font-size: 12px;
-  --btn-letter-spacing: 0.05em;
   --btn-color: #ff9a9a;
   --btn-hover-border-color: rgba(255, 59, 59, 0.7);
   --btn-hover-color: #ffd2d2;
@@ -325,4 +298,3 @@
 .ui-button--preset-toolkit-view-toggle .material-symbols-outlined {
   font-size: 14px;
 }
-
