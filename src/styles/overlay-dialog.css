@@ -74,6 +74,8 @@
   font-size: 12px;
   line-height: 1.45;
   color: rgba(255, 255, 255, 0.86);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .overlay-dialog-message--pre {

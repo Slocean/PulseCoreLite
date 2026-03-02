@@ -14,6 +14,31 @@ export type UpdateInfo = {
   date?: string;
 };
 
+function isMojibakeLine(line: string): boolean {
+  const latinMatches = line.match(/[\u00C0-\u00FF]/g);
+  const cjkMatches = line.match(/[\u4E00-\u9FFF]/g);
+  const latinCount = latinMatches ? latinMatches.length : 0;
+  const cjkCount = cjkMatches ? cjkMatches.length : 0;
+  return latinCount >= 3 && cjkCount === 0;
+}
+
+function decodeMojibake(line: string): string {
+  try {
+    const bytes = Uint8Array.from([...line].map(char => char.charCodeAt(0)));
+    const decoded = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+    return decoded || line;
+  } catch {
+    return line;
+  }
+}
+
+function normalizeUpdateNotes(notes: string): string {
+  if (!notes) return notes;
+  const lines = notes.split(/\r?\n/);
+  const normalized = lines.map(line => (isMojibakeLine(line) ? decodeMojibake(line) : line));
+  return normalized.join("\n");
+}
+
 function toMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -47,7 +72,7 @@ export function useUpdater() {
         updateAvailable.value = true;
         updateInfo.value = {
           version: update.version,
-          notes: update.body ?? "",
+          notes: normalizeUpdateNotes(update.body ?? ""),
           date: update.date
         };
       } else {

@@ -629,10 +629,18 @@ async function toggleToolkitWindow(forceOpen?: boolean) {
 }
 
 async function handleVersionClick() {
+  if (updateAvailable.value) {
+    updateDialogOpen.value = true;
+    return;
+  }
   await triggerUpdateCheck();
 }
 
 async function handleCheckUpdate() {
+  if (updateAvailable.value) {
+    updateDialogOpen.value = true;
+    return;
+  }
   await triggerUpdateCheck();
 }
 
