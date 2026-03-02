@@ -55,7 +55,7 @@
     <div v-if="sections.schedule" class="toolkit-reminder-block">
       <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatDaily') }}</div>
       <div class="toolkit-reminder-inline">
-        <input v-model="dailyInputTime" type="time" />
+        <UiTimeInput v-model="dailyInputTime" />
         <UiButton native-type="button" preset="overlay-primary" @click="addDailyTime">
           {{ t('toolkit.reminderAddTime') }}
         </UiButton>
@@ -76,7 +76,7 @@
       <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatWeekly') }}</div>
       <div class="toolkit-reminder-inline toolkit-reminder-inline--weekly">
         <UiSelect v-model="weeklyInputDays" :options="weekdayOptions" multiple />
-        <input v-model="weeklyInputTime" type="time" class="toolkit-reminder-time-input" />
+        <UiTimeInput v-model="weeklyInputTime" class="toolkit-reminder-time-input" />
         <UiButton native-type="button" preset="overlay-primary" @click="addWeeklySlot">
           {{ t('toolkit.reminderAddSlot') }}
         </UiButton>
@@ -97,7 +97,7 @@
       <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatMonthly') }}</div>
       <div class="toolkit-reminder-inline toolkit-reminder-inline--triple">
         <input v-model.number="monthlyInputDay" type="number" min="1" max="31" />
-        <input v-model="monthlyInputTime" type="time" />
+        <UiTimeInput v-model="monthlyInputTime" />
         <UiButton native-type="button" preset="overlay-primary" @click="addMonthlySlot">
           {{ t('toolkit.reminderAddSlot') }}
         </UiButton>
@@ -245,6 +245,7 @@ import { useI18n } from 'vue-i18n';
 import UiButton from '@/components/ui/Button';
 import UiSelect from '@/components/ui/Select';
 import UiSwitch from '@/components/ui/Switch';
+import UiTimeInput from '@/components/ui/TimeInput';
 import OverlayDialog from '../OverlayDialog.vue';
 import { useTaskReminders } from '../../composables/useTaskReminders';
 import type { MonthlyReminderSlot, SmtpEmailConfig, TaskReminder, WeeklyReminderSlot } from '../../types';
