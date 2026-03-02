@@ -69,6 +69,7 @@ import { useTopmostGuard } from '../composables/useTopmostGuard';
 import { useTaskbarWindow } from '../composables/useTaskbarWindow';
 import { api, inTauri } from '../services/tauri';
 import { useAppStore } from '../stores/app';
+import { formatNetworkLatencyMs, formatNetworkSpeedMbps } from '../utils/networkFormatter';
 import TaskbarContextMenu from '../components/TaskbarContextMenu.vue';
 
 const store = useAppStore();
@@ -114,12 +115,14 @@ const memUsage = computed(() => {
   return `${used.toFixed(1)}/${total.toFixed(0)}GB`;
 });
 
-const down = computed(() => (snapshot.value.network.download_bytes_per_sec / 1024 / 1024).toFixed(1));
-const up = computed(() => (snapshot.value.network.upload_bytes_per_sec / 1024 / 1024).toFixed(1));
-const latency = computed(() => {
-  const value = snapshot.value.network.latency_ms;
-  return value == null ? null : `${value.toFixed(0)}ms`;
-});
+const down = computed(() => formatNetworkSpeedMbps(snapshot.value.network.download_bytes_per_sec, 1));
+const up = computed(() => formatNetworkSpeedMbps(snapshot.value.network.upload_bytes_per_sec, 1));
+const latency = computed(() =>
+  formatNetworkLatencyMs(snapshot.value.network.latency_ms, {
+    naLabel: t('common.na'),
+    compact: true
+  })
+);
 
 const appCpuPct = computed(() => {
   const value = snapshot.value.appCpuUsagePct ?? 0;
@@ -252,7 +255,7 @@ const segments = computed<SizedSegment[]>(() => {
   }
 
   if (prefs.showLatency) {
-    parts.push(createSegment({ id: 'lat', label: 'L', value: latency.value ?? t('common.na') }));
+    parts.push(createSegment({ id: 'lat', label: 'L', value: latency.value }));
   }
 
   return parts;

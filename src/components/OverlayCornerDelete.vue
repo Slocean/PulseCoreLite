@@ -1,16 +1,13 @@
 <template>
-  <UiButton
-    native-type="button"
+  <CornerAction
     preset="overlay-corner-danger"
-    :aria-label="ariaLabel"
-    @click.stop="emit('click')"
-    @contextmenu.prevent.stop>
-    <span class="material-symbols-outlined">close</span>
-  </UiButton>
+    icon="close"
+    :ariaLabel="ariaLabel"
+    @click="emit('click')" />
 </template>
 
 <script setup lang="ts">
-import UiButton from '@/components/ui/Button';
+import CornerAction from '@/components/overlay/CornerAction.vue';
 
 defineProps<{
   ariaLabel: string;

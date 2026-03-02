@@ -1,3 +1,5 @@
+import { formatNetworkLatencyMs } from '../utils/networkFormatter';
+
 export function formatGpuFreq(value: number) {
   return `${(value / 1000).toFixed(2)} GHz`;
 }
@@ -79,7 +81,7 @@ export function formatMemoryUsageLabel(usedMb: number, totalMb: number) {
 }
 
 export function formatLatencyLabel(value: number | null | undefined, t: (key: string) => string) {
-  return value == null ? t('common.na') : `${value.toFixed(0)} ms`;
+  return formatNetworkLatencyMs(value, { naLabel: t('common.na') });
 }
 
 export function formatDiskUsageLabel(input: { used_gb: number; total_gb: number }) {

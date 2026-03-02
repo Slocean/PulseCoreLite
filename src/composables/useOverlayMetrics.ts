@@ -12,10 +12,10 @@ import {
   formatDiskUsageLabel,
   formatGpuDetailLabel,
   formatHardwareLabel,
-  formatLatencyLabel,
   formatMemoryUsageLabel,
   resolveDiskHardwareLabel
 } from './overlayMetricsFormatter';
+import { formatNetworkLatencyMs, formatNetworkSpeedMbps } from '../utils/networkFormatter';
 
 export function useOverlayMetrics(prefs: OverlayPrefs) {
   const { t } = useI18n();
@@ -46,9 +46,9 @@ export function useOverlayMetrics(prefs: OverlayPrefs) {
     })
   );
   const memoryUsageLabel = computed(() => formatMemoryUsageLabel(snapshot.value.memory.used_mb, snapshot.value.memory.total_mb));
-  const downloadSpeed = computed(() => (snapshot.value.network.download_bytes_per_sec / 1024 / 1024).toFixed(2));
-  const uploadSpeed = computed(() => (snapshot.value.network.upload_bytes_per_sec / 1024 / 1024).toFixed(2));
-  const latencyLabel = computed(() => formatLatencyLabel(snapshot.value.network.latency_ms, t));
+  const downloadSpeed = computed(() => formatNetworkSpeedMbps(snapshot.value.network.download_bytes_per_sec, 2));
+  const uploadSpeed = computed(() => formatNetworkSpeedMbps(snapshot.value.network.upload_bytes_per_sec, 2));
+  const latencyLabel = computed(() => formatNetworkLatencyMs(snapshot.value.network.latency_ms, { naLabel: t('common.na') }));
   const cpuHardwareLabel = computed(() => formatHardwareLabel([store.hardwareInfo.cpu_model], t));
   const gpuHardwareLabel = computed(() => formatHardwareLabel([store.hardwareInfo.gpu_model], t));
   const memoryHardwareLabel = computed(() => formatHardwareLabel([store.hardwareInfo.ram_spec], t));
