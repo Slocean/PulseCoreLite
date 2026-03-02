@@ -93,10 +93,9 @@ function readStoredSettings(): Partial<AppSettings> | null {
       hasOwn('memoryTrimSystemEnabled') && typeof parsed.memoryTrimSystemEnabled === 'boolean';
     const hasMemoryTrimTargets =
       hasOwn('memoryTrimTargets') && Array.isArray(parsed.memoryTrimTargets);
+    const intervalValue = parsed.memoryTrimIntervalMinutes;
     const hasMemoryTrimIntervalMinutes =
-      hasOwn('memoryTrimIntervalMinutes') &&
-      typeof parsed.memoryTrimIntervalMinutes === 'number' &&
-      Number.isFinite(parsed.memoryTrimIntervalMinutes);
+      hasOwn('memoryTrimIntervalMinutes') && typeof intervalValue === 'number' && Number.isFinite(intervalValue);
     const hasRememberOverlayPosition =
       hasOwn('rememberOverlayPosition') && typeof parsed.rememberOverlayPosition === 'boolean';
     const hasOverlayAlwaysOnTop = hasOwn('overlayAlwaysOnTop') && typeof parsed.overlayAlwaysOnTop === 'boolean';
@@ -136,9 +135,7 @@ function readStoredSettings(): Partial<AppSettings> | null {
         ...(hasMemoryTrimTargets
           ? { memoryTrimTargets: normalizeMemoryTrimTargets(parsed.memoryTrimTargets) }
           : {}),
-        ...(hasMemoryTrimIntervalMinutes
-          ? { memoryTrimIntervalMinutes: Math.round(parsed.memoryTrimIntervalMinutes) }
-          : {}),
+        ...(hasMemoryTrimIntervalMinutes ? { memoryTrimIntervalMinutes: Math.round(intervalValue) } : {}),
         ...(hasRememberOverlayPosition ? { rememberOverlayPosition: parsed.rememberOverlayPosition } : {}),
         ...(hasOverlayAlwaysOnTop ? { overlayAlwaysOnTop: parsed.overlayAlwaysOnTop } : {}),
         ...(hasTaskbarMonitorEnabled ? { taskbarMonitorEnabled: parsed.taskbarMonitorEnabled } : {}),
