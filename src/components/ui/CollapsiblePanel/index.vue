@@ -1,5 +1,5 @@
 <template>
-  <article class="ui-collapsible-panel">
+  <article class="ui-collapsible-panel" :class="{ 'ui-collapsible-panel--framed': props.framed }">
     <template v-if="props.collapsible">
       <div v-if="props.headerMode === 'split'" class="ui-collapsible-panel__header" :class="props.headerClass">
         <UiButton native-type="button" :preset="props.splitTitlePreset" @click="toggleOpen">
@@ -40,6 +40,7 @@ import UiButton from '@/components/ui/Button';
 import type { CollapsiblePanelProps } from './types';
 
 const props = withDefaults(defineProps<CollapsiblePanelProps>(), {
+  framed: false,
   modelValue: true,
   collapsible: true,
   headerMode: 'single',
@@ -80,6 +81,13 @@ function toggleOpen() {
 .ui-collapsible-panel {
   display: grid;
   gap: 6px;
+}
+
+.ui-collapsible-panel--framed {
+  padding: var(--ui-panel-padding, 10px);
+  border-radius: var(--ui-panel-radius, 10px);
+  border: var(--ui-panel-border, 1px solid rgba(255, 255, 255, 0.12));
+  background: var(--ui-panel-bg, rgba(0, 0, 0, 0.24));
 }
 
 .ui-collapsible-panel__header {

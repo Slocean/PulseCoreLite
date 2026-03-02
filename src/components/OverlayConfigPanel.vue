@@ -1,6 +1,13 @@
 <template>
   <div class="overlay-config-wrap">
-    <div class="overlay-config" @mousedown.stop>
+    <UiCollapsiblePanel
+      class="overlay-config"
+      title=""
+      :framed="true"
+      :collapsible="false"
+      content-class="overlay-config-content"
+      title-class="overlay-config-panel-title-hidden"
+      @mousedown.stop>
       <!-- <div class="overlay-config-grid overlay-config-grid--3"> -->
       <UiCheckbox v-model="prefs.showCpu">{{ t('overlay.showCpu') }}</UiCheckbox>
       <UiCheckbox v-model="prefs.showGpu">{{ t('overlay.showGpu') }}</UiCheckbox>
@@ -169,7 +176,7 @@
         </UiButton>
       </div>
       <!-- <div class="overlay-config-version">v{{ appVersion }}</div> -->
-    </div>
+    </UiCollapsiblePanel>
 
     <OverlayDialog
       v-model:open="hotkeyClearDialogOpen"
@@ -189,6 +196,7 @@ import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
 import UiCheckbox from '@/components/ui/Checkbox';
+import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiSwitch from '@/components/ui/Switch';
 import OverlayCornerDelete from './OverlayCornerDelete.vue';
 import OverlayDialog from './OverlayDialog.vue';

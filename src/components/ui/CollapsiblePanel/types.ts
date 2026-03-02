@@ -4,6 +4,7 @@ export type CollapsiblePanelHeaderMode = 'single' | 'split';
 
 export interface CollapsiblePanelProps {
   title: string;
+  framed?: boolean;
   modelValue?: boolean;
   collapsible?: boolean;
   headerMode?: CollapsiblePanelHeaderMode;
