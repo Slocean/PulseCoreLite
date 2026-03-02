@@ -140,10 +140,24 @@ function updatePanelPosition() {
   const trigger = triggerRef.value;
   if (!trigger) return;
   const rect = trigger.getBoundingClientRect();
+  const panelWidth = panelRef.value?.offsetWidth ?? Math.max(156, Math.round(rect.width));
+  const panelHeight = panelRef.value?.offsetHeight ?? 220;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  let left = Math.round(rect.left);
+  let top = Math.round(rect.bottom + 4);
+
+  if (left + panelWidth > viewportWidth - 8) {
+    left = Math.max(8, viewportWidth - panelWidth - 8);
+  }
+  if (top + panelHeight > viewportHeight - 8) {
+    top = Math.max(8, Math.round(rect.top - panelHeight - 4));
+  }
+
   panelStyle.value = {
     position: 'fixed',
-    left: `${Math.round(rect.left)}px`,
-    top: `${Math.round(rect.bottom + 4)}px`,
+    left: `${left}px`,
+    top: `${top}px`,
     minWidth: `${Math.max(156, Math.round(rect.width))}px`
   };
 }
