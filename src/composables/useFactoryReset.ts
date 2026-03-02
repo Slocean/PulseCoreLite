@@ -1,5 +1,6 @@
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted } from 'vue';
 
+import { useConfirmDialog } from '../services/dialogService';
 import { matchesHotkeyEvent } from '../utils/hotkey';
 
 interface AppStoreLike {
@@ -17,29 +18,16 @@ interface UseFactoryResetOptions {
 
 export function useFactoryReset(options: UseFactoryResetOptions) {
   const { store, t } = options;
-
-  const factoryResetDialogOpen = ref(false);
-  let factoryResetDialogResolver: ((value: boolean) => void) | null = null;
+  const { open: factoryResetDialogOpen, request: requestFactoryResetConfirm, resolve } =
+    useConfirmDialog('factory-reset');
 
   function resolveFactoryReset(value: boolean) {
-    factoryResetDialogOpen.value = false;
-    const resolve = factoryResetDialogResolver;
-    factoryResetDialogResolver = null;
-    resolve?.(value);
+    resolve(value);
   }
 
   async function confirmFactoryReset(): Promise<boolean> {
     if (typeof window === 'undefined') return false;
-
-    if (factoryResetDialogResolver) {
-      factoryResetDialogResolver(false);
-      factoryResetDialogResolver = null;
-    }
-
-    factoryResetDialogOpen.value = true;
-    return await new Promise<boolean>(resolve => {
-      factoryResetDialogResolver = resolve;
-    });
+    return await requestFactoryResetConfirm();
   }
 
   async function handleFactoryReset() {

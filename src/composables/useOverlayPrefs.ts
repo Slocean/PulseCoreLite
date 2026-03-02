@@ -1,7 +1,7 @@
 import { onMounted, onUnmounted, reactive, watch } from 'vue';
 
-import { inTauri, listenEvent } from '../services/tauri';
 import { storageKeys, storageRepository } from '../services/storageRepository';
+import { emitSyncEvent, listenSyncEvent } from '../services/syncBus';
 import { normalizeImageRef } from '../utils/imageStore';
 
 const PREFS_SYNC_EVENT = 'pulsecorelite://prefs-sync';
@@ -88,37 +88,7 @@ function sanitizePrefs(input: Partial<OverlayPrefs> | null | undefined): Overlay
 }
 
 async function broadcastPrefsSync() {
-  if (!inTauri()) {
-    return;
-  }
-  try {
-    const [{ getCurrentWindow }, { WebviewWindow }] = await Promise.all([
-      import('@tauri-apps/api/window'),
-      import('@tauri-apps/api/webviewWindow')
-    ]);
-    const win = getCurrentWindow();
-    const currentLabel = win.label;
-    const targets: string[] = [];
-    if (currentLabel !== 'main') targets.push('main');
-    if (currentLabel !== 'toolkit') targets.push('toolkit');
-    if (targets.length === 0) return;
-    const existingTargets = await Promise.all(
-      targets.map(async target => {
-        try {
-          return (await WebviewWindow.getByLabel(target)) ? target : null;
-        } catch {
-          return null;
-        }
-      })
-    );
-    await Promise.allSettled(
-      existingTargets
-        .filter((target): target is string => target != null)
-        .map(target => win.emitTo(target, PREFS_SYNC_EVENT, null))
-    );
-  } catch {
-    // ignore
-  }
+  await emitSyncEvent<null>(PREFS_SYNC_EVENT, null, { labels: ['main', 'toolkit'] });
 }
 
 function loadPrefsFromLocalStorage(): OverlayPrefs {
@@ -167,46 +137,43 @@ export function useOverlayPrefs() {
       await storageRepository.setJson(storageKeys.overlayPrefs, snapshot);
     }
 
-    // Listen for prefs sync events from other windows
-    if (inTauri()) {
-      unlistenSync = await listenEvent<null>(PREFS_SYNC_EVENT, async () => {
-        if (isSyncing) return;
-        isSyncing = true;
-        try {
-          const synced = await storageRepository.getJson<Partial<OverlayPrefs>>(storageKeys.overlayPrefs);
-          if (synced && typeof synced === 'object') {
-            const sanitized = sanitizePrefs(synced);
-            // Only update values that are different to avoid unnecessary reactivity triggers
-            const keys: (keyof OverlayPrefs)[] = [
-              'backgroundOpacity',
-              'backgroundImage',
-              'backgroundBlurPx',
-              'backgroundEffect',
-              'backgroundGlassStrength',
-              'showCpu',
-              'showGpu',
-              'showMemory',
-              'showDisk',
-              'showDown',
-              'showUp',
-              'showLatency',
-              'showValues',
-              'showPercent',
-              'showHardwareInfo',
-              'showWarning',
-              'showDragHandle'
-            ];
-            for (const key of keys) {
-              if (prefs[key] !== sanitized[key]) {
-                (prefs as any)[key] = sanitized[key];
-              }
+    unlistenSync = await listenSyncEvent<null>(PREFS_SYNC_EVENT, async () => {
+      if (isSyncing) return;
+      isSyncing = true;
+      try {
+        const synced = await storageRepository.getJson<Partial<OverlayPrefs>>(storageKeys.overlayPrefs);
+        if (synced && typeof synced === 'object') {
+          const sanitized = sanitizePrefs(synced);
+          // Only update values that are different to avoid unnecessary reactivity triggers
+          const keys: (keyof OverlayPrefs)[] = [
+            'backgroundOpacity',
+            'backgroundImage',
+            'backgroundBlurPx',
+            'backgroundEffect',
+            'backgroundGlassStrength',
+            'showCpu',
+            'showGpu',
+            'showMemory',
+            'showDisk',
+            'showDown',
+            'showUp',
+            'showLatency',
+            'showValues',
+            'showPercent',
+            'showHardwareInfo',
+            'showWarning',
+            'showDragHandle'
+          ];
+          for (const key of keys) {
+            if (prefs[key] !== sanitized[key]) {
+              (prefs as any)[key] = sanitized[key];
             }
           }
-        } finally {
-          isSyncing = false;
         }
-      });
-    }
+      } finally {
+        isSyncing = false;
+      }
+    });
 
     readyToPersist = true;
   });

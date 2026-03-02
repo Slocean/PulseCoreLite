@@ -1,9 +1,10 @@
-import { onMounted, onUnmounted, ref } from 'vue';
+import { computed, ref } from 'vue';
+
+import { useInterval } from './useInterval';
 
 export function useOverlayUptime() {
   const startedAt = Date.now();
-  const uptimeLabel = ref('00:00:00');
-  let uptimeTimer: number | undefined;
+  const elapsedMs = ref(0);
 
   const formatUptime = (ms: number) => {
     const totalSeconds = Math.floor(ms / 1000);
@@ -19,20 +20,12 @@ export function useOverlayUptime() {
     return `${hours}:${minutes}:${seconds}`;
   };
 
-  const updateUptime = () => {
-    uptimeLabel.value = formatUptime(Date.now() - startedAt);
+  const updateElapsed = () => {
+    elapsedMs.value = Date.now() - startedAt;
   };
 
-  onMounted(() => {
-    updateUptime();
-    uptimeTimer = window.setInterval(updateUptime, 1000);
-  });
-
-  onUnmounted(() => {
-    if (uptimeTimer) {
-      window.clearInterval(uptimeTimer);
-    }
-  });
+  useInterval(updateElapsed, 1000, { immediate: true });
+  const uptimeLabel = computed(() => formatUptime(elapsedMs.value));
 
   return { uptimeLabel };
 }
