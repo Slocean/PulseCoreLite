@@ -193,7 +193,7 @@
   <p v-if="statusMessage" class="toolkit-status">{{ statusMessage }}</p>
   <p v-if="errorMessage" class="toolkit-error">{{ errorMessage }}</p>
 
-  <OverlayDialog
+  <UiDialog
     v-model:open="smtpDialogOpen"
     :title="t('toolkit.reminderSmtpConfig')"
     :confirm-text="t('overlay.dialogConfirm')"
@@ -242,7 +242,7 @@
         </div>
       </div>
     </template>
-  </OverlayDialog>
+  </UiDialog>
 </template>
 
 <script setup lang="ts">
@@ -254,7 +254,7 @@ import UiSelect from '@/components/ui/Select';
 import UiSwitch from '@/components/ui/Switch';
 import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiTimeInput from '@/components/ui/TimeInput';
-import OverlayDialog from '../OverlayDialog.vue';
+import UiDialog from '@/components/ui/Dialog';
 import { useTaskReminders } from '../../composables/useTaskReminders';
 import type { MonthlyReminderSlot, SmtpEmailConfig, TaskReminder, WeeklyReminderSlot } from '../../types';
 
@@ -556,3 +556,4 @@ async function triggerNow(item: TaskReminder) {
   }
 }
 </script>
+

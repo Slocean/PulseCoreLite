@@ -73,7 +73,7 @@
     <OverlayStatusBar :uptimeLabel="uptimeLabel" />
   </section>
 
-  <OverlayDialog
+  <UiDialog
     v-model:open="factoryResetDialogOpen"
     :title="t('overlay.factoryReset')"
     :message="t('overlay.factoryResetConfirm')"
@@ -83,7 +83,7 @@
     @confirm="resolveFactoryReset(true)"
     @cancel="resolveFactoryReset(false)" />
 
-  <OverlayDialog
+  <UiDialog
     v-model:open="backgroundDialogOpen"
     :title="t('overlay.backgroundImageTitle')"
     :confirm-text="t('overlay.backgroundApply')"
@@ -179,9 +179,9 @@
         {{ t('overlay.backgroundApplySave') }}
       </UiButton>
     </template>
-  </OverlayDialog>
+  </UiDialog>
 
-  <OverlayDialog
+  <UiDialog
     v-model:open="themeNameDialogOpen"
     :title="t('overlay.themeSaveTitle')"
     :confirm-text="t('overlay.dialogConfirm')"
@@ -213,9 +213,9 @@
         {{ t('overlay.dialogConfirm') }}
       </UiButton>
     </template>
-  </OverlayDialog>
+  </UiDialog>
 
-  <OverlayDialog
+  <UiDialog
     v-model:open="themeDeleteDialogOpen"
     :title="t('overlay.themeDeleteTitle')"
     :message="t('overlay.themeDeleteMessage')"
@@ -225,7 +225,7 @@
     @confirm="confirmDeleteTheme"
     @cancel="closeDeleteThemeDialog" />
 
-  <OverlayDialog
+  <UiDialog
     v-model:open="themeEditDialogOpen"
     :title="t('overlay.themeEditTitle')"
     :confirm-text="t('overlay.dialogConfirm')"
@@ -289,9 +289,9 @@
         {{ t('overlay.dialogConfirm') }}
       </UiButton>
     </template>
-  </OverlayDialog>
+  </UiDialog>
 
-  <OverlayDialog
+  <UiDialog
     v-model:open="importConfirmDialogOpen"
     :title="t('overlay.importConfigTitle')"
     :message="t('overlay.importConfigConfirm')"
@@ -301,7 +301,7 @@
     @confirm="confirmImportConfig"
     @cancel="cancelImportConfig" />
 
-  <OverlayDialog
+  <UiDialog
     v-model:open="importErrorDialogOpen"
     :title="t('overlay.importConfigTitle')"
     :message="importErrorMessage"
@@ -312,7 +312,7 @@
     @confirm="closeImportErrorDialog"
     @cancel="closeImportErrorDialog" />
 
-  <OverlayDialog
+  <UiDialog
     v-model:open="exportSuccessDialogOpen"
     :title="t('overlay.exportConfig')"
     :message="t('overlay.exportConfigSuccess')"
@@ -323,7 +323,7 @@
     @confirm="closeExportSuccessDialog"
     @cancel="closeExportSuccessDialog" />
 
-  <OverlayDialog
+  <UiDialog
     v-model:open="updateDialogOpen"
     :title="t('overlay.updateTitle')"
     :close-label="t('overlay.dialogClose')"
@@ -363,7 +363,7 @@
         {{ installingUpdate ? t('overlay.updateInstalling') : t('overlay.updateNow') }}
       </UiButton>
     </template>
-  </OverlayDialog>
+  </UiDialog>
 </template>
 
 <script setup lang="ts">
@@ -373,7 +373,7 @@ import { useI18n } from 'vue-i18n';
 import UiButton from '@/components/ui/Button';
 import UiToast from '@/components/ui/Toast';
 import OverlayConfigPanel from '../components/OverlayConfigPanel.vue';
-import OverlayDialog from '../components/OverlayDialog.vue';
+import UiDialog from '@/components/ui/Dialog';
 import OverlayHeader from '../components/OverlayHeader.vue';
 import OverlayMetricsPanel from '../components/OverlayMetricsPanel.vue';
 import OverlayNetworkFooter from '../components/OverlayNetworkFooter.vue';
@@ -713,4 +713,5 @@ async function setupReminderTriggerListener() {
   });
 }
 </script>
+
 

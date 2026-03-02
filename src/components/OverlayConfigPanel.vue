@@ -178,7 +178,7 @@
       <!-- <div class="overlay-config-version">v{{ appVersion }}</div> -->
     </UiCollapsiblePanel>
 
-    <OverlayDialog
+    <UiDialog
       v-model:open="hotkeyClearDialogOpen"
       :title="t('overlay.hotkeyClearTitle')"
       :message="t('overlay.hotkeyClearMessage')"
@@ -199,7 +199,7 @@ import UiCheckbox from '@/components/ui/Checkbox';
 import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiSwitch from '@/components/ui/Switch';
 import OverlayCornerDelete from './OverlayCornerDelete.vue';
-import OverlayDialog from './OverlayDialog.vue';
+import UiDialog from '@/components/ui/Dialog';
 import type { OverlayBackgroundEffect, OverlayPrefs } from '../composables/useOverlayPrefs';
 import { DEFAULT_BACKGROUND_EFFECT, DEFAULT_BACKGROUND_GLASS_STRENGTH } from '../composables/useOverlayPrefs';
 import { hotkeyFromEvent, hotkeyToString } from '../utils/hotkey';
@@ -378,4 +378,5 @@ onUnmounted(() => {
   stopHotkeyCapture();
 });
 </script>
+
 
