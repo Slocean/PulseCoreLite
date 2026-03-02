@@ -58,7 +58,7 @@ import type { ReminderScreenEventPayload } from '../types';
 import { acquireImageUrl, normalizeImageRef, releaseImageRef } from '../utils/imageStore';
 
 type ToolkitTab = 'shutdown' | 'cleanup' | 'hardware' | 'reminder';
-const TOOLKIT_WIDTH = 280;
+const TOOLKIT_WIDTH = 300;
 
 const { t } = useI18n();
 const { prefs } = useOverlayPrefs();

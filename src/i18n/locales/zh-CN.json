@@ -129,7 +129,7 @@
     "cleanupEnable": "清理自身应用",
     "cleanupInterval": "频率",
     "cleanupTargets": "应用到",
-    "cleanupTargetsTitle": "选择清理范围",
+    "cleanupTargetsTitle": "清理范围",
     "cleanupTargetsNone": "未选择",
     "cleanupTargetsEmpty": "请先开启要清理的项目。",
     "cleanupSystem": "清理系统垃圾",

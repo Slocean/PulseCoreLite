@@ -9,6 +9,7 @@ export interface SelectOption {
 export interface SelectProps {
   modelValue: SelectValue | SelectValue[] | null;
   options: SelectOption[];
+  width?: number | string;
   placeholder?: string;
   disabled?: boolean;
   multiple?: boolean;

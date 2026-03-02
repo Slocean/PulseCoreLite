@@ -1,5 +1,10 @@
 <template>
-  <div ref="rootRef" class="ui-select" :class="containerClass">
+  <div
+    ref="rootRef"
+    class="ui-select"
+    :class="[containerClass, attrClass]"
+    :style="[containerStyle, attrStyle]"
+    v-bind="forwardedAttrs">
     <button
       ref="triggerRef"
       type="button"
@@ -57,8 +62,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useAttrs, watch } from 'vue';
 import type { SelectOption, SelectProps, SelectValue } from './types';
+
+defineOptions({
+  inheritAttrs: false
+});
 
 const props = withDefaults(defineProps<SelectProps>(), {
   placeholder: 'Select',
@@ -72,6 +81,7 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: SelectValue | SelectValue[] | null): void;
   (e: 'change', value: SelectValue | SelectValue[] | null): void;
 }>();
+const attrs = useAttrs();
 
 const rootRef = ref<HTMLElement | null>(null);
 const triggerRef = ref<HTMLElement | null>(null);
@@ -114,6 +124,23 @@ const containerClass = computed(() => ({
   'ui-select--multiple': props.multiple,
   'ui-select--selected': hasSelection.value
 }));
+
+const containerStyle = computed(() => {
+  const width = props.width;
+  if (width == null || width === '') {
+    return null;
+  }
+  const value = typeof width === 'number' ? `${width}px` : String(width);
+  return { width: value };
+});
+
+const attrClass = computed(() => attrs.class as string | string[] | Record<string, boolean> | undefined);
+const attrStyle = computed(() => attrs.style as string | Record<string, string> | Array<string | Record<string, string>> | undefined);
+
+const forwardedAttrs = computed(() => {
+  const { class: _class, style: _style, ...rest } = attrs;
+  return rest;
+});
 
 function isSelected(value: SelectValue): boolean {
   return selectedSet.value.has(value);

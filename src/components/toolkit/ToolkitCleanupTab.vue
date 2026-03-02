@@ -14,9 +14,7 @@
       </div>
     </div>
     <div class="overlay-config-range">
-      <UiButton native-type="button" preset="toolkit-link" @click="openTargetsDialog">
-        {{ t('toolkit.cleanupInterval') }}
-      </UiButton>
+      <span class="overlay-config-label">{{ t('toolkit.cleanupInterval') }}</span>
       <span class="overlay-config-value">{{ memoryTrimIntervalMinutes }}{{ t('toolkit.minutes') }}</span>
       <input
         type="range"
@@ -24,6 +22,16 @@
         max="30"
         step="1"
         v-model.number="memoryTrimIntervalMinutes" />
+    </div>
+    <div class="overlay-config-row">
+      <span class="overlay-config-label">{{ t('toolkit.cleanupTargetsTitle') }}</span>
+      <UiSelect
+        v-model="cleanupTargetsModel"
+        :width="200"
+        :options="enabledTargetOptions"
+        :placeholder="t('toolkit.cleanupTargetsTitle')"
+        :empty-text="t('toolkit.cleanupTargetsEmpty')"
+        multiple />
     </div>
   </div>
 
@@ -103,30 +111,6 @@
       </span>
     </div>
   </div>
-
-  <OverlayDialog
-    v-model:open="targetsDialogOpen"
-    :title="t('toolkit.cleanupTargetsTitle')"
-    :confirm-text="t('overlay.dialogConfirm')"
-    :cancel-text="t('overlay.dialogCancel')"
-    :close-label="t('overlay.dialogClose')"
-    :autofocus-confirm="false"
-    @confirm="confirmTargets"
-    @cancel="cancelTargets">
-    <template #body>
-      <div v-if="enabledTargetOptions.length" class="overlay-config overlay-config--single-column">
-        <UiSelect
-          v-model="tempTargets"
-          :options="enabledTargetOptions"
-          :placeholder="t('toolkit.cleanupTargetsTitle')"
-          :empty-text="t('toolkit.cleanupTargetsEmpty')"
-          multiple />
-      </div>
-      <div v-else class="overlay-dialog-message overlay-dialog-message--muted">
-        {{ t('toolkit.cleanupTargetsEmpty') }}
-      </div>
-    </template>
-  </OverlayDialog>
 </template>
 
 <script setup lang="ts">
@@ -137,7 +121,6 @@ import UiButton from '@/components/ui/Button';
 import UiSelect from '@/components/ui/Select';
 import UiSwitch from '@/components/ui/Switch';
 import UiToast from '@/components/ui/Toast';
-import OverlayDialog from '../OverlayDialog.vue';
 import { useAppStore } from '../../stores/app';
 import { api } from '../../services/tauri';
 
@@ -147,9 +130,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const store = useAppStore();
-
-const targetsDialogOpen = ref(false);
-const tempTargets = ref<Array<'app' | 'system'>>([]);
 
 const memoryTrimEnabled = computed({
   get: () => store.settings.memoryTrimEnabled,
@@ -195,30 +175,21 @@ const enabledTargetOptions = computed(() => {
   return options;
 });
 
+const cleanupTargetsModel = computed<Array<'app' | 'system'>>({
+  get: () => {
+    const enabledIds = new Set(enabledTargetOptions.value.map(item => item.value));
+    return memoryTrimTargets.value.filter(target => enabledIds.has(target));
+  },
+  set: value => {
+    const enabledIds = new Set(enabledTargetOptions.value.map(item => item.value));
+    const next = value.filter(target => enabledIds.has(target));
+    void store.setMemoryTrimTargets(next);
+  }
+});
+
 watch([memoryTrimEnabled, memoryTrimSystemEnabled, memoryTrimIntervalMinutes, memoryTrimTargets], () => {
   nextTick(() => emit('contentChange'));
 });
-
-watch(
-  () => targetsDialogOpen.value,
-  open => {
-    if (!open) return;
-    const enabledIds = enabledTargetOptions.value.map(item => item.value);
-    tempTargets.value = memoryTrimTargets.value.filter(target => enabledIds.includes(target));
-  }
-);
-
-function openTargetsDialog() {
-  targetsDialogOpen.value = true;
-}
-
-async function confirmTargets() {
-  await store.setMemoryTrimTargets(tempTargets.value);
-}
-
-function cancelTargets() {
-  // no-op, temp selections are discarded
-}
 
 const profileStatusText = computed(() => {
   if (!profileStatus.value.active) {
