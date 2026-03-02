@@ -316,5 +316,13 @@
     "reminderScreenLockedHint": "该提醒已锁定，请在倒计时后关闭。",
     "reminderScreenCloseReady": "关闭提醒",
     "reminderScreenCloseWait": "{seconds} 秒后可关闭"
+  },
+  "ui": {
+    "timeInput": {
+      "triggerAria": "选择时间",
+      "panelAria": "时间选择器",
+      "hour": "小时",
+      "minute": "分钟"
+    }
   }
 }

@@ -316,5 +316,13 @@
     "reminderScreenLockedHint": "This reminder is locked by policy.",
     "reminderScreenCloseReady": "Close Reminder",
     "reminderScreenCloseWait": "Close in {seconds}s"
+  },
+  "ui": {
+    "timeInput": {
+      "triggerAria": "Select time",
+      "panelAria": "Time picker",
+      "hour": "Hour",
+      "minute": "Minute"
+    }
   }
 }
