@@ -13,32 +13,37 @@
       :step="props.step"
       :value="props.modelValue"
       :disabled="props.disabled"
+      :aria-label="props.ariaLabel ?? props.label"
       @input="handleInput" />
   </div>
 </template>
 
 <script setup lang="ts">
-import type { RangeProps } from './types'
+import type { RangeProps } from './types';
 
 const props = withDefaults(defineProps<RangeProps>(), {
   min: 0,
   max: 100,
   step: 1,
   disabled: false
-})
+});
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: number): void
-}>()
+  (e: 'update:modelValue', value: number): void;
+}>();
 
 function handleInput(event: Event) {
-  const target = event.target as HTMLInputElement
-  emit('update:modelValue', Number(target.value))
+  const target = event.target as HTMLInputElement;
+  emit('update:modelValue', Number(target.value));
 }
 </script>
 
 <style scoped>
 .ui-range {
+  --ui-range-label-color: rgba(255, 255, 255, 0.86);
+  --ui-range-value-color: rgba(255, 255, 255, 0.6);
+  --ui-range-width: 130px;
+  --ui-range-accent-color: var(--cyan);
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -46,12 +51,12 @@ function handleInput(event: Event) {
 
 .ui-range-label {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.86);
+  color: var(--ui-range-label-color);
 }
 
 .ui-range-value {
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--ui-range-value-color);
   line-height: 1;
   margin-left: 8px;
   margin-right: 12px;
@@ -62,8 +67,8 @@ function handleInput(event: Event) {
 }
 
 .ui-range input[type='range'] {
-  width: 130px;
-  accent-color: var(--cyan);
+  width: var(--ui-range-width);
+  accent-color: var(--ui-range-accent-color);
   margin: 0;
   display: block;
   cursor: pointer;

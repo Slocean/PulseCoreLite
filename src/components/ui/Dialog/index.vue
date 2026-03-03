@@ -19,7 +19,7 @@
             </slot>
           </div>
           <div v-if="props.showActions" class="overlay-dialog-actions">
-            <slot name="actions">
+            <slot name="actions" :confirm="handleConfirm" :cancel="handleCancel">
               <UiButton native-type="button" preset="overlay-chip" @click="handleCancel">
                 {{ props.cancelText }}
               </UiButton>
@@ -42,7 +42,7 @@
 import { onUnmounted, watch } from 'vue';
 
 import UiButton from '@/components/ui/Button';
-import type { DialogProps } from './types';
+import type { DialogProps, DialogSlots } from './types';
 
 const props = withDefaults(defineProps<DialogProps>(), {
   closeLabel: 'Close',
@@ -59,6 +59,8 @@ const emit = defineEmits<{
   (e: 'confirm'): void;
   (e: 'cancel'): void;
 }>();
+
+defineSlots<DialogSlots>();
 
 function handleConfirm() {
   open.value = false;

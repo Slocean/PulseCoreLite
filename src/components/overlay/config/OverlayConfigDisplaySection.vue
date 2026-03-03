@@ -13,15 +13,15 @@
   <UiCheckbox v-model="prefs.showDragHandle">{{ t('overlay.showDragHandle') }}</UiCheckbox>
 
   <div class="overlay-config-range">
-    <span class="overlay-config-label">{{ t('overlay.refreshRate') }}</span>
-    <span class="overlay-config-value">{{ refreshRate }}ms</span>
-    <input
-      type="range"
-      min="10"
-      max="2000"
-      step="10"
-      v-model.number="refreshRate"
-      @change="emit('refreshRateChange')" />
+    <UiRange
+      v-model="refreshRate"
+      :label="t('overlay.refreshRate')"
+      unit="ms"
+      :min="10"
+      :max="2000"
+      :step="10"
+      :aria-label="t('overlay.refreshRate')"
+      @update:model-value="emit('refreshRateChange')" />
   </div>
 </template>
 
@@ -29,6 +29,7 @@
 import { useI18n } from 'vue-i18n';
 
 import UiCheckbox from '@/components/ui/Checkbox';
+import UiRange from '@/components/ui/Range';
 import type { OverlayPrefs } from '@/composables/useOverlayPrefs';
 
 defineProps<{

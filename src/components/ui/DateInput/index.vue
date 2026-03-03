@@ -101,6 +101,7 @@
 import { computed, nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useFloatingPanel } from '../shared/useFloatingPanel';
+import { formatIsoDate, normalizeIsoDate, parseIsoDate, startOfMonth, useDateGrid } from './useDateGrid';
 import type { DateInputProps } from './types';
 
 const props = withDefaults(defineProps<DateInputProps>(), {
@@ -134,41 +135,34 @@ const displayValue = computed(() => {
   return new Intl.DateTimeFormat(locale.value, { year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
 });
 
-const monthTitle = computed(() =>
-  new Intl.DateTimeFormat(locale.value, { year: 'numeric', month: 'long' }).format(viewMonth.value)
-);
-
-const weekdayLabels = computed(() => {
-  const base = new Date(Date.UTC(2024, 0, 7));
-  return Array.from({ length: 7 }, (_, index) => {
-    const day = new Date(base.getTime() + ((weekStart.value + index) % 7) * 24 * 60 * 60 * 1000);
-    return new Intl.DateTimeFormat(locale.value, { weekday: 'short' }).format(day);
-  });
-});
-
-const calendarCells = computed(() => {
-  const first = startOfMonth(viewMonth.value);
-  const startOffset = getWeekIndex(first);
-  const startDate = new Date(first);
-  startDate.setDate(first.getDate() - startOffset);
-
-  return Array.from({ length: 42 }, (_, index) => {
-    const date = new Date(startDate);
-    date.setDate(startDate.getDate() + index);
-    const iso = formatIsoDate(date);
-    return {
-      iso,
-      day: date.getDate(),
-      isCurrentMonth: date.getMonth() === first.getMonth() && date.getFullYear() === first.getFullYear(),
-      selectable: isSelectableIso(iso)
-    };
-  });
-});
-
 const containerClass = computed(() => ({
   'ui-date-input--open': isOpen.value,
   'ui-date-input--disabled': props.disabled
 }));
+
+const {
+  monthTitle,
+  weekdayLabels,
+  calendarCells,
+  shiftMonth,
+  shiftYear,
+  syncViewMonthToValue,
+  getInitialFocusIso,
+  onGridKeyDown,
+  ensureSelectableIso,
+  isSelectableIso
+} = useDateGrid({
+  locale,
+  weekStart,
+  viewMonth,
+  focusedIso,
+  normalizedValue,
+  normalizedMin,
+  normalizedMax,
+  todayIso,
+  onSelectDate: iso => selectDate(iso),
+  focusCell: iso => focusCell(iso)
+});
 
 const { closePanel, toggleOpen: toggleFloatingPanel } = useFloatingPanel({
   rootRef,
@@ -193,22 +187,6 @@ function toggleOpen() {
   toggleFloatingPanel();
 }
 
-function shiftMonth(offset: number) {
-  const next = new Date(viewMonth.value);
-  next.setMonth(next.getMonth() + offset, 1);
-  viewMonth.value = startOfMonth(next);
-  syncFocusMonth();
-  void nextTick(() => focusCell(focusedIso.value));
-}
-
-function shiftYear(offset: number) {
-  const next = new Date(viewMonth.value);
-  next.setFullYear(next.getFullYear() + offset, next.getMonth(), 1);
-  viewMonth.value = startOfMonth(next);
-  syncFocusMonth();
-  void nextTick(() => focusCell(focusedIso.value));
-}
-
 function selectDate(iso: string) {
   if (!isSelectableIso(iso)) return;
   emit('update:modelValue', iso);
@@ -223,44 +201,6 @@ function clearDate() {
 function pickToday() {
   emit('update:modelValue', todayIso.value);
   closePanel();
-}
-
-function syncViewMonthToValue() {
-  const valueDate = parseIsoDate(normalizedValue.value);
-  if (valueDate) {
-    viewMonth.value = startOfMonth(valueDate);
-  }
-}
-
-function getInitialFocusIso(): string {
-  return ensureSelectableIso(normalizedValue.value || todayIso.value, 1);
-}
-
-function onGridKeyDown(event: KeyboardEvent) {
-  if (!isOpen.value) return;
-  const current = parseIsoDate(focusedIso.value || getInitialFocusIso());
-  if (!current) return;
-
-  let nextDate: Date | null = null;
-  if (event.key === 'ArrowLeft') nextDate = addDays(current, -1);
-  if (event.key === 'ArrowRight') nextDate = addDays(current, 1);
-  if (event.key === 'ArrowUp') nextDate = addDays(current, -7);
-  if (event.key === 'ArrowDown') nextDate = addDays(current, 7);
-  if (event.key === 'Home') nextDate = addDays(current, -getWeekIndex(current));
-  if (event.key === 'End') nextDate = addDays(current, 6 - getWeekIndex(current));
-  if (event.key === 'PageUp') nextDate = event.shiftKey ? addYears(current, -1) : addMonths(current, -1);
-  if (event.key === 'PageDown') nextDate = event.shiftKey ? addYears(current, 1) : addMonths(current, 1);
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault();
-    selectDate(ensureSelectableIso(focusedIso.value || formatIsoDate(current), 1));
-    return;
-  }
-  if (!nextDate) return;
-
-  event.preventDefault();
-  focusedIso.value = ensureSelectableIso(formatIsoDate(nextDate), event.key === 'ArrowLeft' ? -1 : 1);
-  viewMonth.value = startOfMonth(nextDate);
-  void nextTick(() => focusCell(focusedIso.value));
 }
 
 watch(
@@ -279,115 +219,9 @@ watch([normalizedMin, normalizedMax], () => {
   void nextTick(() => focusCell(focusedIso.value));
 });
 
-function getWeekIndex(date: Date): number {
-  return (date.getDay() - weekStart.value + 7) % 7;
-}
-
-function startOfMonth(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function normalizeIsoDate(value: string): string {
-  if (!value) return '';
-  const parsed = parseIsoDate(value);
-  if (!parsed) return '';
-  return formatIsoDate(parsed);
-}
-
-function parseIsoDate(value: string): Date | null {
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) return null;
-  const year = Number.parseInt(match[1], 10);
-  const month = Number.parseInt(match[2], 10);
-  const day = Number.parseInt(match[3], 10);
-  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null;
-  const date = new Date(year, month - 1, day);
-  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
-  return date;
-}
-
-function formatIsoDate(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(
-    2,
-    '0'
-  )}`;
-}
-
-function addDays(date: Date, days: number): Date {
-  const next = new Date(date);
-  next.setDate(date.getDate() + days);
-  return next;
-}
-
-function addMonths(date: Date, months: number): Date {
-  const next = new Date(date.getFullYear(), date.getMonth() + months, 1);
-  const day = Math.min(date.getDate(), daysInMonth(next));
-  next.setDate(day);
-  return next;
-}
-
-function addYears(date: Date, years: number): Date {
-  return addMonths(date, years * 12);
-}
-
-function daysInMonth(date: Date): number {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-}
-
-function syncFocusMonth() {
-  const currentFocused = parseIsoDate(focusedIso.value);
-  if (!currentFocused) {
-    focusedIso.value = ensureSelectableIso(formatIsoDate(viewMonth.value), 1);
-    return;
-  }
-  focusedIso.value = ensureSelectableIso(
-    formatIsoDate(
-      new Date(
-        viewMonth.value.getFullYear(),
-        viewMonth.value.getMonth(),
-        Math.min(currentFocused.getDate(), daysInMonth(viewMonth.value))
-      )
-    ),
-    1
-  );
-}
-
 function focusCell(iso: string) {
   const cell = panelRef.value?.querySelector<HTMLButtonElement>(`button[data-iso="${iso}"]`);
   cell?.focus();
-}
-
-function isSelectableIso(iso: string): boolean {
-  if (!iso) return false;
-  if (normalizedMin.value && iso < normalizedMin.value) return false;
-  if (normalizedMax.value && iso > normalizedMax.value) return false;
-  return true;
-}
-
-function ensureSelectableIso(iso: string, preferredStep: number): string {
-  if (isSelectableIso(iso)) return iso;
-  const source = parseIsoDate(iso) ?? new Date();
-  let forward = new Date(source);
-  let backward = new Date(source);
-
-  for (let index = 0; index < 370; index += 1) {
-    if (preferredStep >= 0) {
-      forward = addDays(forward, 1);
-      const forwardIso = formatIsoDate(forward);
-      if (isSelectableIso(forwardIso)) return forwardIso;
-      backward = addDays(backward, -1);
-      const backwardIso = formatIsoDate(backward);
-      if (isSelectableIso(backwardIso)) return backwardIso;
-    } else {
-      backward = addDays(backward, -1);
-      const backwardIso = formatIsoDate(backward);
-      if (isSelectableIso(backwardIso)) return backwardIso;
-      forward = addDays(forward, 1);
-      const forwardIso = formatIsoDate(forward);
-      if (isSelectableIso(forwardIso)) return forwardIso;
-    }
-  }
-  return iso;
 }
 </script>
 
