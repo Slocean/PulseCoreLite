@@ -74,22 +74,22 @@
   </section>
 
   <OverlayThemeDialogs
-    v-model:background-dialog-open="backgroundDialogOpen"
-    v-model:theme-name-dialog-open="themeNameDialogOpen"
-    v-model:theme-delete-dialog-open="themeDeleteDialogOpen"
-    v-model:theme-edit-dialog-open="themeEditDialogOpen"
-    v-model:theme-edit-effect="themeEditEffect"
-    v-model:theme-edit-blur-px="themeEditBlurPx"
-    v-model:theme-edit-glass-strength="themeEditGlassStrength"
-    v-model:theme-name-input="themeNameInput"
-    v-model:background-effect="backgroundEffect"
-    v-model:background-blur-px="backgroundBlurPx"
-    v-model:background-glass-strength="backgroundGlassStrength"
+    v-model:backgroundDialogOpen="backgroundDialogOpen"
+    v-model:themeNameDialogOpen="themeNameDialogOpen"
+    v-model:themeDeleteDialogOpen="themeDeleteDialogOpen"
+    v-model:themeEditDialogOpen="themeEditDialogOpen"
+    v-model:themeEditEffect="themeEditEffect"
+    v-model:themeEditBlurPx="themeEditBlurPx"
+    v-model:themeEditGlassStrength="themeEditGlassStrength"
+    v-model:themeNameInput="themeNameInput"
+    v-model:backgroundEffect="backgroundEffect"
+    v-model:backgroundBlurPx="backgroundBlurPx"
+    v-model:backgroundGlassStrength="backgroundGlassStrength"
     :t="t"
     :background-image-source="backgroundImageSource"
     :background-file-name="backgroundFileName"
-    :background-file-input="backgroundFileInput"
-    :crop-canvas="cropCanvas"
+    :set-background-file-input="setBackgroundFileInput"
+    :set-crop-canvas="setCropCanvas"
     :is-dragging="isDragging"
     :can-apply-background="canApplyBackground"
     :can-save-theme="canSaveTheme"
@@ -114,11 +114,11 @@
     :close-edit-theme-dialog="closeEditThemeDialog" />
 
   <OverlaySystemDialogs
-    v-model:factory-reset-dialog-open="factoryResetDialogOpen"
-    v-model:import-confirm-dialog-open="importConfirmDialogOpen"
-    v-model:import-error-dialog-open="importErrorDialogOpen"
-    v-model:export-success-dialog-open="exportSuccessDialogOpen"
-    v-model:update-dialog-open="updateDialogOpen"
+    v-model:factoryResetDialogOpen="factoryResetDialogOpen"
+    v-model:importConfirmDialogOpen="importConfirmDialogOpen"
+    v-model:importErrorDialogOpen="importErrorDialogOpen"
+    v-model:exportSuccessDialogOpen="exportSuccessDialogOpen"
+    v-model:updateDialogOpen="updateDialogOpen"
     :t="t"
     :app-version="appVersion"
     :update-version="updateInfo?.version"
@@ -241,6 +241,14 @@ const {
   confirmSaveTheme,
   closeThemeNameDialog
 } = useThemeManager({ prefs, overlayRef });
+
+const setBackgroundFileInput = (el: HTMLInputElement | null) => {
+  backgroundFileInput.value = el;
+};
+
+const setCropCanvas = (el: HTMLCanvasElement | null) => {
+  cropCanvas.value = el;
+};
 
 const { factoryResetDialogOpen, resolveFactoryReset, handleFactoryReset, handleUninstall } = useFactoryReset({
   store,

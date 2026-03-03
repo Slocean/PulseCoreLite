@@ -17,7 +17,7 @@
           @dragleave.prevent="handleDragLeave"
           @drop.prevent="handleDrop">
           <input
-            :ref="backgroundFileInput"
+            :ref="setBackgroundFileInput"
             class="overlay-upload-input"
             type="file"
             accept="image/*"
@@ -28,7 +28,7 @@
         </div>
         <div v-if="backgroundImageSource" class="overlay-crop">
           <div class="overlay-crop-title">{{ t('overlay.backgroundCrop') }}</div>
-          <canvas :ref="cropCanvas" class="overlay-crop-canvas" @mousedown="handleCropMouseDown"></canvas>
+          <canvas :ref="setCropCanvas" class="overlay-crop-canvas" @mousedown="handleCropMouseDown"></canvas>
           <div class="overlay-crop-tip">{{ t('overlay.backgroundCropHint') }}</div>
         </div>
         <div v-if="backgroundImageSource" class="overlay-config-language overlay-config-effect">
@@ -164,8 +164,8 @@ defineProps<{
   t: (key: string, params?: Record<string, unknown>) => string;
   backgroundImageSource: string | null;
   backgroundFileName: string | null;
-  backgroundFileInput: Ref<HTMLInputElement | null>;
-  cropCanvas: Ref<HTMLCanvasElement | null>;
+  setBackgroundFileInput: (el: HTMLInputElement | null) => void;
+  setCropCanvas: (el: HTMLCanvasElement | null) => void;
   isDragging: boolean;
   canApplyBackground: boolean;
   canSaveTheme: boolean;
@@ -201,4 +201,5 @@ const themeNameInput = defineModel<string>('themeNameInput');
 const backgroundEffect = defineModel<ThemeEffect>('backgroundEffect');
 const backgroundBlurPx = defineModel<number>('backgroundBlurPx');
 const backgroundGlassStrength = defineModel<number>('backgroundGlassStrength');
+
 </script>

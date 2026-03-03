@@ -94,26 +94,43 @@ function selectDefaultTheme() {
 }
 
 function selectTheme(theme: OverlayTheme) {
+  const nextBlur = clampBlurPx(theme.blurPx);
+  const nextEffect = normalizeBackgroundEffect(theme.effect);
+  const nextGlass = clampGlassStrength(theme.glassStrength);
   if (
     props.prefs.backgroundImage === theme.image &&
-    props.prefs.backgroundBlurPx === theme.blurPx &&
-    props.prefs.backgroundEffect === theme.effect &&
-    props.prefs.backgroundGlassStrength === theme.glassStrength
+    clampBlurPx(props.prefs.backgroundBlurPx) === nextBlur &&
+    normalizeBackgroundEffect(props.prefs.backgroundEffect) === nextEffect &&
+    clampGlassStrength(props.prefs.backgroundGlassStrength) === nextGlass
   ) {
     return;
   }
   props.prefs.backgroundImage = theme.image;
-  props.prefs.backgroundBlurPx = theme.blurPx;
-  props.prefs.backgroundEffect = theme.effect;
-  props.prefs.backgroundGlassStrength = theme.glassStrength;
+  props.prefs.backgroundBlurPx = nextBlur;
+  props.prefs.backgroundEffect = nextEffect;
+  props.prefs.backgroundGlassStrength = nextGlass;
 }
 
 function isThemeActive(theme: OverlayTheme) {
   return (
     props.prefs.backgroundImage === theme.image &&
-    props.prefs.backgroundBlurPx === theme.blurPx &&
-    props.prefs.backgroundEffect === theme.effect &&
-    props.prefs.backgroundGlassStrength === theme.glassStrength
+    clampBlurPx(props.prefs.backgroundBlurPx) === clampBlurPx(theme.blurPx) &&
+    normalizeBackgroundEffect(props.prefs.backgroundEffect) === normalizeBackgroundEffect(theme.effect) &&
+    clampGlassStrength(props.prefs.backgroundGlassStrength) === clampGlassStrength(theme.glassStrength)
   );
+}
+
+function normalizeBackgroundEffect(value: unknown) {
+  return value === 'liquidGlass' ? 'liquidGlass' : DEFAULT_BACKGROUND_EFFECT;
+}
+
+function clampBlurPx(value: unknown) {
+  const parsed = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+  return Math.max(0, Math.min(24, Math.round(parsed)));
+}
+
+function clampGlassStrength(value: unknown) {
+  const parsed = typeof value === 'number' && Number.isFinite(value) ? value : DEFAULT_BACKGROUND_GLASS_STRENGTH;
+  return Math.max(0, Math.min(100, Math.round(parsed)));
 }
 </script>
