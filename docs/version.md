@@ -1,3 +1,18 @@
+## v1.7.6
+
+- 优化全屏提醒窗口创建逻辑：优先当前显示器并延迟关闭旧窗口，避免闪烁与重复关闭
+- 全屏提醒窗口展示升级：改为不透明+全屏模式，背景统一深色并修复“屏幕站不满”问题
+- 提醒屏消息存储与关闭信号完善：新增 reminder-screen/reminder-close 存储键并在关闭时清理
+- 提醒定位调试增强：记录显示器与窗口位置到本地日志便于排查多屏问题
+- 时间选择器体验改进：新增“现在”快捷按钮并优化浮层高度，完善中英文文案
+- 发布流程修复：release workflow 获取 version.md 路径修正，版本升级至 1.7.6
+- Improve fullscreen reminder window creation: prioritize current monitor and delay closing existing windows to reduce flicker
+- Fullscreen reminder display upgrades: switch to opaque fullscreen windows, unify dark background, and fix screen coverage issues
+- Reminder payload storage & close signaling: add reminder-screen/reminder-close keys and clean up on close
+- Add reminder positioning debug logs to local storage for multi-monitor diagnostics
+- Time input UX: add a "Now" shortcut, adjust panel height, and update CN/EN copy
+- Release pipeline fix: correct the version.md path in workflow and bump to 1.7.6
+
 ## v1.7.5
 
 - 前端架构重构：抽离窗口管理、存储仓储与页面职责，提升可维护性与模块边界清晰度
