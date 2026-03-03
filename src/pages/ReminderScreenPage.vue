@@ -25,7 +25,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import ReminderContentRenderer from '../components/reminder/ReminderContentRenderer.vue';
-import { buildReminderCloseSignalKey, readReminderScreenPayload } from '../composables/useTaskReminders';
+import { buildReminderCloseSignalKey, buildReminderScreenStorageKey, readReminderScreenPayload } from '../composables/useTaskReminders';
 import { storageRepository } from '../services/storageRepository';
 import { api, inTauri } from '../services/tauri';
 import {
@@ -143,6 +143,14 @@ async function closeReminderWindows() {
 
 async function closeCurrentWindowBySignal() {
   allowSystemClose = true;
+  if (token.value) {
+    try {
+      storageRepository.removeSync(buildReminderCloseSignalKey(token.value));
+      storageRepository.removeSync(buildReminderScreenStorageKey(token.value));
+    } catch {
+      // ignore
+    }
+  }
   await closeCurrentWindow();
 }
 </script>
