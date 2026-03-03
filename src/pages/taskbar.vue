@@ -179,7 +179,7 @@ const segments = computed<SizedSegment[]>(() => {
     parts.push(
       createSegment({
         id: 'cpu',
-        label: 'CPU',
+        label: t('overlay.taskbarCpuLabel'),
         value: cpuPct.value,
         extra: extras.length > 0 ? extras.join(' ') : undefined,
         valueClass: usageClass(snapshot.value.cpu.usage_pct, 'cyan')
@@ -194,7 +194,7 @@ const segments = computed<SizedSegment[]>(() => {
     parts.push(
       createSegment({
         id: 'gpu',
-        label: 'GPU',
+        label: t('overlay.taskbarGpuLabel'),
         value,
         extra: extras.length > 0 ? extras.join(' ') : undefined,
         valueClass: usageClass(snapshot.value.gpu.usage_pct ?? 0, 'pink')
@@ -206,7 +206,7 @@ const segments = computed<SizedSegment[]>(() => {
     parts.push(
       createSegment({
         id: 'ram',
-        label: 'RAM',
+        label: t('overlay.taskbarMemoryLabel'),
         value: memPct.value
       })
     );
@@ -216,7 +216,7 @@ const segments = computed<SizedSegment[]>(() => {
     parts.push(
       createSegment({
         id: 'app',
-        label: 'APP',
+        label: t('overlay.taskbarAppLabel'),
         value: appCpuPct.value,
         extra: appMem.value ?? undefined,
         valueClass: 'taskbar-glow-cyan'
@@ -231,7 +231,7 @@ const segments = computed<SizedSegment[]>(() => {
         label: t('overlay.down'),
         labelIcon: 'arrow_downward',
         value: down.value,
-        extra: 'MB/s'
+        extra: t('overlay.taskbarThroughputUnit')
       })
     );
   }
@@ -243,13 +243,13 @@ const segments = computed<SizedSegment[]>(() => {
         label: t('overlay.up'),
         labelIcon: 'arrow_upward',
         value: up.value,
-        extra: 'MB/s'
+        extra: t('overlay.taskbarThroughputUnit')
       })
     );
   }
 
   if (prefs.showLatency) {
-    parts.push(createSegment({ id: 'lat', label: 'L', value: latency.value }));
+    parts.push(createSegment({ id: 'lat', label: t('overlay.taskbarLatencyLabel'), value: latency.value }));
   }
 
   return parts;
