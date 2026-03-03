@@ -151,15 +151,14 @@ async function closeCurrentWindowBySignal() {
 .reminder-screen {
   position: fixed;
   inset: 0;
-  min-height: 100%;
-  width: 100%;
-  height: 100%;
+  min-height: 100vh;
+  width: 100vw;
+  height: 100vh;
   display: grid;
   place-items: center;
   background:
     radial-gradient(140% 120% at 20% 10%, rgba(0, 242, 255, 0.18), rgba(0, 0, 0, 0) 60%),
-    radial-gradient(140% 120% at 80% 90%, rgba(255, 72, 112, 0.2), rgba(0, 0, 0, 0) 62%),
-    #05070b;
+    radial-gradient(140% 120% at 80% 90%, rgba(255, 72, 112, 0.2), rgba(0, 0, 0, 0) 62%), #05070b;
   color: rgba(243, 247, 255, 0.96);
   padding: 0;
 }
