@@ -25,7 +25,7 @@
 
       <OverlayConfigThemeSection
         :prefs="prefs"
-        :themes="themes"
+        :themes="props.themes"
         :get-theme-preview-url="getThemePreviewUrl"
         v-model:background-opacity="backgroundOpacity"
         @open-background-dialog="emit('openBackgroundDialog')"
@@ -34,45 +34,28 @@
 
       <OverlayConfigToolsSection
         :checking-update="checkingUpdate"
-        :recording-hotkey="recordingHotkey"
-        :hotkey-label="hotkeyLabel"
-        :factory-reset-hotkey="factoryResetHotkey"
+        v-model:factory-reset-hotkey="factoryResetHotkey"
         :toolkit-switch-on="toolkitSwitchOn"
         :can-uninstall="canUninstall"
         @check-update="emit('checkUpdate')"
         @export-config="emit('exportConfig')"
         @import-config="emit('importConfig', $event)"
-        @begin-hotkey-capture="beginHotkeyCapture"
-        @request-clear-hotkey="requestClearHotkey"
         @factory-reset="confirmFactoryReset"
         @open-toolkit="handleToolkitToggle"
         @uninstall="emit('uninstall')" />
     </UiCollapsiblePanel>
-
-    <UiDialog
-      v-model:open="hotkeyClearDialogOpen"
-      :title="t('overlay.hotkeyClearTitle')"
-      :message="t('overlay.hotkeyClearMessage')"
-      :confirm-text="t('overlay.dialogConfirm')"
-      :cancel-text="t('overlay.dialogCancel')"
-      :close-label="t('overlay.dialogClose')"
-      @confirm="confirmClearHotkey"
-      @cancel="closeClearHotkeyDialog" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from 'vue';
-import { useI18n } from 'vue-i18n';
+import { computed } from 'vue';
 
 import OverlayConfigDisplaySection from '@/components/overlay/config/OverlayConfigDisplaySection.vue';
 import OverlayConfigSystemSection from '@/components/overlay/config/OverlayConfigSystemSection.vue';
 import OverlayConfigThemeSection from '@/components/overlay/config/OverlayConfigThemeSection.vue';
 import OverlayConfigToolsSection from '@/components/overlay/config/OverlayConfigToolsSection.vue';
 import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
-import UiDialog from '@/components/ui/Dialog';
 import type { OverlayPrefs } from '../composables/useOverlayPrefs';
-import { hotkeyFromEvent, hotkeyToString } from '../utils/hotkey';
 import type { OverlayTheme } from '@/components/overlay/config/types';
 
 const props = defineProps<{
@@ -110,78 +93,13 @@ const emit = defineEmits<{
   (e: 'checkUpdate'): void;
 }>();
 
-const { t } = useI18n();
-
-const recordingHotkey = ref(false);
-let hotkeyUnlisten: (() => void) | null = null;
-const hotkeyClearDialogOpen = ref(false);
-
-const hotkeyLabel = computed(() => factoryResetHotkey.value ?? t('overlay.hotkeyNotSet'));
 const toolkitSwitchOn = computed(() => props.toolkitState !== 'closed');
-const themes = computed(() => props.themes);
-
-function stopHotkeyCapture() {
-  if (hotkeyUnlisten) {
-    hotkeyUnlisten();
-    hotkeyUnlisten = null;
-  }
-  recordingHotkey.value = false;
-}
-
-function beginHotkeyCapture() {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  if (recordingHotkey.value) {
-    stopHotkeyCapture();
-    return;
-  }
-
-  recordingHotkey.value = true;
-  const handler = (event: KeyboardEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    if (!event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey && event.key === 'Escape') {
-      stopHotkeyCapture();
-      return;
-    }
-
-    const hotkey = hotkeyFromEvent(event);
-    if (!hotkey) {
-      return;
-    }
-    factoryResetHotkey.value = hotkeyToString(hotkey);
-    stopHotkeyCapture();
-  };
-
-  window.addEventListener('keydown', handler, true);
-  hotkeyUnlisten = () => window.removeEventListener('keydown', handler, true);
-}
 
 function confirmFactoryReset() {
   emit('factoryReset');
 }
 
-function requestClearHotkey() {
-  if (factoryResetHotkey.value == null) return;
-  hotkeyClearDialogOpen.value = true;
-}
-
-function closeClearHotkeyDialog() {
-  hotkeyClearDialogOpen.value = false;
-}
-
-function confirmClearHotkey() {
-  factoryResetHotkey.value = null;
-  closeClearHotkeyDialog();
-}
-
 function handleToolkitToggle(enabled: boolean) {
   emit('openToolkit', enabled);
 }
-
-onUnmounted(() => {
-  stopHotkeyCapture();
-});
 </script>

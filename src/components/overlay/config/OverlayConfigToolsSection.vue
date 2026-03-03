@@ -32,7 +32,7 @@
       <span class="overlay-config-label">{{ t('overlay.factoryResetHotkey') }}</span>
       <div class="overlay-config-hotkey-controls">
         <div class="overlay-hotkey-chip">
-          <UiButton native-type="button" preset="overlay-chip" @click="emit('beginHotkeyCapture')">
+          <UiButton native-type="button" preset="overlay-chip" @click="beginHotkeyCapture">
             {{ recordingHotkey ? t('overlay.hotkeyRecording') : hotkeyLabel }}
           </UiButton>
           <CornerAction
@@ -40,7 +40,7 @@
             preset="overlay-corner-danger"
             icon="close"
             :ariaLabel="t('overlay.hotkeyClear')"
-            @click="emit('requestClearHotkey')" />
+            @click="requestClearHotkey" />
         </div>
         <UiButton native-type="button" preset="overlay-danger" @click="emit('factoryReset')">
           {{ t('overlay.factoryReset') }}
@@ -58,22 +58,31 @@
       {{ t('overlay.uninstall') }}
     </UiButton>
   </div>
+
+  <UiDialog
+    v-model:open="hotkeyClearDialogOpen"
+    :title="t('overlay.hotkeyClearTitle')"
+    :message="t('overlay.hotkeyClearMessage')"
+    :confirm-text="t('overlay.dialogConfirm')"
+    :cancel-text="t('overlay.dialogCancel')"
+    :close-label="t('overlay.dialogClose')"
+    @confirm="confirmClearHotkey"
+    @cancel="closeClearHotkeyDialog" />
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import CornerAction from '@/components/overlay/CornerAction.vue';
 import UiButton from '@/components/ui/Button';
+import UiDialog from '@/components/ui/Dialog';
 import UiSwitch from '@/components/ui/Switch';
+import { hotkeyFromEvent, hotkeyToString } from '../../../utils/hotkey';
 
 withDefaults(
   defineProps<{
     checkingUpdate: boolean;
-    recordingHotkey: boolean;
-    hotkeyLabel: string;
-    factoryResetHotkey: string | null;
     toolkitSwitchOn: boolean;
     canUninstall: boolean;
     showUninstall?: boolean;
@@ -87,15 +96,20 @@ const emit = defineEmits<{
   (e: 'checkUpdate'): void;
   (e: 'exportConfig'): void;
   (e: 'importConfig', value: File): void;
-  (e: 'beginHotkeyCapture'): void;
-  (e: 'requestClearHotkey'): void;
   (e: 'factoryReset'): void;
   (e: 'openToolkit', value: boolean): void;
   (e: 'uninstall'): void;
 }>();
 
+const factoryResetHotkey = defineModel<string | null>('factoryResetHotkey', { required: true });
+
 const importFileInput = ref<HTMLInputElement | null>(null);
 const { t } = useI18n();
+const recordingHotkey = ref(false);
+let hotkeyUnlisten: (() => void) | null = null;
+const hotkeyClearDialogOpen = ref(false);
+
+const hotkeyLabel = computed(() => factoryResetHotkey.value ?? t('overlay.hotkeyNotSet'));
 
 function triggerImport() {
   importFileInput.value?.click();
@@ -112,4 +126,61 @@ function handleImportChange(event: Event) {
   if (!file) return;
   emit('importConfig', file);
 }
+
+function stopHotkeyCapture() {
+  if (hotkeyUnlisten) {
+    hotkeyUnlisten();
+    hotkeyUnlisten = null;
+  }
+  recordingHotkey.value = false;
+}
+
+function beginHotkeyCapture() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  if (recordingHotkey.value) {
+    stopHotkeyCapture();
+    return;
+  }
+
+  recordingHotkey.value = true;
+  const handler = (event: KeyboardEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey && event.key === 'Escape') {
+      stopHotkeyCapture();
+      return;
+    }
+
+    const hotkey = hotkeyFromEvent(event);
+    if (!hotkey) {
+      return;
+    }
+    factoryResetHotkey.value = hotkeyToString(hotkey);
+    stopHotkeyCapture();
+  };
+
+  window.addEventListener('keydown', handler, true);
+  hotkeyUnlisten = () => window.removeEventListener('keydown', handler, true);
+}
+
+function requestClearHotkey() {
+  if (factoryResetHotkey.value == null) return;
+  hotkeyClearDialogOpen.value = true;
+}
+
+function closeClearHotkeyDialog() {
+  hotkeyClearDialogOpen.value = false;
+}
+
+function confirmClearHotkey() {
+  factoryResetHotkey.value = null;
+  closeClearHotkeyDialog();
+}
+
+onUnmounted(() => {
+  stopHotkeyCapture();
+});
 </script>
