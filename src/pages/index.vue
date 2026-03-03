@@ -73,225 +73,81 @@
     <OverlayStatusBar :uptimeLabel="uptimeLabel" />
   </section>
 
-  <UiDialog
-    v-model:open="factoryResetDialogOpen"
-    :title="t('overlay.factoryReset')"
-    :message="t('overlay.factoryResetConfirm')"
-    :confirm-text="t('overlay.dialogConfirm')"
-    :cancel-text="t('overlay.dialogCancel')"
-    :close-label="t('overlay.dialogClose')"
-    @confirm="resolveFactoryReset(true)"
-    @cancel="resolveFactoryReset(false)" />
-
-  <UiDialog
-    v-model:open="backgroundDialogOpen"
-    :title="t('overlay.backgroundImageTitle')"
-    :confirm-text="t('overlay.backgroundApply')"
-    :cancel-text="t('overlay.dialogCancel')"
-    :close-label="t('overlay.dialogClose')"
-    @confirm="applyBackgroundCrop"
-    @cancel="closeBackgroundDialog">
-    <template #body>
-      <div class="overlay-background-body">
-        <div
-          class="overlay-upload"
-          :class="{ 'overlay-upload--active': isDragging }"
-          @click="triggerFileInput"
-          @dragover.prevent="handleDragOver"
-          @dragleave.prevent="handleDragLeave"
-          @drop.prevent="handleDrop">
-          <input
-            ref="backgroundFileInput"
-            class="overlay-upload-input"
-            type="file"
-            accept="image/*"
-            @change="handleFileChange" />
-          <div class="overlay-upload-title">{{ t('overlay.backgroundUpload') }}</div>
-          <div class="overlay-upload-subtitle">{{ t('overlay.backgroundUploadHint') }}</div>
-          <div v-if="backgroundFileName" class="overlay-upload-name">{{ backgroundFileName }}</div>
-        </div>
-        <div v-if="backgroundImageSource" class="overlay-crop">
-          <div class="overlay-crop-title">{{ t('overlay.backgroundCrop') }}</div>
-          <canvas ref="cropCanvas" class="overlay-crop-canvas" @mousedown="handleCropMouseDown"></canvas>
-          <div class="overlay-crop-tip">{{ t('overlay.backgroundCropHint') }}</div>
-        </div>
-        <div v-if="backgroundImageSource" class="overlay-config-language overlay-config-effect">
-          <span class="overlay-config-label">{{ t('overlay.backgroundEffect') }}</span>
-          <div class="overlay-lang-buttons overlay-config-effect-buttons">
-            <UiButton
-              native-type="button"
-              preset="overlay-chip-soft"
-              :active="backgroundEffect === 'gaussian'"
-              @click="setBackgroundEffect('gaussian')">
-              {{ t('overlay.effectGaussian') }}
-            </UiButton>
-            <UiButton
-              native-type="button"
-              preset="overlay-chip-soft"
-              :active="backgroundEffect === 'liquidGlass'"
-              @click="setBackgroundEffect('liquidGlass')">
-              {{ t('overlay.effectLiquidGlass') }}
-            </UiButton>
-          </div>
-        </div>
-        <div v-if="backgroundImageSource" class="overlay-config-range">
-          <span class="overlay-config-label">
-            {{ backgroundEffect === 'gaussian' ? t('overlay.backgroundBlur') : t('overlay.backgroundGlassBlur') }}
-          </span>
-          <span class="overlay-config-value">{{ backgroundBlurPx }}px</span>
-          <input
-            type="range"
-            min="0"
-            max="24"
-            step="1"
-            v-model.number="backgroundBlurPx"
-            @input="drawCropCanvas" />
-        </div>
-        <div v-if="backgroundImageSource && backgroundEffect === 'liquidGlass'" class="overlay-config-range">
-          <span class="overlay-config-label">{{ t('overlay.backgroundGlassStrength') }}</span>
-          <span class="overlay-config-value">{{ backgroundGlassStrength }}%</span>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="5"
-            v-model.number="backgroundGlassStrength"
-            @input="drawCropCanvas" />
-        </div>
-      </div>
-    </template>
-    <template #actions>
-      <UiButton native-type="button" preset="overlay-chip" @click="closeBackgroundDialog">
-        {{ t('overlay.dialogCancel') }}
-      </UiButton>
-      <UiButton
-        native-type="button"
-        preset="overlay-primary"
-        :disabled="!canApplyBackground"
-        @click="applyBackgroundCrop">
-        {{ t('overlay.backgroundApply') }}
-      </UiButton>
-      <UiButton
-        native-type="button"
-        preset="overlay-primary"
-        :disabled="!canApplyBackground || !canSaveTheme"
-        @click="applyBackgroundAndSave">
-        {{ t('overlay.backgroundApplySave') }}
-      </UiButton>
-    </template>
-  </UiDialog>
-
-  <UiDialog
-    v-model:open="themeNameDialogOpen"
-    :title="t('overlay.themeSaveTitle')"
-    :confirm-text="t('overlay.dialogConfirm')"
-    :cancel-text="t('overlay.dialogCancel')"
-    :close-label="t('overlay.dialogClose')"
-    :autofocus-confirm="false"
-    @confirm="confirmSaveTheme"
-    @cancel="closeThemeNameDialog">
-    <template #body>
-      <div class="overlay-dialog-input-wrap">
-        <div class="overlay-dialog-message">{{ t('overlay.themeNameHint') }}</div>
-        <input
-          v-model="themeNameInput"
-          class="overlay-dialog-input"
-          type="text"
-          :placeholder="t('overlay.themeNamePlaceholder')"
-          maxlength="3" />
-      </div>
-    </template>
-    <template #actions>
-      <UiButton native-type="button" preset="overlay-chip" @click="closeThemeNameDialog">
-        {{ t('overlay.dialogCancel') }}
-      </UiButton>
-      <UiButton
-        native-type="button"
-        preset="overlay-primary"
-        :disabled="!canConfirmThemeName"
-        @click="confirmSaveTheme">
-        {{ t('overlay.dialogConfirm') }}
-      </UiButton>
-    </template>
-  </UiDialog>
-
-  <UiDialog
-    v-model:open="themeDeleteDialogOpen"
-    :title="t('overlay.themeDeleteTitle')"
-    :message="t('overlay.themeDeleteMessage')"
-    :confirm-text="t('overlay.dialogConfirm')"
-    :cancel-text="t('overlay.dialogCancel')"
-    :close-label="t('overlay.dialogClose')"
-    @confirm="confirmDeleteTheme"
-    @cancel="closeDeleteThemeDialog" />
-
-  <OverlayThemeEditDialog
-    v-model:open="themeEditDialogOpen"
-    v-model:effect="themeEditEffect"
-    v-model:blurPx="themeEditBlurPx"
-    v-model:glassStrength="themeEditGlassStrength"
+  <OverlayThemeDialogs
+    v-model:background-dialog-open="backgroundDialogOpen"
+    v-model:theme-name-dialog-open="themeNameDialogOpen"
+    v-model:theme-delete-dialog-open="themeDeleteDialogOpen"
+    v-model:theme-edit-dialog-open="themeEditDialogOpen"
+    v-model:theme-edit-effect="themeEditEffect"
+    v-model:theme-edit-blur-px="themeEditBlurPx"
+    v-model:theme-edit-glass-strength="themeEditGlassStrength"
+    v-model:theme-name-input="themeNameInput"
+    v-model:background-effect="backgroundEffect"
+    v-model:background-blur-px="backgroundBlurPx"
+    v-model:background-glass-strength="backgroundGlassStrength"
+    :t="t"
+    :background-image-source="backgroundImageSource"
+    :background-file-name="backgroundFileName"
+    :background-file-input="backgroundFileInput"
+    :crop-canvas="cropCanvas"
+    :is-dragging="isDragging"
+    :can-apply-background="canApplyBackground"
+    :can-save-theme="canSaveTheme"
+    :can-confirm-theme-name="canConfirmThemeName"
     :can-confirm-theme-edit="canConfirmThemeEdit"
-    @confirm="confirmEditTheme"
-    @cancel="closeEditThemeDialog" />
+    :apply-background-crop="applyBackgroundCrop"
+    :apply-background-and-save="applyBackgroundAndSave"
+    :close-background-dialog="closeBackgroundDialog"
+    :set-background-effect="setBackgroundEffect"
+    :trigger-file-input="triggerFileInput"
+    :handle-drag-over="handleDragOver"
+    :handle-drag-leave="handleDragLeave"
+    :handle-drop="handleDrop"
+    :handle-file-change="handleFileChange"
+    :handle-crop-mouse-down="handleCropMouseDown"
+    :draw-crop-canvas="drawCropCanvas"
+    :confirm-save-theme="confirmSaveTheme"
+    :close-theme-name-dialog="closeThemeNameDialog"
+    :confirm-delete-theme="confirmDeleteTheme"
+    :close-delete-theme-dialog="closeDeleteThemeDialog"
+    :confirm-edit-theme="confirmEditTheme"
+    :close-edit-theme-dialog="closeEditThemeDialog" />
 
-  <UiDialog
-    v-model:open="importConfirmDialogOpen"
-    :title="t('overlay.importConfigTitle')"
-    :message="t('overlay.importConfigConfirm')"
-    :confirm-text="t('overlay.dialogConfirm')"
-    :cancel-text="t('overlay.dialogCancel')"
-    :close-label="t('overlay.dialogClose')"
-    @confirm="confirmImportConfig"
-    @cancel="cancelImportConfig" />
-
-  <UiDialog
-    v-model:open="importErrorDialogOpen"
-    :title="t('overlay.importConfigTitle')"
-    :message="importErrorMessage"
-    :confirm-text="t('overlay.dialogConfirm')"
-    :cancel-text="t('overlay.dialogCancel')"
-    :close-label="t('overlay.dialogClose')"
-    :show-actions="false"
-    @confirm="closeImportErrorDialog"
-    @cancel="closeImportErrorDialog" />
-
-  <UiDialog
-    v-model:open="exportSuccessDialogOpen"
-    :title="t('overlay.exportConfig')"
-    :message="t('overlay.exportConfigSuccess')"
-    :confirm-text="t('overlay.dialogConfirm')"
-    :cancel-text="t('overlay.dialogCancel')"
-    :close-label="t('overlay.dialogClose')"
-    :show-actions="false"
-    @confirm="closeExportSuccessDialog"
-    @cancel="closeExportSuccessDialog" />
-
-  <OverlayUpdateDialog
-    v-model:open="updateDialogOpen"
+  <OverlaySystemDialogs
+    v-model:factory-reset-dialog-open="factoryResetDialogOpen"
+    v-model:import-confirm-dialog-open="importConfirmDialogOpen"
+    v-model:import-error-dialog-open="importErrorDialogOpen"
+    v-model:export-success-dialog-open="exportSuccessDialogOpen"
+    v-model:update-dialog-open="updateDialogOpen"
+    :t="t"
     :app-version="appVersion"
     :update-version="updateInfo?.version"
     :update-notes="updateNotes"
     :update-notes-footer-text="updateNotesFooterText"
     :update-error="updateError"
     :installing-update="installingUpdate"
-    @cancel="closeUpdateDialog"
-    @confirm="handleInstallUpdate" />
+    :import-error-message="importErrorMessage"
+    :resolve-factory-reset="resolveFactoryReset"
+    :confirm-import-config="confirmImportConfig"
+    :cancel-import-config="cancelImportConfig"
+    :close-import-error-dialog="closeImportErrorDialog"
+    :close-export-success-dialog="closeExportSuccessDialog"
+    :close-update-dialog="closeUpdateDialog"
+    :handle-install-update="handleInstallUpdate" />
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import UiButton from '@/components/ui/Button';
 import UiToast from '@/components/ui/Toast';
 import OverlayConfigPanel from '../components/OverlayConfigPanel.vue';
-import OverlayThemeEditDialog from '../components/overlay/OverlayThemeEditDialog.vue';
-import OverlayUpdateDialog from '../components/overlay/OverlayUpdateDialog.vue';
-import UiDialog from '@/components/ui/Dialog';
 import OverlayHeader from '../components/OverlayHeader.vue';
 import OverlayMetricsPanel from '../components/OverlayMetricsPanel.vue';
 import OverlayNetworkFooter from '../components/OverlayNetworkFooter.vue';
 import OverlayStatusBar from '../components/OverlayStatusBar.vue';
+import OverlayThemeDialogs from '../components/overlay/OverlayThemeDialogs.vue';
+import OverlaySystemDialogs from '../components/overlay/OverlaySystemDialogs.vue';
 import { useConfigTransfer } from '../composables/useConfigTransfer';
 import { useFactoryReset } from '../composables/useFactoryReset';
 import { useOverlayMetrics } from '../composables/useOverlayMetrics';
