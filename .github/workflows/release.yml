@@ -70,12 +70,12 @@ jobs:
         run: |
           $version = "${{ steps.version.outputs.version }}"
           $notesPath = Join-Path $env:GITHUB_WORKSPACE "release-notes.txt"
-          if (-not (Test-Path -LiteralPath "version.md" -PathType Leaf)) {
+          if (-not (Test-Path -LiteralPath "docs/version.md" -PathType Leaf)) {
             "" | Set-Content -LiteralPath $notesPath -Encoding utf8
             "notes_path=$notesPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
             exit 0
           }
-          $lines = Get-Content -LiteralPath "version.md"
+          $lines = Get-Content -LiteralPath "docs/version.md"
           $target = "## v$version"
           $start = [Array]::IndexOf($lines, $target)
           if ($start -lt 0) {
