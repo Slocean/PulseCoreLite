@@ -8,10 +8,13 @@ export const storageKeys = {
   settings: `${STORAGE_NAMESPACE}.settings`,
   hardwareInfo: `${STORAGE_NAMESPACE}.hardware_info`,
   overlayPrefs: `${STORAGE_NAMESPACE}.overlay_prefs`,
+  overlayThemes: `${STORAGE_NAMESPACE}.overlay_themes`,
   taskbarPrefs: `${STORAGE_NAMESPACE}.taskbar_prefs`,
   overlayPosition: `${STORAGE_NAMESPACE}.overlay_pos`,
   taskbarPosition: `${STORAGE_NAMESPACE}.taskbar_pos`,
-  refreshRate: `${STORAGE_NAMESPACE}.refresh_rate`
+  refreshRate: `${STORAGE_NAMESPACE}.refresh_rate`,
+  reminderScreenPrefix: `${STORAGE_NAMESPACE}.reminder-screen.`,
+  reminderClosePrefix: `${STORAGE_NAMESPACE}.reminder-close.`
 } as const;
 
 type StorageWriteOptions = {

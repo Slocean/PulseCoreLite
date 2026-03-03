@@ -1,8 +1,17 @@
 ﻿import { inTauri } from '../../services/tauri';
+import { storageKeys, storageRepository } from '../../services/storageRepository';
 import type { ReminderContentType, ReminderScreenEventPayload } from '../../types';
 import { nowIso } from './scheduler';
 
-const REMINDER_SCREEN_KEY_PREFIX = 'pulsecorelite.reminder-screen.';
+const REMINDER_SCREEN_KEY_PREFIX = storageKeys.reminderScreenPrefix;
+
+export function buildReminderScreenStorageKey(token: string) {
+  return `${REMINDER_SCREEN_KEY_PREFIX}${token}`;
+}
+
+export function buildReminderCloseSignalKey(token: string) {
+  return `${storageKeys.reminderClosePrefix}${token}`;
+}
 
 export async function openReminderScreensFromPayload(payload: ReminderScreenEventPayload) {
   if (!inTauri()) {
@@ -32,7 +41,7 @@ export async function openReminderScreensFromPayload(payload: ReminderScreenEven
       contentType: payload.contentType ?? 'text',
       timestamp: nowIso()
     };
-    window.localStorage.setItem(`${REMINDER_SCREEN_KEY_PREFIX}${token}`, JSON.stringify(storagePayload));
+    storageRepository.setJsonSync(buildReminderScreenStorageKey(token), storagePayload);
 
     const monitors = await windowApi.availableMonitors();
     const fallback = await windowApi.primaryMonitor();
@@ -68,17 +77,17 @@ export function readReminderScreenPayload(token: string | null) {
     return null;
   }
   try {
-    const raw = window.localStorage.getItem(`${REMINDER_SCREEN_KEY_PREFIX}${token}`);
-    if (!raw) {
-      return null;
-    }
-    return JSON.parse(raw) as {
+    const raw = storageRepository.getJsonSync<{
       token: string;
       title: string;
       content: string;
       contentType: ReminderContentType;
       timestamp: string;
-    };
+    }>(buildReminderScreenStorageKey(token));
+    if (!raw) {
+      return null;
+    }
+    return raw;
   } catch {
     return null;
   }

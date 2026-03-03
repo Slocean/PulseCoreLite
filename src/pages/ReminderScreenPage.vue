@@ -25,7 +25,8 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import ReminderContentRenderer from '../components/reminder/ReminderContentRenderer.vue';
-import { readReminderScreenPayload } from '../composables/useTaskReminders';
+import { buildReminderCloseSignalKey, readReminderScreenPayload } from '../composables/useTaskReminders';
+import { storageRepository } from '../services/storageRepository';
 import { api, inTauri } from '../services/tauri';
 import type { ReminderContentType } from '../types';
 
@@ -83,7 +84,7 @@ onMounted(async () => {
     if (!token.value || !event.key || !event.newValue) {
       return;
     }
-    const key = `pulsecorelite.reminder-close.${token.value}`;
+    const key = buildReminderCloseSignalKey(token.value);
     if (event.key !== key) {
       return;
     }
@@ -132,7 +133,7 @@ async function closeReminderWindows() {
     }
   }
   try {
-    window.localStorage.setItem(`pulsecorelite.reminder-close.${token.value}`, String(Date.now()));
+    storageRepository.setStringSync(buildReminderCloseSignalKey(token.value), String(Date.now()));
   } catch {
     // ignore
   }

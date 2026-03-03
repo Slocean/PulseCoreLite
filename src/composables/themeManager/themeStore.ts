@@ -1,4 +1,4 @@
-﻿import { kvGet, kvSet } from '../../utils/kv';
+﻿import { storageKeys, storageRepository } from '../../services/storageRepository';
 import type { OverlayBackgroundEffect } from '../useOverlayPrefs';
 
 export type OverlayTheme = {
@@ -10,40 +10,27 @@ export type OverlayTheme = {
   glassStrength: number;
 };
 
-export const THEME_STORAGE_KEY = 'pulsecorelite.overlay_themes';
+export const THEME_STORAGE_KEY = storageKeys.overlayThemes;
 
 export function loadThemesFromLocalStorage(
   sanitizeThemes: (input: unknown) => OverlayTheme[]
 ): OverlayTheme[] {
-  try {
-    const raw = localStorage.getItem(THEME_STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-    return sanitizeThemes(JSON.parse(raw));
-  } catch {
-    return [];
-  }
+  return sanitizeThemes(storageRepository.getJsonSync<unknown>(THEME_STORAGE_KEY) ?? []);
 }
 
 export async function readThemesFromKv(
   sanitizeThemes: (input: unknown) => OverlayTheme[]
 ): Promise<OverlayTheme[]> {
-  const fromKv = await kvGet<unknown>(THEME_STORAGE_KEY);
+  const fromKv = await storageRepository.getJson<unknown>(THEME_STORAGE_KEY, {
+    migrateFromLocal: true
+  });
   return sanitizeThemes(fromKv);
 }
 
 export async function persistThemes(next: OverlayTheme[]) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  await kvSet(THEME_STORAGE_KEY, next);
+  await storageRepository.setJson(THEME_STORAGE_KEY, next);
 }
 
 export function removeLegacyThemesFromLocalStorage() {
-  try {
-    localStorage.removeItem(THEME_STORAGE_KEY);
-  } catch {
-    // ignore
-  }
+  storageRepository.removeSync(THEME_STORAGE_KEY);
 }

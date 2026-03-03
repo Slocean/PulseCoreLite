@@ -10,7 +10,11 @@ import {
   normalizeSmtpConfig,
   nowIso
 } from './taskReminders/scheduler';
-import { openReminderScreensFromPayload, readReminderScreenPayload } from './taskReminders/windowPresenter';
+import {
+  buildReminderCloseSignalKey,
+  openReminderScreensFromPayload,
+  readReminderScreenPayload
+} from './taskReminders/windowPresenter';
 
 const reminders = ref<TaskReminder[]>([]);
 const loaded = ref(false);
@@ -24,7 +28,7 @@ function toStorePayload(): TaskReminderStore {
   };
 }
 
-export { formatWeekday, openReminderScreensFromPayload, readReminderScreenPayload };
+export { buildReminderCloseSignalKey, formatWeekday, openReminderScreensFromPayload, readReminderScreenPayload };
 
 export function useTaskReminders() {
   const reminderCount = computed(() => reminders.value.length);
