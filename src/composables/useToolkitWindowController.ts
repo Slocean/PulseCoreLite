@@ -1,6 +1,12 @@
 import { nextTick, onBeforeUnmount, onMounted, type Ref } from 'vue';
 
 import { inTauri } from '../services/tauri';
+import {
+  closeCurrentWindow,
+  minimizeCurrentWindow,
+  setCurrentWindowLogicalSize,
+  startCurrentWindowDragging
+} from '../services/windowManager';
 
 const TOOLKIT_WIDTH = 300;
 
@@ -12,14 +18,6 @@ export function useToolkitWindowController({ pageRef }: UseToolkitWindowControll
   let resizeObserver: ResizeObserver | undefined;
   let resizeFrame: number | undefined;
   let lastHeight = 0;
-  let windowApiPromise: Promise<typeof import('@tauri-apps/api/window')> | undefined;
-
-  const getWindowApi = async () => {
-    if (!windowApiPromise) {
-      windowApiPromise = import('@tauri-apps/api/window');
-    }
-    return windowApiPromise;
-  };
 
   function scheduleResize() {
     if (resizeFrame != null) return;
@@ -32,8 +30,6 @@ export function useToolkitWindowController({ pageRef }: UseToolkitWindowControll
   async function updateWindowHeight() {
     if (!inTauri()) return;
     try {
-      const { getCurrentWindow } = await getWindowApi();
-      const { LogicalSize } = await import('@tauri-apps/api/dpi');
       const content = pageRef.value ?? (document.querySelector('.toolkit-page') as HTMLElement | null);
       const rect = content ? content.getBoundingClientRect() : document.body.getBoundingClientRect();
       const height = Math.max(1, Math.ceil(rect.height));
@@ -41,7 +37,7 @@ export function useToolkitWindowController({ pageRef }: UseToolkitWindowControll
         return;
       }
       lastHeight = height;
-      await getCurrentWindow().setSize(new LogicalSize(TOOLKIT_WIDTH, height));
+      await setCurrentWindowLogicalSize(TOOLKIT_WIDTH, height);
     } catch {
       // ignore
     }
@@ -49,32 +45,17 @@ export function useToolkitWindowController({ pageRef }: UseToolkitWindowControll
 
   async function closeToolkitWindow() {
     if (!inTauri()) return;
-    try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      await getCurrentWindow().close();
-    } catch {
-      // ignore
-    }
+    await closeCurrentWindow();
   }
 
   async function minimizeToolkitWindow() {
     if (!inTauri()) return;
-    try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      await getCurrentWindow().minimize();
-    } catch {
-      // ignore
-    }
+    await minimizeCurrentWindow();
   }
 
   async function startDragging() {
     if (!inTauri()) return;
-    try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      await getCurrentWindow().startDragging();
-    } catch {
-      // ignore
-    }
+    await startCurrentWindowDragging();
   }
 
   function handleToolkitMouseDown(event: MouseEvent) {

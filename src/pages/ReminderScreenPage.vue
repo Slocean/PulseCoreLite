@@ -28,6 +28,12 @@ import ReminderContentRenderer from '../components/reminder/ReminderContentRende
 import { buildReminderCloseSignalKey, readReminderScreenPayload } from '../composables/useTaskReminders';
 import { storageRepository } from '../services/storageRepository';
 import { api, inTauri } from '../services/tauri';
+import {
+  closeCurrentWindow,
+  focusCurrentWindow,
+  listenCurrentWindowCloseRequested,
+  setCurrentWindowAlwaysOnTop
+} from '../services/windowManager';
 import type { ReminderContentType } from '../types';
 
 const { t } = useI18n();
@@ -66,19 +72,13 @@ onMounted(async () => {
     }
   }
 
-  try {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window');
-    const current = getCurrentWindow();
-    await current.setAlwaysOnTop(true);
-    await current.setFocus();
-    unlistenCloseRequested = await current.onCloseRequested(event => {
-      if (!canClose.value && !allowSystemClose) {
-        event.preventDefault();
-      }
-    });
-  } catch {
-    // ignore
-  }
+  void setCurrentWindowAlwaysOnTop(true);
+  void focusCurrentWindow();
+  unlistenCloseRequested = await listenCurrentWindowCloseRequested(event => {
+    if (!canClose.value && !allowSystemClose) {
+      event.preventDefault();
+    }
+  });
 
   storageSignalHandler = event => {
     if (!token.value || !event.key || !event.newValue) {
@@ -142,12 +142,7 @@ async function closeReminderWindows() {
 
 async function closeCurrentWindowBySignal() {
   allowSystemClose = true;
-  try {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window');
-    await getCurrentWindow().close();
-  } catch {
-    // ignore
-  }
+  await closeCurrentWindow();
 }
 </script>
 

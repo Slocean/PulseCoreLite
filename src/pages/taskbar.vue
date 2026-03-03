@@ -68,6 +68,7 @@ import { useTaskbarPrefs } from '../composables/useTaskbarPrefs';
 import { useTopmostGuard } from '../composables/useTopmostGuard';
 import { useTaskbarWindow } from '../composables/useTaskbarWindow';
 import { api, inTauri } from '../services/tauri';
+import { getPrimaryMonitor, setCurrentWindowAlwaysOnTop } from '../services/windowManager';
 import { useAppStore } from '../stores/app';
 import { formatNetworkLatencyMs, formatNetworkSpeedMbps } from '../utils/networkFormatter';
 import TaskbarContextMenu from '../components/TaskbarContextMenu.vue';
@@ -285,12 +286,7 @@ async function applyTaskbarTopmost(enabled: boolean) {
   try {
     await api.setWindowSystemTopmost('taskbar', enabled);
   } catch {
-    try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      await getCurrentWindow().setAlwaysOnTop(enabled);
-    } catch {
-      // ignore
-    }
+    void setCurrentWindowAlwaysOnTop(enabled);
   }
 }
 
@@ -311,8 +307,7 @@ async function syncTaskbarHeightVar() {
     return;
   }
   try {
-    const [{ primaryMonitor }] = await Promise.all([import('@tauri-apps/api/window')]);
-    const monitor = await primaryMonitor();
+    const monitor = await getPrimaryMonitor();
     const scale = monitor?.scaleFactor ?? 1;
     const info = await api.getTaskbarInfo();
     const taskbarHeightPx = info ? Math.abs(info.bottom - info.top) : 48;
