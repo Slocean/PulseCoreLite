@@ -41,17 +41,38 @@ export async function openReminderScreensFromPayload(payload: ReminderScreenEven
     const fallback = await windowApi.primaryMonitor();
     const targetMonitors = monitors && monitors.length > 0 ? monitors : fallback ? [fallback] : [];
 
+    const logs = JSON.parse(localStorage.getItem('reminder_debug_logs') || '[]');
+    targetMonitors.forEach((m, i) => {
+      logs.push({
+        time: new Date().toISOString(),
+        action: `Monitor ${i}: pos(${m.position.x}, ${m.position.y}) size(${m.size.width}x${m.size.height}) scale(${m.scaleFactor})`
+      });
+    });
+    localStorage.setItem('reminder_debug_logs', JSON.stringify(logs.slice(-20)));
+
     const newWindows = [];
     for (let index = 0; index < targetMonitors.length; index += 1) {
       const monitor = targetMonitors[index];
       const label = `reminder-screen-${token}-${index}`;
+
+      const windowConfig = {
+        x: Math.round(monitor.position.x / monitor.scaleFactor),
+        y: Math.round(monitor.position.y / monitor.scaleFactor),
+        width: Math.round(monitor.size.width / monitor.scaleFactor),
+        height: Math.round(monitor.size.height / monitor.scaleFactor)
+      };
+
+      const logs2 = JSON.parse(localStorage.getItem('reminder_debug_logs') || '[]');
+      logs2.push({
+        time: new Date().toISOString(),
+        action: `Window ${index}: x=${windowConfig.x} y=${windowConfig.y} w=${windowConfig.width} h=${windowConfig.height}`
+      });
+      localStorage.setItem('reminder_debug_logs', JSON.stringify(logs2.slice(-20)));
+
       const win = new WebviewWindow(label, {
         url: `toolkit.html?reminderScreen=1&token=${encodeURIComponent(token)}&idx=${index}`,
         title: `Reminder Screen ${index + 1}`,
-        x: monitor.position.x,
-        y: monitor.position.y,
-        width: monitor.size.width,
-        height: monitor.size.height,
+        ...windowConfig,
         backgroundColor: '#05070b',
         decorations: false,
         resizable: false,
