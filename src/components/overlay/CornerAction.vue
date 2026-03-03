@@ -3,7 +3,7 @@
     native-type="button"
     :preset="preset"
     :aria-label="ariaLabel"
-    @click.stop="emit('click')"
+    @click.stop="emit('click', $event)"
     @contextmenu.prevent.stop>
     <slot>
       <span class="material-symbols-outlined">{{ icon }}</span>
@@ -28,6 +28,6 @@ withDefaults(
 );
 
 const emit = defineEmits<{
-  (e: 'click'): void;
+  (e: 'click', event: MouseEvent): void;
 }>();
 </script>

@@ -1,6 +1,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 import { api } from '../services/tauri';
+import { useToastService } from './useToastService';
 import type { ProfileStatus } from '../types';
 
 type Translate = (key: string, params?: Record<string, unknown>) => string;
@@ -20,10 +21,8 @@ export function useToolkitProfileCapture(options: UseToolkitProfileCaptureOption
     startedAt: null,
     samples: 0
   });
-  const profileToastMessage = ref('');
-  const profileToastVisible = ref(false);
+  const { showToast } = useToastService('toolkit');
   let profileStatusTimer: number | undefined;
-  let profileToastTimer: number | undefined;
 
   const profileStatusText = computed(() => {
     if (!profileStatus.value.active) {
@@ -43,9 +42,6 @@ export function useToolkitProfileCapture(options: UseToolkitProfileCaptureOption
   onUnmounted(() => {
     if (profileStatusTimer) {
       window.clearInterval(profileStatusTimer);
-    }
-    if (profileToastTimer != null) {
-      window.clearTimeout(profileToastTimer);
     }
   });
 
@@ -86,14 +82,7 @@ export function useToolkitProfileCapture(options: UseToolkitProfileCaptureOption
     if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) return;
     try {
       await navigator.clipboard.writeText(text);
-      profileToastMessage.value = t('toolkit.copyPathSuccess');
-      profileToastVisible.value = true;
-      if (profileToastTimer != null) {
-        window.clearTimeout(profileToastTimer);
-      }
-      profileToastTimer = window.setTimeout(() => {
-        profileToastVisible.value = false;
-      }, 2000);
+      showToast(t('toolkit.copyPathSuccess'));
     } catch {
       // ignore clipboard write failures
     }
@@ -115,8 +104,6 @@ export function useToolkitProfileCapture(options: UseToolkitProfileCaptureOption
     profileDurationSec,
     profileStatus,
     profileStatusText,
-    profileToastMessage,
-    profileToastVisible,
     refreshProfileStatus,
     startProfile,
     stopProfile,

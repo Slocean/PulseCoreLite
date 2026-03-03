@@ -1,18 +1,52 @@
 <template>
   <Transition name="toast">
-    <div v-if="props.open && props.message" class="ui-toast-layer" :aria-live="props.ariaLive">
+    <div v-if="effectiveOpen && effectiveMessage" class="ui-toast-layer" :aria-live="props.ariaLive">
       <div class="ui-toast">
-        {{ props.message }}
+        {{ effectiveMessage }}
       </div>
     </div>
   </Transition>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+import type { PropType } from 'vue';
+import { useToastService } from '@/composables/useToastService';
 import type { ToastProps } from "./types";
 
-const props = withDefaults(defineProps<ToastProps>(), {
-  ariaLive: "polite"
+const props = defineProps({
+  open: {
+    type: Boolean,
+    default: undefined
+  },
+  message: {
+    type: String,
+    default: undefined
+  },
+  channel: {
+    type: String,
+    default: undefined
+  },
+  ariaLive: {
+    type: String as PropType<ToastProps['ariaLive']>,
+    default: 'polite'
+  }
+});
+
+const isServiceMode = computed(() => Boolean(props.channel));
+const { toastState } = useToastService(props.channel ?? 'global');
+
+const effectiveOpen = computed(() => {
+  if (isServiceMode.value) {
+    return toastState.value.open;
+  }
+  return Boolean(props.open && props.message);
+});
+const effectiveMessage = computed(() => {
+  if (isServiceMode.value) {
+    return toastState.value.message;
+  }
+  return props.message ?? '';
 });
 </script>
 

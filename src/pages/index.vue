@@ -10,7 +10,7 @@
       class="overlay-bg overlay-bg--liquid-highlight"
       :style="overlayLiquidGlassHighlightStyle"
       aria-hidden="true"></div>
-    <UiToast :open="updateToastVisible" :message="updateToastMessage" />
+    <UiToast channel="overlay" />
     <OverlayHeader
       :show-drag-handle="prefs.showDragHandle"
       :app-version="appVersion"
@@ -429,8 +429,6 @@ const {
   updateDialogOpen,
   updateNotesFooterText,
   updateNotes,
-  updateToastMessage,
-  updateToastVisible,
   handleVersionClick,
   handleCheckUpdate,
   closeUpdateDialog,

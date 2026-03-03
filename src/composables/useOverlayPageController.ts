@@ -1,6 +1,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
 
 import { api, inTauri, listenEvent } from '../services/tauri';
+import { useToastService } from './useToastService';
 import type { ReminderScreenEventPayload } from '../types';
 import type { useAppStore } from '../stores/app';
 
@@ -38,10 +39,8 @@ export function useOverlayPageController({
 }: UseOverlayPageControllerOptions) {
   const showConfig = ref(false);
   const updateDialogOpen = ref(false);
-  const updateToastMessage = ref('');
-  const updateToastVisible = ref(false);
+  const { showToast } = useToastService('overlay');
   const releaseNotesUrl = 'https://github.com/Slocean/PulseCoreLite/releases';
-  let updateToastTimer: number | null = null;
   let unlistenReminderTrigger: (() => void) | null = null;
 
   const closeToTray = computed({
@@ -130,14 +129,7 @@ export function useOverlayPageController({
   }
 
   function showUpdateToast(message: string) {
-    updateToastMessage.value = message;
-    updateToastVisible.value = true;
-    if (updateToastTimer != null) {
-      window.clearTimeout(updateToastTimer);
-    }
-    updateToastTimer = window.setTimeout(() => {
-      updateToastVisible.value = false;
-    }, 2000);
+    showToast(message);
   }
 
   async function triggerUpdateCheck() {
@@ -239,9 +231,6 @@ export function useOverlayPageController({
   });
 
   onBeforeUnmount(() => {
-    if (updateToastTimer != null) {
-      window.clearTimeout(updateToastTimer);
-    }
     if (unlistenReminderTrigger) {
       unlistenReminderTrigger();
       unlistenReminderTrigger = null;
@@ -262,8 +251,6 @@ export function useOverlayPageController({
     updateDialogOpen,
     updateNotesFooterText,
     updateNotes,
-    updateToastMessage,
-    updateToastVisible,
     handleVersionClick,
     handleCheckUpdate,
     closeUpdateDialog,

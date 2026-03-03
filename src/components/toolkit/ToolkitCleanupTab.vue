@@ -1,5 +1,5 @@
 <template>
-  <UiToast :open="profileToastVisible" :message="profileToastMessage" />
+  <UiToast channel="toolkit" />
 
   <UiCollapsiblePanel class="toolkit-card" :title="t('toolkit.cleanupTitle')" :collapsible="false" title-class="toolkit-section-title">
     <div class="toolkit-cleanup-list">
@@ -177,8 +177,6 @@ const {
   profileDurationSec,
   profileStatus,
   profileStatusText,
-  profileToastMessage,
-  profileToastVisible,
   startProfile,
   stopProfile,
   copyProfilePath,
@@ -193,8 +191,7 @@ watch(
     memoryTrimSystemEnabled,
     memoryTrimIntervalMinutes,
     memoryTrimTargets,
-    profileStatus,
-    profileToastVisible
+    profileStatus
   ],
   () => {
     nextTick(() => emit('contentChange'));
