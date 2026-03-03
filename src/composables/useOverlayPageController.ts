@@ -97,15 +97,16 @@ export function useOverlayPageController({
     const skipInlineLinkLine = (line: string) => releaseLinePattern.test(line);
     const hasCjk = (line: string) => /[\u4E00-\u9FFF]/.test(line);
     const hasLatin = (line: string) => /[A-Za-z]/.test(line);
+    const hasDigit = (line: string) => /\d/.test(line);
     const kept = lines.filter(line => {
       const trimmed = line.trim();
       if (!trimmed) return true;
       if (skipInlineLinkLine(trimmed)) return false;
       const cjk = hasCjk(trimmed);
       if (language === 'zh-CN') {
-        return cjk;
+        return cjk || hasDigit(trimmed);
       }
-      return !cjk && hasLatin(trimmed);
+      return !cjk && (hasLatin(trimmed) || hasDigit(trimmed));
     });
 
     const collapsed: string[] = [];
