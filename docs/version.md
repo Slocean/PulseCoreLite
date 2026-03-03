@@ -1,3 +1,20 @@
+## v1.7.5
+
+- 前端架构重构：抽离窗口管理、存储仓储与页面职责，提升可维护性与模块边界清晰度
+- 悬浮窗配置重构：新增系统/主题对话框组件，统一对话流程并增强类型约束
+- 工具箱能力增强：新增任务提醒与提醒全屏页，周提醒支持多选日期，时间/日期输入体验升级
+- UI 组件体系升级：统一按钮/选择器/时间输入/Toast/Dialog 等基础组件，提升一致性与复用性
+- 本地化与展示优化：补齐任务栏指标文案、优化雷达图与面板样式，改进中英文更新文本过滤策略
+- 质量保障完善：引入 ESLint、Vitest、组件契约检查与前端质量工作流，补充关键 composable/store 单测
+- 版本与发布同步：版本升级至 1.7.5，并保持发布说明路径与打包流程一致
+- Frontend architecture refactor: extract window manager, storage repository, and page responsibilities for clearer boundaries
+- Overlay config refactor: introduce system/theme dialog components and strengthen type constraints in dialog flows
+- Toolkit enhancements: add task reminders and fullscreen reminder screen, support multi-day weekly reminders, and improve date/time input UX
+- UI foundation upgrade: unify button/select/time-input/toast/dialog components for stronger consistency and reuse
+- Localization and presentation polish: add taskbar metric i18n labels, refine radar/panel styles, and improve CN/EN notes filtering
+- Quality pipeline improvements: add ESLint, Vitest, component contract checks, frontend quality workflow, and key composable/store tests
+- Version and release alignment: bump to 1.7.5 and keep release-note paths and packaging flow consistent
+
 ## v1.6.5
 
 - 更新检查新增清单回退机制，网络异常时可给出手动下载地址
