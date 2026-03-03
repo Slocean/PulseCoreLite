@@ -13,6 +13,7 @@ import { computed } from 'vue';
 import type { PropType } from 'vue';
 import { useToastService } from '@/composables/useToastService';
 import type { ToastProps } from "./types";
+import { resolveToastRenderState } from './logic';
 
 const props = defineProps({
   open: {
@@ -36,18 +37,19 @@ const props = defineProps({
 const isServiceMode = computed(() => Boolean(props.channel));
 const { toastState } = useToastService(props.channel ?? 'global');
 
-const effectiveOpen = computed(() => {
-  if (isServiceMode.value) {
-    return toastState.value.open;
-  }
-  return Boolean(props.open && props.message);
-});
-const effectiveMessage = computed(() => {
-  if (isServiceMode.value) {
-    return toastState.value.message;
-  }
-  return props.message ?? '';
-});
+const renderState = computed(() =>
+  resolveToastRenderState(
+    {
+      open: props.open,
+      message: props.message,
+      channel: isServiceMode.value ? props.channel : undefined
+    },
+    { open: toastState.value.open, message: toastState.value.message }
+  )
+);
+
+const effectiveOpen = computed(() => renderState.value.open);
+const effectiveMessage = computed(() => renderState.value.message);
 </script>
 
 <style scoped>

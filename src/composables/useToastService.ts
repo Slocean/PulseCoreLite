@@ -14,6 +14,10 @@ const DEFAULT_CHANNEL = 'global';
 const DEFAULT_DURATION_MS = 2000;
 const toastStateMap = reactive<Record<string, ToastState>>({});
 const toastTimerMap = new Map<string, number>();
+const timerApi = globalThis as typeof globalThis & {
+  setTimeout: (handler: TimerHandler, timeout?: number, ...arguments_: unknown[]) => number;
+  clearTimeout: (timeoutId: number | undefined) => void;
+};
 
 function ensureToastState(channel: string): ToastState {
   if (!toastStateMap[channel]) {
@@ -28,7 +32,7 @@ function ensureToastState(channel: string): ToastState {
 function clearToastTimer(channel: string) {
   const timer = toastTimerMap.get(channel);
   if (timer != null) {
-    window.clearTimeout(timer);
+    timerApi.clearTimeout(timer);
     toastTimerMap.delete(channel);
   }
 }
@@ -46,7 +50,7 @@ export function useToastService(channel = DEFAULT_CHANNEL) {
     if (!state.open || durationMs <= 0) {
       return;
     }
-    const timer = window.setTimeout(() => {
+    const timer = timerApi.setTimeout(() => {
       const current = ensureToastState(targetChannel);
       current.open = false;
     }, durationMs);
@@ -66,4 +70,11 @@ export function useToastService(channel = DEFAULT_CHANNEL) {
     showToast,
     hideToast
   };
+}
+
+export function resetToastServiceStateForTests() {
+  for (const channel of Object.keys(toastStateMap)) {
+    clearToastTimer(channel);
+    delete toastStateMap[channel];
+  }
 }
