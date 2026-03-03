@@ -1,0 +1,81 @@
+﻿.toolkit-cleanup-list {
+  display: grid;
+  gap: 10px;
+}
+
+.toolkit-profile-hint {
+  margin: 0;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.04em;
+}
+
+.toolkit-profile-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.toolkit-profile-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.toolkit-profile-row > * {
+  min-width: 0;
+}
+
+.toolkit-profile-path-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.toolkit-profile-input {
+  height: 28px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.toolkit-profile-input:focus {
+  outline: none;
+  border-color: rgba(0, 242, 255, 0.7);
+  box-shadow: 0 0 0 1px rgba(0, 242, 255, 0.2);
+}
+
+.toolkit-profile-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolkit-profile-actions .ui-button {
+  flex: 1 1 0;
+  min-width: 88px;
+}
+
+.toolkit-profile-actions .ui-button .ui-button__content {
+  white-space: nowrap;
+}
+
+.toolkit-profile-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolkit-profile-status {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.04em;
+}

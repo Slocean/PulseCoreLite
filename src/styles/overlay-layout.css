@@ -1,0 +1,137 @@
+﻿.overlay-shell {
+  display: inline-flex;
+  align-items: flex-start;
+  padding: 0;
+  width: fit-content;
+  height: fit-content;
+  background: transparent;
+}
+
+.overlay-widget {
+  width: 310px;
+  max-width: none;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+}
+
+.overlay-bg {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-base);
+  pointer-events: none;
+  transform-origin: center;
+  will-change: filter, transform;
+}
+
+.overlay-bg--liquid-highlight {
+  z-index: var(--z-content);
+  transform: none !important;
+  filter: none !important;
+  mix-blend-mode: screen;
+}
+
+.overlay-widget > :not(.overlay-bg):not(.ui-toast-layer) {
+  position: relative;
+  z-index: var(--z-overlay-chrome);
+}
+
+.overlay-widget--cyber::before,
+.overlay-widget--cyber::after {
+  display: none;
+}
+
+.overlay-widget header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  position: relative;
+}
+
+.overlay-title {
+  position: relative;
+}
+
+.overlay-title .badge {
+  position: absolute;
+  left: 103px;
+  top: 3.5px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #e9feff;
+  border: 1px solid rgba(0, 242, 255, 0.65);
+  box-shadow:
+    0 0 10px rgba(0, 242, 255, 0.3),
+    inset 0 0 8px rgba(0, 242, 255, 0.2);
+}
+
+.overlay-title .title {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.22em;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: var(--cyan);
+  text-shadow:
+    0 0 6px rgba(0, 242, 255, 0.45),
+    0 0 14px rgba(0, 242, 255, 0.25);
+}
+
+.overlay-meta {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 92%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.overlay-meta .version-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #ff4d4f;
+  box-shadow:
+    0 0 6px rgba(255, 77, 79, 0.55),
+    0 0 12px rgba(255, 77, 79, 0.35);
+}
+
+.overlay-meta .usage {
+  font-size: 10px;
+  color: var(--text);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  text-shadow: 0 0 10px rgba(0, 242, 255, 0.7);
+}
+
+.overlay-header-actions {
+  justify-content: flex-end;
+  display: flex;
+  gap: 7px;
+  margin-top: 0;
+}
+
+.overlay-drag {
+  width: 20px;
+  height: 28px;
+  border-radius: 10px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: move;
+}
+
+.overlay-drag .material-symbols-outlined {
+  font-size: 18px;
+}

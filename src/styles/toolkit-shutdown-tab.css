@@ -1,0 +1,121 @@
+﻿.toolkit-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.toolkit-grid--3 {
+  grid-template-columns: repeat(3, minmax(56px, 1fr));
+}
+
+.toolkit-field {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.toolkit-datetime-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px;
+  gap: 6px;
+  align-items: center;
+}
+
+.toolkit-field input,
+.toolkit-field select {
+  appearance: none;
+  width: 100%;
+  min-height: 30px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.24));
+  color: rgba(255, 255, 255, 0.92);
+  padding: 5px 6px;
+  font-size: 12px;
+  outline: none;
+  transition: all var(--motion-duration-fast) var(--motion-ease-standard);
+  -webkit-app-region: no-drag;
+}
+
+.toolkit-field input:focus,
+.toolkit-field select:focus {
+  border-color: rgba(0, 242, 255, 0.58);
+  box-shadow: 0 0 0 2px rgba(0, 242, 255, 0.16);
+}
+
+.toolkit-field select {
+  padding-right: 32px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(0, 242, 255, 0.85) 50%),
+    linear-gradient(135deg, rgba(0, 242, 255, 0.85) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) calc(50% - 2px),
+    calc(100% - 9px) calc(50% - 2px);
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+}
+
+.toolkit-field select option {
+  background: #111824;
+  color: #e8edf6;
+}
+
+.toolkit-field input[type='datetime-local'] {
+  color-scheme: dark;
+  padding-right: 28px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  letter-spacing: -0.05em;
+  font-size: 11px;
+  position: relative;
+}
+
+.toolkit-field input[type='datetime-local']::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+.toolkit-field input[type='number']::-webkit-inner-spin-button,
+.toolkit-field input[type='number']::-webkit-outer-spin-button {
+  opacity: 0.8;
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  margin: 0;
+}
+
+.toolkit-plan {
+  margin: 0;
+  min-height: 36px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.9);
+  word-break: break-word;
+}
+
+.toolkit-plan--muted {
+  color: rgba(255, 255, 255, 0.56);
+}
+
+.toolkit-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.toolkit-card .ui-button--preset-overlay-primary,
+.toolkit-card .ui-button--preset-overlay-danger {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 12px;
+  -webkit-app-region: no-drag;
+}
+
+.toolkit-card .ui-button--preset-overlay-primary {
+  width: 100%;
+}

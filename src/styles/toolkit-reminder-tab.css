@@ -1,0 +1,124 @@
+﻿.toolkit-reminder-count {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.toolkit-reminder-block {
+  display: grid;
+  gap: 6px;
+}
+
+.toolkit-reminder-subtitle {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.toolkit-reminder-inline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.toolkit-reminder-inline--triple {
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+}
+
+.toolkit-reminder-inline--weekly,
+.toolkit-reminder-inline--monthly {
+  grid-template-columns: minmax(0, 1fr) 76px auto;
+}
+
+.toolkit-reminder-time-input {
+  width: 76px;
+  min-width: 76px;
+  max-width: 76px;
+  justify-self: end;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.toolkit-reminder-inline input,
+.toolkit-reminder-inline select {
+  appearance: none;
+  width: 100%;
+  min-height: 30px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.24));
+  color: rgba(255, 255, 255, 0.92);
+  padding: 5px 6px;
+  font-size: 12px;
+}
+
+.toolkit-reminder-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.toolkit-reminder-chip {
+  border: 1px dashed rgba(0, 242, 255, 0.45);
+  border-radius: 999px;
+  background: rgba(0, 242, 255, 0.1);
+  color: rgba(0, 242, 255, 0.96);
+  font-size: 11px;
+  padding: 3px 9px;
+  cursor: pointer;
+}
+
+.toolkit-field textarea {
+  width: 100%;
+  min-height: 86px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.24));
+  color: rgba(255, 255, 255, 0.92);
+  padding: 7px;
+  font-size: 12px;
+  resize: vertical;
+}
+
+.toolkit-reminder-list {
+  display: grid;
+  gap: 7px;
+}
+
+.toolkit-reminder-item {
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.toolkit-reminder-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.toolkit-reminder-item-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  word-break: break-word;
+}
+
+.toolkit-reminder-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.toolkit-reminder-item-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}

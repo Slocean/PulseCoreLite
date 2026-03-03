@@ -134,9 +134,9 @@ const appMem = computed(() => {
 });
 
 function usageClass(value: number, base: 'cyan' | 'pink') {
-  if (value > 85) return 'overlay-glow-red';
-  if (value > 75) return 'overlay-glow-orange';
-  return base === 'cyan' ? 'overlay-glow-cyan' : 'overlay-glow-pink';
+  if (value > 85) return 'taskbar-glow-red';
+  if (value > 75) return 'taskbar-glow-orange';
+  return base === 'cyan' ? 'taskbar-glow-cyan' : 'taskbar-glow-pink';
 }
 
 type Segment = {
@@ -225,7 +225,7 @@ const segments = computed<SizedSegment[]>(() => {
         label: 'APP',
         value: appCpuPct.value,
         extra: appMem.value ?? undefined,
-        valueClass: 'overlay-glow-cyan'
+        valueClass: 'taskbar-glow-cyan'
       })
     );
   }

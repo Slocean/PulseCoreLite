@@ -1,6 +1,6 @@
 <template>
   <div class="app-root">
-    <div class="overlay-shell overlay-shell--taskbar">
+    <div class="taskbar-shell">
       <TaskbarMonitorPage />
     </div>
   </div>

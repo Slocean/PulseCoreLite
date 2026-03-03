@@ -1,9 +1,9 @@
 .slide-enter-active,
 .slide-leave-active {
   transition:
-    max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-height var(--motion-duration-expand) var(--motion-ease-standard),
+    opacity var(--motion-duration-slow) var(--motion-ease-standard),
+    transform var(--motion-duration-slow) var(--motion-ease-standard);
   max-height: 600px;
   opacity: 1;
   overflow: hidden;
@@ -26,8 +26,8 @@
 .overlay-dialog-enter-active,
 .overlay-dialog-leave-active {
   transition:
-    opacity 180ms ease,
-    transform 180ms ease;
+    opacity var(--motion-duration-standard) ease,
+    transform var(--motion-duration-standard) ease;
 }
 
 .overlay-dialog-enter-from,
@@ -39,8 +39,8 @@
 .toast-enter-active,
 .toast-leave-active {
   transition:
-    opacity 180ms ease,
-    transform 180ms ease;
+    opacity var(--motion-duration-standard) ease,
+    transform var(--motion-duration-standard) ease;
 }
 
 .toast-enter-from,

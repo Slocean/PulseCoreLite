@@ -1,0 +1,6 @@
+﻿:root {
+  --z-base: 0;
+  --z-content: 1;
+  --z-overlay-chrome: 2;
+  --z-dialog: 9999;
+}

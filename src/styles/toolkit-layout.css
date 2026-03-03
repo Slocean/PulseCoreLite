@@ -1,0 +1,133 @@
+﻿html.window-toolkit,
+html.window-toolkit body,
+.window-toolkit .app-root,
+.window-toolkit .overlay-shell {
+  height: 100%;
+}
+
+html.window-toolkit body {
+  background: transparent;
+  overflow: hidden;
+}
+
+.window-toolkit .overlay-shell {
+  display: block;
+  width: 100%;
+}
+
+.toolkit-page {
+  width: 100%;
+  max-width: none;
+  padding: 10px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  background: rgba(11, 14, 20, var(--overlay-bg-opacity, 1));
+  transform: translateZ(0);
+}
+
+.toolkit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.toolkit-drag-region {
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+  flex: 1 1 auto;
+  min-width: 0;
+  user-select: none;
+  cursor: move;
+  -webkit-app-region: drag;
+  background: transparent;
+}
+
+.toolkit-drag-region .title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.16em;
+  font-size: 13px;
+  font-weight: 700;
+  background: transparent;
+}
+
+.toolkit-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+  -webkit-app-region: no-drag;
+}
+
+.toolkit-card {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.24);
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.toolkit-section-header {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolkit-view-toggle-text {
+  white-space: nowrap;
+}
+
+.toolkit-collapse-indicator {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.72);
+  transition:
+    transform var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.toolkit-collapse-indicator.is-open {
+  transform: rotate(180deg);
+  color: rgba(0, 242, 255, 0.85);
+}
+
+.toolkit-section-title {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: uppercase;
+}
+
+.toolkit-status,
+.toolkit-error {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.toolkit-status {
+  color: rgba(0, 242, 255, 0.92);
+  padding: 0 4px;
+}
+
+.toolkit-error {
+  color: #ff9a9a;
+  padding: 0 4px;
+}
+
+.toolkit-header .overlay-header-actions,
+.toolkit-header .overlay-header-actions .ui-button {
+  -webkit-app-region: no-drag;
+}

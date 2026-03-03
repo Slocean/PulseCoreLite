@@ -1,0 +1,193 @@
+﻿.overlay-config {
+  margin-bottom: 10px;
+}
+
+.overlay-config-content {
+  display: grid;
+  grid-auto-flow: row;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.overlay-config--single-column {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.overlay-config-panel-title-hidden {
+  display: none;
+}
+
+.overlay-config-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px 12px;
+}
+
+.overlay-config-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.overlay-config label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.overlay-config-item--wide {
+  grid-column: 1 / -1;
+}
+
+.overlay-config-language {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.overlay-config-duo {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.overlay-config-duo .overlay-config-language,
+.overlay-config-duo .overlay-config-hotkey {
+  grid-column: auto;
+}
+
+.overlay-config-duo .overlay-config-hotkey {
+  flex-wrap: wrap;
+}
+
+.overlay-config-effect {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.overlay-config-effect-buttons {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.overlay-config-taskbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.overlay-config-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.overlay-config-inline {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.overlay-config-taskbar--compact {
+  gap: 8px;
+}
+
+.overlay-config-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.overlay-lang-buttons {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.overlay-config-range {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.overlay-config-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+}
+
+.overlay-hotkey-chip {
+  position: relative;
+  display: inline-flex;
+}
+
+.overlay-hotkey-chip:hover .ui-button--preset-overlay-corner-danger {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.overlay-config-value {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1;
+  margin-left: 8px;
+  margin-right: 12px;
+  width: 40px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+.overlay-config-range input[type='range'] {
+  width: 130px;
+  accent-color: var(--cyan);
+  margin: 0;
+  display: block;
+  cursor: pointer;
+}
+
+.overlay-config-hotkey {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.overlay-config-uninstall {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+
+.overlay-config-hotkey-controls {
+  display: inline-flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.overlay-config-hotkey-controls .ui-button--preset-overlay-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.overlay-config-reset {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
