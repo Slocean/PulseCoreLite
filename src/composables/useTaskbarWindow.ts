@@ -10,8 +10,7 @@ import {
   useWindowPositioningCore,
   type MonitorRect,
   type WindowFrameInsets,
-  type WindowPosition,
-  type WindowSize
+  type WindowPosition
 } from './useWindowPositioningCore';
 
 interface UseTaskbarWindowOptions {

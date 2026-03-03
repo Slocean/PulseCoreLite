@@ -149,7 +149,9 @@ const attrClass = computed(() => attrs.class as string | string[] | Record<strin
 const attrStyle = computed(() => attrs.style as string | Record<string, string> | Array<string | Record<string, string>> | undefined);
 
 const forwardedAttrs = computed(() => {
-  const { class: _class, style: _style, ...rest } = attrs;
+  const rest = { ...attrs } as Record<string, unknown>;
+  delete rest.class;
+  delete rest.style;
   return rest;
 });
 

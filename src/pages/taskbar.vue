@@ -109,11 +109,6 @@ const gpuTemp = computed(() => {
 });
 
 const memPct = computed(() => `${snapshot.value.memory.usage_pct.toFixed(0)}%`);
-const memUsage = computed(() => {
-  const used = snapshot.value.memory.used_mb / 1024;
-  const total = snapshot.value.memory.total_mb / 1024;
-  return `${used.toFixed(1)}/${total.toFixed(0)}GB`;
-});
 
 const down = computed(() => formatNetworkSpeedMbps(snapshot.value.network.download_bytes_per_sec, 1));
 const up = computed(() => formatNetworkSpeedMbps(snapshot.value.network.upload_bytes_per_sec, 1));
@@ -213,7 +208,6 @@ const segments = computed<SizedSegment[]>(() => {
         id: 'ram',
         label: 'RAM',
         value: memPct.value
-        // extra: memUsage.value
       })
     );
   }

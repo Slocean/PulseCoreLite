@@ -470,15 +470,6 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     closeEditThemeDialog();
   }
 
-  function openThemeNameDialog(image: string) {
-    pendingThemeImage.value = image;
-    pendingThemeBlurPx.value = backgroundBlurPx.value;
-    pendingThemeEffect.value = backgroundEffect.value;
-    pendingThemeGlassStrength.value = backgroundGlassStrength.value;
-    themeNameInput.value = '';
-    themeNameDialogOpen.value = true;
-  }
-
   function closeThemeNameDialog() {
     themeNameDialogOpen.value = false;
     pendingThemeImage.value = null;

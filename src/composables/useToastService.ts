@@ -13,11 +13,8 @@ type ShowToastOptions = {
 const DEFAULT_CHANNEL = 'global';
 const DEFAULT_DURATION_MS = 2000;
 const toastStateMap = reactive<Record<string, ToastState>>({});
-const toastTimerMap = new Map<string, number>();
-const timerApi = globalThis as typeof globalThis & {
-  setTimeout: (handler: TimerHandler, timeout?: number, ...arguments_: unknown[]) => number;
-  clearTimeout: (timeoutId: number | undefined) => void;
-};
+const toastTimerMap = new Map<string, ReturnType<typeof globalThis.setTimeout>>();
+const timerApi = globalThis;
 
 function ensureToastState(channel: string): ToastState {
   if (!toastStateMap[channel]) {
