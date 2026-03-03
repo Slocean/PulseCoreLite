@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
@@ -52,26 +52,19 @@ import ToolkitReminderTab from '../components/toolkit/ToolkitReminderTab.vue';
 import ToolkitShutdownTab from '../components/toolkit/ToolkitShutdownTab.vue';
 import ToolkitTabs from '../components/toolkit/ToolkitTabs.vue';
 import { openReminderScreensFromPayload } from '../composables/useTaskReminders';
-import { useOverlayPrefs, type OverlayBackgroundEffect } from '../composables/useOverlayPrefs';
+import { useOverlayPrefs } from '../composables/useOverlayPrefs';
+import { useToolkitVisualLayer } from '../composables/useToolkitVisualLayer';
+import { useToolkitWindowController } from '../composables/useToolkitWindowController';
 import { inTauri, listenEvent } from '../services/tauri';
 import type { ReminderScreenEventPayload } from '../types';
-import { acquireImageUrl, normalizeImageRef, releaseImageRef } from '../utils/imageStore';
 
 type ToolkitTab = 'shutdown' | 'cleanup' | 'hardware' | 'reminder';
-const TOOLKIT_WIDTH = 300;
 
 const { t } = useI18n();
 const { prefs } = useOverlayPrefs();
 const activeTab = ref<ToolkitTab>('shutdown');
 const pageRef = ref<HTMLElement | null>(null);
-let resizeObserver: ResizeObserver | undefined;
-let resizeFrame: number | undefined;
-let lastHeight = 0;
-let windowApiPromise: Promise<typeof import('@tauri-apps/api/window')> | undefined;
 let unlistenReminderTrigger: (() => void) | null = null;
-const backgroundImageUrl = ref<string | null>(null);
-let backgroundImageRef: string | null = null;
-let backgroundResolveToken = 0;
 
 const tabs = computed(() => [
   { id: 'shutdown' as const, label: t('toolkit.tabShutdown') },
@@ -80,105 +73,27 @@ const tabs = computed(() => [
   { id: 'reminder' as const, label: t('toolkit.tabReminder') }
 ]);
 
-const overlayBackgroundStyle = computed(() => {
-  if (!backgroundImageUrl.value) {
-    return {};
-  }
-  const effect = normalizeBackgroundEffect(prefs.backgroundEffect);
-  const blurPx = clampBlurPx(prefs.backgroundBlurPx);
-  const glassStrength = clampGlassStrength(prefs.backgroundGlassStrength);
-  return {
-    backgroundImage: `url(${backgroundImageUrl.value})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-    filter: getBackgroundFilter(effect, blurPx, glassStrength),
-    transform: effect === 'liquidGlass' ? 'scale(1.03)' : 'none'
-  };
+const { overlayBackgroundStyle, showLiquidGlassHighlight, overlayLiquidGlassHighlightStyle } = useToolkitVisualLayer({
+  prefs
 });
-
-const showLiquidGlassHighlight = computed(
-  () => Boolean(prefs.backgroundImage) && normalizeBackgroundEffect(prefs.backgroundEffect) === 'liquidGlass'
-);
-
-const overlayLiquidGlassHighlightStyle = computed(() => {
-  const strength = clampGlassStrength(prefs.backgroundGlassStrength);
-  const opacity = 0.14 + strength / 420;
-  return {
-    background:
-      'radial-gradient(120% 90% at 0% 0%, rgba(255,255,255,0.34), rgba(255,255,255,0) 60%), radial-gradient(100% 80% at 100% 0%, rgba(180,220,255,0.18), rgba(180,220,255,0) 70%)',
-    opacity: opacity.toFixed(3)
-  };
-});
-
-watch(
-  () => prefs.backgroundImage,
-  async value => {
-    const token = ++backgroundResolveToken;
-    if (backgroundImageRef) {
-      releaseImageRef(backgroundImageRef);
-      backgroundImageRef = null;
-    }
-    if (!value) {
-      backgroundImageUrl.value = null;
-      return;
-    }
-    const normalized = await normalizeImageRef(value);
-    if (normalized && normalized !== value) {
-      prefs.backgroundImage = normalized;
-    }
-    const { url, ref } = await acquireImageUrl(normalized ?? value);
-    if (token !== backgroundResolveToken) {
-      releaseImageRef(ref);
-      return;
-    }
-    backgroundImageRef = ref ?? null;
-    backgroundImageUrl.value = url || null;
-  },
-  { immediate: true }
-);
-
-watch(
-  () => prefs.backgroundOpacity,
-  value => {
-    if (typeof document === 'undefined') {
-      return;
-    }
-    const safeValue = Math.max(0, Math.min(100, value));
-    document.documentElement.style.setProperty('--overlay-bg-opacity', String(safeValue / 100));
-  },
-  { immediate: true }
-);
+const {
+  scheduleResize,
+  notifyContentChange,
+  handleToolkitMouseDown,
+  startDragging,
+  closeToolkitWindow,
+  minimizeToolkitWindow
+} = useToolkitWindowController({ pageRef });
 
 watch(activeTab, () => {
-  nextTick(scheduleResize);
+  scheduleResize();
 });
 
 onMounted(() => {
-  if (typeof ResizeObserver !== 'undefined') {
-    resizeObserver = new ResizeObserver(() => {
-      scheduleResize();
-    });
-    if (pageRef.value) {
-      resizeObserver.observe(pageRef.value);
-    }
-  }
-  setTimeout(scheduleResize, 100);
   void setupReminderTriggerListener();
 });
 
 onUnmounted(() => {
-  if (resizeObserver && pageRef.value) {
-    resizeObserver.unobserve(pageRef.value);
-  }
-  resizeObserver = undefined;
-  if (backgroundImageRef) {
-    releaseImageRef(backgroundImageRef);
-    backgroundImageRef = null;
-  }
-  if (resizeFrame != null) {
-    window.cancelAnimationFrame(resizeFrame);
-  }
   if (unlistenReminderTrigger) {
     unlistenReminderTrigger();
     unlistenReminderTrigger = null;
@@ -186,101 +101,7 @@ onUnmounted(() => {
 });
 
 function handleContentChange() {
-  nextTick(scheduleResize);
-}
-
-function scheduleResize() {
-  if (resizeFrame != null) return;
-  resizeFrame = window.requestAnimationFrame(() => {
-    resizeFrame = undefined;
-    void updateWindowHeight();
-  });
-}
-
-const getWindowApi = async () => {
-  if (!windowApiPromise) {
-    windowApiPromise = import('@tauri-apps/api/window');
-  }
-  return windowApiPromise;
-};
-
-async function updateWindowHeight() {
-  if (!inTauri()) return;
-  try {
-    const { getCurrentWindow } = await getWindowApi();
-    const { LogicalSize } = await import('@tauri-apps/api/dpi');
-    const content = pageRef.value ?? (document.querySelector('.toolkit-page') as HTMLElement | null);
-    const rect = content ? content.getBoundingClientRect() : document.body.getBoundingClientRect();
-    const height = Math.max(1, Math.ceil(rect.height));
-    if (Math.abs(height - lastHeight) < 2) {
-      return;
-    }
-    lastHeight = height;
-    await getCurrentWindow().setSize(new LogicalSize(TOOLKIT_WIDTH, height));
-  } catch {}
-}
-
-async function closeToolkitWindow() {
-  if (!inTauri()) return;
-  try {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window');
-    await getCurrentWindow().close();
-  } catch {
-    // ignore
-  }
-}
-
-async function minimizeToolkitWindow() {
-  if (!inTauri()) return;
-  try {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window');
-    await getCurrentWindow().minimize();
-  } catch {
-    // ignore
-  }
-}
-
-async function startDragging() {
-  if (!inTauri()) return;
-  try {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window');
-    await getCurrentWindow().startDragging();
-  } catch {
-    // ignore
-  }
-}
-
-function handleToolkitMouseDown(event: MouseEvent) {
-  const target = event.target as HTMLElement | null;
-  if (!target) return;
-  if (target.closest('.overlay-header-actions')) return;
-  if (target.closest('.toolkit-tabs, .toolkit-card')) return;
-  if (target.closest('button, input, select, textarea, label, .overlay-config')) return;
-  void startDragging();
-}
-
-function clampBlurPx(value: unknown) {
-  return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.min(40, Math.round(value))) : 0;
-}
-
-function clampGlassStrength(value: unknown) {
-  return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.min(100, Math.round(value))) : 55;
-}
-
-function normalizeBackgroundEffect(value: unknown): OverlayBackgroundEffect {
-  return value === 'liquidGlass' ? 'liquidGlass' : 'gaussian';
-}
-
-function getBackgroundFilter(effect: OverlayBackgroundEffect, blurPx: number, glassStrength: number) {
-  const safeBlur = clampBlurPx(blurPx);
-  if (effect === 'liquidGlass') {
-    const s = clampGlassStrength(glassStrength);
-    const blur = 8 + Math.round((safeBlur / 40) * 14 + (s / 100) * 8);
-    const saturate = (130 + Math.round((s / 100) * 70)).toString();
-    const brightness = (92 + Math.round((s / 100) * 12)).toString();
-    return `blur(${blur}px) saturate(${saturate}%) brightness(${brightness}%)`;
-  }
-  return safeBlur > 0 ? `blur(${safeBlur}px)` : 'none';
+  notifyContentChange();
 }
 
 async function setupReminderTriggerListener() {

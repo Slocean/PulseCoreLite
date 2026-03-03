@@ -1,4 +1,12 @@
 import CollapsiblePanel from './index.vue';
 
 export default CollapsiblePanel;
-export type { CollapsiblePanelHeaderMode, CollapsiblePanelProps } from './types';
+export {
+  COLLAPSIBLE_PANEL_DEFAULTS
+} from './types';
+export type {
+  CollapsiblePanelDefaultProps,
+  CollapsiblePanelHeaderMode,
+  CollapsiblePanelProps,
+  CollapsiblePanelSlots
+} from './types';

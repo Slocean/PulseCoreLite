@@ -1,8 +1,8 @@
-import { onMounted, onUnmounted, ref, watch, type Ref } from 'vue';
+﻿import { onMounted, onUnmounted, ref, watch, type Ref } from 'vue';
 
 import { inTauri } from '../services/tauri';
-
-const OVERLAY_POS_KEY = 'pulsecorelite.overlay_pos';
+import { storageKeys } from '../services/storageRepository';
+import { useWindowPositioningCore } from './useWindowPositioningCore';
 
 interface UseOverlayWindowOptions {
   allowDrag: Ref<boolean>;
@@ -12,202 +12,45 @@ interface UseOverlayWindowOptions {
 export function useOverlayWindow({ allowDrag, rememberPosition }: UseOverlayWindowOptions) {
   const overlayRef = ref<HTMLElement | null>(null);
   let resizeObserver: ResizeObserver | undefined;
-  let resizeFrame: number | undefined;
-  let lastSize = { width: 0, height: 0 };
-  let windowApiPromise: Promise<typeof import('@tauri-apps/api/window')> | undefined;
   let moveUnlisten: (() => void) | undefined;
-  let moveFrame: number | undefined;
-  let lastPosition: { x: number; y: number } | null = null;
 
-  const loadPosition = () => {
-    if (!rememberPosition.value) {
-      return null;
-    }
-    try {
-      const raw = localStorage.getItem(OVERLAY_POS_KEY);
-      if (!raw) {
-        return null;
-      }
-      const parsed = JSON.parse(raw) as { x?: number; y?: number };
-      if (typeof parsed.x !== 'number' || typeof parsed.y !== 'number') {
-        return null;
-      }
-      return { x: parsed.x, y: parsed.y };
-    } catch {
-      return null;
-    }
-  };
-
-  const savePosition = (next: { x: number; y: number }) => {
-    if (!rememberPosition.value) {
-      return;
-    }
-    if (lastPosition && next.x === lastPosition.x && next.y === lastPosition.y) {
-      return;
-    }
-    lastPosition = next;
-    localStorage.setItem(OVERLAY_POS_KEY, JSON.stringify(next));
-  };
-
-  const getWindowApi = async () => {
-    if (!windowApiPromise) {
-      windowApiPromise = import('@tauri-apps/api/window');
-    }
-    return windowApiPromise;
-  };
-
-  type Rect = { left: number; top: number; right: number; bottom: number };
-
-  const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-
-  const toMonitorRect = (monitor: { position: { x: number; y: number }; size: { width: number; height: number } }): Rect => ({
-    left: monitor.position.x,
-    top: monitor.position.y,
-    right: monitor.position.x + monitor.size.width,
-    bottom: monitor.position.y + monitor.size.height
+  const core = useWindowPositioningCore({
+    rememberPosition,
+    storageKey: storageKeys.overlayPosition,
+    visibleMargins: { x: 72, y: 48 },
+    minVisibleArea: 320 * 180
   });
 
-  const intersectionArea = (a: Rect, b: Rect) => {
-    const width = Math.min(a.right, b.right) - Math.max(a.left, b.left);
-    const height = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
-    if (width <= 0 || height <= 0) {
-      return 0;
-    }
-    return width * height;
-  };
-
-  const clampPositionToMonitor = (
-    position: { x: number; y: number },
-    windowSize: { width: number; height: number },
-    monitor: Rect
-  ) => {
-    // Keep a small visible margin so users can always drag the window back.
-    const visibleMarginX = 72;
-    const visibleMarginY = 48;
-    const monitorWidth = monitor.right - monitor.left;
-    const monitorHeight = monitor.bottom - monitor.top;
-
-    const clampAxis = (pos: number, size: number, start: number, total: number, visibleMargin: number) => {
-      const end = start + total;
-      if (size <= total) {
-        return clamp(pos, start, end - size);
-      }
-      return clamp(pos, start - size + visibleMargin, end - visibleMargin);
-    };
-
-    return {
-      x: Math.round(clampAxis(position.x, windowSize.width, monitor.left, monitorWidth, visibleMarginX)),
-      y: Math.round(clampAxis(position.y, windowSize.height, monitor.top, monitorHeight, visibleMarginY))
-    };
-  };
-
-  const sanitizePosition = async (saved: { x: number; y: number }) => {
-    const { availableMonitors, getCurrentWindow } = await getWindowApi();
-    const monitors = await availableMonitors();
-    if (monitors.length === 0) {
-      return saved;
-    }
-
-    const windowSize = await getCurrentWindow().outerSize();
-    const savedRect: Rect = {
-      left: saved.x,
-      top: saved.y,
-      right: saved.x + windowSize.width,
-      bottom: saved.y + windowSize.height
-    };
-
-    const monitorRects = monitors.map(toMonitorRect);
-    const bestVisible = monitorRects
-      .map((rect, index) => ({ index, area: intersectionArea(savedRect, rect) }))
-      .sort((a, b) => b.area - a.area)[0];
-
-    const hasEnoughVisibleArea =
-      bestVisible.area >= Math.min(windowSize.width * windowSize.height * 0.2, 320 * 180);
-
-    const chosenMonitor = hasEnoughVisibleArea
-      ? monitorRects[bestVisible.index]
-      : monitorRects
-          .map(rect => {
-            const centerX = (rect.left + rect.right) / 2;
-            const centerY = (rect.top + rect.bottom) / 2;
-            const savedCenterX = saved.x + windowSize.width / 2;
-            const savedCenterY = saved.y + windowSize.height / 2;
-            const distance = (centerX - savedCenterX) ** 2 + (centerY - savedCenterY) ** 2;
-            return { rect, distance };
-          })
-          .sort((a, b) => a.distance - b.distance)[0].rect;
-
-    return clampPositionToMonitor(saved, windowSize, chosenMonitor);
-  };
-
-  const applyWindowSize = async (width: number, height: number) => {
-    if (!inTauri()) {
+  const resizeScheduler = core.createFrameScheduler(async () => {
+    const element = overlayRef.value;
+    if (!element) {
       return;
     }
-    const nextWidth = Math.max(1, Math.ceil(width));
-    const nextHeight = Math.max(1, Math.ceil(height));
-    if (nextWidth === lastSize.width && nextHeight === lastSize.height) {
-      return;
-    }
-    lastSize = { width: nextWidth, height: nextHeight };
-    const { getCurrentWindow, LogicalSize } = await getWindowApi();
-    await getCurrentWindow().setSize(new LogicalSize(nextWidth, nextHeight));
-  };
+    const rect = element.getBoundingClientRect();
+    await core.setWindowSize(rect.width, rect.height);
+  });
 
-  const restorePosition = async () => {
-    const saved = loadPosition();
-    if (!saved) {
-      return;
-    }
-    const safePosition = await sanitizePosition(saved);
-    savePosition(safePosition);
-    const { getCurrentWindow, PhysicalPosition } = await getWindowApi();
-    await getCurrentWindow().setPosition(new PhysicalPosition(safePosition.x, safePosition.y));
-  };
-
-  const schedulePositionSave = () => {
-    if (moveFrame != null) {
-      return;
-    }
-    moveFrame = window.requestAnimationFrame(async () => {
-      moveFrame = undefined;
-      const { getCurrentWindow } = await getWindowApi();
-      const pos = await getCurrentWindow().outerPosition();
-      savePosition({ x: pos.x, y: pos.y });
-    });
-  };
+  const moveScheduler = core.createFrameScheduler(async () => {
+    const pos = await core.getCurrentPosition();
+    core.savePosition(pos);
+  });
 
   watch(
     rememberPosition,
     enabled => {
-      lastPosition = null;
+      core.resetPositionCache();
       if (!enabled) {
-        localStorage.removeItem(OVERLAY_POS_KEY);
+        core.clearSavedPosition();
       }
     },
     { immediate: true }
   );
 
-  const scheduleResize = () => {
-    if (resizeFrame != null) {
-      return;
-    }
-    resizeFrame = window.requestAnimationFrame(() => {
-      resizeFrame = undefined;
-      const element = overlayRef.value;
-      if (!element) {
-        return;
-      }
-      const rect = element.getBoundingClientRect();
-      void applyWindowSize(rect.width, rect.height);
-    });
-  };
-
   const startDragging = async () => {
     if (!inTauri()) {
       return;
     }
-    const { getCurrentWindow } = await getWindowApi();
+    const { getCurrentWindow } = await core.getWindowApi();
     await getCurrentWindow().startDragging();
   };
 
@@ -232,59 +75,55 @@ export function useOverlayWindow({ allowDrag, rememberPosition }: UseOverlayWind
     if (!inTauri()) {
       return;
     }
+
     if (rememberPosition.value) {
-      void restorePosition();
+      void core.restorePosition();
     }
-    void getWindowApi()
-      .then(({ getCurrentWindow }) =>
-        getCurrentWindow().onMoved(() => {
-          if (!rememberPosition.value) {
-            return;
-          }
-          schedulePositionSave();
-        })
-      )
-      .then(unlisten => {
-        moveUnlisten = unlisten;
-      });
+
+    void core.listenMoved(() => {
+      if (!rememberPosition.value) {
+        return;
+      }
+      moveScheduler.schedule();
+    }).then(unlisten => {
+      moveUnlisten = unlisten;
+    });
 
     const element = overlayRef.value;
     if (!element || typeof ResizeObserver === 'undefined') {
       return;
     }
     resizeObserver = new ResizeObserver(() => {
-      scheduleResize();
+      resizeScheduler.schedule();
     });
     resizeObserver.observe(element);
-    scheduleResize();
+    resizeScheduler.schedule();
   });
 
   onUnmounted(() => {
     if (inTauri() && rememberPosition.value) {
       void (async () => {
         try {
-          const { getCurrentWindow } = await getWindowApi();
-          const pos = await getCurrentWindow().outerPosition();
-          savePosition({ x: pos.x, y: pos.y });
+          const pos = await core.getCurrentPosition();
+          core.savePosition(pos);
         } catch {
           // best-effort; ignore
         }
       })();
     }
+
     if (resizeObserver && overlayRef.value) {
       resizeObserver.unobserve(overlayRef.value);
     }
     resizeObserver = undefined;
-    if (resizeFrame != null) {
-      window.cancelAnimationFrame(resizeFrame);
-    }
+
+    resizeScheduler.cancel();
+
     if (moveUnlisten) {
       moveUnlisten();
     }
     moveUnlisten = undefined;
-    if (moveFrame != null) {
-      window.cancelAnimationFrame(moveFrame);
-    }
+    moveScheduler.cancel();
   });
 
   return { overlayRef, startDragging, handleOverlayMouseDown };

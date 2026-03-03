@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <UiCollapsiblePanel
     class="toolkit-card"
     :title="t('toolkit.reminderTitle')"
@@ -12,250 +12,68 @@
     </div>
   </UiCollapsiblePanel>
 
-  <UiCollapsiblePanel
-    class="toolkit-card"
-    :title="editingId ? t('toolkit.reminderEdit') : t('toolkit.reminderCreate')"
-    v-model="sections.task"
-    header-mode="split"
-    header-class="toolkit-section-header"
-    split-title-preset="toolkit-collapse-title"
-    split-toggle-preset="toolkit-collapse-icon"
-    title-class="toolkit-section-title"
-    indicator-class="toolkit-collapse-indicator"
-    @toggle="emit('contentChange')">
-    <template #header-actions>
-      <UiButton native-type="button" preset="toolkit-link" :aria-label="t('toolkit.reminderSmtpConfig')" @click="openSmtpDialog">
-        {{ t('toolkit.reminderSmtpConfig') }}
-      </UiButton>
-    </template>
-    <div class="toolkit-grid">
-      <label class="toolkit-field">
-        <span>{{ t('toolkit.reminderTaskTitle') }}</span>
-        <input v-model.trim="form.title" type="text" maxlength="80" />
-      </label>
-      <label class="toolkit-field">
-        <span>{{ t('toolkit.reminderChannel') }}</span>
-        <UiSelect v-model="form.channel" :options="channelOptions" />
-      </label>
-      <label v-if="form.channel === 'email'" class="toolkit-field">
-        <span>{{ t('toolkit.reminderEmail') }}</span>
-        <input v-model.trim="form.email" type="email" placeholder="name@example.com" />
-      </label>
-      <p v-if="form.channel === 'email'" class="toolkit-profile-hint">{{ t('toolkit.reminderEmailHint') }}</p>
-      <div class="overlay-config-row">
-        <span class="overlay-config-label">{{ t('toolkit.reminderEnabled') }}</span>
-        <UiSwitch v-model="form.enabled" :aria-label="t('toolkit.reminderEnabled')" />
-      </div>
-    </div>
-  </UiCollapsiblePanel>
+  <ReminderEditorPanels
+    :editing-id="editingId"
+    :form="form"
+    :sections="sections"
+    :daily-input-time="dailyInputTime"
+    :weekly-input-days="weeklyInputDays"
+    :weekly-input-time="weeklyInputTime"
+    :monthly-input-days="monthlyInputDays"
+    :monthly-input-time="monthlyInputTime"
+    :channel-options="channelOptions"
+    :weekday-options="weekdayOptions"
+    :monthly-day-options="monthlyDayOptions"
+    :content-type-options="contentTypeOptions"
+    :format-weekday="formatWeekday"
+    @content-change="emit('contentChange')"
+    @open-smtp-dialog="openSmtpDialog"
+    @add-daily-time="addDailyTime"
+    @remove-daily-time="removeDailyTime"
+    @add-weekly-slot="addWeeklySlot"
+    @remove-weekly-slot="removeWeeklySlot"
+    @add-monthly-slot="addMonthlySlot"
+    @remove-monthly-slot="removeMonthlySlot"
+    @save-reminder="saveReminder"
+    @reset-form="resetForm"
+    @update:daily-input-time="updateDailyInputTime"
+    @update:weekly-input-days="updateWeeklyInputDays"
+    @update:weekly-input-time="updateWeeklyInputTime"
+    @update:monthly-input-days="updateMonthlyInputDays"
+    @update:monthly-input-time="updateMonthlyInputTime" />
 
-  <UiCollapsiblePanel
-    class="toolkit-card"
-    :title="t('toolkit.reminderSchedule')"
-    v-model="sections.schedule"
-    single-header-preset="toolkit-collapse"
-    title-class="toolkit-section-title"
-    indicator-class="toolkit-collapse-indicator"
-    @toggle="emit('contentChange')">
-    <div class="toolkit-reminder-block">
-      <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatDaily') }}</div>
-      <div class="toolkit-reminder-inline">
-        <UiTimeInput v-model="dailyInputTime" />
-        <UiButton native-type="button" preset="overlay-primary" @click="addDailyTime">
-          {{ t('toolkit.reminderAddTime') }}
-        </UiButton>
-      </div>
-      <div class="toolkit-reminder-chip-list">
-        <button
-          v-for="time in form.dailyTimes"
-          :key="`daily-${time}`"
-          class="toolkit-reminder-chip"
-          type="button"
-          @click="removeDailyTime(time)">
-          {{ time }} ×
-        </button>
-      </div>
-    </div>
-
-    <div class="toolkit-reminder-block">
-      <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatWeekly') }}</div>
-      <div class="toolkit-reminder-inline toolkit-reminder-inline--weekly">
-        <UiSelect v-model="weeklyInputDays" :options="weekdayOptions" multiple />
-        <UiTimeInput v-model="weeklyInputTime" class="toolkit-reminder-time-input" />
-        <UiButton native-type="button" preset="overlay-primary" @click="addWeeklySlot">
-          {{ t('toolkit.reminderAddSlot') }}
-        </UiButton>
-      </div>
-      <div class="toolkit-reminder-chip-list">
-        <button
-          v-for="slot in form.weeklySlots"
-          :key="`weekly-${slot.weekday}-${slot.time}`"
-          class="toolkit-reminder-chip"
-          type="button"
-          @click="removeWeeklySlot(slot.weekday, slot.time)">
-          {{ formatWeekday(slot.weekday) }} {{ slot.time }} ×
-        </button>
-      </div>
-    </div>
-
-    <div class="toolkit-reminder-block">
-      <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatMonthly') }}</div>
-      <div class="toolkit-reminder-inline toolkit-reminder-inline--monthly">
-        <UiSelect v-model="monthlyInputDays" :options="monthlyDayOptions" multiple />
-        <UiTimeInput v-model="monthlyInputTime" />
-        <UiButton native-type="button" preset="overlay-primary" @click="addMonthlySlot">
-          {{ t('toolkit.reminderAddSlot') }}
-        </UiButton>
-      </div>
-      <div class="toolkit-reminder-chip-list">
-        <button
-          v-for="slot in form.monthlySlots"
-          :key="`monthly-${slot.day}-${slot.time}`"
-          class="toolkit-reminder-chip"
-          type="button"
-          @click="removeMonthlySlot(slot.day, slot.time)">
-          {{ t('toolkit.reminderDayOfMonth', { day: slot.day }) }} {{ slot.time }} ×
-        </button>
-      </div>
-    </div>
-  </UiCollapsiblePanel>
-
-  <UiCollapsiblePanel
-    class="toolkit-card"
-    :title="t('toolkit.reminderContent')"
-    v-model="sections.content"
-    single-header-preset="toolkit-collapse"
-    title-class="toolkit-section-title"
-    indicator-class="toolkit-collapse-indicator"
-    @toggle="emit('contentChange')">
-    <div class="toolkit-grid">
-      <label class="toolkit-field">
-        <span>{{ t('toolkit.reminderContentType') }}</span>
-        <UiSelect v-model="form.contentType" :options="contentTypeOptions" />
-      </label>
-
-      <label class="toolkit-field">
-        <span>{{ t('toolkit.reminderContentValue') }}</span>
-        <textarea v-if="form.contentType === 'text' || form.contentType === 'markdown'" v-model="form.content" rows="4" />
-        <input v-else v-model.trim="form.content" type="text" />
-      </label>
-    </div>
-
-    <div class="toolkit-profile-actions">
-      <UiButton native-type="button" preset="overlay-primary" @click="saveReminder">
-        {{ t('toolkit.reminderSave') }}
-      </UiButton>
-      <UiButton native-type="button" preset="overlay-danger" @click="resetForm">
-        {{ t('toolkit.reminderReset') }}
-      </UiButton>
-    </div>
-  </UiCollapsiblePanel>
-
-  <UiCollapsiblePanel
-    class="toolkit-card"
-    :title="t('toolkit.reminderList')"
+  <ReminderListPanel
     v-model="sections.list"
-    single-header-preset="toolkit-collapse"
-    title-class="toolkit-section-title"
-    indicator-class="toolkit-collapse-indicator"
-    @toggle="emit('contentChange')">
-    <div v-if="!reminders.length" class="toolkit-plan toolkit-plan--muted">
-      {{ t('toolkit.reminderListEmpty') }}
-    </div>
-    <div v-else class="toolkit-reminder-list">
-      <div v-for="item in reminders" :key="item.id" class="toolkit-reminder-item">
-        <div class="toolkit-reminder-item-header">
-          <div class="toolkit-reminder-item-title">{{ item.title }}</div>
-          <UiSwitch
-            :model-value="item.enabled"
-            :aria-label="t('toolkit.reminderEnabled')"
-            @update:model-value="(value: boolean) => toggleReminderEnabled(item.id, value)" />
-        </div>
-        <div class="toolkit-reminder-item-meta">
-          <span>{{ item.channel === 'email' ? t('toolkit.reminderChannelEmail') : t('toolkit.reminderChannelFullscreen') }}</span>
-          <span v-if="item.channel === 'email'">{{ item.email }}</span>
-        </div>
-        <div class="toolkit-reminder-item-actions">
-          <UiButton native-type="button" preset="toolkit-link" @click="editReminder(item)">
-            {{ t('toolkit.reminderEditAction') }}
-          </UiButton>
-          <UiButton native-type="button" preset="toolkit-link" @click="triggerNow(item)">
-            {{ t('toolkit.reminderTriggerNow') }}
-          </UiButton>
-          <UiButton native-type="button" preset="toolkit-link" @click="deleteReminder(item.id)">
-            {{ t('toolkit.reminderDelete') }}
-          </UiButton>
-        </div>
-      </div>
-    </div>
-  </UiCollapsiblePanel>
+    :reminders="reminders"
+    @content-change="emit('contentChange')"
+    @edit-reminder="editReminder"
+    @trigger-now="triggerNow"
+    @delete-reminder="deleteReminder"
+    @toggle-enabled="toggleReminderEnabled" />
 
   <p v-if="statusMessage" class="toolkit-status">{{ statusMessage }}</p>
   <p v-if="errorMessage" class="toolkit-error">{{ errorMessage }}</p>
 
-  <OverlayDialog
+  <ReminderSmtpDialog
     v-model:open="smtpDialogOpen"
-    :title="t('toolkit.reminderSmtpConfig')"
-    :confirm-text="t('overlay.dialogConfirm')"
-    :cancel-text="t('overlay.dialogCancel')"
-    :close-label="t('overlay.dialogClose')"
-    :autofocus-confirm="false"
-    @confirm="saveSmtpSettings">
-    <template #body>
-      <div class="toolkit-grid">
-        <label class="toolkit-field">
-          <span>{{ t('toolkit.reminderSmtpHost') }}</span>
-          <input v-model.trim="smtpForm.host" type="text" />
-        </label>
-        <label class="toolkit-field">
-          <span>{{ t('toolkit.reminderSmtpPort') }}</span>
-          <input v-model.number="smtpForm.port" type="number" min="1" max="65535" />
-        </label>
-        <label class="toolkit-field">
-          <span>{{ t('toolkit.reminderSmtpSecurity') }}</span>
-          <UiSelect v-model="smtpForm.security" :options="smtpSecurityOptions" />
-        </label>
-        <label class="toolkit-field">
-          <span>{{ t('toolkit.reminderSmtpUsername') }}</span>
-          <input v-model="smtpForm.username" type="text" />
-        </label>
-        <label class="toolkit-field">
-          <span>{{ t('toolkit.reminderSmtpPassword') }}</span>
-          <input v-model="smtpForm.password" type="password" />
-        </label>
-        <label class="toolkit-field">
-          <span>{{ t('toolkit.reminderSmtpFromEmail') }}</span>
-          <input v-model.trim="smtpForm.fromEmail" type="email" />
-        </label>
-        <label class="toolkit-field">
-          <span>{{ t('toolkit.reminderSmtpFromName') }}</span>
-          <input v-model="smtpForm.fromName" type="text" />
-        </label>
-        <label class="toolkit-field">
-          <span>{{ t('toolkit.reminderSmtpTestTo') }}</span>
-          <input v-model.trim="smtpTestTo" type="email" />
-        </label>
-        <div class="toolkit-actions">
-          <UiButton native-type="button" preset="overlay-primary" @click="sendSmtpTestEmail">
-            {{ t('toolkit.reminderSmtpSendTest') }}
-          </UiButton>
-        </div>
-      </div>
-    </template>
-  </OverlayDialog>
+    :smtp-form="smtpForm"
+    :smtp-test-to="smtpTestTo"
+    :smtp-security-options="smtpSecurityOptions"
+    @update:smtp-test-to="updateSmtpTestTo"
+    @save="saveSmtpSettings"
+    @test="sendSmtpTestEmail" />
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import UiButton from '@/components/ui/Button';
-import UiSelect from '@/components/ui/Select';
-import UiSwitch from '@/components/ui/Switch';
 import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
-import UiTimeInput from '@/components/ui/TimeInput';
-import OverlayDialog from '../OverlayDialog.vue';
+import type { SelectOption } from '@/components/ui/Select/types';
 import { useTaskReminders } from '../../composables/useTaskReminders';
+import ReminderEditorPanels from './reminder/ReminderEditorPanels.vue';
+import ReminderListPanel from './reminder/ReminderListPanel.vue';
+import ReminderSmtpDialog from './reminder/ReminderSmtpDialog.vue';
 import type { MonthlyReminderSlot, SmtpEmailConfig, TaskReminder, WeeklyReminderSlot } from '../../types';
 
 const emit = defineEmits<{
@@ -319,7 +137,7 @@ const smtpForm = reactive<SmtpEmailConfig>({
   security: 'starttls'
 });
 
-const weekdayOptions = computed(() => [
+const weekdayOptions = computed<SelectOption[]>(() => [
   { value: 1, label: t('toolkit.weekdayMon') },
   { value: 2, label: t('toolkit.weekdayTue') },
   { value: 3, label: t('toolkit.weekdayWed') },
@@ -329,25 +147,25 @@ const weekdayOptions = computed(() => [
   { value: 7, label: t('toolkit.weekdaySun') }
 ]);
 
-const channelOptions = computed(() => [
+const channelOptions = computed<SelectOption[]>(() => [
   { value: 'email', label: t('toolkit.reminderChannelEmail') },
   { value: 'fullscreen', label: t('toolkit.reminderChannelFullscreen') }
 ]);
 
-const contentTypeOptions = computed(() => [
+const contentTypeOptions = computed<SelectOption[]>(() => [
   { value: 'text', label: t('toolkit.reminderContentText') },
   { value: 'markdown', label: t('toolkit.reminderContentMarkdown') },
   { value: 'web', label: t('toolkit.reminderContentWeb') },
   { value: 'image', label: t('toolkit.reminderContentImage') }
 ]);
 
-const smtpSecurityOptions = computed(() => [
+const smtpSecurityOptions = computed<SelectOption[]>(() => [
   { value: 'none', label: t('toolkit.reminderSmtpSecurityNone') },
   { value: 'starttls', label: t('toolkit.reminderSmtpSecurityStarttls') },
   { value: 'tls', label: t('toolkit.reminderSmtpSecurityTls') }
 ]);
 
-const monthlyDayOptions = computed(() =>
+const monthlyDayOptions = computed<SelectOption[]>(() =>
   Array.from({ length: 31 }, (_, index) => {
     const day = index + 1;
     return {
@@ -377,6 +195,30 @@ onMounted(async () => {
 function clearTip() {
   statusMessage.value = '';
   errorMessage.value = '';
+}
+
+function updateDailyInputTime(value: string) {
+  dailyInputTime.value = value;
+}
+
+function updateWeeklyInputDays(value: number[]) {
+  weeklyInputDays.value = value;
+}
+
+function updateWeeklyInputTime(value: string) {
+  weeklyInputTime.value = value;
+}
+
+function updateMonthlyInputDays(value: number[]) {
+  monthlyInputDays.value = value;
+}
+
+function updateMonthlyInputTime(value: string) {
+  monthlyInputTime.value = value;
+}
+
+function updateSmtpTestTo(value: string) {
+  smtpTestTo.value = value;
 }
 
 function addDailyTime() {

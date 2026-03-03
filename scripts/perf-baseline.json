@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-03-02T14:26:12.774Z",
+  "distDir": "dist",
+  "budgets": {
+    "totalGzipBytes": 10,
+    "jsBytes": 10,
+    "jsGzipBytes": 10,
+    "cssBytes": 15,
+    "cssGzipBytes": 15,
+    "largestJsGzipBytes": 12
+  },
+  "metrics": {
+    "fileCount": 85,
+    "totalBytes": 4266394,
+    "totalGzipBytes": 3897407,
+    "jsBytes": 416387,
+    "jsGzipBytes": 132667,
+    "cssBytes": 90462,
+    "cssGzipBytes": 22980,
+    "htmlBytes": 2097,
+    "htmlGzipBytes": 1040,
+    "largestJsBytes": 192166,
+    "largestJsGzipBytes": 66999,
+    "largestJsFile": "dist/assets/createPulseApp-CyFJAkza.js"
+  }
+}

@@ -1,0 +1,166 @@
+:where(.ui-button) {
+  --btn-height: 28px;
+  --btn-min-height: var(--btn-height);
+  --btn-width: auto;
+  --btn-min-width: 0;
+  --btn-padding: 0 10px;
+  --btn-radius: 8px;
+  --btn-bg: rgba(255, 255, 255, 0.08);
+  --btn-border-color: rgba(255, 255, 255, 0.18);
+  --btn-border-style: solid;
+  --btn-border-width: 1px;
+  --btn-shadow: none;
+  --btn-color: rgba(255, 255, 255, 0.85);
+  --btn-font-size: 12px;
+  --btn-font-weight: 400;
+  --btn-letter-spacing: 0.05em;
+  --btn-text-transform: none;
+  --btn-text-align: center;
+  --btn-gap: 6px;
+  --btn-justify: center;
+  --btn-hover-opacity: 0.9;
+  --btn-hover-border-color: var(--btn-border-color);
+  --btn-hover-color: var(--btn-color);
+  --btn-hover-bg: var(--btn-bg);
+  --btn-hover-shadow: var(--btn-shadow);
+  --btn-active-border: var(--cyan, #00f2ff);
+  --btn-active-color: var(--cyan, #00f2ff);
+  --btn-active-bg: var(--btn-bg);
+  --btn-active-shadow: var(--btn-shadow);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: var(--btn-justify);
+  gap: var(--btn-gap);
+  width: var(--btn-width);
+  min-width: var(--btn-min-width);
+  height: var(--btn-height);
+  min-height: var(--btn-min-height);
+  padding: var(--btn-padding);
+  border-radius: var(--btn-radius);
+  border: var(--btn-border-width) var(--btn-border-style) var(--btn-border-color);
+  background: var(--btn-bg);
+  box-shadow: var(--btn-shadow);
+  color: var(--btn-color);
+  font-size: var(--btn-font-size);
+  font-weight: var(--btn-font-weight);
+  letter-spacing: var(--btn-letter-spacing);
+  text-transform: var(--btn-text-transform);
+  text-align: var(--btn-text-align);
+  cursor: pointer;
+  transition:
+    opacity 0.2s,
+    transform 0.1s,
+    border-color 0.16s,
+    color 0.16s,
+    background 0.16s;
+}
+
+:where(.ui-button--sm) {
+  --btn-height: 24px;
+  --btn-padding: 0 8px;
+  --btn-font-size: 11px;
+}
+
+:where(.ui-button--lg) {
+  --btn-height: 34px;
+  --btn-padding: 0 14px;
+  --btn-font-size: 13px;
+}
+
+:where(.ui-button--solid) {
+  --btn-border-style: solid;
+}
+
+:where(.ui-button--dashed) {
+  --btn-border-style: dashed;
+  --btn-bg: transparent;
+  --btn-text-transform: uppercase;
+  --btn-letter-spacing: 0.1em;
+}
+
+:where(.ui-button--text) {
+  --btn-border-color: transparent;
+  --btn-bg: transparent;
+  --btn-padding: 0;
+  --btn-height: auto;
+}
+
+:where(.ui-button--icon) {
+  --btn-border-color: transparent;
+  --btn-bg: transparent;
+  --btn-padding: 0;
+  width: var(--btn-height);
+}
+
+:where(.ui-button--default) {
+  --btn-border-color: rgba(255, 255, 255, 0.18);
+  --btn-color: rgba(255, 255, 255, 0.7);
+}
+
+:where(.ui-button--primary) {
+  --btn-border-color: rgba(59, 130, 246, 0.6);
+  --btn-color: #93c5fd;
+  --btn-bg: rgba(59, 130, 246, 0.12);
+  --btn-hover-border-color: rgba(59, 130, 246, 0.85);
+  --btn-hover-color: #dbeafe;
+}
+
+:where(.ui-button--danger) {
+  --btn-border-color: rgba(255, 59, 59, 0.45);
+  --btn-color: #ff9a9a;
+  --btn-bg: rgba(255, 59, 59, 0.08);
+  --btn-hover-border-color: rgba(255, 59, 59, 0.7);
+  --btn-hover-color: #ffd2d2;
+}
+
+:where(.ui-button--ghost) {
+  --btn-border-color: rgba(255, 255, 255, 0.18);
+  --btn-color: rgba(255, 255, 255, 0.6);
+  --btn-bg: transparent;
+}
+
+:where(.ui-button--active) {
+  border-color: var(--btn-active-border);
+  color: var(--btn-active-color);
+  background: var(--btn-active-bg);
+  box-shadow: var(--btn-active-shadow);
+}
+
+:where(.ui-button):hover:not(:disabled) {
+  opacity: var(--btn-hover-opacity);
+  border-color: var(--btn-hover-border-color);
+  color: var(--btn-hover-color);
+  background: var(--btn-hover-bg);
+  box-shadow: var(--btn-hover-shadow);
+}
+
+:where(.ui-button):disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ui-button__spinner {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: ui-button-spin 0.8s linear infinite;
+}
+
+.ui-button__content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: var(--btn-justify);
+  gap: 6px;
+  width: 100%;
+}
+
+@keyframes ui-button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+

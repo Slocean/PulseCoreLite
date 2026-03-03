@@ -1,24 +1,23 @@
 import { computed, nextTick, onUnmounted, reactive, ref, watch, type Ref } from 'vue';
 
-import { kvGet, kvSet } from '../utils/kv';
-import { acquireImageUrl, deleteImageRef, isImageRef, normalizeImageRef, releaseImageRef } from '../utils/imageStore';
+import { acquireImageUrl, isImageRef, normalizeImageRef, releaseImageRef } from '../utils/imageStore';
 import {
   DEFAULT_BACKGROUND_EFFECT,
   DEFAULT_BACKGROUND_GLASS_STRENGTH,
   type OverlayBackgroundEffect,
   type OverlayPrefs
 } from './useOverlayPrefs';
+import { clampRange, getBackgroundFilter, getBackgroundScale } from './themeManager/cropper';
+import { cleanupOldBackgroundImage, cleanupRemovedThemeImages } from './themeManager/imageLifecycle';
+import {
+  loadThemesFromLocalStorage,
+  persistThemes,
+  readThemesFromKv,
+  removeLegacyThemesFromLocalStorage,
+  type OverlayTheme
+} from './themeManager/themeStore';
 
-export type OverlayTheme = {
-  id: string;
-  name: string;
-  image: string;
-  blurPx: number;
-  effect: OverlayBackgroundEffect;
-  glassStrength: number;
-};
-
-const THEME_STORAGE_KEY = 'pulsecorelite.overlay_themes';
+export type { OverlayTheme } from './themeManager/themeStore';
 
 export function clampBlurPx(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.min(40, Math.round(value))) : 0;
@@ -34,27 +33,6 @@ export function normalizeBackgroundEffect(value: unknown): OverlayBackgroundEffe
   return value === 'liquidGlass' ? 'liquidGlass' : DEFAULT_BACKGROUND_EFFECT;
 }
 
-function getBackgroundFilter(effect: OverlayBackgroundEffect, blurPx: number, glassStrength: number) {
-  const safeBlur = clampBlurPx(blurPx);
-  if (effect === 'liquidGlass') {
-    const safeStrength = clampGlassStrength(glassStrength);
-    const minBlur = Math.max(2, safeBlur);
-    const saturation = (1.25 + safeStrength / 140).toFixed(2);
-    const contrast = (1.05 + safeStrength / 420).toFixed(2);
-    const brightness = (1.01 + safeStrength / 900).toFixed(2);
-    return `blur(${minBlur}px) saturate(${saturation}) contrast(${contrast}) brightness(${brightness})`;
-  }
-  return safeBlur > 0 ? `blur(${safeBlur}px)` : 'none';
-}
-
-function getBackgroundScale(effect: OverlayBackgroundEffect, blurPx: number, glassStrength: number) {
-  if (effect === 'liquidGlass') {
-    const safeStrength = clampGlassStrength(glassStrength);
-    return (1.06 + safeStrength / 1000).toFixed(3);
-  }
-  return (clampBlurPx(blurPx) > 0 ? 1.05 : 1).toString();
-}
-
 export function sanitizeThemes(input: unknown): OverlayTheme[] {
   if (!Array.isArray(input)) return [];
   return input
@@ -68,18 +46,6 @@ export function sanitizeThemes(input: unknown): OverlayTheme[] {
       glassStrength: clampGlassStrength((item as any).glassStrength)
     }))
     .filter(item => item.id && item.name && item.image);
-}
-
-function loadThemesFromLocalStorage(): OverlayTheme[] {
-  try {
-    const raw = localStorage.getItem(THEME_STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-    return sanitizeThemes(JSON.parse(raw));
-  } catch {
-    return [];
-  }
 }
 
 export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<HTMLElement | null> }) {
@@ -146,7 +112,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
   let currentObjectUrl: string | null = null;
 
   if (typeof window !== 'undefined') {
-    themes.value = loadThemesFromLocalStorage();
+    themes.value = loadThemesFromLocalStorage(sanitizeThemes);
     void hydrateThemes();
   }
 
@@ -176,7 +142,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
         backgroundImageRef = null;
       }
       if (previous && previous !== value) {
-        await cleanupOldBackgroundImage(previous, value);
+        await cleanupOldBackgroundImage(previous, value, themes.value, prefs.backgroundImage);
       }
       if (!value) {
         backgroundImageUrl.value = null;
@@ -240,8 +206,8 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
-      filter: getBackgroundFilter(effect, blurPx, glassStrength),
-      transform: `scale(${getBackgroundScale(effect, blurPx, glassStrength)})`
+      filter: getBackgroundFilter(effect, blurPx, glassStrength, clampBlurPx, clampGlassStrength),
+      transform: `scale(${getBackgroundScale(effect, blurPx, glassStrength, clampBlurPx, clampGlassStrength)})`
     };
   });
 
@@ -356,18 +322,11 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     }
   }
 
-  function persistThemes(next: OverlayTheme[]) {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    void kvSet(THEME_STORAGE_KEY, next);
-  }
-
   function updateThemes(next: OverlayTheme[]) {
     const previous = themes.value;
     themes.value = next;
-    persistThemes(next);
-    void cleanupRemovedThemeImages(previous, next);
+    void persistThemes(next);
+    void cleanupRemovedThemeImages(previous, next, prefs.backgroundImage);
   }
 
   async function migrateStoredThemes() {
@@ -388,71 +347,24 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     }
     if (changed) {
       themes.value = migrated;
-      persistThemes(migrated);
+      await persistThemes(migrated);
     }
   }
 
   async function hydrateThemes() {
-    const fromKv = await kvGet<unknown>(THEME_STORAGE_KEY);
-    const parsed = sanitizeThemes(fromKv);
+    const parsed = await readThemesFromKv(sanitizeThemes);
     if (parsed.length) {
       themes.value = parsed;
     } else if (themes.value.length) {
-      await kvSet(THEME_STORAGE_KEY, themes.value);
+      await persistThemes(themes.value);
     }
 
     await migrateStoredThemes();
-
-    try {
-      localStorage.removeItem(THEME_STORAGE_KEY);
-    } catch {}
+    removeLegacyThemesFromLocalStorage();
   }
 
   function getThemePreviewUrl(theme: OverlayTheme) {
     return themePreviewUrls[theme.id] ?? (isImageRef(theme.image) ? '' : theme.image);
-  }
-
-  function collectInUseImageRefs(excludeId?: string) {
-    const refs = new Set<string>();
-    const bg = prefs.backgroundImage;
-    if (isImageRef(bg)) {
-      refs.add(bg);
-    }
-    for (const theme of themes.value) {
-      if (excludeId && theme.id === excludeId) continue;
-      if (isImageRef(theme.image)) {
-        refs.add(theme.image);
-      }
-    }
-    return refs;
-  }
-
-  async function cleanupRemovedThemeImages(previous: OverlayTheme[], next: OverlayTheme[]) {
-    const inUse = new Set<string>();
-    for (const theme of next) {
-      if (isImageRef(theme.image)) {
-        inUse.add(theme.image);
-      }
-    }
-    const bg = prefs.backgroundImage;
-    if (isImageRef(bg)) {
-      inUse.add(bg);
-    }
-    for (const theme of previous) {
-      if (isImageRef(theme.image) && !inUse.has(theme.image)) {
-        await deleteImageRef(theme.image);
-      }
-    }
-  }
-
-  async function cleanupOldBackgroundImage(oldValue: string | null | undefined, nextValue: string | null | undefined) {
-    if (!isImageRef(oldValue) || oldValue === nextValue) {
-      return;
-    }
-    const inUse = collectInUseImageRefs();
-    if (!inUse.has(oldValue)) {
-      await deleteImageRef(oldValue);
-    }
   }
 
   function requestDeleteTheme(id: string) {
@@ -558,15 +470,6 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     closeEditThemeDialog();
   }
 
-  function openThemeNameDialog(image: string) {
-    pendingThemeImage.value = image;
-    pendingThemeBlurPx.value = backgroundBlurPx.value;
-    pendingThemeEffect.value = backgroundEffect.value;
-    pendingThemeGlassStrength.value = backgroundGlassStrength.value;
-    themeNameInput.value = '';
-    themeNameDialogOpen.value = true;
-  }
-
   function closeThemeNameDialog() {
     themeNameDialogOpen.value = false;
     pendingThemeImage.value = null;
@@ -660,7 +563,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     const effect = normalizeBackgroundEffect(backgroundEffect.value);
     const blurPx = Math.max(0, Math.min(24, Math.round(backgroundBlurPx.value)));
     const glassStrength = clampGlassStrength(backgroundGlassStrength.value);
-    ctx.filter = getBackgroundFilter(effect, blurPx, glassStrength);
+    ctx.filter = getBackgroundFilter(effect, blurPx, glassStrength, clampBlurPx, clampGlassStrength);
     ctx.drawImage(img, imageFit.offsetX, imageFit.offsetY, imageFit.drawWidth, imageFit.drawHeight);
     ctx.filter = 'none';
     if (effect === 'liquidGlass') {
@@ -725,10 +628,6 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     window.addEventListener('mouseup', handleCropMouseUp, true);
   }
 
-  function clamp(value: number, min: number, max: number) {
-    return Math.min(Math.max(value, min), max);
-  }
-
   function handleCropMouseMove(event: MouseEvent) {
     if (!dragState.active) {
       return;
@@ -744,8 +643,8 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
       const minY = imageFit.offsetY;
       const maxX = imageFit.offsetX + imageFit.drawWidth - cropRect.width;
       const maxY = imageFit.offsetY + imageFit.drawHeight - cropRect.height;
-      cropRect.x = clamp(nextX, minX, maxX);
-      cropRect.y = clamp(nextY, minY, maxY);
+      cropRect.x = clampRange(nextX, minX, maxX);
+      cropRect.y = clampRange(nextY, minY, maxY);
     } else {
       const dx = point.x - dragState.startX;
       const dy = point.y - dragState.startY;
@@ -791,10 +690,10 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     if (!img) {
       return null;
     }
-    const cropX = clamp((cropRect.x - imageFit.offsetX) / imageFit.scale, 0, img.width - 1);
-    const cropY = clamp((cropRect.y - imageFit.offsetY) / imageFit.scale, 0, img.height - 1);
-    const cropWidth = clamp(cropRect.width / imageFit.scale, 1, img.width - cropX);
-    const cropHeight = clamp(cropRect.height / imageFit.scale, 1, img.height - cropY);
+    const cropX = clampRange((cropRect.x - imageFit.offsetX) / imageFit.scale, 0, img.width - 1);
+    const cropY = clampRange((cropRect.y - imageFit.offsetY) / imageFit.scale, 0, img.height - 1);
+    const cropWidth = clampRange(cropRect.width / imageFit.scale, 1, img.width - cropX);
+    const cropHeight = clampRange(cropRect.height / imageFit.scale, 1, img.height - cropY);
     const output = document.createElement('canvas');
     output.width = Math.round(cropWidth);
     output.height = Math.round(cropHeight);

@@ -1,6 +1,7 @@
 import { ref, type Ref } from 'vue';
 
 import { api, inTauri } from '../services/tauri';
+import { storageKeys, storageRepository } from '../services/storageRepository';
 import type { OverlayPrefs } from './useOverlayPrefs';
 import type { OverlayTheme } from './useThemeManager';
 import { clampBlurPx, clampGlassStrength, normalizeBackgroundEffect, sanitizeThemes } from './useThemeManager';
@@ -49,6 +50,31 @@ interface UseConfigTransferOptions {
   t: (key: string) => string;
 }
 
+interface ImportedTaskbarPrefs {
+  showCpu: boolean;
+  showCpuFreq: boolean;
+  showCpuTemp: boolean;
+  showGpu: boolean;
+  showGpuTemp: boolean;
+  showMemory: boolean;
+  showApp: boolean;
+  showDown: boolean;
+  showUp: boolean;
+  showLatency: boolean;
+  twoLineMode: boolean;
+}
+
+interface ImportCommitPlan {
+  settingCommitters: Array<() => Promise<void>>;
+  nextOverlayPrefs: OverlayPrefs | null;
+  nextThemes: OverlayTheme[] | null;
+  nextRefreshRate: number | null;
+  nextTaskbarPrefs: ImportedTaskbarPrefs | null;
+  nextOverlayPosition: { x: number; y: number } | null;
+  nextTaskbarPosition: { x: number; y: number } | null;
+  restartTaskbarMonitor: boolean;
+}
+
 export function useConfigTransfer(options: UseConfigTransferOptions) {
   const { store, prefs, themes, updateThemes, refreshRate, t } = options;
 
@@ -57,15 +83,6 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
   const pendingImportConfig = ref<unknown | null>(null);
   const importErrorDialogOpen = ref(false);
   const importErrorMessage = ref('');
-
-  function safeJsonParse<T>(raw: string | null): T | null {
-    if (!raw) return null;
-    try {
-      return JSON.parse(raw) as T;
-    } catch {
-      return null;
-    }
-  }
 
   async function exportConfig() {
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
@@ -95,9 +112,9 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
       refreshRateMs: refreshRate.value,
       overlayPrefs,
       overlayThemes,
-      taskbarPrefs: safeJsonParse<unknown>(localStorage.getItem('pulsecorelite.taskbar_prefs')),
-      overlayPosition: safeJsonParse<unknown>(localStorage.getItem('pulsecorelite.overlay_pos')),
-      taskbarPosition: safeJsonParse<unknown>(localStorage.getItem('pulsecorelite.taskbar_pos'))
+      taskbarPrefs: storageRepository.getJsonSync<unknown>(storageKeys.taskbarPrefs) ?? null,
+      overlayPosition: storageRepository.getJsonSync<unknown>(storageKeys.overlayPosition) ?? null,
+      taskbarPosition: storageRepository.getJsonSync<unknown>(storageKeys.taskbarPosition) ?? null
     };
 
     const json = JSON.stringify(payload, null, 2);
@@ -161,7 +178,7 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
     exportSuccessDialogOpen.value = false;
   }
 
-  function sanitizeImportedTaskbarPrefs(input: unknown) {
+  function sanitizeImportedTaskbarPrefs(input: unknown): ImportedTaskbarPrefs {
     const parsed = input && typeof input === 'object' ? (input as any) : {};
     const bool = (key: string) => typeof parsed[key] === 'boolean';
     return {
@@ -179,9 +196,38 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
     };
   }
 
-  async function applyImportedOverlayPrefs(input: unknown) {
-    const parsed = input && typeof input === 'object' ? (input as any) : {};
-    const boolKeys: Array<keyof typeof prefs> = [
+  function clampRefreshRate(value: number) {
+    return Math.max(10, Math.min(2000, Math.round(value)));
+  }
+
+  function isRecord(input: unknown): input is Record<string, unknown> {
+    return Boolean(input) && typeof input === 'object';
+  }
+
+  function sanitizeMemoryTrimTargets(input: unknown): Array<'app' | 'system'> | null {
+    if (!Array.isArray(input)) {
+      return null;
+    }
+    return input.filter((target): target is 'app' | 'system' => target === 'app' || target === 'system');
+  }
+
+  async function buildImportedOverlayPrefs(input: unknown): Promise<OverlayPrefs> {
+    const parsed = isRecord(input) ? (input as any) : {};
+    const next: OverlayPrefs = JSON.parse(JSON.stringify(prefs)) as OverlayPrefs;
+    type OverlayPrefsBooleanKey =
+      | 'showCpu'
+      | 'showGpu'
+      | 'showMemory'
+      | 'showDisk'
+      | 'showDown'
+      | 'showUp'
+      | 'showLatency'
+      | 'showValues'
+      | 'showPercent'
+      | 'showHardwareInfo'
+      | 'showWarning'
+      | 'showDragHandle';
+    const boolKeys: OverlayPrefsBooleanKey[] = [
       'showCpu',
       'showGpu',
       'showMemory',
@@ -196,24 +242,27 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
       'showDragHandle'
     ];
     for (const key of boolKeys) {
-      if (typeof parsed[key] === 'boolean') (prefs as any)[key] = parsed[key];
+      if (typeof parsed[key] === 'boolean') {
+        next[key] = parsed[key] as OverlayPrefs[OverlayPrefsBooleanKey];
+      }
     }
     if (typeof parsed.backgroundOpacity === 'number' && Number.isFinite(parsed.backgroundOpacity)) {
-      prefs.backgroundOpacity = Math.max(0, Math.min(100, Math.round(parsed.backgroundOpacity)));
+      next.backgroundOpacity = Math.max(0, Math.min(100, Math.round(parsed.backgroundOpacity)));
     }
     if (parsed.backgroundImage === null || typeof parsed.backgroundImage === 'string') {
       const normalized = await normalizeImageRef(parsed.backgroundImage);
-      prefs.backgroundImage = normalized;
+      next.backgroundImage = normalized;
     }
     if (typeof parsed.backgroundBlurPx === 'number' && Number.isFinite(parsed.backgroundBlurPx)) {
-      prefs.backgroundBlurPx = clampBlurPx(parsed.backgroundBlurPx);
+      next.backgroundBlurPx = clampBlurPx(parsed.backgroundBlurPx);
     }
     if (parsed.backgroundEffect === 'gaussian' || parsed.backgroundEffect === 'liquidGlass') {
-      prefs.backgroundEffect = normalizeBackgroundEffect(parsed.backgroundEffect);
+      next.backgroundEffect = normalizeBackgroundEffect(parsed.backgroundEffect);
     }
     if (typeof parsed.backgroundGlassStrength === 'number' && Number.isFinite(parsed.backgroundGlassStrength)) {
-      prefs.backgroundGlassStrength = clampGlassStrength(parsed.backgroundGlassStrength);
+      next.backgroundGlassStrength = clampGlassStrength(parsed.backgroundGlassStrength);
     }
+    return next;
   }
 
   function isPositionLike(input: unknown): input is { x: number; y: number } {
@@ -227,6 +276,146 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
     );
   }
 
+  async function buildImportCommitPlan(raw: unknown): Promise<ImportCommitPlan> {
+    if (!isRecord(raw)) {
+      throw new Error('invalid-import');
+    }
+    const candidate = raw as Record<string, unknown>;
+    if (typeof candidate.schema === 'string' && candidate.schema !== 'pulsecorelite.config') {
+      throw new Error('invalid-schema');
+    }
+
+    const settingCommitters: Array<() => Promise<void>> = [];
+    const pushSettingCommitter = (run: () => Promise<void> | void) => {
+      settingCommitters.push(async () => {
+        await run();
+      });
+    };
+
+    const settings = isRecord(candidate.settings) ? (candidate.settings as Record<string, unknown>) : null;
+    if (settings) {
+      if (settings.language === 'zh-CN' || settings.language === 'en-US') {
+        pushSettingCommitter(() => store.setLanguage(settings.language as 'zh-CN' | 'en-US'));
+      }
+      if (typeof settings.closeToTray === 'boolean') {
+        pushSettingCommitter(() => store.setCloseToTray(settings.closeToTray as boolean));
+      }
+      if (typeof settings.rememberOverlayPosition === 'boolean') {
+        pushSettingCommitter(() => store.setRememberOverlayPosition(settings.rememberOverlayPosition as boolean));
+      }
+      if (typeof settings.overlayAlwaysOnTop === 'boolean') {
+        pushSettingCommitter(() => store.setOverlayAlwaysOnTop(settings.overlayAlwaysOnTop as boolean));
+      }
+      if (typeof settings.taskbarAlwaysOnTop === 'boolean') {
+        pushSettingCommitter(() => store.setTaskbarAlwaysOnTop(settings.taskbarAlwaysOnTop as boolean));
+      }
+      if (typeof settings.taskbarAutoHideOnFullscreen === 'boolean') {
+        pushSettingCommitter(() => store.setTaskbarAutoHideOnFullscreen(settings.taskbarAutoHideOnFullscreen as boolean));
+      }
+      if (typeof settings.taskbarPositionLocked === 'boolean') {
+        pushSettingCommitter(() => store.setTaskbarPositionLocked(settings.taskbarPositionLocked as boolean));
+      }
+      if (settings.factoryResetHotkey == null || typeof settings.factoryResetHotkey === 'string') {
+        pushSettingCommitter(() => store.setFactoryResetHotkey((settings.factoryResetHotkey as string | null) ?? null));
+      }
+      if (typeof settings.taskbarMonitorEnabled === 'boolean') {
+        pushSettingCommitter(() => store.setTaskbarMonitorEnabled(settings.taskbarMonitorEnabled as boolean));
+      }
+      if (typeof settings.autoStartEnabled === 'boolean') {
+        pushSettingCommitter(() => store.setAutoStartEnabled(settings.autoStartEnabled as boolean));
+      }
+      if (typeof settings.memoryTrimEnabled === 'boolean') {
+        pushSettingCommitter(() => store.setMemoryTrimEnabled(settings.memoryTrimEnabled as boolean));
+      }
+      if (typeof settings.memoryTrimSystemEnabled === 'boolean') {
+        pushSettingCommitter(() => store.setMemoryTrimSystemEnabled(settings.memoryTrimSystemEnabled as boolean));
+      }
+      const targets = sanitizeMemoryTrimTargets(settings.memoryTrimTargets);
+      if (targets) {
+        pushSettingCommitter(() => store.setMemoryTrimTargets(targets));
+      }
+      if (typeof settings.memoryTrimIntervalMinutes === 'number' && Number.isFinite(settings.memoryTrimIntervalMinutes)) {
+        pushSettingCommitter(() => store.setMemoryTrimIntervalMinutes(settings.memoryTrimIntervalMinutes as number));
+      }
+    }
+
+    const nextOverlayPrefs = isRecord(candidate.overlayPrefs)
+      ? await buildImportedOverlayPrefs(candidate.overlayPrefs)
+      : null;
+
+    const hasThemePayload = Array.isArray(candidate.overlayThemes) || Array.isArray(candidate.themes);
+    let nextThemes: OverlayTheme[] | null = null;
+    if (hasThemePayload) {
+      const importedThemes = sanitizeThemes(candidate.overlayThemes ?? candidate.themes);
+      const normalizedThemes = await Promise.all(
+        importedThemes.map(async theme => {
+          const image = await normalizeImageRef(theme.image);
+          return { ...theme, image: image ?? theme.image };
+        })
+      );
+      nextThemes = normalizedThemes.slice(0, 3);
+    }
+
+    const nextRefreshRate =
+      typeof candidate.refreshRateMs === 'number' && Number.isFinite(candidate.refreshRateMs)
+        ? clampRefreshRate(candidate.refreshRateMs)
+        : null;
+
+    const nextTaskbarPrefs = candidate.taskbarPrefs ? sanitizeImportedTaskbarPrefs(candidate.taskbarPrefs) : null;
+    const nextOverlayPosition = isPositionLike(candidate.overlayPosition) ? candidate.overlayPosition : null;
+    const nextTaskbarPosition = isPositionLike(candidate.taskbarPosition) ? candidate.taskbarPosition : null;
+    const restartTaskbarMonitor =
+      typeof settings?.taskbarMonitorEnabled === 'boolean'
+        ? (settings.taskbarMonitorEnabled as boolean)
+        : store.settings.taskbarMonitorEnabled;
+
+    return {
+      settingCommitters,
+      nextOverlayPrefs,
+      nextThemes,
+      nextRefreshRate,
+      nextTaskbarPrefs,
+      nextOverlayPosition,
+      nextTaskbarPosition,
+      restartTaskbarMonitor
+    };
+  }
+
+  async function commitImportPlan(plan: ImportCommitPlan) {
+    for (const commit of plan.settingCommitters) {
+      await commit();
+    }
+
+    if (plan.nextOverlayPrefs) {
+      Object.assign(prefs, plan.nextOverlayPrefs);
+    }
+    if (plan.nextThemes) {
+      updateThemes(plan.nextThemes);
+    }
+    if (plan.nextRefreshRate != null) {
+      refreshRate.value = plan.nextRefreshRate;
+      store.setRefreshRate(plan.nextRefreshRate);
+    }
+
+    if (plan.nextTaskbarPrefs) {
+      storageRepository.setJsonSync(storageKeys.taskbarPrefs, plan.nextTaskbarPrefs);
+    }
+    if (plan.nextOverlayPosition) {
+      storageRepository.setJsonSync(storageKeys.overlayPosition, plan.nextOverlayPosition);
+    }
+    if (plan.nextTaskbarPosition) {
+      storageRepository.setJsonSync(storageKeys.taskbarPosition, plan.nextTaskbarPosition);
+    }
+    if (plan.nextRefreshRate != null) {
+      await storageRepository.setString(storageKeys.refreshRate, String(plan.nextRefreshRate));
+    }
+
+    if (plan.restartTaskbarMonitor) {
+      await store.setTaskbarMonitorEnabled(false);
+      await store.setTaskbarMonitorEnabled(true);
+    }
+  }
+
   async function confirmImportConfig() {
     const raw = pendingImportConfig.value;
     importConfirmDialogOpen.value = false;
@@ -234,73 +423,8 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
     if (!raw || typeof window === 'undefined') return;
 
     try {
-      const candidate = raw as any;
-
-      const settings = candidate.settings && typeof candidate.settings === 'object' ? candidate.settings : null;
-      if (settings) {
-        if (settings.language === 'zh-CN' || settings.language === 'en-US') store.setLanguage(settings.language);
-        if (typeof settings.closeToTray === 'boolean') store.setCloseToTray(settings.closeToTray);
-        if (typeof settings.rememberOverlayPosition === 'boolean')
-          store.setRememberOverlayPosition(settings.rememberOverlayPosition);
-        if (typeof settings.overlayAlwaysOnTop === 'boolean')
-          store.setOverlayAlwaysOnTop(settings.overlayAlwaysOnTop);
-        if (typeof settings.taskbarAlwaysOnTop === 'boolean')
-          store.setTaskbarAlwaysOnTop(settings.taskbarAlwaysOnTop);
-        if (typeof settings.taskbarAutoHideOnFullscreen === 'boolean')
-          store.setTaskbarAutoHideOnFullscreen(settings.taskbarAutoHideOnFullscreen);
-        if (typeof settings.taskbarPositionLocked === 'boolean')
-          store.setTaskbarPositionLocked(settings.taskbarPositionLocked);
-        if (settings.factoryResetHotkey == null || typeof settings.factoryResetHotkey === 'string')
-          store.setFactoryResetHotkey(settings.factoryResetHotkey ?? null);
-        if (typeof settings.taskbarMonitorEnabled === 'boolean')
-          await store.setTaskbarMonitorEnabled(settings.taskbarMonitorEnabled);
-        if (typeof settings.autoStartEnabled === 'boolean')
-          await store.setAutoStartEnabled(settings.autoStartEnabled);
-        if (typeof settings.memoryTrimEnabled === 'boolean')
-          await store.setMemoryTrimEnabled(settings.memoryTrimEnabled);
-        if (typeof settings.memoryTrimSystemEnabled === 'boolean')
-          await store.setMemoryTrimSystemEnabled(settings.memoryTrimSystemEnabled);
-        if (Array.isArray(settings.memoryTrimTargets))
-          await store.setMemoryTrimTargets(settings.memoryTrimTargets as Array<'app' | 'system'>);
-        if (typeof settings.memoryTrimIntervalMinutes === 'number' && Number.isFinite(settings.memoryTrimIntervalMinutes))
-          await store.setMemoryTrimIntervalMinutes(settings.memoryTrimIntervalMinutes);
-      }
-
-      await applyImportedOverlayPrefs(candidate.overlayPrefs);
-      const importedThemes = sanitizeThemes(candidate.overlayThemes ?? candidate.themes);
-      if (importedThemes.length || Array.isArray(candidate.overlayThemes) || Array.isArray(candidate.themes)) {
-        const normalizedThemes = await Promise.all(
-          importedThemes.map(async theme => {
-            const image = await normalizeImageRef(theme.image);
-            return { ...theme, image: image ?? theme.image };
-          })
-        );
-        updateThemes(normalizedThemes.slice(0, 3));
-      }
-
-      if (typeof candidate.refreshRateMs === 'number' && Number.isFinite(candidate.refreshRateMs)) {
-        const nextRate = Math.max(10, Math.min(2000, Math.round(candidate.refreshRateMs)));
-        refreshRate.value = nextRate;
-        store.setRefreshRate(nextRate);
-        localStorage.setItem('pulsecorelite.refresh_rate', String(nextRate));
-      }
-
-      if (candidate.taskbarPrefs) {
-        const next = sanitizeImportedTaskbarPrefs(candidate.taskbarPrefs);
-        localStorage.setItem('pulsecorelite.taskbar_prefs', JSON.stringify(next));
-      }
-
-      if (isPositionLike(candidate.overlayPosition)) {
-        localStorage.setItem('pulsecorelite.overlay_pos', JSON.stringify(candidate.overlayPosition));
-      }
-      if (isPositionLike(candidate.taskbarPosition)) {
-        localStorage.setItem('pulsecorelite.taskbar_pos', JSON.stringify(candidate.taskbarPosition));
-      }
-
-      if (store.settings.taskbarMonitorEnabled) {
-        await store.setTaskbarMonitorEnabled(false);
-        await store.setTaskbarMonitorEnabled(true);
-      }
+      const nextState = await buildImportCommitPlan(raw);
+      await commitImportPlan(nextState);
     } catch {
       importErrorMessage.value = t('overlay.importConfigInvalid');
       importErrorDialogOpen.value = true;

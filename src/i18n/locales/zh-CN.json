@@ -107,10 +107,18 @@
     "cpuFreq": "CPU 频率",
     "gpuTemp": "GPU 温度",
     "app": "APP",
+    "systemStable": "系统稳定",
+    "uptimePrefix": "运行时长：",
     "openMainWindow": "显示主窗口",
     "hideMainWindow": "隐藏主窗口",
     "taskbarTwoLine": "两行模式",
     "closeTaskbarMonitor": "关闭任务栏监测",
+    "taskbarCpuLabel": "CPU",
+    "taskbarGpuLabel": "GPU",
+    "taskbarMemoryLabel": "RAM",
+    "taskbarAppLabel": "APP",
+    "taskbarThroughputUnit": "MB/s",
+    "taskbarLatencyLabel": "L",
     "toolkit": "工具箱",
     "openToolkit": "打开工具箱",
     "closeToolkit": "关闭工具箱",
@@ -140,6 +148,7 @@
     "profileDuration": "采样时长 (秒)",
     "profileStart": "开始采样",
     "profileStop": "停止采样",
+    "copyPath": "复制路径",
     "copyPathSuccess": "路径已复制",
     "openPath": "打开目录",
     "profileStatusIdle": "未采样",
@@ -315,7 +324,9 @@
     "reminderScreenBadge": "任务提醒",
     "reminderScreenLockedHint": "该提醒已锁定，请在倒计时后关闭。",
     "reminderScreenCloseReady": "关闭提醒",
-    "reminderScreenCloseWait": "{seconds} 秒后可关闭"
+    "reminderScreenCloseWait": "{seconds} 秒后可关闭",
+    "reminderScreenWebBlocked": "该网页地址不在安全白名单内，已阻止嵌入。",
+    "reminderScreenImageBlocked": "该图片地址不符合安全策略，已阻止加载。"
   },
   "ui": {
     "dateInput": {

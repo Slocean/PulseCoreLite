@@ -107,10 +107,18 @@
     "cpuFreq": "CPU Frequency",
     "gpuTemp": "GPU Temperature",
     "app": "APP",
+    "systemStable": "SYSTEM STABLE",
+    "uptimePrefix": "Uptime:",
     "openMainWindow": "Show Main Window",
     "hideMainWindow": "Hide Main Window",
     "taskbarTwoLine": "Two-line mode",
     "closeTaskbarMonitor": "Disable Taskbar Monitor",
+    "taskbarCpuLabel": "CPU",
+    "taskbarGpuLabel": "GPU",
+    "taskbarMemoryLabel": "RAM",
+    "taskbarAppLabel": "APP",
+    "taskbarThroughputUnit": "MB/s",
+    "taskbarLatencyLabel": "L",
     "toolkit": "Toolkit",
     "openToolkit": "Open Toolkit",
     "closeToolkit": "Close Toolkit",
@@ -141,6 +149,7 @@
     "profileDuration": "Duration (sec)",
     "profileStart": "Start capture",
     "profileStop": "Stop capture",
+    "copyPath": "Copy path",
     "copyPathSuccess": "Path copied",
     "openPath": "Open folder",
     "profileStatusIdle": "Idle",
@@ -315,7 +324,9 @@
     "reminderScreenBadge": "TASK REMINDER",
     "reminderScreenLockedHint": "This reminder is locked by policy.",
     "reminderScreenCloseReady": "Close Reminder",
-    "reminderScreenCloseWait": "Close in {seconds}s"
+    "reminderScreenCloseWait": "Close in {seconds}s",
+    "reminderScreenWebBlocked": "This URL is not in the safe iframe whitelist and has been blocked.",
+    "reminderScreenImageBlocked": "This image URL violates the safety policy and has been blocked."
   },
   "ui": {
     "dateInput": {

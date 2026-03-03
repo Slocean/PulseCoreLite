@@ -4,14 +4,7 @@
       <div class="reminder-screen__badge">{{ t('toolkit.reminderScreenBadge') }}</div>
       <h1 class="reminder-screen__title">{{ title }}</h1>
       <div class="reminder-screen__content">
-        <pre v-if="contentType === 'text'" class="reminder-screen__text">{{ content }}</pre>
-        <article v-else-if="contentType === 'markdown'" class="reminder-screen__markdown" v-html="markdownHtml"></article>
-        <iframe
-          v-else-if="contentType === 'web'"
-          class="reminder-screen__web"
-          :src="content"
-          referrerpolicy="no-referrer"></iframe>
-        <img v-else-if="contentType === 'image'" class="reminder-screen__image" :src="content" :alt="title" />
+        <ReminderContentRenderer :content-type="contentType" :title="title" :content="content" />
       </div>
       <div class="reminder-screen__hint">{{ t('toolkit.reminderScreenLockedHint') }}</div>
       <div class="reminder-screen__actions">
@@ -31,8 +24,16 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { readReminderScreenPayload } from '../composables/useTaskReminders';
+import ReminderContentRenderer from '../components/reminder/ReminderContentRenderer.vue';
+import { buildReminderCloseSignalKey, readReminderScreenPayload } from '../composables/useTaskReminders';
+import { storageRepository } from '../services/storageRepository';
 import { api, inTauri } from '../services/tauri';
+import {
+  closeCurrentWindow,
+  focusCurrentWindow,
+  listenCurrentWindowCloseRequested,
+  setCurrentWindowAlwaysOnTop
+} from '../services/windowManager';
 import type { ReminderContentType } from '../types';
 
 const { t } = useI18n();
@@ -47,7 +48,6 @@ let unlistenCloseRequested: (() => void) | null = null;
 let storageSignalHandler: ((event: StorageEvent) => void) | null = null;
 let allowSystemClose = false;
 
-const markdownHtml = computed(() => renderMarkdown(content.value));
 const closeButtonText = computed(() =>
   canClose.value
     ? t('toolkit.reminderScreenCloseReady')
@@ -72,25 +72,19 @@ onMounted(async () => {
     }
   }
 
-  try {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window');
-    const current = getCurrentWindow();
-    await current.setAlwaysOnTop(true);
-    await current.setFocus();
-    unlistenCloseRequested = await current.onCloseRequested(event => {
-      if (!canClose.value && !allowSystemClose) {
-        event.preventDefault();
-      }
-    });
-  } catch {
-    // ignore
-  }
+  void setCurrentWindowAlwaysOnTop(true);
+  void focusCurrentWindow();
+  unlistenCloseRequested = await listenCurrentWindowCloseRequested(event => {
+    if (!canClose.value && !allowSystemClose) {
+      event.preventDefault();
+    }
+  });
 
   storageSignalHandler = event => {
     if (!token.value || !event.key || !event.newValue) {
       return;
     }
-    const key = `pulsecorelite.reminder-close.${token.value}`;
+    const key = buildReminderCloseSignalKey(token.value);
     if (event.key !== key) {
       return;
     }
@@ -139,7 +133,7 @@ async function closeReminderWindows() {
     }
   }
   try {
-    window.localStorage.setItem(`pulsecorelite.reminder-close.${token.value}`, String(Date.now()));
+    storageRepository.setStringSync(buildReminderCloseSignalKey(token.value), String(Date.now()));
   } catch {
     // ignore
   }
@@ -148,33 +142,7 @@ async function closeReminderWindows() {
 
 async function closeCurrentWindowBySignal() {
   allowSystemClose = true;
-  try {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window');
-    await getCurrentWindow().close();
-  } catch {
-    // ignore
-  }
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function renderMarkdown(raw: string) {
-  const escaped = escapeHtml(raw);
-  return escaped
-    .replace(/^###\s+(.+)$/gm, '<h3>$1</h3>')
-    .replace(/^##\s+(.+)$/gm, '<h2>$1</h2>')
-    .replace(/^#\s+(.+)$/gm, '<h1>$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
-    .replace(/\n/g, '<br />');
+  await closeCurrentWindow();
 }
 </script>
 
@@ -224,33 +192,6 @@ function renderMarkdown(raw: string) {
   background: rgba(0, 0, 0, 0.5);
   padding: clamp(16px, 2.2vw, 28px);
   overflow: auto;
-}
-
-.reminder-screen__text,
-.reminder-screen__markdown {
-  margin: 0;
-  font-size: clamp(18px, 1.8vw, 30px);
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.reminder-screen__markdown :deep(a) {
-  color: rgba(0, 242, 255, 0.96);
-}
-
-.reminder-screen__web {
-  width: 100%;
-  height: 64vh;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.4);
-}
-
-.reminder-screen__image {
-  width: 100%;
-  max-height: 72vh;
-  object-fit: contain;
 }
 
 .reminder-screen__hint {

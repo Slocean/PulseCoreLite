@@ -1,89 +1,25 @@
-import type { UnlistenFn } from "@tauri-apps/api/event";
-import type {
-  AppBootstrap,
-  HardwareInfo,
-  SendReminderEmailRequest,
-  ScheduleShutdownRequest,
-  ShutdownPlan,
-  TaskReminder,
-  TaskReminderStore,
-  TaskbarInfo
-} from "../types";
+export { inTauri, listenEvent } from './tauri/core';
+import { telemetryApi } from './tauri/telemetry';
+import { systemApi } from './tauri/system';
+import { windowApi } from './tauri/window';
+import { shutdownApi } from './tauri/shutdown';
+import { profileApi } from './tauri/profile';
+import { reminderApi } from './tauri/reminder';
 
-const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-
-async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  if (!isTauri) {
-    throw new Error("Not running inside Tauri runtime.");
-  }
-  const { invoke } = await import("@tauri-apps/api/core");
-  return invoke<T>(cmd, args);
-}
-
-export async function listenEvent<T>(event: string, handler: (payload: T) => void): Promise<UnlistenFn> {
-  if (!isTauri) {
-    return () => undefined;
-  }
-  const { listen } = await import("@tauri-apps/api/event");
-  return listen<T>(event, (e) => handler(e.payload));
-}
-
-export function inTauri(): boolean {
-  return isTauri;
-}
+export const tauriApi = {
+  telemetry: telemetryApi,
+  system: systemApi,
+  window: windowApi,
+  shutdown: shutdownApi,
+  profile: profileApi,
+  reminder: reminderApi
+};
 
 export const api = {
-  getInitialState: () => tauriInvoke<AppBootstrap>("get_initial_state"),
-  getHardwareInfo: () => tauriInvoke<HardwareInfo>("get_hardware_info"),
-  toggleOverlay: (visible: boolean) => tauriInvoke<boolean>("toggle_overlay", { visible }),
-  setRefreshRate: (rateMs: number) => tauriInvoke<void>("set_refresh_rate", { rateMs }),
-  setMemoryTrimEnabled: (enabled: boolean) => tauriInvoke<void>("set_memory_trim_enabled", { enabled }),
-  setMemoryTrimSystemEnabled: (enabled: boolean) => tauriInvoke<void>("set_memory_trim_system_enabled", { enabled }),
-  setMemoryTrimIntervalMinutes: (intervalMinutes: number) =>
-    tauriInvoke<void>("set_memory_trim_interval", { intervalMinutes }),
-  confirmFactoryReset: (title: string, message: string) =>
-    tauriInvoke<boolean>("confirm_factory_reset", { title, message }),
-  getInstallationMode: () => tauriInvoke<"installed" | "portable">("get_installation_mode"),
-  uninstallApp: (title: string, message: string) => tauriInvoke<void>("uninstall_app", { title, message }),
-  getTaskbarInfo: () => tauriInvoke<TaskbarInfo | null>("get_taskbar_info"),
-  isFullscreenWindowActive: () => tauriInvoke<boolean>("is_fullscreen_window_active"),
-  setWindowSystemTopmost: (label: string, topmost: boolean) =>
-    tauriInvoke<void>("set_window_system_topmost", { label, topmost }),
-  getAutoStartEnabled: () => tauriInvoke<boolean>("get_auto_start_enabled"),
-  setAutoStartEnabled: (enabled: boolean) => tauriInvoke<boolean>("set_auto_start_enabled", { enabled }),
-  saveExportConfig: (path: string, content: string) => tauriInvoke<void>("save_export_config", { path, content }),
-  getShutdownPlan: () => tauriInvoke<ShutdownPlan | null>("get_shutdown_plan"),
-  scheduleShutdown: (request: ScheduleShutdownRequest) =>
-    tauriInvoke<ShutdownPlan>("schedule_shutdown", { request }),
-  cancelShutdownSchedule: () => tauriInvoke<void>("cancel_shutdown_schedule"),
-  exitApp: () => tauriInvoke<void>("exit_app"),
-  startProfileCapture: (options: { path: string; intervalMs: number; durationMs?: number | null }) =>
-    tauriInvoke<{
-      active: boolean;
-      path: string | null;
-      startedAt: string | null;
-      samples: number;
-    }>("start_profile_capture", options),
-  stopProfileCapture: () =>
-    tauriInvoke<{
-      active: boolean;
-      path: string | null;
-      startedAt: string | null;
-      samples: number;
-    }>("stop_profile_capture"),
-  getProfileStatus: () =>
-    tauriInvoke<{
-      active: boolean;
-      path: string | null;
-      startedAt: string | null;
-      samples: number;
-    }>("get_profile_status"),
-  getProfileOutputDir: () => tauriInvoke<string>("get_profile_output_dir"),
-  openProfileOutputPath: (path: string) => tauriInvoke<void>("open_profile_output_path", { path }),
-  sendReminderEmail: (request: SendReminderEmailRequest) => tauriInvoke<void>("send_reminder_email", { request }),
-  forceCloseReminderScreens: (token: string) => tauriInvoke<number>("force_close_reminder_screens", { token }),
-  getTaskReminderStore: () => tauriInvoke<TaskReminderStore>("get_task_reminder_store"),
-  saveTaskReminderStore: (store: TaskReminderStore) =>
-    tauriInvoke<TaskReminderStore>("save_task_reminder_store", { store }),
-  triggerTaskReminderNow: (reminder: TaskReminder) => tauriInvoke<void>("trigger_task_reminder_now", { reminder })
+  ...telemetryApi,
+  ...systemApi,
+  ...windowApi,
+  ...shutdownApi,
+  ...profileApi,
+  ...reminderApi
 };

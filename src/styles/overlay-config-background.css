@@ -1,0 +1,66 @@
+﻿.overlay-background-body {
+  display: grid;
+  gap: 10px;
+}
+
+.overlay-upload {
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 14px 12px;
+  display: grid;
+  gap: 6px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--motion-duration-fast) var(--motion-ease-standard);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.overlay-upload--active {
+  border-color: rgba(0, 242, 255, 0.55);
+  box-shadow: 0 0 12px rgba(0, 242, 255, 0.12);
+}
+
+.overlay-upload-input {
+  display: none;
+}
+
+.overlay-upload-title {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.overlay-upload-subtitle {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.overlay-upload-name {
+  font-size: 10px;
+  color: rgba(0, 242, 255, 0.9);
+  word-break: break-all;
+}
+
+.overlay-crop {
+  display: grid;
+  gap: 6px;
+}
+
+.overlay-crop-title {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.overlay-crop-canvas {
+  width: 100%;
+  height: 160px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.35);
+  cursor: crosshair;
+}
+
+.overlay-crop-tip {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.55);
+  text-align: center;
+}

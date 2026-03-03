@@ -1,6 +1,6 @@
 import { onMounted, ref } from 'vue';
 
-const REFRESH_RATE_KEY = 'pulsecorelite.refresh_rate';
+import { storageKeys, storageRepository } from '../services/storageRepository';
 
 export function useOverlayRefreshRate(store: { setRefreshRate: (rateMs: number) => Promise<void> | void }) {
   const refreshRate = ref(1000);
@@ -10,7 +10,7 @@ export function useOverlayRefreshRate(store: { setRefreshRate: (rateMs: number) 
     const next = clampRefreshRate(value);
     refreshRate.value = next;
     store.setRefreshRate(next);
-    localStorage.setItem(REFRESH_RATE_KEY, String(next));
+    void storageRepository.setString(storageKeys.refreshRate, String(next));
   };
 
   const handleRefreshRateChange = () => {
@@ -18,17 +18,21 @@ export function useOverlayRefreshRate(store: { setRefreshRate: (rateMs: number) 
   };
 
   onMounted(() => {
-    const storedRate = localStorage.getItem(REFRESH_RATE_KEY);
-    if (!storedRate) {
-      return;
-    }
-    const value = Number(storedRate);
-    if (!Number.isFinite(value)) {
-      return;
-    }
-    const next = clampRefreshRate(value);
-    refreshRate.value = next;
-    store.setRefreshRate(next);
+    void (async () => {
+      const storedRate = await storageRepository.getString(storageKeys.refreshRate, {
+        migrateFromLocal: true
+      });
+      if (!storedRate) {
+        return;
+      }
+      const value = Number(storedRate);
+      if (!Number.isFinite(value)) {
+        return;
+      }
+      const next = clampRefreshRate(value);
+      refreshRate.value = next;
+      store.setRefreshRate(next);
+    })();
   });
 
   return { refreshRate, handleRefreshRateChange };

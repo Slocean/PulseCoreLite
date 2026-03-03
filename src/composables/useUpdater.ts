@@ -1,5 +1,7 @@
-﻿import { markRaw, ref, shallowRef, toRaw } from "vue";
-import { inTauri } from "../services/tauri";
+﻿import { markRaw, ref, shallowRef, toRaw } from 'vue';
+
+import { inTauri } from '../services/tauri';
+import { toUpdaterMessage } from './updater/messages';
 
 type UpdatePayload = {
   version: string;
@@ -22,8 +24,8 @@ type UpdateManifest = {
 };
 
 const UPDATE_MANIFEST_URL =
-  "https://github.com/Slocean/PulseCoreLite/releases/latest/download/latest.json";
-const RELEASES_URL = "https://github.com/Slocean/PulseCoreLite/releases";
+  'https://github.com/Slocean/PulseCoreLite/releases/latest/download/latest.json';
+const RELEASES_URL = 'https://github.com/Slocean/PulseCoreLite/releases';
 
 function isMojibakeLine(line: string): boolean {
   const latinMatches = line.match(/[\u00C0-\u00FF]/g);
@@ -36,7 +38,7 @@ function isMojibakeLine(line: string): boolean {
 function decodeMojibake(line: string): string {
   try {
     const bytes = Uint8Array.from([...line].map(char => char.charCodeAt(0)));
-    const decoded = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+    const decoded = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
     return decoded || line;
   } catch {
     return line;
@@ -44,25 +46,12 @@ function decodeMojibake(line: string): string {
 }
 
 function normalizeUpdateNotes(notes: string): string {
-  if (!notes) return notes;
+  if (!notes) {
+    return notes;
+  }
   const lines = notes.split(/\r?\n/);
   const normalized = lines.map(line => (isMojibakeLine(line) ? decodeMojibake(line) : line));
-  return normalized.join("\n");
-}
-
-function toMessage(error: unknown): string {
-  const message = error instanceof Error ? error.message : typeof error === "string" ? error : "Unknown error";
-  const lower = message.toLowerCase();
-  if (
-    lower.includes("error sending request for url") ||
-    lower.includes("failed to send request") ||
-    lower.includes("dns") ||
-    lower.includes("timeout") ||
-    lower.includes("connection")
-  ) {
-    return `Update server connection failed. Please check your network and retry. Manual download: ${RELEASES_URL}`;
-  }
-  return message;
+  return normalized.join('\n');
 }
 
 function keepRawUpdate(update: UpdatePayload | null): UpdatePayload | null {
@@ -73,7 +62,7 @@ function keepRawUpdate(update: UpdatePayload | null): UpdatePayload | null {
 }
 
 function normalizeVersion(version: string): number[] {
-  const clean = version.trim().replace(/^v/i, "");
+  const clean = version.trim().replace(/^v/i, '');
   const parts = clean.split(/[^\d]+/).filter(Boolean);
   return parts.map(part => Number.parseInt(part, 10) || 0);
 }
@@ -85,27 +74,33 @@ function isRemoteVersionNewer(remoteVersion: string, currentVersion: string): bo
   for (let i = 0; i < maxLength; i += 1) {
     const remotePart = remote[i] ?? 0;
     const currentPart = current[i] ?? 0;
-    if (remotePart > currentPart) return true;
-    if (remotePart < currentPart) return false;
+    if (remotePart > currentPart) {
+      return true;
+    }
+    if (remotePart < currentPart) {
+      return false;
+    }
   }
   return false;
 }
 
 function getManifestWindowsDownloadUrl(manifest: UpdateManifest): string | null {
-  if (!manifest.platforms) return null;
+  if (!manifest.platforms) {
+    return null;
+  }
   const candidates = Object.entries(manifest.platforms)
-    .filter(([key]) => key.toLowerCase().includes("windows"))
+    .filter(([key]) => key.toLowerCase().includes('windows'))
     .map(([, value]) => value?.url)
-    .filter((url): url is string => typeof url === "string" && url.length > 0);
+    .filter((url): url is string => typeof url === 'string' && url.length > 0);
   return candidates[0] ?? null;
 }
 
 function openExternalUrl(url: string): boolean {
   try {
-    const anchor = document.createElement("a");
+    const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.target = "_blank";
-    anchor.rel = "noopener noreferrer";
+    anchor.target = '_blank';
+    anchor.rel = 'noopener noreferrer';
     anchor.click();
     return true;
   } catch {
@@ -124,14 +119,14 @@ export function useUpdater(currentVersion: string) {
   const manualDownloadUrl = ref<string | null>(null);
 
   async function checkForUpdatesByManifestFallback() {
-    const response = await fetch(UPDATE_MANIFEST_URL, { cache: "no-store" });
+    const response = await fetch(UPDATE_MANIFEST_URL, { cache: 'no-store' });
     if (!response.ok) {
       throw new Error(`Fallback request failed: HTTP ${response.status}`);
     }
     const manifest = (await response.json()) as UpdateManifest;
     const version = manifest.version?.trim();
     if (!version) {
-      throw new Error("Fallback manifest missing version");
+      throw new Error('Fallback manifest missing version');
     }
 
     manualDownloadUrl.value = getManifestWindowsDownloadUrl(manifest);
@@ -145,7 +140,7 @@ export function useUpdater(currentVersion: string) {
     updateAvailable.value = true;
     updateInfo.value = {
       version,
-      notes: normalizeUpdateNotes(manifest.notes ?? ""),
+      notes: normalizeUpdateNotes(manifest.notes ?? ''),
       date: manifest.pub_date
     };
   }
@@ -157,7 +152,7 @@ export function useUpdater(currentVersion: string) {
     checkingUpdate.value = true;
     updateError.value = null;
     try {
-      const { check } = await import("@tauri-apps/plugin-updater");
+      const { check } = await import('@tauri-apps/plugin-updater');
       const update = keepRawUpdate((await check()) as UpdatePayload | null);
       updateRef.value = update;
       manualDownloadUrl.value = null;
@@ -165,7 +160,7 @@ export function useUpdater(currentVersion: string) {
         updateAvailable.value = true;
         updateInfo.value = {
           version: update.version,
-          notes: normalizeUpdateNotes(update.body ?? ""),
+          notes: normalizeUpdateNotes(update.body ?? ''),
           date: update.date
         };
       } else {
@@ -176,7 +171,7 @@ export function useUpdater(currentVersion: string) {
       try {
         await checkForUpdatesByManifestFallback();
       } catch {
-        updateError.value = toMessage(error);
+        updateError.value = toUpdaterMessage(error, RELEASES_URL);
       }
     } finally {
       checkingUpdate.value = false;
@@ -192,7 +187,7 @@ export function useUpdater(currentVersion: string) {
     try {
       let update = keepRawUpdate(updateRef.value);
       if (!update) {
-        const { check } = await import("@tauri-apps/plugin-updater");
+        const { check } = await import('@tauri-apps/plugin-updater');
         update = keepRawUpdate((await check()) as UpdatePayload | null);
         updateRef.value = update;
       }
@@ -209,10 +204,10 @@ export function useUpdater(currentVersion: string) {
       const downloadAndInstall = update.downloadAndInstall.bind(update);
       await downloadAndInstall();
 
-      const { relaunch } = await import("@tauri-apps/plugin-process");
+      const { relaunch } = await import('@tauri-apps/plugin-process');
       await relaunch();
     } catch (error) {
-      updateError.value = toMessage(error);
+      updateError.value = toUpdaterMessage(error, RELEASES_URL);
     } finally {
       installingUpdate.value = false;
     }

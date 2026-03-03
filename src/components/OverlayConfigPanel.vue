@@ -8,210 +8,55 @@
       content-class="overlay-config-content"
       title-class="overlay-config-panel-title-hidden"
       @mousedown.stop>
-      <!-- <div class="overlay-config-grid overlay-config-grid--3"> -->
-      <UiCheckbox v-model="prefs.showCpu">{{ t('overlay.showCpu') }}</UiCheckbox>
-      <UiCheckbox v-model="prefs.showGpu">{{ t('overlay.showGpu') }}</UiCheckbox>
-      <UiCheckbox v-model="prefs.showMemory">{{ t('overlay.showMemory') }}</UiCheckbox>
-      <UiCheckbox v-model="prefs.showDisk">{{ t('overlay.showDisk') }}</UiCheckbox>
-      <UiCheckbox v-model="prefs.showDown">{{ t('overlay.showDown') }}</UiCheckbox>
-      <UiCheckbox v-model="prefs.showUp">{{ t('overlay.showUp') }}</UiCheckbox>
-      <!-- </div> -->
-      <UiCheckbox v-model="prefs.showLatency">{{ t('overlay.showLatency') }}</UiCheckbox>
-      <UiCheckbox v-model="prefs.showValues">{{ t('overlay.showValues') }}</UiCheckbox>
-      <UiCheckbox v-model="prefs.showPercent">{{ t('overlay.showPercent') }}</UiCheckbox>
-      <UiCheckbox v-model="prefs.showHardwareInfo">{{ t('overlay.showHardware') }}</UiCheckbox>
-      <UiCheckbox v-model="prefs.showWarning">{{ t('overlay.showWarning') }}</UiCheckbox>
-      <UiCheckbox v-model="prefs.showDragHandle">{{ t('overlay.showDragHandle') }}</UiCheckbox>
+      <OverlayConfigDisplaySection
+        :prefs="prefs"
+        v-model:refresh-rate="refreshRate"
+        @refresh-rate-change="emit('refreshRateChange')" />
 
-      <UiCheckbox v-model="autoStartEnabled">{{ t('overlay.autoStart') }}</UiCheckbox>
-      <UiCheckbox v-model="memoryTrimEnabled">{{ t('overlay.memoryTrim') }}</UiCheckbox>
-      <UiCheckbox v-model="rememberOverlayPosition">{{ t('overlay.rememberPosition') }}</UiCheckbox>
-      <UiCheckbox v-model="overlayAlwaysOnTop">{{ t('overlay.mainWindowAlwaysOnTop') }}</UiCheckbox>
-      <div class="overlay-config-row">
-        <UiCheckbox v-model="closeToTray">{{ t('overlay.closeToTray') }}</UiCheckbox>
-        <div class="overlay-config-taskbar overlay-config-taskbar--compact">
-          <span class="overlay-config-label">{{ t('overlay.taskbarMonitor') }}</span>
-          <UiSwitch v-model="taskbarMonitorEnabled" :aria-label="t('overlay.taskbarMonitor')" />
-        </div>
-      </div>
-      <div class="overlay-config-language">
-        <span class="overlay-config-label">{{ t('overlay.language') }}</span>
-        <div class="overlay-lang-buttons">
-          <UiButton
-            native-type="button"
-            preset="overlay-chip"
-            :active="language === 'zh-CN'"
-            @click="emit('setLanguage', 'zh-CN')">
-            {{ t('overlay.langZh') }}
-          </UiButton>
-          <UiButton
-            native-type="button"
-            preset="overlay-chip"
-            :active="language === 'en-US'"
-            @click="emit('setLanguage', 'en-US')">
-            {{ t('overlay.langEn') }}
-          </UiButton>
-        </div>
-      </div>
-      <div class="overlay-config-range">
-        <span class="overlay-config-label">{{ t('overlay.refreshRate') }}</span>
-        <span class="overlay-config-value">{{ refreshRate }}ms</span>
-        <input
-          type="range"
-          min="10"
-          max="2000"
-          step="10"
-          v-model.number="refreshRate"
-          @change="emit('refreshRateChange')" />
-      </div>
-      <div v-if="!prefs.backgroundImage" class="overlay-config-range">
-        <span class="overlay-config-label">{{ t('overlay.backgroundOpacity') }}</span>
-        <span class="overlay-config-value">{{ backgroundOpacity }}%</span>
-        <input type="range" min="0" max="100" step="5" v-model.number="backgroundOpacity" />
-      </div>
-      <div class="overlay-config-item--wide overlay-config-action">
-        <div class="overlay-config-theme">
-          <span class="overlay-config-label">{{ t('overlay.backgroundImage') }}</span>
-          <div class="overlay-lang-buttons overlay-config-theme-tabs">
-            <UiButton
-              native-type="button"
-              preset="overlay-chip-tab"
-              :active="isDefaultTheme"
-              @click="selectDefaultTheme">
-              {{ t('overlay.themeDefault') }}
-            </UiButton>
-            <div class="overlay-theme-list">
-              <div
-                v-for="theme in themes"
-                :key="theme.id"
-                class="overlay-theme-chip"
-                :class="{ 'overlay-theme-chip--active': isThemeActive(theme) }"
-                :data-name="theme.name"
-                @click="selectTheme(theme)">
-                <!-- @contextmenu.prevent.stop="emit('editTheme', theme.id)" -->
-                <!-- <span class="overlay-theme-name">{{ theme.name }}</span> -->
-                <span
-                  class="overlay-theme-thumb"
-                  :style="{ backgroundImage: `url(${getThemePreviewUrl(theme)})` }"></span>
-                <OverlayCornerDelete
-                  :ariaLabel="t('overlay.themeDelete')"
-                  @click="emit('deleteTheme', theme.id)" />
-                <UiButton
-                  native-type="button"
-                  preset="overlay-corner-primary"
-                  :aria-label="t('overlay.themeEditTitle')"
-                  @click.stop="emit('editTheme', theme.id)"
-                  @contextmenu.prevent.stop>
-                  <span class="material-symbols-outlined">edit</span>
-                </UiButton>
-              </div>
-            </div>
-          </div>
-        </div>
-        <UiButton
-          native-type="button"
-          preset="overlay-chip-action"
-          :disabled="!canAddTheme"
-          @click="emit('openBackgroundDialog')">
-          {{ t('overlay.backgroundImageButton') }}
-        </UiButton>
-      </div>
-      <div class="overlay-config-duo">
-        <div class="overlay-config-language">
-          <span class="overlay-config-label">{{ t('overlay.update') }}</span>
-          <div class="overlay-lang-buttons">
-            <UiButton
-              native-type="button"
-              preset="overlay-chip"
-              :disabled="checkingUpdate"
-              @click="emit('checkUpdate')">
-              {{ checkingUpdate ? t('overlay.updateChecking') : t('overlay.checkUpdate') }}
-            </UiButton>
-          </div>
-        </div>
-        <div class="overlay-config-language">
-          <span class="overlay-config-label">{{ t('overlay.configTransfer') }}</span>
-          <div class="overlay-lang-buttons">
-            <UiButton native-type="button" preset="overlay-chip" @click="emit('exportConfig')">
-              {{ t('overlay.exportConfig') }}
-            </UiButton>
-            <UiButton native-type="button" preset="overlay-chip" @click="triggerImport">
-              {{ t('overlay.importConfig') }}
-            </UiButton>
-          </div>
-          <input
-            ref="importFileInput"
-            class="overlay-upload-input"
-            type="file"
-            accept="application/json"
-            @change="handleImportChange" />
-        </div>
-      </div>
-      <div class="overlay-config-duo">
-        <div class="overlay-config-hotkey">
-          <span class="overlay-config-label">{{ t('overlay.factoryResetHotkey') }}</span>
-          <div class="overlay-config-hotkey-controls">
-            <div class="overlay-hotkey-chip">
-              <UiButton native-type="button" preset="overlay-chip" @click="beginHotkeyCapture">
-                {{ recordingHotkey ? t('overlay.hotkeyRecording') : hotkeyLabel }}
-              </UiButton>
-              <OverlayCornerDelete
-                v-if="factoryResetHotkey != null && !recordingHotkey"
-                :ariaLabel="t('overlay.hotkeyClear')"
-                @click="requestClearHotkey" />
-            </div>
-            <UiButton native-type="button" preset="overlay-danger" @click="confirmFactoryReset">
-              {{ t('overlay.factoryReset') }}
-            </UiButton>
-          </div>
-        </div>
-        <div class="overlay-config-language">
-          <span class="overlay-config-label">{{ t('overlay.toolkit') }}</span>
-          <UiSwitch :model-value="toolkitSwitchOn" :aria-label="t('overlay.toolkit')" @update:model-value="handleToolkitToggle" />
-        </div>
-      </div>
-      <div v-if="false && canUninstall" class="overlay-config-uninstall">
-        <UiButton native-type="button" preset="overlay-danger" @click="emit('uninstall')">
-          {{ t('overlay.uninstall') }}
-        </UiButton>
-      </div>
-      <!-- <div class="overlay-config-version">v{{ appVersion }}</div> -->
+      <OverlayConfigSystemSection
+        :language="language"
+        v-model:auto-start-enabled="autoStartEnabled"
+        v-model:memory-trim-enabled="memoryTrimEnabled"
+        v-model:remember-overlay-position="rememberOverlayPosition"
+        v-model:overlay-always-on-top="overlayAlwaysOnTop"
+        v-model:close-to-tray="closeToTray"
+        v-model:taskbar-monitor-enabled="taskbarMonitorEnabled"
+        @set-language="emit('setLanguage', $event)" />
+
+      <OverlayConfigThemeSection
+        :prefs="prefs"
+        :themes="props.themes"
+        :get-theme-preview-url="getThemePreviewUrl"
+        v-model:background-opacity="backgroundOpacity"
+        @open-background-dialog="emit('openBackgroundDialog')"
+        @delete-theme="emit('deleteTheme', $event)"
+        @edit-theme="emit('editTheme', $event)" />
+
+      <OverlayConfigToolsSection
+        :checking-update="checkingUpdate"
+        v-model:factory-reset-hotkey="factoryResetHotkey"
+        :toolkit-switch-on="toolkitSwitchOn"
+        :can-uninstall="canUninstall"
+        @check-update="emit('checkUpdate')"
+        @export-config="emit('exportConfig')"
+        @import-config="emit('importConfig', $event)"
+        @factory-reset="confirmFactoryReset"
+        @open-toolkit="handleToolkitToggle"
+        @uninstall="emit('uninstall')" />
     </UiCollapsiblePanel>
-
-    <OverlayDialog
-      v-model:open="hotkeyClearDialogOpen"
-      :title="t('overlay.hotkeyClearTitle')"
-      :message="t('overlay.hotkeyClearMessage')"
-      :confirm-text="t('overlay.dialogConfirm')"
-      :cancel-text="t('overlay.dialogCancel')"
-      :close-label="t('overlay.dialogClose')"
-      @confirm="confirmClearHotkey"
-      @cancel="closeClearHotkeyDialog" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from 'vue';
-import { useI18n } from 'vue-i18n';
+import { computed } from 'vue';
 
-import UiButton from '@/components/ui/Button';
-import UiCheckbox from '@/components/ui/Checkbox';
+import OverlayConfigDisplaySection from '@/components/overlay/config/OverlayConfigDisplaySection.vue';
+import OverlayConfigSystemSection from '@/components/overlay/config/OverlayConfigSystemSection.vue';
+import OverlayConfigThemeSection from '@/components/overlay/config/OverlayConfigThemeSection.vue';
+import OverlayConfigToolsSection from '@/components/overlay/config/OverlayConfigToolsSection.vue';
 import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
-import UiSwitch from '@/components/ui/Switch';
-import OverlayCornerDelete from './OverlayCornerDelete.vue';
-import OverlayDialog from './OverlayDialog.vue';
-import type { OverlayBackgroundEffect, OverlayPrefs } from '../composables/useOverlayPrefs';
-import { DEFAULT_BACKGROUND_EFFECT, DEFAULT_BACKGROUND_GLASS_STRENGTH } from '../composables/useOverlayPrefs';
-import { hotkeyFromEvent, hotkeyToString } from '../utils/hotkey';
-
-type OverlayTheme = {
-  id: string;
-  name: string;
-  image: string;
-  blurPx: number;
-  effect: OverlayBackgroundEffect;
-  glassStrength: number;
-};
+import type { OverlayPrefs } from '../composables/useOverlayPrefs';
+import type { OverlayTheme } from '@/components/overlay/config/types';
 
 const props = defineProps<{
   appVersion: string;
@@ -248,134 +93,13 @@ const emit = defineEmits<{
   (e: 'checkUpdate'): void;
 }>();
 
-const { t } = useI18n();
-
-const recordingHotkey = ref(false);
-let hotkeyUnlisten: (() => void) | null = null;
-const hotkeyClearDialogOpen = ref(false);
-const importFileInput = ref<HTMLInputElement | null>(null);
-
-const hotkeyLabel = computed(() => factoryResetHotkey.value ?? t('overlay.hotkeyNotSet'));
-const isDefaultTheme = computed(() => !prefs.value.backgroundImage);
-const themes = computed(() => props.themes);
 const toolkitSwitchOn = computed(() => props.toolkitState !== 'closed');
-
-function stopHotkeyCapture() {
-  if (hotkeyUnlisten) {
-    hotkeyUnlisten();
-    hotkeyUnlisten = null;
-  }
-  recordingHotkey.value = false;
-}
-
-function beginHotkeyCapture() {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  if (recordingHotkey.value) {
-    stopHotkeyCapture();
-    return;
-  }
-
-  recordingHotkey.value = true;
-  const handler = (event: KeyboardEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    if (!event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey && event.key === 'Escape') {
-      stopHotkeyCapture();
-      return;
-    }
-
-    const hotkey = hotkeyFromEvent(event);
-    if (!hotkey) {
-      return;
-    }
-    factoryResetHotkey.value = hotkeyToString(hotkey);
-    stopHotkeyCapture();
-  };
-
-  window.addEventListener('keydown', handler, true);
-  hotkeyUnlisten = () => window.removeEventListener('keydown', handler, true);
-}
-
-function selectDefaultTheme() {
-  if (
-    !prefs.value.backgroundImage &&
-    prefs.value.backgroundBlurPx === 0 &&
-    prefs.value.backgroundEffect === DEFAULT_BACKGROUND_EFFECT &&
-    prefs.value.backgroundGlassStrength === DEFAULT_BACKGROUND_GLASS_STRENGTH
-  ) {
-    return;
-  }
-  prefs.value.backgroundImage = null;
-  prefs.value.backgroundBlurPx = 0;
-  prefs.value.backgroundEffect = DEFAULT_BACKGROUND_EFFECT;
-  prefs.value.backgroundGlassStrength = DEFAULT_BACKGROUND_GLASS_STRENGTH;
-}
-
-function selectTheme(theme: OverlayTheme) {
-  if (
-    prefs.value.backgroundImage === theme.image &&
-    prefs.value.backgroundBlurPx === theme.blurPx &&
-    prefs.value.backgroundEffect === theme.effect &&
-    prefs.value.backgroundGlassStrength === theme.glassStrength
-  ) {
-    return;
-  }
-  prefs.value.backgroundImage = theme.image;
-  prefs.value.backgroundBlurPx = theme.blurPx;
-  prefs.value.backgroundEffect = theme.effect;
-  prefs.value.backgroundGlassStrength = theme.glassStrength;
-}
-
-function isThemeActive(theme: OverlayTheme) {
-  return (
-    prefs.value.backgroundImage === theme.image &&
-    prefs.value.backgroundBlurPx === theme.blurPx &&
-    prefs.value.backgroundEffect === theme.effect &&
-    prefs.value.backgroundGlassStrength === theme.glassStrength
-  );
-}
-
-const canAddTheme = computed(() => props.themes.length < 3);
 
 function confirmFactoryReset() {
   emit('factoryReset');
 }
 
-function requestClearHotkey() {
-  if (factoryResetHotkey.value == null) return;
-  hotkeyClearDialogOpen.value = true;
-}
-
-function closeClearHotkeyDialog() {
-  hotkeyClearDialogOpen.value = false;
-}
-
-function confirmClearHotkey() {
-  factoryResetHotkey.value = null;
-  closeClearHotkeyDialog();
-}
-
-function triggerImport() {
-  importFileInput.value?.click();
-}
-
 function handleToolkitToggle(enabled: boolean) {
   emit('openToolkit', enabled);
 }
-
-function handleImportChange(event: Event) {
-  const input = event.target as HTMLInputElement | null;
-  const file = input?.files?.[0];
-  if (input) input.value = '';
-  if (!file) return;
-  emit('importConfig', file);
-}
-
-onUnmounted(() => {
-  stopHotkeyCapture();
-});
 </script>
-

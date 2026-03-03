@@ -1,5 +1,5 @@
 <template>
-  <UiToast :open="profileToastVisible" :message="profileToastMessage" />
+  <UiToast channel="toolkit" />
 
   <UiCollapsiblePanel class="toolkit-card" :title="t('toolkit.cleanupTitle')" :collapsible="false" title-class="toolkit-section-title">
     <div class="toolkit-cleanup-list">
@@ -49,8 +49,8 @@
           <UiButton
             native-type="button"
             preset="overlay-action-primary"
-            aria-label="Copy path"
-            title="Copy path"
+            :aria-label="t('toolkit.copyPath')"
+            :title="t('toolkit.copyPath')"
             @click="copyProfilePath">
             <span class="material-symbols-outlined">content_copy</span>
           </UiButton>
@@ -100,7 +100,7 @@
         preset="overlay-danger"
         :disabled="!profileStatus.active"
         @click="stopProfile">
-        停止
+        {{ t('toolkit.profileStop') }}
       </UiButton>
     </div>
     <div class="toolkit-profile-status-row">
@@ -112,16 +112,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
+import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiSelect from '@/components/ui/Select';
 import UiSwitch from '@/components/ui/Switch';
-import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiToast from '@/components/ui/Toast';
+import { useToolkitProfileCapture } from '../../composables/useToolkitProfileCapture';
 import { useAppStore } from '../../stores/app';
-import { api } from '../../services/tauri';
 
 const emit = defineEmits<{
   (event: 'contentChange'): void;
@@ -139,7 +139,6 @@ const memoryTrimSystemEnabled = computed({
   set: value => void store.setMemoryTrimSystemEnabled(value)
 });
 const memoryTrimTargets = computed(() => store.settings.memoryTrimTargets);
-
 const memoryTrimIntervalMinutes = computed({
   get: () => store.settings.memoryTrimIntervalMinutes,
   set: value => void store.setMemoryTrimIntervalMinutes(value)
@@ -148,20 +147,6 @@ const memoryTrimIntervalMinutes = computed({
 const profilePathId = 'toolkit-profile-path';
 const profileIntervalId = 'toolkit-profile-interval';
 const profileDurationId = 'toolkit-profile-duration';
-
-const profilePath = ref('');
-const profileIntervalMs = ref(1000);
-const profileDurationSec = ref(120);
-const profileStatus = ref<{ active: boolean; path: string | null; startedAt: string | null; samples: number }>({
-  active: false,
-  path: null,
-  startedAt: null,
-  samples: 0
-});
-const profileToastMessage = ref('');
-const profileToastVisible = ref(false);
-let profileStatusTimer: number | undefined;
-let profileToastTimer: number | undefined;
 
 const enabledTargetOptions = computed(() => {
   const options: Array<{ value: 'app' | 'system'; label: string }> = [];
@@ -186,93 +171,31 @@ const cleanupTargetsModel = computed<Array<'app' | 'system'>>({
   }
 });
 
-watch([memoryTrimEnabled, memoryTrimSystemEnabled, memoryTrimIntervalMinutes, memoryTrimTargets], () => {
-  nextTick(() => emit('contentChange'));
+const {
+  profilePath,
+  profileIntervalMs,
+  profileDurationSec,
+  profileStatus,
+  profileStatusText,
+  startProfile,
+  stopProfile,
+  copyProfilePath,
+  openProfilePath
+} = useToolkitProfileCapture({
+  t: (key, params) => (params ? t(key, params) : t(key))
 });
 
-const profileStatusText = computed(() => {
-  if (!profileStatus.value.active) {
-    return t('toolkit.profileStatusIdle');
-  }
-  const samples = profileStatus.value.samples;
-  return t('toolkit.profileStatusRunning', { samples });
-});
-
-async function refreshProfileStatus() {
-  try {
-    profileStatus.value = await api.getProfileStatus();
-  } catch {
-    // ignore
-  }
-}
-
-async function startProfile() {
-  const durationSec = Number.isFinite(profileDurationSec.value) ? profileDurationSec.value : 120;
-  const interval = Number.isFinite(profileIntervalMs.value) ? profileIntervalMs.value : 1000;
-  const durationMs = Math.max(5, durationSec) * 1000;
-  const response = await api.startProfileCapture({
-    path: profilePath.value.trim() || 'profile-data',
-    intervalMs: Math.max(200, interval),
-    durationMs
-  });
-  profileStatus.value = response;
-}
-
-async function stopProfile() {
-  const response = await api.stopProfileCapture();
-  profileStatus.value = response;
-}
-
-async function loadProfileOutputDir() {
-  try {
-    profilePath.value = await api.getProfileOutputDir();
-  } catch {
-    profilePath.value = 'profile-data';
-  }
-}
-
-async function copyProfilePath() {
-  const text = profilePath.value.trim();
-  if (!text) return;
-  if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) return;
-  try {
-    await navigator.clipboard.writeText(text);
-    profileToastMessage.value = t('toolkit.copyPathSuccess');
-    profileToastVisible.value = true;
-    if (profileToastTimer != null) {
-      window.clearTimeout(profileToastTimer);
-    }
-    profileToastTimer = window.setTimeout(() => {
-      profileToastVisible.value = false;
-    }, 2000);
-  } catch {
-    // ignore clipboard write failures
-  }
-}
-
-async function openProfilePath() {
-  const text = profilePath.value.trim();
-  if (!text) return;
-  try {
-    await api.openProfileOutputPath(text);
-  } catch {
-    // ignore open failures
-  }
-}
-
-onMounted(() => {
-  loadProfileOutputDir();
-  refreshProfileStatus();
-  profileStatusTimer = window.setInterval(refreshProfileStatus, 1000);
-});
-
-onUnmounted(() => {
-  if (profileStatusTimer) {
-    window.clearInterval(profileStatusTimer);
-  }
-  if (profileToastTimer != null) {
-    window.clearTimeout(profileToastTimer);
-  }
-});
+watch(
+  [
+    memoryTrimEnabled,
+    memoryTrimSystemEnabled,
+    memoryTrimIntervalMinutes,
+    memoryTrimTargets,
+    profileStatus
+  ],
+  () => {
+    nextTick(() => emit('contentChange'));
+  },
+  { deep: true }
+);
 </script>
-

@@ -1,149 +1,71 @@
 <template>
-  <UiCollapsiblePanel
-    class="toolkit-card toolkit-card--score"
-    :title="t('toolkit.hardwareScoreTitle')"
+  <HardwareScorePanel
     v-model="sections.score"
-    single-header-preset="toolkit-collapse"
-    title-class="toolkit-section-title"
-    indicator-class="toolkit-collapse-indicator"
-    @toggle="emit('contentChange')">
-    <div>
-      <div class="toolkit-score-ring" :style="scoreRingStyle">
-        <div class="toolkit-score-center">
-          <div class="toolkit-score-value">{{ totalScore }}</div>
-          <div class="toolkit-score-grade">{{ totalGrade }}</div>
-        </div>
-      </div>
-      <div class="toolkit-score-caption">{{ totalGradeLabel }}</div>
-      <p class="toolkit-score-desc">{{ totalSummary }}</p>
-    </div>
-  </UiCollapsiblePanel>
+    :total-score="totalScore"
+    :total-grade="totalGrade"
+    :total-grade-label="totalGradeLabel"
+    :total-summary="totalSummary"
+    :score-ring-style="scoreRingStyle"
+    @content-change="emit('contentChange')" />
 
-  <UiCollapsiblePanel
-    class="toolkit-card"
-    :title="t('toolkit.dimensionTitle')"
+  <HardwareDimensionPanel
     v-model="sections.dimension"
-    header-mode="split"
-    header-class="toolkit-section-header"
-    split-title-preset="toolkit-collapse-title"
-    split-toggle-preset="toolkit-collapse-icon"
-    title-class="toolkit-section-title"
-    indicator-class="toolkit-collapse-indicator"
-    :toggle-aria-label="t('toolkit.dimensionTitle')"
-    @toggle="emit('contentChange')">
-    <template #header-actions>
-      <UiButton
-        native-type="button"
-        preset="toolkit-view-toggle"
-        :aria-label="dimensionViewLabel"
-        @click="toggleDimensionView">
-        <span class="material-symbols-outlined">{{ dimensionViewIcon }}</span>
-        <span class="toolkit-view-toggle-text">{{ dimensionViewLabel }}</span>
-      </UiButton>
-    </template>
-    <div>
-      <div v-if="dimensionView === 'bars'" class="toolkit-score-list">
-        <div v-for="item in dimensionScores" :key="item.id" class="toolkit-score-item">
-          <div class="toolkit-score-item-header">
-            <span class="toolkit-score-title">{{ item.title }}</span>
-            <span class="toolkit-score-badge" :class="item.badgeClass">{{ item.level }}</span>
-            <span class="toolkit-score-number" :style="{ color: item.color }">{{ item.score }}</span>
-          </div>
-          <div class="toolkit-score-bar">
-            <span class="toolkit-score-bar-fill" :style="{ width: `${item.score}%`, background: item.color }"></span>
-          </div>
-          <p class="toolkit-score-desc">{{ item.summary }}</p>
-        </div>
-      </div>
-      <div v-else class="toolkit-radar">
-        <svg class="toolkit-radar-svg" viewBox="0 0 200 200" aria-hidden="true">
-          <g>
-            <polygon
-              v-for="ring in radarGridPolygons"
-              :key="ring.step"
-              class="toolkit-radar-grid"
-              :points="ring.points" />
-          </g>
-          <g>
-            <line
-              v-for="(axis, index) in radarAxes"
-              :key="`axis-${index}`"
-              class="toolkit-radar-axis"
-              :x1="RADAR_CENTER"
-              :y1="RADAR_CENTER"
-              :x2="axis.x"
-              :y2="axis.y" />
-          </g>
-          <polygon class="toolkit-radar-area" :points="radarValuePoints" />
-          <circle
-            v-for="(point, index) in radarValueDots"
-            :key="`dot-${index}`"
-            class="toolkit-radar-point"
-            :cx="point.x"
-            :cy="point.y"
-            r="2.4" />
-          <text
-            v-for="(axis, index) in radarAxes"
-            :key="`label-${index}`"
-            class="toolkit-radar-label"
-            :x="axis.labelX"
-            :y="axis.labelY"
-            :text-anchor="axis.anchor"
-            :dominant-baseline="axis.baseline">
-            {{ axis.label }}
-          </text>
-        </svg>
-        <div class="toolkit-radar-legend">
-          <div v-for="item in dimensionScores" :key="`legend-${item.id}`" class="toolkit-radar-legend-item">
-            <span class="toolkit-radar-dot" :style="{ background: item.color }"></span>
-            <span class="toolkit-radar-label-text">{{ item.title }}</span>
-            <span class="toolkit-radar-value">{{ item.score }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </UiCollapsiblePanel>
+    :dimension-view="dimensionView"
+    :dimension-view-label="dimensionViewLabel"
+    :dimension-view-icon="dimensionViewIcon"
+    :dimension-scores="dimensionScores"
+    :radar-axes="radarAxes"
+    :radar-grid-polygons="radarGridPolygons"
+    :radar-value-points="radarValuePoints"
+    :radar-value-dots="radarValueDots"
+    @toggle-view="toggleDimensionView"
+    @content-change="emit('contentChange')" />
 
-  <UiCollapsiblePanel
-    class="toolkit-card"
-    :title="t('toolkit.hardwareSummaryTitle')"
+  <HardwareSummaryPanel
     v-model="sections.summary"
-    single-header-preset="toolkit-collapse"
-    title-class="toolkit-section-title"
-    indicator-class="toolkit-collapse-indicator"
-    @toggle="emit('contentChange')">
-    <div class="toolkit-summary-grid">
-      <div v-for="row in hardwareSummaryRows" :key="row.id" class="toolkit-summary-item">
-        <span class="toolkit-summary-label">{{ row.label }}</span>
-        <span class="toolkit-summary-value">{{ row.value }}</span>
-      </div>
-    </div>
-  </UiCollapsiblePanel>
+    :rows="hardwareSummaryRows"
+    @content-change="emit('contentChange')" />
 
-  <UiCollapsiblePanel
-    class="toolkit-card"
-    :title="t('toolkit.hardwareAdviceTitle')"
+  <HardwareAdvicePanel
     v-model="sections.advice"
-    single-header-preset="toolkit-collapse"
-    title-class="toolkit-section-title"
-    indicator-class="toolkit-collapse-indicator"
-    @toggle="emit('contentChange')">
-    <ul class="toolkit-advice-list">
-      <li v-for="(item, index) in adviceList" :key="index" class="toolkit-advice-item">{{ item }}</li>
-    </ul>
-  </UiCollapsiblePanel>
+    :advice-list="adviceList"
+    @content-change="emit('contentChange')" />
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import UiButton from '@/components/ui/Button';
-import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
+import {
+  badgeClassForScore,
+  buildRamLabel,
+  calcBalanceScore,
+  calcCodingScore,
+  calcCpuScore,
+  calcDiskScore,
+  calcGpuScore,
+  calcLlmScore,
+  calcOverallScore,
+  calcProductivityScore,
+  calcRadarAxes,
+  calcRadarGridPolygons,
+  calcRadarValueDots,
+  calcRadarValuePoints,
+  calcRamScore,
+  clampScore,
+  detectDiskType,
+  gradeColor,
+  gradeForScore,
+  gradeLabel,
+  isCudaSupported,
+  parseRamSpec,
+  totalSummaryText
+} from './hardware/hardwareScoring';
+import HardwareAdvicePanel from './hardware/HardwareAdvicePanel.vue';
+import HardwareDimensionPanel from './hardware/HardwareDimensionPanel.vue';
+import HardwareScorePanel from './hardware/HardwareScorePanel.vue';
+import HardwareSummaryPanel from './hardware/HardwareSummaryPanel.vue';
 import { useAppStore } from '../../stores/app';
-
-type Grade = 'S' | 'A' | 'B' | 'C' | 'D';
-type DiskType = 'nvme' | 'ssd' | 'hdd' | 'unknown';
 
 const emit = defineEmits<{
   (event: 'contentChange'): void;
@@ -151,11 +73,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const store = useAppStore();
-
-const RADAR_CENTER = 100;
-const RADAR_RADIUS = 68;
-const RADAR_LABEL_RADIUS = 88;
-const RADAR_RINGS = [0.2, 0.4, 0.6, 0.8, 1];
 
 const sections = ref({
   score: true,
@@ -406,62 +323,10 @@ const dimensionViewLabel = computed(() =>
 );
 const dimensionViewIcon = computed(() => (dimensionView.value === 'bars' ? 'radar' : 'bar_chart'));
 
-const radarAxes = computed(() => {
-  const total = Math.max(1, dimensionScores.value.length);
-  return dimensionScores.value.map((item, index) => {
-    const angle = ((-90 + (360 / total) * index) * Math.PI) / 180;
-    const x = RADAR_CENTER + RADAR_RADIUS * Math.cos(angle);
-    const y = RADAR_CENTER + RADAR_RADIUS * Math.sin(angle);
-    const labelX = RADAR_CENTER + RADAR_LABEL_RADIUS * Math.cos(angle);
-    const labelY = RADAR_CENTER + RADAR_LABEL_RADIUS * Math.sin(angle);
-    const axisCos = Math.cos(angle);
-    const axisSin = Math.sin(angle);
-    const anchor = Math.abs(axisCos) < 0.2 ? 'middle' : axisCos > 0 ? 'start' : 'end';
-    const baseline = Math.abs(axisSin) < 0.2 ? 'middle' : axisSin > 0 ? 'hanging' : 'baseline';
-    return { x, y, labelX, labelY, label: item.title, anchor, baseline };
-  });
-});
-
-const radarGridPolygons = computed(() => {
-  const total = Math.max(1, dimensionScores.value.length);
-  return RADAR_RINGS.map(step => {
-    const points = dimensionScores.value
-      .map((_, index) => {
-        const angle = ((-90 + (360 / total) * index) * Math.PI) / 180;
-        const radius = RADAR_RADIUS * step;
-        const x = RADAR_CENTER + radius * Math.cos(angle);
-        const y = RADAR_CENTER + radius * Math.sin(angle);
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-      })
-      .join(' ');
-    return { step, points };
-  });
-});
-
-const radarValuePoints = computed(() => {
-  const total = Math.max(1, dimensionScores.value.length);
-  return dimensionScores.value
-    .map((item, index) => {
-      const angle = ((-90 + (360 / total) * index) * Math.PI) / 180;
-      const radius = (RADAR_RADIUS * item.score) / 100;
-      const x = RADAR_CENTER + radius * Math.cos(angle);
-      const y = RADAR_CENTER + radius * Math.sin(angle);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(' ');
-});
-
-const radarValueDots = computed(() => {
-  const total = Math.max(1, dimensionScores.value.length);
-  return dimensionScores.value.map((item, index) => {
-    const angle = ((-90 + (360 / total) * index) * Math.PI) / 180;
-    const radius = (RADAR_RADIUS * item.score) / 100;
-    return {
-      x: RADAR_CENTER + radius * Math.cos(angle),
-      y: RADAR_CENTER + radius * Math.sin(angle)
-    };
-  });
-});
+const radarAxes = computed(() => calcRadarAxes(dimensionScores.value));
+const radarGridPolygons = computed(() => calcRadarGridPolygons(dimensionScores.value.length));
+const radarValuePoints = computed(() => calcRadarValuePoints(dimensionScores.value));
+const radarValueDots = computed(() => calcRadarValueDots(dimensionScores.value));
 
 const hardwareSummaryRows = computed(() => {
   const cpuLabel = hardwareInfo.value.cpu_model || t('common.na');
@@ -531,241 +396,6 @@ onMounted(() => {
 function toggleDimensionView() {
   dimensionView.value = dimensionView.value === 'bars' ? 'radar' : 'bars';
   nextTick(() => emit('contentChange'));
-}
-
-function clampScore(value: number) {
-  if (!Number.isFinite(value)) return 0;
-  return Math.max(0, Math.min(100, Math.round(value)));
-}
-
-function gradeForScore(value: number): Grade {
-  if (value >= 95) return 'S';
-  if (value >= 80) return 'A';
-  if (value >= 60) return 'B';
-  if (value >= 40) return 'C';
-  return 'D';
-}
-
-function gradeColor(grade: Grade) {
-  if (grade === 'S') return 'rgba(0, 242, 255, 0.96)';
-  if (grade === 'A') return 'rgba(99, 255, 212, 0.92)';
-  if (grade === 'B') return 'rgba(255, 214, 102, 0.92)';
-  if (grade === 'C') return 'rgba(255, 144, 155, 0.92)';
-  return 'rgba(255, 92, 92, 0.92)';
-}
-
-function gradeLabel(grade: Grade, t: (key: string, params?: Record<string, unknown>) => string) {
-  if (grade === 'S') return t('toolkit.levelS');
-  if (grade === 'A') return t('toolkit.levelA');
-  if (grade === 'B') return t('toolkit.levelB');
-  if (grade === 'C') return t('toolkit.levelC');
-  return t('toolkit.levelD');
-}
-
-function badgeClassForScore(value: number) {
-  return `toolkit-score-badge--${gradeForScore(value).toLowerCase()}`;
-}
-
-function totalSummaryText(score: number, t: (key: string, params?: Record<string, unknown>) => string) {
-  if (score >= 95) return t('toolkit.totalSummaryS');
-  if (score >= 80) return t('toolkit.totalSummaryA');
-  if (score >= 60) return t('toolkit.totalSummaryB');
-  if (score >= 40) return t('toolkit.totalSummaryC');
-  return t('toolkit.totalSummaryD');
-}
-
-function parseRamSpec(value: string) {
-  const text = value ?? '';
-  const totalMatch = text.match(/(\d+)\s*(?:GB|G)\b/i);
-  const freqMatch = text.match(/(\d{3,5})\s*mhz/i);
-  const typeMatch = text.match(/\b(DDR\d|LPDDR\d)\b/i);
-  return {
-    totalGb: totalMatch ? Math.max(1, Number(totalMatch[1])) : null,
-    freqMhz: freqMatch ? Math.max(1, Number(freqMatch[1])) : null,
-    type: typeMatch ? typeMatch[1].toUpperCase() : null
-  };
-}
-
-function buildRamLabel(
-  spec: { totalGb: number | null; freqMhz: number | null; type: string | null },
-  totalGb: number,
-  t: (key: string, params?: Record<string, unknown>) => string
-) {
-  const parts: string[] = [];
-  if (spec.type) parts.push(spec.type);
-  if (spec.freqMhz) parts.push(`${spec.freqMhz}MHz`);
-  if (totalGb) parts.push(`${totalGb}GB`);
-  return parts.length ? parts.join(' ') : t('common.na');
-}
-
-function detectDiskType(models: string[]): DiskType {
-  const text = models.join(' ').toLowerCase();
-  if (!text.trim()) return 'unknown';
-  if (/(nvme|pcie|m\.2)/i.test(text)) return 'nvme';
-  if (/(ssd|solid state)/i.test(text)) return 'ssd';
-  if (/(hdd|hard disk|5400|7200|wdc|seagate|hitachi|toshiba)/i.test(text)) return 'hdd';
-  return 'unknown';
-}
-
-function calcCpuScore(model: string, maxFreqMhz: number | null, currentFreqMhz: number | null) {
-  const freq = maxFreqMhz ?? currentFreqMhz ?? 3200;
-  const base = ((freq - 1200) / (6000 - 1200)) * 100;
-  const name = (model ?? '').toLowerCase();
-  let boost = 0;
-  if (/(threadripper|epyc|xeon w|xeon gold|i9|ryzen 9)/i.test(name)) boost = 12;
-  else if (/(i7|ryzen 7)/i.test(name)) boost = 6;
-  else if (/(i5|ryzen 5)/i.test(name)) boost = 2;
-  else if (/(i3|ryzen 3)/i.test(name)) boost = -6;
-  else if (/(celeron|pentium|athlon)/i.test(name)) boost = -14;
-  else if (/\bm[1-3]\b|\bm2\b|\bm3\b/i.test(name)) boost = 8;
-  return clampScore(base + boost);
-}
-
-function calcGpuScore(model: string, vramGb: number | null) {
-  const normalized = (model ?? '').trim().toLowerCase();
-  if (!normalized || normalized === 'n/a' || normalized === 'unknown') {
-    const fallback = calcVramScore(vramGb);
-    return clampScore(fallback ?? 25);
-  }
-  const candidates = (model ?? '')
-    .split('/')
-    .map(item => item.trim())
-    .filter(Boolean);
-  const modelScore = candidates.reduce((best, name) => {
-    const score = gpuModelScore(name);
-    if (score == null) return best;
-    return Math.max(best ?? 0, score);
-  }, null as number | null);
-  const vramScore = calcVramScore(vramGb);
-  if (modelScore != null && vramScore != null) {
-    return clampScore(modelScore * 0.7 + vramScore * 0.3);
-  }
-  if (modelScore != null) return clampScore(modelScore);
-  if (vramScore != null) return clampScore(vramScore);
-  return 50;
-}
-
-function gpuModelScore(name: string): number | null {
-  const text = name.toLowerCase();
-  const table: Array<[RegExp, number]> = [
-    [/rtx\s?4090/, 100],
-    [/rtx\s?4080/, 95],
-    [/rtx\s?4070\s?ti/, 88],
-    [/rtx\s?4070/, 84],
-    [/rtx\s?4060\s?ti/, 78],
-    [/rtx\s?4060/, 74],
-    [/rtx\s?3090/, 90],
-    [/rtx\s?3080/, 86],
-    [/rtx\s?3070/, 80],
-    [/rtx\s?3060/, 72],
-    [/rtx\s?3050/, 62],
-    [/rtx\s?2080/, 78],
-    [/rtx\s?2070/, 72],
-    [/rtx\s?2060/, 66],
-    [/gtx\s?1660/, 58],
-    [/gtx\s?1650/, 50],
-    [/gtx\s?1060/, 50],
-    [/gtx\s?1050/, 40],
-    [/arc\s?a770/, 78],
-    [/arc\s?a750/, 74],
-    [/arc\s?a580/, 68],
-    [/arc\s?a380/, 55],
-    [/7900\s?xtx/, 96],
-    [/7900\s?xt/, 92],
-    [/7800\s?xt/, 86],
-    [/7700\s?xt/, 80],
-    [/7600/, 72],
-    [/6950\s?xt/, 88],
-    [/6900\s?xt/, 86],
-    [/6800\s?xt/, 84],
-    [/6700\s?xt/, 78],
-    [/6600/, 68],
-    [/6500/, 58],
-    [/quadro|tesla|rtx\s?a\d{3,4}/, 78],
-    [/iris|uhd|hd graphics|intel graphics/, 30],
-    [/radeon graphics|vega|rx vega|apu/, 34]
-  ];
-  for (const [regex, score] of table) {
-    if (regex.test(text)) return score;
-  }
-  return null;
-}
-
-function calcVramScore(vramGb: number | null) {
-  if (vramGb == null) return null;
-  if (vramGb >= 24) return 92;
-  if (vramGb >= 16) return 84;
-  if (vramGb >= 12) return 76;
-  if (vramGb >= 8) return 68;
-  if (vramGb >= 6) return 60;
-  if (vramGb >= 4) return 50;
-  if (vramGb >= 2) return 35;
-  return 25;
-}
-
-function calcRamScore(totalGb: number, freqMhz: number | null) {
-  let score = 0;
-  if (totalGb >= 64) score = 100;
-  else if (totalGb >= 32) score = 95;
-  else if (totalGb >= 16) score = 80;
-  else if (totalGb >= 12) score = 72;
-  else if (totalGb >= 8) score = 60;
-  else if (totalGb >= 4) score = 40;
-  else score = 20;
-
-  if (freqMhz != null) {
-    if (freqMhz >= 5600) score += 4;
-    else if (freqMhz >= 3600) score += 2;
-  }
-  return clampScore(score);
-}
-
-function calcDiskScore(type: DiskType) {
-  if (type === 'nvme') return 100;
-  if (type === 'ssd') return 80;
-  if (type === 'hdd') return 40;
-  return 60;
-}
-
-function calcBalanceScore(cpu: number, gpu: number, ram: number, diskType: DiskType) {
-  const values = [cpu, gpu, ram];
-  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
-  const variance = values.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) / values.length;
-  const stddev = Math.sqrt(variance);
-  let score = 100 - stddev * 2;
-  if (diskType === 'hdd') score -= 10;
-  return clampScore(score);
-}
-
-function calcLlmScore(vramGb: number | null, ramScore: number, cpuScore: number, diskScore: number, diskType: DiskType) {
-  const vramScore = calcVramScore(vramGb) ?? 30;
-  let score = vramScore * 0.5 + ramScore * 0.25 + cpuScore * 0.15 + diskScore * 0.1;
-  if (diskType === 'hdd') score -= 15;
-  return clampScore(score);
-}
-
-function calcOverallScore(cpu: number, gpu: number, ram: number, diskScore: number) {
-  return clampScore(cpu * 0.35 + gpu * 0.35 + ram * 0.2 + diskScore * 0.1);
-}
-
-function calcProductivityScore(cpu: number, gpu: number, ram: number, diskScore: number) {
-  return clampScore(cpu * 0.4 + ram * 0.3 + diskScore * 0.2 + gpu * 0.1);
-}
-
-function calcCodingScore(ramGb: number, diskType: DiskType) {
-  let score = 0;
-  if (ramGb >= 64) score = 100;
-  else if (ramGb >= 32) score = 95;
-  else if (ramGb >= 16) score = 80;
-  else if (ramGb >= 8) score = 60;
-  else if (ramGb >= 4) score = 40;
-  else score = 25;
-  if (diskType === 'hdd') score -= 10;
-  return clampScore(score);
-}
-
-function isCudaSupported(model: string) {
-  return /(nvidia|geforce|rtx|gtx|quadro|tesla)/i.test(model ?? '');
 }
 </script>
 

@@ -6,12 +6,34 @@ export type Hotkey = {
   key: string;
 };
 
-const MODIFIERS = new Set(['ctrl', 'control', 'alt', 'shift', 'meta', 'cmd', 'command']);
+type HotkeyPlatform = 'auto' | 'mac' | 'windows' | 'linux';
+type HotkeyDisplayStyle = 'text' | 'symbol';
+
+const MODIFIERS = new Set(['ctrl', 'control', 'alt', 'shift', 'meta', 'cmd', 'command', '⌘']);
+const MAC_META_LABEL = 'Cmd';
+const MAC_META_SYMBOL = '⌘';
 
 function normalizeKeyPart(key: string): string {
   if (key === ' ') return 'Space';
   if (key.length === 1) return key.toUpperCase();
   return key;
+}
+
+function resolvePlatform(platform: HotkeyPlatform): Exclude<HotkeyPlatform, 'auto'> {
+  if (platform !== 'auto') {
+    return platform;
+  }
+  if (typeof navigator === 'undefined') {
+    return 'windows';
+  }
+  const signal = `${navigator.platform} ${navigator.userAgent}`.toLowerCase();
+  if (signal.includes('mac')) {
+    return 'mac';
+  }
+  if (signal.includes('linux')) {
+    return 'linux';
+  }
+  return 'windows';
 }
 
 function normalizeKeyFromEvent(event: KeyboardEvent): string | null {
@@ -48,11 +70,26 @@ export function hotkeyFromEvent(event: KeyboardEvent): Hotkey | null {
 }
 
 export function hotkeyToString(hotkey: Hotkey): string {
+  return hotkeyToDisplayString(hotkey, { platform: 'auto', style: 'text' });
+}
+
+export function hotkeyToDisplayString(
+  hotkey: Hotkey,
+  options: { platform?: HotkeyPlatform; style?: HotkeyDisplayStyle } = {}
+): string {
+  const platform = resolvePlatform(options.platform ?? 'auto');
+  const style = options.style ?? 'text';
   const parts: string[] = [];
   if (hotkey.ctrl) parts.push('Ctrl');
   if (hotkey.alt) parts.push('Alt');
   if (hotkey.shift) parts.push('Shift');
-  if (hotkey.meta) parts.push('Meta');
+  if (hotkey.meta) {
+    if (platform === 'mac') {
+      parts.push(style === 'symbol' ? MAC_META_SYMBOL : MAC_META_LABEL);
+    } else {
+      parts.push('Meta');
+    }
+  }
   parts.push(normalizeKeyPart(hotkey.key));
   return parts.join('+');
 }
@@ -79,7 +116,7 @@ export function parseHotkeyString(value: string): Hotkey | null {
     if (lower === 'ctrl' || lower === 'control') ctrl = true;
     if (lower === 'alt') alt = true;
     if (lower === 'shift') shift = true;
-    if (lower === 'meta' || lower === 'cmd' || lower === 'command') meta = true;
+    if (lower === 'meta' || lower === 'cmd' || lower === 'command' || lower === '⌘') meta = true;
   }
 
   if (keyParts.length !== 1) {
@@ -93,6 +130,14 @@ export function parseHotkeyString(value: string): Hotkey | null {
     meta,
     key: normalizeKeyPart(keyParts[0])
   };
+}
+
+export function normalizeHotkeyDisplay(value: string, platform: HotkeyPlatform = 'auto'): string {
+  const parsed = parseHotkeyString(value);
+  if (!parsed) {
+    return value;
+  }
+  return hotkeyToDisplayString(parsed, { platform, style: 'text' });
 }
 
 export function matchesHotkeyEvent(event: KeyboardEvent, hotkeyString: string): boolean {

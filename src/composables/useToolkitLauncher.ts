@@ -1,4 +1,5 @@
 import { inTauri } from '../services/tauri';
+import { ensureWindow } from '../services/windowManager';
 
 export function useToolkitLauncher() {
   async function openToolkitWindow() {
@@ -7,15 +8,7 @@ export function useToolkitLauncher() {
     }
     const TOOLKIT_WIDTH = 300;
     try {
-      const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
-      const { LogicalSize } = await import('@tauri-apps/api/dpi');
-      const existing = await WebviewWindow.getByLabel('toolkit');
-      if (existing) {
-        await existing.show();
-        await existing.setFocus();
-        return;
-      }
-      new WebviewWindow('toolkit', {
+      await ensureWindow('toolkit', {
         url: 'toolkit.html',
         title: 'PulseCoreLite Toolkit',
         width: TOOLKIT_WIDTH,

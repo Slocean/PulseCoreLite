@@ -5,6 +5,8 @@
       role="switch"
       :checked="props.modelValue"
       :disabled="props.disabled"
+      :aria-labelledby="props.ariaLabelledby"
+      :aria-describedby="props.ariaDescribedby"
       @change="handleChange" />
     <span class="ui-switch-track" aria-hidden="true"></span>
   </label>
@@ -29,6 +31,8 @@ function handleChange(event: Event) {
 
 <style scoped>
 .ui-switch {
+  --ui-switch-focus-ring-color: rgba(0, 242, 255, 0.55);
+  --ui-switch-focus-ring-offset: 2px;
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -90,7 +94,7 @@ function handleChange(event: Event) {
 }
 
 .ui-switch input:focus-visible + .ui-switch-track {
-  outline: 2px solid rgba(0, 242, 255, 0.55);
-  outline-offset: 2px;
+  outline: 2px solid var(--ui-switch-focus-ring-color);
+  outline-offset: var(--ui-switch-focus-ring-offset);
 }
 </style>

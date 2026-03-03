@@ -1,12 +1,10 @@
+@import './tokens/colors.css';
+@import './tokens/typography.css';
+@import './tokens/layers.css';
+@import './tokens/motion.css';
+
 :root {
   color-scheme: dark;
-  --bg: #0b0e14;
-  --overlay-bg-opacity: 1;
-  --text: #e2e8f0;
-  --cyan: #00f2ff;
-  --pink: #bc13fe;
-  --orange: #ffa500;
-  --red: #ff3b3b;
 }
 
 * {
@@ -16,14 +14,14 @@
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-family: var(--font-family-base);
   color: var(--text);
   background: rgba(11, 14, 20, var(--overlay-bg-opacity, 1));
   overflow: hidden;
 }
 
 .material-symbols-outlined {
-  font-family: 'Material Symbols Outlined';
+  font-family: var(--font-family-symbols);
   font-variation-settings:
     'FILL' 0,
     'wght' 500,

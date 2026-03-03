@@ -1,0 +1,27 @@
+.ui-progress {
+  --ui-progress-track-bg: rgba(255, 255, 255, 0.08);
+  --ui-progress-track-overlay: linear-gradient(90deg, transparent 75%, rgba(0, 0, 0, 0.55) 75%);
+  --ui-progress-track-overlay-opacity: 0.6;
+  --ui-progress-fill: linear-gradient(to right, #2b6cee, var(--cyan));
+  --ui-progress-glow: 0 0 14px rgba(0, 242, 255, 0.35);
+}
+
+.ui-progress-fill--cyan {
+  --ui-progress-fill: linear-gradient(to right, #2b6cee, var(--cyan));
+  --ui-progress-glow: 0 0 14px rgba(0, 242, 255, 0.35);
+}
+
+.ui-progress-fill--pink {
+  --ui-progress-fill: linear-gradient(to right, #7c3aed, var(--pink));
+  --ui-progress-glow: 0 0 14px rgba(188, 19, 254, 0.35);
+}
+
+.ui-progress-fill--orange {
+  --ui-progress-fill: linear-gradient(to right, #eab308, var(--orange));
+  --ui-progress-glow: 0 0 14px rgba(255, 165, 0, 0.35);
+}
+
+.ui-progress-fill--red {
+  --ui-progress-fill: linear-gradient(to right, #ef4444, var(--red));
+  --ui-progress-glow: 0 0 14px rgba(255, 59, 59, 0.35);
+}

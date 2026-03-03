@@ -38,15 +38,11 @@
       </UiButton>
     </div>
     <div class="overlay-meta">
-      <UiButton
-        native-type="button"
-        preset="overlay-version"
-        :active="Boolean(updateAvailable)"
-        :title="updateAvailable ? updateLabel : undefined"
-        @click="handleVersionClick">
-        v{{ appVersion }}
-        <span v-if="updateAvailable" class="version-dot" aria-hidden="true"></span>
-      </UiButton>
+      <OverlayVersionButton
+        :app-version="appVersion"
+        :update-available="updateAvailable"
+        :update-label="updateLabel"
+        @click="emit('versionClick')" />
       <span class="usage">{{ appUsageLabel }}</span>
     </div>
   </header>
@@ -55,6 +51,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import UiButton from '@/components/ui/Button';
+import OverlayVersionButton from '@/components/overlay/OverlayVersionButton.vue';
 
 defineProps<{
   showDragHandle: boolean;
@@ -73,9 +70,5 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-
-function handleVersionClick() {
-  emit('versionClick');
-}
 </script>
 

@@ -4,17 +4,20 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { DEFAULT_METRIC_WARNING_THRESHOLDS, resolveMetricWarningLevel } from '@/composables/metricWarningPolicy'
 import type { UsageValueProps } from './types'
 
 const props = withDefaults(defineProps<UsageValueProps>(), {
   baseColor: 'cyan',
-  showWarning: true
+  showWarning: true,
+  warningThresholds: () => ({ ...DEFAULT_METRIC_WARNING_THRESHOLDS })
 })
 
 const glowClass = computed(() => {
   if (!props.showWarning) return `ui-glow-${props.baseColor}`
-  if (props.value > 85) return 'ui-glow-red'
-  if (props.value > 70) return 'ui-glow-orange'
+  const level = resolveMetricWarningLevel(props.value, props.warningThresholds)
+  if (level === 'danger') return 'ui-glow-red'
+  if (level === 'warning') return 'ui-glow-orange'
   return `ui-glow-${props.baseColor}`
 })
 </script>

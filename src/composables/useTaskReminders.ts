@@ -1,114 +1,25 @@
-import { computed, ref } from 'vue';
+﻿import { computed, ref } from 'vue';
 
-import { kvGet, kvSet } from '../utils/kv';
 import { api, inTauri } from '../services/tauri';
-import type {
-  MonthlyReminderSlot,
-  ReminderChannel,
-  ReminderContentType,
-  ReminderScreenEventPayload,
-  SmtpEmailConfig,
-  TaskReminder,
-  TaskReminderStore,
-  WeeklyReminderSlot
-} from '../types';
-
-const REMINDER_KEY = 'pulsecorelite.toolkit.task-reminders';
-const SMTP_CONFIG_KEY = 'pulsecorelite.toolkit.smtp-email-config';
-const REMINDER_SCREEN_KEY_PREFIX = 'pulsecorelite.reminder-screen.';
+import type { SmtpEmailConfig, TaskReminder, TaskReminderStore } from '../types';
+import { loadReminderStore, saveReminderStore } from './taskReminders/repository';
+import {
+  formatWeekday,
+  hasAnySchedule,
+  normalizeReminder,
+  normalizeSmtpConfig,
+  nowIso
+} from './taskReminders/scheduler';
+import {
+  buildReminderCloseSignalKey,
+  openReminderScreensFromPayload,
+  readReminderScreenPayload
+} from './taskReminders/windowPresenter';
 
 const reminders = ref<TaskReminder[]>([]);
 const loaded = ref(false);
 const running = ref(true);
 const smtpConfig = ref<SmtpEmailConfig | null>(null);
-
-function nowIso() {
-  return new Date().toISOString();
-}
-
-function normalizeSmtpConfig(input: SmtpEmailConfig | null | undefined): SmtpEmailConfig | null {
-  if (!input) return null;
-  const port = Number.isFinite(input.port) ? Math.max(1, Math.min(65535, Math.round(input.port))) : 25;
-  const security = input.security === 'tls' || input.security === 'starttls' ? input.security : 'none';
-  return {
-    host: (input.host ?? '').trim(),
-    port,
-    username: input.username ?? '',
-    password: input.password ?? '',
-    fromEmail: (input.fromEmail ?? '').trim(),
-    fromName: input.fromName ?? '',
-    security
-  };
-}
-
-function createId() {
-  const random = Math.random().toString(36).slice(2, 10);
-  return `rem-${Date.now()}-${random}`;
-}
-
-function normalizeTime(value: string) {
-  const match = value.trim().match(/^(\d{1,2}):(\d{1,2})$/);
-  if (!match) return null;
-  const hour = Number(match[1]);
-  const minute = Number(match[2]);
-  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null;
-  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
-  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-}
-
-function normalizeWeeklySlots(slots: WeeklyReminderSlot[]) {
-  const dedupe = new Set<string>();
-  const result: WeeklyReminderSlot[] = [];
-  for (const item of slots) {
-    const weekday = Math.max(1, Math.min(7, Math.round(item.weekday)));
-    const time = normalizeTime(item.time);
-    if (!time) continue;
-    const key = `${weekday}-${time}`;
-    if (dedupe.has(key)) continue;
-    dedupe.add(key);
-    result.push({ weekday, time });
-  }
-  return result;
-}
-
-function normalizeMonthlySlots(slots: MonthlyReminderSlot[]) {
-  const dedupe = new Set<string>();
-  const result: MonthlyReminderSlot[] = [];
-  for (const item of slots) {
-    const day = Math.max(1, Math.min(31, Math.round(item.day)));
-    const time = normalizeTime(item.time);
-    if (!time) continue;
-    const key = `${day}-${time}`;
-    if (dedupe.has(key)) continue;
-    dedupe.add(key);
-    result.push({ day, time });
-  }
-  return result;
-}
-
-function normalizeReminder(input: TaskReminder): TaskReminder {
-  const normalizedChannel: ReminderChannel = input.channel === 'fullscreen' ? 'fullscreen' : 'email';
-  const normalizedType: ReminderContentType = ['text', 'markdown', 'web', 'image'].includes(input.contentType)
-    ? input.contentType
-    : 'text';
-  const dailyTimes = Array.from(
-    new Set((input.dailyTimes ?? []).map(item => normalizeTime(item)).filter((item): item is string => Boolean(item)))
-  );
-  return {
-    id: input.id || createId(),
-    enabled: Boolean(input.enabled),
-    title: (input.title ?? '').trim() || 'Untitled Reminder',
-    channel: normalizedChannel,
-    email: (input.email ?? '').trim(),
-    dailyTimes,
-    weeklySlots: normalizeWeeklySlots(input.weeklySlots ?? []),
-    monthlySlots: normalizeMonthlySlots(input.monthlySlots ?? []),
-    contentType: normalizedType,
-    content: input.content ?? '',
-    createdAt: input.createdAt || nowIso(),
-    updatedAt: nowIso()
-  };
-}
 
 function toStorePayload(): TaskReminderStore {
   return {
@@ -117,120 +28,27 @@ function toStorePayload(): TaskReminderStore {
   };
 }
 
-export function formatWeekday(weekday: number) {
-  const list = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const idx = Math.max(1, Math.min(7, weekday)) - 1;
-  return list[idx];
-}
-
-export async function openReminderScreensFromPayload(payload: ReminderScreenEventPayload) {
-  if (!inTauri()) {
-    return;
-  }
-  try {
-    const [{ WebviewWindow, getAllWebviewWindows }, windowApi] = await Promise.all([
-      import('@tauri-apps/api/webviewWindow'),
-      import('@tauri-apps/api/window')
-    ]);
-    const existed = (await getAllWebviewWindows()).filter((win: { label: string }) =>
-      win.label.startsWith('reminder-screen-')
-    );
-    for (const win of existed) {
-      try {
-        await win.close();
-      } catch {
-        // ignore
-      }
-    }
-
-    const token = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const storagePayload = {
-      token,
-      title: payload.title ?? 'Task Reminder',
-      content: payload.content ?? '',
-      contentType: payload.contentType ?? 'text',
-      timestamp: nowIso()
-    };
-    window.localStorage.setItem(`${REMINDER_SCREEN_KEY_PREFIX}${token}`, JSON.stringify(storagePayload));
-
-    const monitors = await windowApi.availableMonitors();
-    const fallback = await windowApi.primaryMonitor();
-    const targetMonitors = monitors.length > 0 ? monitors : fallback ? [fallback] : [];
-    for (let index = 0; index < targetMonitors.length; index += 1) {
-      const monitor = targetMonitors[index];
-      const label = `reminder-screen-${token}-${index}`;
-      new WebviewWindow(label, {
-        url: `toolkit.html?reminderScreen=1&token=${encodeURIComponent(token)}&idx=${index}`,
-        title: `Reminder Screen ${index + 1}`,
-        x: monitor.position.x,
-        y: monitor.position.y,
-        width: monitor.size.width,
-        height: monitor.size.height,
-        decorations: false,
-        resizable: false,
-        maximizable: false,
-        minimizable: false,
-        closable: true,
-        alwaysOnTop: true,
-        skipTaskbar: true,
-        focus: true,
-        visible: true
-      });
-    }
-  } catch {
-    // ignore
-  }
-}
-
-export function readReminderScreenPayload(token: string | null) {
-  if (!token || typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(`${REMINDER_SCREEN_KEY_PREFIX}${token}`);
-    if (!raw) return null;
-    return JSON.parse(raw) as {
-      token: string;
-      title: string;
-      content: string;
-      contentType: ReminderContentType;
-      timestamp: string;
-    };
-  } catch {
-    return null;
-  }
-}
+export { buildReminderCloseSignalKey, formatWeekday, openReminderScreensFromPayload, readReminderScreenPayload };
 
 export function useTaskReminders() {
   const reminderCount = computed(() => reminders.value.length);
   const enabledCount = computed(() => reminders.value.filter(item => item.enabled).length);
 
   async function load() {
-    if (loaded.value) return;
-    if (inTauri()) {
-      const store = await api.getTaskReminderStore();
-      reminders.value = Array.isArray(store.reminders) ? store.reminders.map(normalizeReminder) : [];
-      smtpConfig.value = normalizeSmtpConfig(store.smtpConfig);
-      loaded.value = true;
+    if (loaded.value) {
       return;
     }
-    const saved = await kvGet<TaskReminder[]>(REMINDER_KEY);
-    reminders.value = Array.isArray(saved) ? saved.map(normalizeReminder) : [];
-    smtpConfig.value = normalizeSmtpConfig(await kvGet<SmtpEmailConfig>(SMTP_CONFIG_KEY));
+
+    const store = await loadReminderStore();
+    reminders.value = store.reminders;
+    smtpConfig.value = store.smtpConfig;
     loaded.value = true;
   }
 
   async function persist() {
-    if (inTauri()) {
-      const store = await api.saveTaskReminderStore(toStorePayload());
-      reminders.value = Array.isArray(store.reminders) ? store.reminders.map(normalizeReminder) : [];
-      smtpConfig.value = normalizeSmtpConfig(store.smtpConfig);
-      return;
-    }
-    await kvSet(REMINDER_KEY, reminders.value);
-    await kvSet(SMTP_CONFIG_KEY, smtpConfig.value);
-  }
-
-  function hasAnySchedule(reminder: TaskReminder) {
-    return reminder.dailyTimes.length > 0 || reminder.weeklySlots.length > 0 || reminder.monthlySlots.length > 0;
+    const store = await saveReminderStore(toStorePayload());
+    reminders.value = store.reminders;
+    smtpConfig.value = store.smtpConfig;
   }
 
   async function upsertReminder(input: TaskReminder) {
@@ -258,7 +76,9 @@ export function useTaskReminders() {
 
   async function toggleReminderEnabled(id: string, enabled: boolean) {
     const item = reminders.value.find(entry => entry.id === id);
-    if (!item) return;
+    if (!item) {
+      return;
+    }
     item.enabled = enabled;
     item.updatedAt = nowIso();
     await persist();
