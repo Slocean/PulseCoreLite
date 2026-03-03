@@ -1,5 +1,5 @@
 <template>
-  <div ref="rootRef" class="ui-time-input" :class="containerClass">
+  <div ref="rootRef" class="ui-time-input" :class="containerClass" v-bind="attrs">
     <button
       ref="triggerRef"
       type="button"
@@ -55,10 +55,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, ref, useAttrs } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useFloatingPanel } from '../shared/useFloatingPanel';
 import type { TimeInputProps } from './types';
+
+defineOptions({ inheritAttrs: false });
 
 const props = withDefaults(defineProps<TimeInputProps>(), {
   disabled: false
@@ -68,6 +70,7 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
 }>();
 const { t } = useI18n();
+const attrs = useAttrs();
 
 const HOURS = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, '0'));
 const MINUTES = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'));

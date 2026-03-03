@@ -17,9 +17,7 @@
       <span class="ui-select-trigger-text" :class="{ 'ui-select-trigger-text--placeholder': !hasSelection }">
         {{ summaryText }}
       </span>
-      <span class="ui-select-icon material-symbols-outlined" aria-hidden="true">
-        expand_more
-      </span>
+      <span class="ui-select-icon material-symbols-outlined" aria-hidden="true">expand_more</span>
     </button>
   </div>
 
@@ -146,7 +144,9 @@ const containerStyle = computed(() => {
 });
 
 const attrClass = computed(() => attrs.class as string | string[] | Record<string, boolean> | undefined);
-const attrStyle = computed(() => attrs.style as string | Record<string, string> | Array<string | Record<string, string>> | undefined);
+const attrStyle = computed(
+  () => attrs.style as string | Record<string, string> | Array<string | Record<string, string>> | undefined
+);
 
 const forwardedAttrs = computed(() => {
   const rest = { ...attrs } as Record<string, unknown>;
@@ -194,6 +194,8 @@ function selectOption(value: SelectValue) {
 }
 
 .ui-select-trigger {
+  margin: 5px 0;
+  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
