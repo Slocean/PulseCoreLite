@@ -51,12 +51,9 @@ import ToolkitHardwareTab from '../components/toolkit/ToolkitHardwareTab.vue';
 import ToolkitReminderTab from '../components/toolkit/ToolkitReminderTab.vue';
 import ToolkitShutdownTab from '../components/toolkit/ToolkitShutdownTab.vue';
 import ToolkitTabs from '../components/toolkit/ToolkitTabs.vue';
-import { openReminderScreensFromPayload } from '../composables/useTaskReminders';
 import { useOverlayPrefs } from '../composables/useOverlayPrefs';
 import { useToolkitVisualLayer } from '../composables/useToolkitVisualLayer';
 import { useToolkitWindowController } from '../composables/useToolkitWindowController';
-import { inTauri, listenEvent } from '../services/tauri';
-import type { ReminderScreenEventPayload } from '../types';
 
 type ToolkitTab = 'shutdown' | 'cleanup' | 'hardware' | 'reminder';
 
@@ -64,7 +61,6 @@ const { t } = useI18n();
 const { prefs } = useOverlayPrefs();
 const activeTab = ref<ToolkitTab>('shutdown');
 const pageRef = ref<HTMLElement | null>(null);
-let unlistenReminderTrigger: (() => void) | null = null;
 
 const tabs = computed(() => [
   { id: 'shutdown' as const, label: t('toolkit.tabShutdown') },
@@ -89,27 +85,8 @@ watch(activeTab, () => {
   scheduleResize();
 });
 
-onMounted(() => {
-  void setupReminderTriggerListener();
-});
-
-onUnmounted(() => {
-  if (unlistenReminderTrigger) {
-    unlistenReminderTrigger();
-    unlistenReminderTrigger = null;
-  }
-});
-
 function handleContentChange() {
   notifyContentChange();
-}
-
-async function setupReminderTriggerListener() {
-  if (!inTauri()) return;
-  if (unlistenReminderTrigger) return;
-  unlistenReminderTrigger = await listenEvent<ReminderScreenEventPayload>('reminder://trigger', payload => {
-    void openReminderScreensFromPayload(payload);
-  });
 }
 </script>
 

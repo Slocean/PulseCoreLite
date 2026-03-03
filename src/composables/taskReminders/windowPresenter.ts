@@ -22,16 +22,10 @@ export async function openReminderScreensFromPayload(payload: ReminderScreenEven
       import('@tauri-apps/api/webviewWindow'),
       import('@tauri-apps/api/window')
     ]);
+
     const existed = (await getAllWebviewWindows()).filter((win: { label: string }) =>
       win.label.startsWith('reminder-screen-')
     );
-    for (const win of existed) {
-      try {
-        await win.close();
-      } catch {
-        // ignore
-      }
-    }
 
     const token = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const storagePayload = {
@@ -45,7 +39,7 @@ export async function openReminderScreensFromPayload(payload: ReminderScreenEven
 
     const monitors = await windowApi.availableMonitors();
     const fallback = await windowApi.primaryMonitor();
-    const targetMonitors = monitors.length > 0 ? monitors : fallback ? [fallback] : [];
+    const targetMonitors = monitors && monitors.length > 0 ? monitors : fallback ? [fallback] : [];
     for (let index = 0; index < targetMonitors.length; index += 1) {
       const monitor = targetMonitors[index];
       const label = `reminder-screen-${token}-${index}`;
@@ -68,6 +62,16 @@ export async function openReminderScreensFromPayload(payload: ReminderScreenEven
         visible: true
       });
     }
+
+    setTimeout(() => {
+      for (const win of existed) {
+        try {
+          void win.close();
+        } catch {
+          // ignore
+        }
+      }
+    }, 200);
   } catch {
     // ignore
   }
