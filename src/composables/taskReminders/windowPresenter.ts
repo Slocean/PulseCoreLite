@@ -38,66 +38,37 @@ export async function openReminderScreensFromPayload(payload: ReminderScreenEven
     storageRepository.setJsonSync(buildReminderScreenStorageKey(token), storagePayload);
 
     const monitors = await windowApi.availableMonitors();
-    const currentMonitor = await windowApi.currentMonitor();
-    const primaryMonitor = await windowApi.primaryMonitor();
-    const targetMonitor = currentMonitor || primaryMonitor;
+    const fallback = await windowApi.primaryMonitor();
+    const targetMonitors = monitors && monitors.length > 0 ? monitors : fallback ? [fallback] : [];
 
-    if (!targetMonitor) {
-      return;
+    const newWindows = [];
+    for (let index = 0; index < targetMonitors.length; index += 1) {
+      const monitor = targetMonitors[index];
+      const label = `reminder-screen-${token}-${index}`;
+      const win = new WebviewWindow(label, {
+        url: `toolkit.html?reminderScreen=1&token=${encodeURIComponent(token)}&idx=${index}`,
+        title: `Reminder Screen ${index + 1}`,
+        x: monitor.position.x,
+        y: monitor.position.y,
+        width: monitor.size.width,
+        height: monitor.size.height,
+        backgroundColor: '#05070b',
+        decorations: false,
+        resizable: false,
+        maximizable: false,
+        minimizable: false,
+        closable: true,
+        alwaysOnTop: true,
+        skipTaskbar: true,
+        focus: index === 0,
+        visible: false
+      });
+      newWindows.push(win);
     }
 
-    // 先创建当前屏幕的窗口
-    const monitor = targetMonitor;
-    const index = 0;
-    const label = `reminder-screen-${token}-${index}`;
-    new WebviewWindow(label, {
-      url: `toolkit.html?reminderScreen=1&token=${encodeURIComponent(token)}&idx=${index}`,
-      title: `Reminder Screen ${index + 1}`,
-      x: monitor.position.x,
-      y: monitor.position.y,
-      width: monitor.size.width,
-      height: monitor.size.height,
-      backgroundColor: '#05070b',
-      decorations: false,
-      resizable: false,
-      maximizable: false,
-      minimizable: false,
-      closable: true,
-      alwaysOnTop: true,
-      skipTaskbar: true,
-      focus: true,
-      visible: true
-    });
-
-    // 延迟创建其他屏幕的窗口
-    setTimeout(() => {
-      const allMonitors = monitors && monitors.length > 0 ? monitors : primaryMonitor ? [primaryMonitor] : [];
-      const otherMonitors = allMonitors.filter(m =>
-        m.position.x !== targetMonitor.position.x || m.position.y !== targetMonitor.position.y
-      );
-
-      otherMonitors.forEach((mon, idx) => {
-        const otherLabel = `reminder-screen-${token}-${idx + 1}`;
-        new WebviewWindow(otherLabel, {
-          url: `toolkit.html?reminderScreen=1&token=${encodeURIComponent(token)}&idx=${idx + 1}`,
-          title: `Reminder Screen ${idx + 2}`,
-          x: mon.position.x,
-          y: mon.position.y,
-          width: mon.size.width,
-          height: mon.size.height,
-          backgroundColor: '#05070b',
-          decorations: false,
-          resizable: false,
-          maximizable: false,
-          minimizable: false,
-          closable: true,
-          alwaysOnTop: true,
-          skipTaskbar: true,
-          focus: false,
-          visible: true
-        });
-      });
-    }, 100);
+    await Promise.all(newWindows.map(win => win.once('tauri://created', async () => {
+      await win.show();
+    })));
 
     setTimeout(async () => {
       for (const win of existed) {
