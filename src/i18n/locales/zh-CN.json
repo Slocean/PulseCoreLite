@@ -343,6 +343,7 @@
     "timeInput": {
       "triggerAria": "选择时间",
       "panelAria": "时间选择器",
+      "now": "现在",
       "hour": "小时",
       "minute": "分钟"
     }

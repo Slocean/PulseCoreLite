@@ -125,9 +125,10 @@ async function closeReminderWindows() {
   if (!canClose.value || !token.value) {
     return;
   }
+  allowSystemClose = true;
   if (inTauri()) {
     try {
-      await api.forceCloseReminderScreens(token.value);
+      void api.forceCloseReminderScreens(token.value);
     } catch {
       // ignore backend close failures and continue with frontend signal fallback
     }
@@ -148,8 +149,11 @@ async function closeCurrentWindowBySignal() {
 
 <style scoped>
 .reminder-screen {
-  min-height: 100vh;
-  width: 100vw;
+  position: fixed;
+  inset: 0;
+  min-height: 100%;
+  width: 100%;
+  height: 100%;
   display: grid;
   place-items: center;
   background:
@@ -157,7 +161,7 @@ async function closeCurrentWindowBySignal() {
     radial-gradient(140% 120% at 80% 90%, rgba(255, 72, 112, 0.2), rgba(0, 0, 0, 0) 62%),
     #05070b;
   color: rgba(243, 247, 255, 0.96);
-  padding: 3vw;
+  padding: 0;
 }
 
 .reminder-screen__inner {
@@ -165,6 +169,8 @@ async function closeCurrentWindowBySignal() {
   max-height: 100%;
   display: grid;
   gap: 20px;
+  padding: clamp(16px, 3vw, 36px);
+  box-sizing: border-box;
 }
 
 .reminder-screen__badge {

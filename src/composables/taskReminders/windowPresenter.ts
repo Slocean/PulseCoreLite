@@ -56,6 +56,7 @@ export async function openReminderScreensFromPayload(payload: ReminderScreenEven
         y: monitor.position.y,
         width: monitor.size.width,
         height: monitor.size.height,
+        backgroundColor: '#05070b',
         decorations: false,
         resizable: false,
         maximizable: false,

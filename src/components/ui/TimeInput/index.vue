@@ -24,6 +24,11 @@
       :style="panelStyle"
       role="dialog"
       :aria-label="t('ui.timeInput.panelAria')">
+      <div class="ui-time-input-shortcuts">
+        <button type="button" class="ui-time-input-shortcut" @click="setToNow">
+          {{ t('ui.timeInput.now') }}
+        </button>
+      </div>
       <div ref="hourColumnRef" class="ui-time-input-column">
         <div class="ui-time-input-column-title">{{ t('ui.timeInput.hour') }}</div>
         <button
@@ -99,7 +104,7 @@ const { closePanel, toggleOpen: toggleFloatingPanel } = useFloatingPanel({
   panelRef,
   isOpen,
   panelStyle,
-  estimatedHeight: 220,
+  estimatedHeight: 250,
   minWidth: 156,
   widthMode: 'min',
   onAfterOpen: scrollSelectedIntoView
@@ -127,6 +132,14 @@ function selectHour(hour: string) {
 
 function selectMinute(minute: string) {
   emit('update:modelValue', `${selectedHour.value}:${minute}`);
+  closePanel();
+}
+
+function setToNow() {
+  const now = new Date();
+  const hour = String(now.getHours()).padStart(2, '0');
+  const minute = String(now.getMinutes()).padStart(2, '0');
+  emit('update:modelValue', `${hour}:${minute}`);
   closePanel();
 }
 
@@ -194,7 +207,7 @@ function scrollSelectedIntoView() {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
-  max-height: 220px;
+  max-height: 250px;
   overflow: hidden;
   z-index: 10050;
   border-radius: 8px;
@@ -205,6 +218,31 @@ function scrollSelectedIntoView() {
     0 8px 24px rgba(0, 0, 0, 0.35),
     0 0 0 1px rgba(255, 255, 255, 0.03) inset;
   padding: 6px;
+}
+
+.ui-time-input-shortcuts {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.ui-time-input-shortcut {
+  min-height: 24px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 242, 255, 0.14);
+  color: rgba(0, 242, 255, 0.92);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.ui-time-input-shortcut:hover {
+  border-color: rgba(0, 242, 255, 0.5);
+  background: rgba(0, 242, 255, 0.22);
 }
 
 .ui-time-input-column {

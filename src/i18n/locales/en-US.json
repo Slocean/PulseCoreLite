@@ -343,6 +343,7 @@
     "timeInput": {
       "triggerAria": "Select time",
       "panelAria": "Time picker",
+      "now": "Now",
       "hour": "Hour",
       "minute": "Minute"
     }
