@@ -75,6 +75,7 @@ export async function openReminderScreensFromPayload(payload: ReminderScreenEven
         ...windowConfig,
         backgroundColor: '#05070b',
         decorations: false,
+        transparent: false,
         resizable: false,
         maximizable: false,
         minimizable: false,
@@ -82,7 +83,8 @@ export async function openReminderScreensFromPayload(payload: ReminderScreenEven
         alwaysOnTop: true,
         skipTaskbar: true,
         focus: index === 0,
-        visible: false
+        visible: false,
+        fullscreen: true
       });
       newWindows.push(win);
     }
