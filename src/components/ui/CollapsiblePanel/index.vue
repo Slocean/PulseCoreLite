@@ -37,41 +37,31 @@
 import { computed } from 'vue';
 
 import UiButton from '@/components/ui/Button';
-import type { CollapsiblePanelProps } from './types';
+import {
+  getNextCollapsiblePanelValue,
+  resolveCollapsiblePanelOpenState,
+  resolveCollapsiblePanelToggleLabel
+} from './logic';
+import { COLLAPSIBLE_PANEL_DEFAULTS } from './types';
+import type { CollapsiblePanelProps, CollapsiblePanelSlots } from './types';
 
-const props = withDefaults(defineProps<CollapsiblePanelProps>(), {
-  framed: false,
-  modelValue: true,
-  collapsible: true,
-  headerMode: 'single',
-  titleAriaLabel: '',
-  toggleAriaLabel: '',
-  contentClass: '',
-  headerClass: '',
-  titleClass: '',
-  indicatorClass: '',
-  singleHeaderPreset: 'default',
-  splitTitlePreset: 'default',
-  splitTogglePreset: 'default',
-  toggleIcon: 'expand_more'
-});
+const props = withDefaults(defineProps<CollapsiblePanelProps>(), COLLAPSIBLE_PANEL_DEFAULTS);
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean];
   toggle: [value: boolean];
 }>();
 
-defineSlots<{
-  default?: () => unknown;
-  'header-actions'?: () => unknown;
-}>();
+defineSlots<CollapsiblePanelSlots>();
 
-const isOpen = computed(() => (props.collapsible ? props.modelValue : true));
-const toggleLabel = computed(() => props.toggleAriaLabel || props.titleAriaLabel || props.title);
+const isOpen = computed(() => resolveCollapsiblePanelOpenState(props.collapsible, props.modelValue));
+const toggleLabel = computed(() =>
+  resolveCollapsiblePanelToggleLabel(props.toggleAriaLabel, props.titleAriaLabel, props.title)
+);
 
 function toggleOpen() {
   if (!props.collapsible) return;
-  const next = !isOpen.value;
+  const next = getNextCollapsiblePanelValue(isOpen.value);
   emit('update:modelValue', next);
   emit('toggle', next);
 }

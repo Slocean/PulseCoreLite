@@ -2,8 +2,13 @@
   <label class="ui-checkbox" :class="{ 'ui-checkbox--disabled': props.disabled }">
     <input
       type="checkbox"
+      :id="props.inputId"
       :checked="isChecked"
       :disabled="props.disabled"
+      :aria-label="ariaLabel"
+      :aria-description="ariaDescription"
+      :aria-describedby="ariaDescribedBy"
+      @keydown="handleKeydown"
       @change="handleChange" />
     <span class="ui-checkbox-box" aria-hidden="true">
       <span class="ui-checkbox-check"></span>
@@ -13,38 +18,46 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { CheckboxProps, CheckboxModelValue, CheckboxValue } from './types'
+import { computed } from 'vue';
+
+import {
+  createNextCheckboxModelValue,
+  isCheckboxChecked,
+  shouldToggleCheckboxOnKeydown
+} from './logic';
+import type { CheckboxProps, CheckboxModelValue } from './types';
 
 const props = withDefaults(defineProps<CheckboxProps>(), {
   disabled: false
-})
+});
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: CheckboxModelValue): void
-}>()
+  (e: 'update:modelValue', value: CheckboxModelValue): void;
+}>();
 
-const isChecked = computed(() => {
-  if (Array.isArray(props.modelValue)) {
-    return props.value !== undefined && props.modelValue.includes(props.value)
-  }
-  return props.modelValue === true
-})
+const isChecked = computed(() => isCheckboxChecked(props.modelValue, props.value));
+const ariaLabel = computed(() => props.ariaLabel ?? props.a11y?.ariaLabel);
+const ariaDescription = computed(() => props.ariaDescription ?? props.a11y?.ariaDescription);
+const ariaDescribedBy = computed(() => {
+  const ids = [props.describedBy ?? props.a11y?.describedBy].filter((value): value is string =>
+    Boolean(value?.trim())
+  );
+  return ids.length ? ids.join(' ') : undefined;
+});
 
 function handleChange(event: Event) {
-  const checked = (event.target as HTMLInputElement).checked
-  if (Array.isArray(props.modelValue)) {
-    const next = [...props.modelValue] as CheckboxValue[]
-    if (checked && props.value !== undefined) {
-      next.push(props.value)
-    } else {
-      const idx = props.value !== undefined ? next.indexOf(props.value) : -1
-      if (idx !== -1) next.splice(idx, 1)
-    }
-    emit('update:modelValue', next)
-  } else {
-    emit('update:modelValue', checked)
-  }
+  const checked = (event.target as HTMLInputElement).checked;
+  const next = createNextCheckboxModelValue(props.modelValue, props.value, checked);
+  emit('update:modelValue', next);
+}
+
+function handleKeydown(event: KeyboardEvent) {
+  if (!shouldToggleCheckboxOnKeydown(event.key)) return;
+  event.preventDefault();
+  const input = event.target as HTMLInputElement | null;
+  if (!input || input.disabled) return;
+  input.checked = !input.checked;
+  input.dispatchEvent(new Event('change', { bubbles: true }));
 }
 </script>
 
