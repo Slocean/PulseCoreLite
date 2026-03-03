@@ -152,7 +152,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Ref } from 'vue';
+import type { VNodeRef } from 'vue';
 
 import UiButton from '@/components/ui/Button';
 import UiDialog from '@/components/ui/Dialog';
@@ -164,8 +164,8 @@ defineProps<{
   t: (key: string, params?: Record<string, unknown>) => string;
   backgroundImageSource: string | null;
   backgroundFileName: string | null;
-  setBackgroundFileInput: (el: HTMLInputElement | null) => void;
-  setCropCanvas: (el: HTMLCanvasElement | null) => void;
+  setBackgroundFileInput: VNodeRef;
+  setCropCanvas: VNodeRef;
   isDragging: boolean;
   canApplyBackground: boolean;
   canSaveTheme: boolean;
@@ -190,16 +190,16 @@ defineProps<{
   closeEditThemeDialog: () => void;
 }>();
 
-const backgroundDialogOpen = defineModel<boolean>('backgroundDialogOpen');
-const themeNameDialogOpen = defineModel<boolean>('themeNameDialogOpen');
-const themeDeleteDialogOpen = defineModel<boolean>('themeDeleteDialogOpen');
-const themeEditDialogOpen = defineModel<boolean>('themeEditDialogOpen');
-const themeEditEffect = defineModel<ThemeEffect>('themeEditEffect');
-const themeEditBlurPx = defineModel<number>('themeEditBlurPx');
-const themeEditGlassStrength = defineModel<number>('themeEditGlassStrength');
-const themeNameInput = defineModel<string>('themeNameInput');
-const backgroundEffect = defineModel<ThemeEffect>('backgroundEffect');
-const backgroundBlurPx = defineModel<number>('backgroundBlurPx');
-const backgroundGlassStrength = defineModel<number>('backgroundGlassStrength');
+const backgroundDialogOpen = defineModel<boolean>('backgroundDialogOpen', { required: true });
+const themeNameDialogOpen = defineModel<boolean>('themeNameDialogOpen', { required: true });
+const themeDeleteDialogOpen = defineModel<boolean>('themeDeleteDialogOpen', { required: true });
+const themeEditDialogOpen = defineModel<boolean>('themeEditDialogOpen', { required: true });
+const themeEditEffect = defineModel<ThemeEffect>('themeEditEffect', { required: true });
+const themeEditBlurPx = defineModel<number>('themeEditBlurPx', { required: true });
+const themeEditGlassStrength = defineModel<number>('themeEditGlassStrength', { required: true });
+const themeNameInput = defineModel<string>('themeNameInput', { required: true });
+const backgroundEffect = defineModel<ThemeEffect>('backgroundEffect', { required: true });
+const backgroundBlurPx = defineModel<number>('backgroundBlurPx', { required: true });
+const backgroundGlassStrength = defineModel<number>('backgroundGlassStrength', { required: true });
 
 </script>

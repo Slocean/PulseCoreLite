@@ -75,9 +75,9 @@ defineProps<{
   handleInstallUpdate: () => void;
 }>();
 
-const factoryResetDialogOpen = defineModel<boolean>('factoryResetDialogOpen');
-const importConfirmDialogOpen = defineModel<boolean>('importConfirmDialogOpen');
-const importErrorDialogOpen = defineModel<boolean>('importErrorDialogOpen');
-const exportSuccessDialogOpen = defineModel<boolean>('exportSuccessDialogOpen');
-const updateDialogOpen = defineModel<boolean>('updateDialogOpen');
+const factoryResetDialogOpen = defineModel<boolean>('factoryResetDialogOpen', { required: true });
+const importConfirmDialogOpen = defineModel<boolean>('importConfirmDialogOpen', { required: true });
+const importErrorDialogOpen = defineModel<boolean>('importErrorDialogOpen', { required: true });
+const exportSuccessDialogOpen = defineModel<boolean>('exportSuccessDialogOpen', { required: true });
+const updateDialogOpen = defineModel<boolean>('updateDialogOpen', { required: true });
 </script>

@@ -138,6 +138,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import type { VNodeRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiToast from '@/components/ui/Toast';
@@ -242,12 +243,12 @@ const {
   closeThemeNameDialog
 } = useThemeManager({ prefs, overlayRef });
 
-const setBackgroundFileInput = (el: HTMLInputElement | null) => {
-  backgroundFileInput.value = el;
+const setBackgroundFileInput: VNodeRef = ref => {
+  backgroundFileInput.value = ref instanceof HTMLInputElement ? ref : null;
 };
 
-const setCropCanvas = (el: HTMLCanvasElement | null) => {
-  cropCanvas.value = el;
+const setCropCanvas: VNodeRef = ref => {
+  cropCanvas.value = ref instanceof HTMLCanvasElement ? ref : null;
 };
 
 const { factoryResetDialogOpen, resolveFactoryReset, handleFactoryReset, handleUninstall } = useFactoryReset({
