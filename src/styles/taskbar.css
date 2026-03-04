@@ -17,7 +17,8 @@ html.window-taskbar body {
   padding: 0 10px;
   display: inline-flex;
   align-items: center;
-  border-radius: 12px;
+  /* border-radius: 12px; */
+  /* overflow: hidden; */
   /* border: 1px solid rgba(255, 255, 255, 0.12); */
   background: rgba(0, 0, 0, 0.28);
   backdrop-filter: blur(10px);
@@ -63,6 +64,16 @@ html.window-taskbar body {
 
 .taskbar-bar--theme-light .taskbar-v {
   color: rgba(0, 0, 0, 0.9);
+}
+
+.taskbar-bar--theme-dark .taskbar-v.taskbar-glow-orange,
+.taskbar-bar--theme-light .taskbar-v.taskbar-glow-orange {
+  color: var(--orange);
+}
+
+.taskbar-bar--theme-dark .taskbar-v.taskbar-glow-red,
+.taskbar-bar--theme-light .taskbar-v.taskbar-glow-red {
+  color: var(--red);
 }
 
 .taskbar-bar--two-line {
