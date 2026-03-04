@@ -130,14 +130,6 @@
       </label>
     </div>
 
-    <div class="toolkit-profile-actions">
-      <UiButton native-type="button" preset="overlay-primary" @click="emit('saveReminder')">
-        {{ t('toolkit.reminderSave') }}
-      </UiButton>
-      <UiButton native-type="button" preset="overlay-danger" @click="emit('resetForm')">
-        {{ t('toolkit.reminderReset') }}
-      </UiButton>
-    </div>
   </UiCollapsiblePanel>
 </template>
 
@@ -195,8 +187,6 @@ const emit = defineEmits<{
   (event: 'removeWeeklySlot', weekday: number, time: string): void;
   (event: 'addMonthlySlot'): void;
   (event: 'removeMonthlySlot', day: number, time: string): void;
-  (event: 'saveReminder'): void;
-  (event: 'resetForm'): void;
   (event: 'update:dailyInputTime', value: string): void;
   (event: 'update:weeklyInputDays', value: number[]): void;
   (event: 'update:weeklyInputTime', value: string): void;

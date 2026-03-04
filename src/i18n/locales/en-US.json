@@ -310,7 +310,6 @@
     "reminderAdvancedBlockButtons": "Disable All Keys",
     "reminderAdvancedRequirePassword": "Close Password",
     "reminderAdvancedClosePassword": "Close Password",
-    "reminderAdvancedApplyTo": "Apply To Reminders",
     "reminderAdvancedUpload": "Upload Background",
     "reminderAdvancedUploadHint": "Auto-compress to WebP, max 1920px edge",
     "reminderAdvancedUploadInvalid": "Please choose an image file",

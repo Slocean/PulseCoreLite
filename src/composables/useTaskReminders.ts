@@ -1,16 +1,9 @@
 ﻿import { computed, ref } from 'vue';
 
 import { api, inTauri } from '../services/tauri';
-import type { ReminderAdvancedSettings, SmtpEmailConfig, TaskReminder, TaskReminderStore } from '../types';
+import type { SmtpEmailConfig, TaskReminder, TaskReminderStore } from '../types';
 import { loadReminderStore, saveReminderStore } from './taskReminders/repository';
-import {
-  formatWeekday,
-  hasAnySchedule,
-  normalizeAdvancedSettings,
-  normalizeReminder,
-  normalizeSmtpConfig,
-  nowIso
-} from './taskReminders/scheduler';
+import { formatWeekday, hasAnySchedule, normalizeReminder, normalizeSmtpConfig, nowIso } from './taskReminders/scheduler';
 import {
   buildReminderCloseSignalKey,
   buildReminderScreenStorageKey,
@@ -103,29 +96,6 @@ export function useTaskReminders() {
     }
   }
 
-  async function applyAdvancedSettings(ids: string[], settings: ReminderAdvancedSettings) {
-    const normalized = normalizeAdvancedSettings(settings);
-    const targetIds = new Set(ids);
-    if (!targetIds.size) {
-      return;
-    }
-    let changed = false;
-    reminders.value = reminders.value.map(item => {
-      if (!targetIds.has(item.id) || item.channel !== 'fullscreen') {
-        return item;
-      }
-      changed = true;
-      return {
-        ...item,
-        advancedSettings: normalized,
-        updatedAt: nowIso()
-      };
-    });
-    if (changed) {
-      await persist();
-    }
-  }
-
   async function saveSmtpConfig(config: SmtpEmailConfig) {
     const normalized = normalizeSmtpConfig(config);
     if (!normalized) {
@@ -172,7 +142,6 @@ export function useTaskReminders() {
     removeReminder,
     toggleReminderEnabled,
     runReminderNow,
-    applyAdvancedSettings,
     saveSmtpConfig,
     testSmtpConfig,
     formatWeekday

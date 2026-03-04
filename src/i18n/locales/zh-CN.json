@@ -310,7 +310,6 @@
     "reminderAdvancedBlockButtons": "屏蔽所有按键",
     "reminderAdvancedRequirePassword": "关闭密码",
     "reminderAdvancedClosePassword": "关闭密码",
-    "reminderAdvancedApplyTo": "设置作用于",
     "reminderAdvancedUpload": "上传背景图片",
     "reminderAdvancedUploadHint": "自动压缩为 WebP，最长边 1920px",
     "reminderAdvancedUploadInvalid": "请选择图片文件",

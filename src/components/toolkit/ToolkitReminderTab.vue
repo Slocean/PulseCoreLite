@@ -32,8 +32,6 @@
     @remove-weekly-slot="removeWeeklySlot"
     @add-monthly-slot="addMonthlySlot"
     @remove-monthly-slot="removeMonthlySlot"
-    @save-reminder="saveReminder"
-    @reset-form="resetForm"
     @update:daily-input-time="updateDailyInputTime"
     @update:weekly-input-days="updateWeeklyInputDays"
     @update:weekly-input-time="updateWeeklyInputTime"
@@ -73,10 +71,6 @@
         <span>{{ t('toolkit.reminderAdvancedColor') }}</span>
         <input v-model.trim="advancedSettings.backgroundColor" type="text" />
       </label>
-      <label class="toolkit-field toolkit-field--inline">
-        <span>{{ t('toolkit.reminderAdvancedApplyTo') }}</span>
-        <UiSelect v-model="advancedApplyTargets" :options="advancedApplyOptions" multiple />
-      </label>
       <div class="overlay-config-row">
         <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedAllowClose') }}</span>
         <UiSwitch v-model="advancedSettings.allowClose" :aria-label="t('toolkit.reminderAdvancedAllowClose')" />
@@ -99,6 +93,15 @@
   <p v-if="statusMessage" class="toolkit-status">{{ statusMessage }}</p>
   <p v-if="errorMessage" class="toolkit-error">{{ errorMessage }}</p>
 
+  <div class="toolkit-profile-actions">
+    <UiButton native-type="button" preset="overlay-primary" @click="saveReminder">
+      {{ t('toolkit.reminderSave') }}
+    </UiButton>
+    <UiButton native-type="button" preset="overlay-danger" @click="resetForm">
+      {{ t('toolkit.reminderReset') }}
+    </UiButton>
+  </div>
+
   <ReminderSmtpDialog
     v-model:open="smtpDialogOpen"
     :smtp-form="smtpForm"
@@ -115,7 +118,6 @@ import { useI18n } from 'vue-i18n';
 
 import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiButton from '@/components/ui/Button';
-import UiSelect from '@/components/ui/Select';
 import type { SelectOption } from '@/components/ui/Select/types';
 import UiSwitch from '@/components/ui/Switch';
 import { useTaskReminders } from '../../composables/useTaskReminders';
@@ -139,7 +141,6 @@ const {
   removeReminder,
   toggleReminderEnabled,
   runReminderNow,
-  applyAdvancedSettings,
   saveSmtpConfig,
   testSmtpConfig,
   formatWeekday
@@ -197,7 +198,6 @@ const defaultAdvancedSettings = (): ReminderAdvancedSettings => ({
 });
 
 const advancedSettings = reactive<ReminderAdvancedSettings>(defaultAdvancedSettings());
-const advancedApplyTargets = ref<string[]>([]);
 
 const weekdayOptions = computed<SelectOption[]>(() => [
   { value: 1, label: t('toolkit.weekdayMon') },
@@ -227,15 +227,6 @@ const smtpSecurityOptions = computed<SelectOption[]>(() => [
   { value: 'tls', label: t('toolkit.reminderSmtpSecurityTls') }
 ]);
 
-const advancedApplyOptions = computed<SelectOption[]>(() =>
-  reminders.value
-    .filter(item => item.channel === 'fullscreen' && item.id !== (editingId.value ?? ''))
-    .map(item => ({
-      value: item.id,
-      label: item.title || t('toolkit.reminderTitle')
-    }))
-);
-
 const reminderListTitle = computed(() => {
   const summary = t('toolkit.reminderSummary', { total: reminderCount.value, enabled: enabledCount.value });
   return `${t('toolkit.reminderTitle')} · ${summary}`;
@@ -252,7 +243,7 @@ const monthlyDayOptions = computed<SelectOption[]>(() =>
 );
 
 watch(
-  [reminders, statusMessage, errorMessage, sections, advancedSettings, advancedApplyTargets],
+  [reminders, statusMessage, errorMessage, sections, advancedSettings],
   () => {
     nextTick(() => emit('contentChange'));
   },
@@ -423,7 +414,6 @@ function resetForm() {
   form.contentType = 'text';
   form.content = '';
   Object.assign(advancedSettings, defaultAdvancedSettings());
-  advancedApplyTargets.value = [];
   weeklyInputDays.value = [1];
   monthlyInputDays.value = [new Date().getDate()];
 }
@@ -476,9 +466,6 @@ async function saveReminder() {
       updatedAt: new Date().toISOString()
     };
     await upsertReminder(payload);
-    if (advancedApplyTargets.value.length) {
-      await applyAdvancedSettings(advancedApplyTargets.value, advancedSettings);
-    }
     statusMessage.value = t('toolkit.reminderSaveSuccess');
     resetForm();
   } catch (error) {
@@ -500,7 +487,6 @@ function editReminder(item: TaskReminder) {
   form.contentType = item.contentType;
   form.content = item.content;
   Object.assign(advancedSettings, item.advancedSettings ?? defaultAdvancedSettings());
-  advancedApplyTargets.value = [];
   const editDays = [...new Set(item.weeklySlots.map(slot => slot.weekday))]
     .map(value => Math.round(value))
     .filter(value => value >= 1 && value <= 7)
