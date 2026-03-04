@@ -311,7 +311,7 @@
     "reminderAdvancedBlockButtons": "Disable All Keys",
     "reminderAdvancedRequirePassword": "Close Password",
     "reminderAdvancedClosePassword": "Close Password",
-    "reminderAdvancedUpload": "Upload Background",
+    "reminderAdvancedUpload": "Upload Img",
     "reminderAdvancedUploadHint": "Auto-compress to WebP, max 1920px edge",
     "reminderAdvancedUploadInvalid": "Please choose an image file",
     "reminderAdvancedUploadSuccess": "Background image updated",

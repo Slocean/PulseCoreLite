@@ -108,6 +108,10 @@
   align-items: center;
 }
 
+.toolkit-field--inline-select {
+  grid-template-columns: 100px minmax(0, 1fr);
+}
+
 .toolkit-field--inline > span {
   padding-top: 2px;
   white-space: nowrap;

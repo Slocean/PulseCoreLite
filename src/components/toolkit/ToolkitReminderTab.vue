@@ -48,9 +48,9 @@
     indicator-class="toolkit-collapse-indicator"
     @toggle="emit('contentChange')">
     <div class="toolkit-grid">
-      <label class="toolkit-field toolkit-field--inline">
-        <span>{{ t('toolkit.reminderAdvancedImage') }}</span>
-        <div class="toolkit-reminder-advanced-input">
+      <label class="toolkit-field toolkit-field--inline toolkit-field--inline-select">
+        <UiSelect v-model="advancedBackgroundTypeModel" :options="advancedBackgroundOptions" />
+        <div v-if="advancedBackgroundTypeModel === 'image'" class="toolkit-reminder-advanced-input">
           <input v-model.trim="advancedSettings.backgroundImage" type="text" />
           <input
             ref="advancedImageInput"
@@ -66,12 +66,11 @@
             {{ t('toolkit.reminderAdvancedUpload') }}
           </UiButton>
         </div>
+        <input v-else v-model.trim="advancedSettings.backgroundColor" type="color" />
       </label>
-      <p class="toolkit-reminder-advanced-hint">{{ t('toolkit.reminderAdvancedUploadHint') }}</p>
-      <label class="toolkit-field toolkit-field--inline">
-        <span>{{ t('toolkit.reminderAdvancedColor') }}</span>
-        <input v-model.trim="advancedSettings.backgroundColor" type="text" />
-      </label>
+      <p v-if="advancedBackgroundTypeModel === 'image'" class="toolkit-reminder-advanced-hint">
+        {{ t('toolkit.reminderAdvancedUploadHint') }}
+      </p>
       <div class="overlay-config-row">
         <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedAllowClose') }}</span>
         <UiSwitch v-model="advancedSettings.allowClose" :aria-label="t('toolkit.reminderAdvancedAllowClose')" />
@@ -119,6 +118,7 @@ import { useI18n } from 'vue-i18n';
 
 import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiButton from '@/components/ui/Button';
+import UiSelect from '@/components/ui/Select';
 import type { SelectOption } from '@/components/ui/Select/types';
 import UiSwitch from '@/components/ui/Switch';
 import { useTaskReminders } from '../../composables/useTaskReminders';
@@ -179,6 +179,7 @@ const monthlyInputDays = ref<number[]>([new Date().getDate()]);
 const monthlyInputTime = ref('09:00');
 const smtpTestTo = ref('');
 const advancedImageInput = ref<HTMLInputElement | null>(null);
+const advancedBackgroundType = ref<'image' | 'color'>('image');
 const smtpForm = reactive<SmtpEmailConfig>({
   host: '',
   port: 587,
@@ -221,6 +222,24 @@ const contentTypeOptions = computed<SelectOption[]>(() => [
   { value: 'web', label: t('toolkit.reminderContentWeb') },
   { value: 'image', label: t('toolkit.reminderContentImage') }
 ]);
+
+const advancedBackgroundOptions = computed<SelectOption[]>(() => [
+  { value: 'image', label: t('toolkit.reminderAdvancedImage') },
+  { value: 'color', label: t('toolkit.reminderAdvancedColor') }
+]);
+
+const advancedBackgroundTypeModel = computed<'image' | 'color'>({
+  get: () => advancedBackgroundType.value,
+  set: value => {
+    if (value === advancedBackgroundType.value) return;
+    advancedBackgroundType.value = value;
+    if (value === 'image') {
+      advancedSettings.backgroundColor = '';
+      return;
+    }
+    advancedSettings.backgroundImage = '';
+  }
+});
 
 const smtpSecurityOptions = computed<SelectOption[]>(() => [
   { value: 'none', label: t('toolkit.reminderSmtpSecurityNone') },
@@ -300,6 +319,18 @@ function updateMonthlyInputTime(value: string) {
 
 function updateSmtpTestTo(value: string) {
   smtpTestTo.value = value;
+}
+
+function syncAdvancedBackgroundType() {
+  if (advancedSettings.backgroundImage) {
+    advancedBackgroundType.value = 'image';
+    return;
+  }
+  if (advancedSettings.backgroundColor) {
+    advancedBackgroundType.value = 'color';
+    return;
+  }
+  advancedBackgroundType.value = 'image';
 }
 
 function triggerAdvancedImageSelect() {
@@ -428,6 +459,7 @@ function resetForm() {
   form.contentType = 'text';
   form.content = '';
   Object.assign(advancedSettings, defaultAdvancedSettings());
+  syncAdvancedBackgroundType();
   weeklyInputDays.value = [1];
   monthlyInputDays.value = [new Date().getDate()];
 }
@@ -501,6 +533,7 @@ function editReminder(item: TaskReminder) {
   form.contentType = item.contentType;
   form.content = item.content;
   Object.assign(advancedSettings, item.advancedSettings ?? defaultAdvancedSettings());
+  syncAdvancedBackgroundType();
   const editDays = [...new Set(item.weeklySlots.map(slot => slot.weekday))]
     .map(value => Math.round(value))
     .filter(value => value >= 1 && value <= 7)

@@ -123,13 +123,8 @@
     indicator-class="toolkit-collapse-indicator"
     @toggle="emit('contentChange')">
     <div class="toolkit-grid">
-      <label class="toolkit-field toolkit-field--inline">
-        <span>{{ t('toolkit.reminderContentType') }}</span>
-        <UiSelect v-model="form.contentType" :options="contentTypeOptions" />
-      </label>
-
-      <label class="toolkit-field toolkit-field--inline">
-        <span>{{ t('toolkit.reminderContentValue') }}</span>
+      <label class="toolkit-field toolkit-field--inline toolkit-field--inline-select">
+        <UiSelect v-model="form.contentType" :options="contentTypeOptions" :aria-label="t('toolkit.reminderContentType')" />
         <textarea v-if="form.contentType === 'text' || form.contentType === 'markdown'" v-model="form.content" rows="4" />
         <input v-else v-model.trim="form.content" type="text" />
       </label>
