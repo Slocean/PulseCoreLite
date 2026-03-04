@@ -10,7 +10,7 @@
 .overlay-widget {
   width: 310px;
   max-width: none;
-  padding: 16px;
+  padding: 0;
   position: relative;
   overflow: hidden;
   background: transparent;
@@ -48,6 +48,18 @@
   align-items: center;
   /* margin-bottom: 14px; */
   position: relative;
+}
+
+.overlay-pane {
+  padding: 0 16px;
+}
+
+.overlay-pane--header {
+  padding-top: 16px;
+}
+
+.overlay-pane--content {
+  padding-bottom: 16px;
 }
 
 .overlay-title {

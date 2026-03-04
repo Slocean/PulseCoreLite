@@ -11,67 +11,71 @@
       :style="overlayLiquidGlassHighlightStyle"
       aria-hidden="true"></div>
     <UiToast channel="overlay" />
-    <OverlayHeader
-      :show-drag-handle="prefs.showDragHandle"
-      :app-version="appVersion"
-      :app-usage-label="appUsageLabel"
-      :update-available="updateAvailable"
-      :update-label="t('overlay.updateAvailable')"
-      @startDrag="startDragging"
-      @minimize="minimizeOverlay"
-      @toggleConfig="toggleSettingsTab"
-      @close="handleClose"
-      @versionClick="handleVersionClick" />
+    <div class="overlay-pane overlay-pane--header">
+      <OverlayHeader
+        :show-drag-handle="prefs.showDragHandle"
+        :app-version="appVersion"
+        :app-usage-label="appUsageLabel"
+        :update-available="updateAvailable"
+        :update-label="t('overlay.updateAvailable')"
+        @startDrag="startDragging"
+        @minimize="minimizeOverlay"
+        @toggleConfig="toggleSettingsTab"
+        @close="handleClose"
+        @versionClick="handleVersionClick" />
+    </div>
     <UiNavTabs v-model="activeMainTab" :items="mainNavItems" :aria-label="t('overlay.mainNavAriaLabel')" />
 
-    <OverlayConfigPanel
-      v-if="activeMainTab === 'settings'"
-      v-model:prefs="prefs"
-      v-model:closeToTray="closeToTray"
-      v-model:autoStartEnabled="autoStartEnabled"
-      v-model:memoryTrimEnabled="memoryTrimEnabled"
-      v-model:rememberOverlayPosition="rememberOverlayPosition"
-      v-model:overlayAlwaysOnTop="overlayAlwaysOnTop"
-      v-model:taskbarMonitorEnabled="taskbarMonitorEnabled"
-      v-model:factoryResetHotkey="factoryResetHotkey"
-      v-model:refreshRate="refreshRate"
-      v-model:backgroundOpacity="prefs.backgroundOpacity"
-      :can-uninstall="store.installationMode === 'installed'"
-      :app-version="appVersion"
-      :language="store.settings.language"
-      :themes="themes"
-      :get-theme-preview-url="getThemePreviewUrl"
-      :toolkit-state="toolkitState"
-      :checking-update="checkingUpdate"
-      @setLanguage="setLanguage"
-      @refreshRateChange="handleRefreshRateChange"
-      @factoryReset="handleFactoryReset"
-      @uninstall="handleUninstall"
-      @openBackgroundDialog="openBackgroundDialog"
-      @deleteTheme="requestDeleteTheme"
-      @editTheme="requestEditTheme"
-      @exportConfig="exportConfig"
-      @importConfig="handleImportConfig"
-      @openToolkit="toggleToolkitWindow"
-      @checkUpdate="handleCheckUpdate" />
-    <ToolkitEmbedded v-else-if="activeMainTab === 'toolkit'" @openStandalone="openToolkitWindow" />
-    <template v-else>
-      <OverlayMetricsPanel
-        :prefs="prefs"
-        :metrics="metrics"
-        :getUsageClass="getUsageClass"
-        :getProgressClass="getProgressClass"
-        :diskUsageLabel="diskUsageLabel"
-        :diskPercentLabel="diskPercentLabel"
-        :diskIoLabel="diskIoLabel"
-        :getDiskHardwareLabel="getDiskHardwareLabel" />
+    <div class="overlay-pane overlay-pane--content">
+      <OverlayConfigPanel
+        v-if="activeMainTab === 'settings'"
+        v-model:prefs="prefs"
+        v-model:closeToTray="closeToTray"
+        v-model:autoStartEnabled="autoStartEnabled"
+        v-model:memoryTrimEnabled="memoryTrimEnabled"
+        v-model:rememberOverlayPosition="rememberOverlayPosition"
+        v-model:overlayAlwaysOnTop="overlayAlwaysOnTop"
+        v-model:taskbarMonitorEnabled="taskbarMonitorEnabled"
+        v-model:factoryResetHotkey="factoryResetHotkey"
+        v-model:refreshRate="refreshRate"
+        v-model:backgroundOpacity="prefs.backgroundOpacity"
+        :can-uninstall="store.installationMode === 'installed'"
+        :app-version="appVersion"
+        :language="store.settings.language"
+        :themes="themes"
+        :get-theme-preview-url="getThemePreviewUrl"
+        :toolkit-state="toolkitState"
+        :checking-update="checkingUpdate"
+        @setLanguage="setLanguage"
+        @refreshRateChange="handleRefreshRateChange"
+        @factoryReset="handleFactoryReset"
+        @uninstall="handleUninstall"
+        @openBackgroundDialog="openBackgroundDialog"
+        @deleteTheme="requestDeleteTheme"
+        @editTheme="requestEditTheme"
+        @exportConfig="exportConfig"
+        @importConfig="handleImportConfig"
+        @openToolkit="toggleToolkitWindow"
+        @checkUpdate="handleCheckUpdate" />
+      <ToolkitEmbedded v-else-if="activeMainTab === 'toolkit'" @openStandalone="openToolkitWindow" />
+      <template v-else>
+        <OverlayMetricsPanel
+          :prefs="prefs"
+          :metrics="metrics"
+          :getUsageClass="getUsageClass"
+          :getProgressClass="getProgressClass"
+          :diskUsageLabel="diskUsageLabel"
+          :diskPercentLabel="diskPercentLabel"
+          :diskIoLabel="diskIoLabel"
+          :getDiskHardwareLabel="getDiskHardwareLabel" />
 
-      <div class="overlay-divider"></div>
+        <div class="overlay-divider"></div>
 
-      <OverlayNetworkFooter :prefs="prefs" :network="metrics.network" />
+        <OverlayNetworkFooter :prefs="prefs" :network="metrics.network" />
 
-      <OverlayStatusBar :uptimeLabel="uptimeLabel" />
-    </template>
+        <OverlayStatusBar :uptimeLabel="uptimeLabel" />
+      </template>
+    </div>
   </section>
 
   <OverlayThemeDialogs
