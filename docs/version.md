@@ -1,3 +1,17 @@
+## v1.8.7
+
+- 主页面新增三段式导航：统一切换监控、工具箱、设置视图，降低功能跳转成本
+- 主页面内嵌工具箱能力：可直接在悬浮窗中使用关机、清理、硬件分析与提醒页签
+- 悬浮窗头部交互升级：新增页签展开/收起切换，并补充对应中英文文案
+- 性能与加载优化：配置面板与内嵌工具箱改为异步加载，提升首屏响应速度
+- 代码结构清理：移除已弃用的提醒屏幕备份文件，减少历史冗余
+
+- Add tri-pane main navigation to switch between Monitor, Toolkit, and Settings views
+- Embed Toolkit directly in the main overlay with shutdown, cleanup, hardware, and reminder tabs
+- Upgrade overlay header interactions with tabs expand/collapse toggle and updated CN/EN copy
+- Improve startup performance by async-loading the config panel and embedded toolkit components
+- Remove deprecated reminder-screen backup files to keep the codebase lean
+
 ## v1.7.7
 
 - 任务栏新增主题定制能力：支持透明、深色、浅色三种主题并补齐中英文文案
