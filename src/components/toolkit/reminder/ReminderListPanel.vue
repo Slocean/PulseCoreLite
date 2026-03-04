@@ -26,20 +26,22 @@
             :aria-label="t('toolkit.reminderEnabled')"
             @update:model-value="(value: boolean) => emit('toggleEnabled', item.id, value)" />
         </div>
-        <div class="toolkit-reminder-item-meta">
-          <span>{{ item.channel === 'email' ? t('toolkit.reminderChannelEmail') : t('toolkit.reminderChannelFullscreen') }}</span>
-          <span v-if="item.channel === 'email'">{{ item.email }}</span>
-        </div>
-        <div class="toolkit-reminder-item-actions">
-          <UiButton native-type="button" preset="toolkit-link" @click="emit('editReminder', item)">
-            {{ t('toolkit.reminderEditAction') }}
-          </UiButton>
-          <UiButton native-type="button" preset="toolkit-link" @click="emit('triggerNow', item)">
-            {{ t('toolkit.reminderTriggerNow') }}
-          </UiButton>
-          <UiButton native-type="button" preset="toolkit-link" @click="emit('deleteReminder', item.id)">
-            {{ t('toolkit.reminderDelete') }}
-          </UiButton>
+        <div class="toolkit-reminder-item-footer">
+          <div class="toolkit-reminder-item-meta">
+            <span>{{ item.channel === 'email' ? t('toolkit.reminderChannelEmail') : t('toolkit.reminderChannelFullscreen') }}</span>
+            <span v-if="item.channel === 'email'">{{ item.email }}</span>
+          </div>
+          <div class="toolkit-reminder-item-actions">
+            <UiButton native-type="button" preset="toolkit-link" @click="emit('editReminder', item)">
+              {{ t('toolkit.reminderEditAction') }}
+            </UiButton>
+            <UiButton native-type="button" preset="toolkit-link" @click="emit('triggerNow', item)">
+              {{ t('toolkit.reminderTriggerNow') }}
+            </UiButton>
+            <UiButton native-type="button" preset="toolkit-link" @click="emit('deleteReminder', item.id)">
+              {{ t('toolkit.reminderDelete') }}
+            </UiButton>
+          </div>
         </div>
       </div>
     </div>
