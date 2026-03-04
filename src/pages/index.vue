@@ -54,6 +54,7 @@
       @importConfig="handleImportConfig"
       @openToolkit="toggleToolkitWindow"
       @checkUpdate="handleCheckUpdate" />
+    <ToolkitEmbedded v-else-if="activeMainTab === 'toolkit'" @openStandalone="openToolkitWindow" />
     <template v-else>
       <OverlayMetricsPanel
         :prefs="prefs"
@@ -137,7 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { VNodeRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -150,6 +151,7 @@ import OverlayNetworkFooter from '../components/OverlayNetworkFooter.vue';
 import OverlayStatusBar from '../components/OverlayStatusBar.vue';
 import OverlayThemeDialogs from '../components/overlay/OverlayThemeDialogs.vue';
 import OverlaySystemDialogs from '../components/overlay/OverlaySystemDialogs.vue';
+import ToolkitEmbedded from '../components/toolkit/ToolkitEmbedded.vue';
 import { useConfigTransfer } from '../composables/useConfigTransfer';
 import { useFactoryReset } from '../composables/useFactoryReset';
 import { useOverlayMetrics } from '../composables/useOverlayMetrics';
@@ -174,6 +176,11 @@ const mainNavItems = computed(() => [
     id: 'monitor',
     label: t('overlay.mainNavMonitor'),
     icon: 'monitor_heart'
+  },
+  {
+    id: 'toolkit',
+    label: t('overlay.mainNavToolkit'),
+    icon: 'construction'
   },
   {
     id: 'settings',
@@ -334,14 +341,21 @@ const {
   }
 });
 
-const activeMainTab = computed({
-  get: () => (showConfig.value ? 'settings' : 'monitor'),
-  set: value => {
-    showConfig.value = value === 'settings';
-  }
-});
+const activeMainTab = ref<'monitor' | 'toolkit' | 'settings'>('monitor');
+const lastNonSettingsTab = ref<'monitor' | 'toolkit'>('monitor');
+
+watch(
+  activeMainTab,
+  tab => {
+    if (tab !== 'settings') {
+      lastNonSettingsTab.value = tab;
+    }
+    showConfig.value = tab === 'settings';
+  },
+  { immediate: true }
+);
 
 function toggleSettingsTab() {
-  activeMainTab.value = activeMainTab.value === 'settings' ? 'monitor' : 'settings';
+  activeMainTab.value = activeMainTab.value === 'settings' ? lastNonSettingsTab.value : 'settings';
 }
 </script>
