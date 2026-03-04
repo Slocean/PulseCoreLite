@@ -49,7 +49,7 @@
     indicator-class="toolkit-collapse-indicator"
     @toggle="emit('contentChange')">
     <div class="toolkit-grid">
-      <label class="toolkit-field">
+      <label class="toolkit-field toolkit-field--inline">
         <span>{{ t('toolkit.reminderAdvancedImage') }}</span>
         <input v-model.trim="advancedSettings.screenImage" type="text" />
       </label>
