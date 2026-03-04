@@ -75,11 +75,11 @@ function handleItemClick(id: string) {
 
 <style scoped lang="css">
 .ui-nav-tabs {
-  --ui-nav-tabs-bg: linear-gradient(180deg, rgba(6, 13, 21, 0.95), rgba(3, 9, 15, 0.95));
-  --ui-nav-tabs-border: rgba(0, 242, 255, 0.2);
+  --ui-nav-tabs-bg: transparent;
+  /* --ui-nav-tabs-border: rgba(0, 242, 255, 0.2); */
   --ui-nav-tabs-text: rgba(219, 231, 242, 0.72);
   --ui-nav-tabs-active: #00f2ff;
-  --ui-nav-tabs-shadow: 0 -8px 26px rgba(0, 0, 0, 0.34);
+  /* --ui-nav-tabs-shadow: 0 -8px 26px rgba(0, 0, 0, 0.34); */
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
