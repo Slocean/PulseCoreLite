@@ -17,6 +17,7 @@ export interface TaskbarPrefs {
   showUp: boolean;
   showLatency: boolean;
   twoLineMode: boolean;
+  backgroundMode: 'transparent' | 'dark' | 'light';
 }
 
 const fallbackPrefs: TaskbarPrefs = {
@@ -30,22 +31,24 @@ const fallbackPrefs: TaskbarPrefs = {
   showDown: true,
   showUp: true,
   showLatency: false,
-  twoLineMode: false
+  twoLineMode: false,
+  backgroundMode: 'transparent'
 };
 
-const TASKBAR_PREF_KEYS: (keyof TaskbarPrefs)[] = [
-  'showCpu',
-  'showCpuFreq',
-  'showCpuTemp',
-  'showGpu',
-  'showGpuTemp',
-  'showMemory',
-  'showApp',
-  'showDown',
-  'showUp',
-  'showLatency',
-  'twoLineMode'
-];
+// const TASKBAR_PREF_KEYS: (keyof TaskbarPrefs)[] = [
+//   'showCpu',
+//   'showCpuFreq',
+//   'showCpuTemp',
+//   'showGpu',
+//   'showGpuTemp',
+//   'showMemory',
+//   'showApp',
+//   'showDown',
+//   'showUp',
+//   'showLatency',
+//   'twoLineMode',
+//   'backgroundMode'
+// ];
 
 function sanitizePrefs(input: Partial<TaskbarPrefs> | null | undefined): TaskbarPrefs {
   const parsed = input ?? {};
@@ -60,7 +63,13 @@ function sanitizePrefs(input: Partial<TaskbarPrefs> | null | undefined): Taskbar
     showDown: parsed.showDown ?? fallbackPrefs.showDown,
     showUp: parsed.showUp ?? fallbackPrefs.showUp,
     showLatency: parsed.showLatency ?? fallbackPrefs.showLatency,
-    twoLineMode: parsed.twoLineMode ?? fallbackPrefs.twoLineMode
+    twoLineMode: parsed.twoLineMode ?? fallbackPrefs.twoLineMode,
+    backgroundMode:
+      parsed.backgroundMode === 'dark' ||
+      parsed.backgroundMode === 'light' ||
+      parsed.backgroundMode === 'transparent'
+        ? parsed.backgroundMode
+        : fallbackPrefs.backgroundMode
   };
 }
 
@@ -116,11 +125,7 @@ export function useTaskbarPrefs() {
           return;
         }
         const sanitized = sanitizePrefs(synced);
-        for (const key of TASKBAR_PREF_KEYS) {
-          if (prefs[key] !== sanitized[key]) {
-            prefs[key] = sanitized[key];
-          }
-        }
+        Object.assign(prefs, sanitized);
       } finally {
         isSyncing = false;
       }

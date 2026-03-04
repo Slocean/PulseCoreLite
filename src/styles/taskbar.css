@@ -29,6 +29,42 @@ html.window-taskbar body {
     0 0 16px rgba(0, 242, 255, 0.12);
 }
 
+.taskbar-bar--theme-transparent {
+  background: rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(10px);
+}
+
+.taskbar-bar--theme-dark {
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: none;
+}
+
+.taskbar-bar--theme-light {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: none;
+  box-shadow:
+    0 12px 36px rgba(0, 0, 0, 0.2),
+    0 0 10px rgba(0, 0, 0, 0.08);
+}
+
+.taskbar-bar--theme-dark .taskbar-k,
+.taskbar-bar--theme-dark .taskbar-extra {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.taskbar-bar--theme-dark .taskbar-v {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.taskbar-bar--theme-light .taskbar-k,
+.taskbar-bar--theme-light .taskbar-extra {
+  color: rgba(0, 0, 0, 0.72);
+}
+
+.taskbar-bar--theme-light .taskbar-v {
+  color: rgba(0, 0, 0, 0.9);
+}
+
 .taskbar-bar--two-line {
   white-space: normal;
 }

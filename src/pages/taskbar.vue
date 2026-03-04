@@ -2,7 +2,10 @@
   <section
     ref="barRef"
     class="taskbar-bar"
-    :class="{ 'taskbar-bar--two-line': prefs.twoLineMode }"
+    :class="[
+      { 'taskbar-bar--two-line': prefs.twoLineMode },
+      `taskbar-bar--theme-${prefs.backgroundMode}`
+    ]"
     role="presentation"
     @mousedown="handleMouseDown"
     @dblclick.prevent.stop="showMainWindow"

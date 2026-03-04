@@ -112,6 +112,10 @@
     "openMainWindow": "Show Main Window",
     "hideMainWindow": "Hide Main Window",
     "taskbarTwoLine": "Two-line mode",
+    "taskbarTheme": "Taskbar Theme",
+    "taskbarThemeTransparent": "Transparent",
+    "taskbarThemeDark": "Dark",
+    "taskbarThemeLight": "Light",
     "closeTaskbarMonitor": "Disable Taskbar Monitor",
     "taskbarCpuLabel": "CPU",
     "taskbarGpuLabel": "GPU",
@@ -122,7 +126,11 @@
     "toolkit": "Toolkit",
     "openToolkit": "Open Toolkit",
     "closeToolkit": "Close Toolkit",
-    "showToolkit": "Show Toolkit"
+    "showToolkit": "Show Toolkit",
+    "mainNavAriaLabel": "Main navigation",
+    "mainNavMonitor": "Monitor",
+    "mainNavToolkit": "Toolkit",
+    "mainNavSettings": "Settings"
   },
   "toolkit": {
     "title": "Toolkit",

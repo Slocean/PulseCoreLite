@@ -71,6 +71,7 @@
     <OverlayNetworkFooter :prefs="prefs" :network="metrics.network" />
 
     <OverlayStatusBar :uptimeLabel="uptimeLabel" />
+    <UiNavTabs :items="mainNavItems" :aria-label="t('overlay.mainNavAriaLabel')" />
   </section>
 
   <OverlayThemeDialogs
@@ -141,6 +142,7 @@ import { computed } from 'vue';
 import type { VNodeRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import UiNavTabs from '@/components/ui/NavTabs';
 import UiToast from '@/components/ui/Toast';
 import OverlayConfigPanel from '../components/OverlayConfigPanel.vue';
 import OverlayHeader from '../components/OverlayHeader.vue';
@@ -168,6 +170,11 @@ import { useAppStore } from '../stores/app';
 const store = useAppStore();
 const { t } = useI18n();
 const appVersion = packageJson.version;
+const mainNavItems = computed(() => [
+  { id: 'monitor', label: t('overlay.mainNavMonitor'), icon: 'monitor_heart', active: true },
+  { id: 'toolkit', label: t('overlay.mainNavToolkit'), icon: 'construction' },
+  { id: 'settings', label: t('overlay.mainNavSettings'), icon: 'settings' }
+]);
 const {
   updateAvailable,
   updateInfo,
@@ -277,10 +284,14 @@ const {
 });
 
 const { openToolkitWindow } = useToolkitLauncher();
-const { toolkitState, refreshToolkitState, toggleToolkitWindow, dispose: disposeToolkitWindow } =
-  useOverlayToolkitWindow({
-    openToolkitWindow
-  });
+const {
+  toolkitState,
+  refreshToolkitState,
+  toggleToolkitWindow,
+  dispose: disposeToolkitWindow
+} = useOverlayToolkitWindow({
+  openToolkitWindow
+});
 const {
   showConfig,
   closeToTray,
@@ -317,5 +328,3 @@ const {
   }
 });
 </script>
-
-

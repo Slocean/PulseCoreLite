@@ -35,6 +35,9 @@ type BuildTaskbarMenuItemsInput = {
     lockTaskbarPosition: string;
     unlockTaskbarPosition: string;
     taskbarTwoLine: string;
+    taskbarThemeTransparent: string;
+    taskbarThemeDark: string;
+    taskbarThemeLight: string;
     cpu: string;
     gpu: string;
     memory: string;
@@ -50,6 +53,7 @@ type BuildTaskbarMenuItemsInput = {
     toggleRememberPosition: (next: boolean) => void | Promise<void>;
     togglePositionLocked: (next: boolean) => void | Promise<void>;
     toggleTwoLineMode: (next: boolean) => void | Promise<void>;
+    setTheme: (next: 'transparent' | 'dark' | 'light') => void | Promise<void>;
     toggleShowCpu: (next: boolean) => void | Promise<void>;
     toggleShowGpu: (next: boolean) => void | Promise<void>;
     toggleShowMemory: (next: boolean) => void | Promise<void>;
@@ -109,6 +113,28 @@ export function buildTaskbarMenuItems(input: BuildTaskbarMenuItemsInput): Taskba
       text: labels.taskbarTwoLine,
       checked: prefs.twoLineMode,
       onTrigger: () => actions.toggleTwoLineMode(!prefs.twoLineMode)
+    },
+    { kind: 'separator', id: 'sep-theme' },
+    {
+      kind: 'check',
+      id: 'theme-transparent',
+      text: labels.taskbarThemeTransparent,
+      checked: prefs.backgroundMode === 'transparent',
+      onTrigger: () => actions.setTheme('transparent')
+    },
+    {
+      kind: 'check',
+      id: 'theme-dark',
+      text: labels.taskbarThemeDark,
+      checked: prefs.backgroundMode === 'dark',
+      onTrigger: () => actions.setTheme('dark')
+    },
+    {
+      kind: 'check',
+      id: 'theme-light',
+      text: labels.taskbarThemeLight,
+      checked: prefs.backgroundMode === 'light',
+      onTrigger: () => actions.setTheme('light')
     },
     { kind: 'separator', id: 'sep-metrics-a' },
     {

@@ -103,6 +103,9 @@ async function open(event: MouseEvent) {
         lockTaskbarPosition: t('overlay.lockTaskbarPosition'),
         unlockTaskbarPosition: t('overlay.unlockTaskbarPosition'),
         taskbarTwoLine: t('overlay.taskbarTwoLine'),
+        taskbarThemeTransparent: t('overlay.taskbarThemeTransparent'),
+        taskbarThemeDark: t('overlay.taskbarThemeDark'),
+        taskbarThemeLight: t('overlay.taskbarThemeLight'),
         cpu: t('overlay.cpu'),
         gpu: t('overlay.gpu'),
         memory: t('overlay.memory'),
@@ -122,6 +125,9 @@ async function open(event: MouseEvent) {
         togglePositionLocked: next => store.setTaskbarPositionLocked(next),
         toggleTwoLineMode: next => {
           props.prefs.twoLineMode = next;
+        },
+        setTheme: next => {
+          props.prefs.backgroundMode = next;
         },
         toggleShowCpu: next => {
           props.prefs.showCpu = next;

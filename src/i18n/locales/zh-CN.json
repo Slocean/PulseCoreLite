@@ -112,6 +112,10 @@
     "openMainWindow": "显示主窗口",
     "hideMainWindow": "隐藏主窗口",
     "taskbarTwoLine": "两行模式",
+    "taskbarTheme": "任务栏主题",
+    "taskbarThemeTransparent": "透明",
+    "taskbarThemeDark": "暗色",
+    "taskbarThemeLight": "明亮",
     "closeTaskbarMonitor": "关闭任务栏监测",
     "taskbarCpuLabel": "CPU",
     "taskbarGpuLabel": "GPU",
@@ -122,7 +126,11 @@
     "toolkit": "工具箱",
     "openToolkit": "打开工具箱",
     "closeToolkit": "关闭工具箱",
-    "showToolkit": "展示工具箱"
+    "showToolkit": "展示工具箱",
+    "mainNavAriaLabel": "主导航",
+    "mainNavMonitor": "监控",
+    "mainNavToolkit": "工具箱",
+    "mainNavSettings": "设置"
   },
   "toolkit": {
     "title": "工具箱",
