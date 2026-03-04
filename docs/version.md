@@ -1,3 +1,17 @@
+## v1.7.7
+
+- 任务栏新增主题定制能力：支持透明、深色、浅色三种主题并补齐中英文文案
+- 新增并接入 NavTabs 组件：支持受控模式与可访问性增强，统一任务栏页签交互
+- 任务栏视觉样式优化：调整发光配色并更新容器样式，提升不同主题下的可读性
+- 悬浮窗指标面板布局优化：由 grid 调整为 flex，改善内容对齐与显示稳定性
+- 构建兼容性增强：引入 autoprefixer 并补充 browserslist 配置
+
+- Add taskbar theme customization with transparent, dark, and light themes plus CN/EN copy updates
+- Introduce and integrate NavTabs with controlled mode and accessibility improvements for unified tab interactions
+- Refine taskbar visuals with updated glow colors and container styles for better readability across themes
+- Optimize overlay metrics layout by switching from grid to flex for more stable alignment
+- Improve build compatibility by adding autoprefixer and browserslist configuration
+
 ## v1.7.6
 
 - 优化全屏提醒窗口创建逻辑：优先当前显示器并延迟关闭旧窗口，避免闪烁与重复关闭
