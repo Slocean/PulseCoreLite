@@ -65,6 +65,8 @@ import { useI18n } from 'vue-i18n';
 
 import { useFullscreenAutoHide } from '../composables/useFullscreenAutoHide';
 import { useTaskbarPrefs } from '../composables/useTaskbarPrefs';
+import { useOverlayPrefs } from '../composables/useOverlayPrefs';
+import { resolveMetricWarningLevel } from '../composables/metricWarningPolicy';
 import { useTopmostGuard } from '../composables/useTopmostGuard';
 import { useTaskbarWindow } from '../composables/useTaskbarWindow';
 import { api, inTauri } from '../services/tauri';
@@ -76,11 +78,13 @@ import TaskbarContextMenu from '../components/TaskbarContextMenu.vue';
 const store = useAppStore();
 const { t } = useI18n();
 const { prefs } = useTaskbarPrefs();
+const { prefs: overlayPrefs } = useOverlayPrefs();
 
 const rememberPosition = computed(() => store.settings.rememberOverlayPosition);
 const alwaysOnTop = computed(() => store.settings.taskbarAlwaysOnTop);
 const autoHideOnFullscreen = computed(() => store.settings.taskbarAutoHideOnFullscreen);
 const positionLocked = computed(() => store.settings.taskbarPositionLocked);
+const showWarning = computed(() => overlayPrefs.showWarning);
 const { barRef, handleMouseDown, scheduleResize } = useTaskbarWindow({ rememberPosition, positionLocked });
 const contextMenuRef = ref<{ open: (event: MouseEvent) => void } | null>(null);
 
@@ -130,8 +134,12 @@ const appMem = computed(() => {
 });
 
 function usageClass(value: number, base: 'cyan' | 'pink') {
-  if (value > 85) return 'taskbar-glow-red';
-  if (value > 75) return 'taskbar-glow-orange';
+  if (!showWarning.value) {
+    return base === 'cyan' ? 'taskbar-glow-cyan' : 'taskbar-glow-pink';
+  }
+  const level = resolveMetricWarningLevel(value);
+  if (level === 'danger') return 'taskbar-glow-red';
+  if (level === 'warning') return 'taskbar-glow-orange';
   return base === 'cyan' ? 'taskbar-glow-cyan' : 'taskbar-glow-pink';
 }
 
@@ -208,7 +216,8 @@ const segments = computed<SizedSegment[]>(() => {
       createSegment({
         id: 'ram',
         label: t('overlay.taskbarMemoryLabel'),
-        value: memPct.value
+        value: memPct.value,
+        valueClass: usageClass(snapshot.value.memory.usage_pct, 'cyan')
       })
     );
   }

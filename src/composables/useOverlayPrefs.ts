@@ -88,7 +88,7 @@ function sanitizePrefs(input: Partial<OverlayPrefs> | null | undefined): Overlay
 }
 
 async function broadcastPrefsSync() {
-  await emitSyncEvent<null>(PREFS_SYNC_EVENT, null, { labels: ['main', 'toolkit'] });
+  await emitSyncEvent<null>(PREFS_SYNC_EVENT, null, { labels: ['main', 'taskbar', 'toolkit'] });
 }
 
 function loadPrefsFromLocalStorage(): OverlayPrefs {
