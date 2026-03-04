@@ -1,8 +1,8 @@
 <template>
   <div class="toolkit-page toolkit-page--embedded">
-    <header class="toolkit-header">
+    <header class="toolkit-header" v-if="false">
       <div class="toolkit-embedded-title">
-        <h2 class="title">{{ t('toolkit.title') }}</h2>
+        <!-- <h2 class="title">{{ t('toolkit.title') }}</h2> -->
       </div>
       <div class="overlay-header-actions">
         <UiButton
@@ -77,5 +77,6 @@ function handleContentChange() {
 
 .toolkit-page--embedded {
   background: transparent;
+  padding: 0;
 }
 </style>

@@ -1,25 +1,27 @@
 <template>
-  <nav
-    class="ui-nav-tabs"
-    :aria-label="props.ariaLabel"
-    role="tablist"
-    :style="{ '--ui-nav-tabs-columns': String(columnCount) }">
-    <button
-      v-for="item in props.items"
-      :key="item.id"
-      type="button"
-      class="ui-nav-tabs__item"
-      role="tab"
-      :aria-selected="isActive(item)"
-      :tabindex="isActive(item) ? 0 : -1"
-      :class="{ 'ui-nav-tabs__item--active': isActive(item) }"
-      @click="handleItemClick(item.id)">
-      <span class="ui-nav-tabs__icon material-symbols-outlined" :class="{ 'fill-1': isActive(item) }">
-        {{ item.icon }}
-      </span>
-      <span class="ui-nav-tabs__label">{{ item.label }}</span>
-    </button>
-  </nav>
+  <div class="ui-nav-tabs-container">
+    <nav
+      class="ui-nav-tabs"
+      :aria-label="props.ariaLabel"
+      role="tablist"
+      :style="{ '--ui-nav-tabs-columns': String(columnCount) }">
+      <button
+        v-for="item in props.items"
+        :key="item.id"
+        type="button"
+        class="ui-nav-tabs__item"
+        role="tab"
+        :aria-selected="isActive(item)"
+        :tabindex="isActive(item) ? 0 : -1"
+        :class="{ 'ui-nav-tabs__item--active': isActive(item) }"
+        @click="handleItemClick(item.id)">
+        <span class="ui-nav-tabs__icon material-symbols-outlined" :class="{ 'fill-1': isActive(item) }">
+          {{ item.icon }}
+        </span>
+        <span class="ui-nav-tabs__label">{{ item.label }}</span>
+      </button>
+    </nav>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -79,6 +81,11 @@ function handleItemClick(id: string) {
 </script>
 
 <style scoped lang="css">
+.ui-nav-tabs-container {
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+
 .ui-nav-tabs {
   --ui-nav-tabs-bg: transparent;
   /* --ui-nav-tabs-border: rgba(0, 242, 255, 0.2); */
@@ -88,7 +95,6 @@ function handleItemClick(id: string) {
   display: grid;
   grid-template-columns: repeat(var(--ui-nav-tabs-columns, 3), minmax(0, 1fr));
   gap: 0;
-  margin-top: 10px;
   border-top: 1px solid var(--ui-nav-tabs-border);
   background: var(--ui-nav-tabs-bg);
   box-shadow: var(--ui-nav-tabs-shadow);
@@ -121,6 +127,7 @@ function handleItemClick(id: string) {
 .ui-nav-tabs__icon {
   font-size: 20px;
   line-height: 1;
+  margin-bottom: 4px;
 }
 
 .ui-nav-tabs__label {

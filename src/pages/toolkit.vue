@@ -1,5 +1,8 @@
 <template>
-  <section ref="pageRef" class="overlay-widget overlay-widget--cyber toolkit-page" @mousedown="handleToolkitMouseDown">
+  <section
+    ref="pageRef"
+    class="overlay-widget overlay-widget--cyber toolkit-page"
+    @mousedown="handleToolkitMouseDown">
     <div v-if="prefs.backgroundImage" class="overlay-bg" :style="overlayBackgroundStyle" aria-hidden="true"></div>
     <div
       v-if="showLiquidGlassHighlight"
@@ -42,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
@@ -69,9 +72,10 @@ const tabs = computed(() => [
   { id: 'reminder' as const, label: t('toolkit.tabReminder') }
 ]);
 
-const { overlayBackgroundStyle, showLiquidGlassHighlight, overlayLiquidGlassHighlightStyle } = useToolkitVisualLayer({
-  prefs
-});
+const { overlayBackgroundStyle, showLiquidGlassHighlight, overlayLiquidGlassHighlightStyle } =
+  useToolkitVisualLayer({
+    prefs
+  });
 const {
   scheduleResize,
   notifyContentChange,
@@ -89,4 +93,3 @@ function handleContentChange() {
   notifyContentChange();
 }
 </script>
-
