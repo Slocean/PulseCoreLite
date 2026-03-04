@@ -1,24 +1,76 @@
 <template>
-  <nav class="ui-nav-tabs" :aria-label="props.ariaLabel">
-    <div
+  <nav class="ui-nav-tabs" :aria-label="props.ariaLabel" role="tablist">
+    <button
       v-for="item in props.items"
       :key="item.id"
+      type="button"
       class="ui-nav-tabs__item"
-      :class="{ 'ui-nav-tabs__item--active': item.active }">
-      <span class="ui-nav-tabs__icon material-symbols-outlined" :class="{ 'fill-1': item.active }">
+      role="tab"
+      :aria-selected="isActive(item)"
+      :tabindex="isActive(item) ? 0 : -1"
+      :class="{ 'ui-nav-tabs__item--active': isActive(item) }"
+      @click="handleItemClick(item.id)">
+      <span class="ui-nav-tabs__icon material-symbols-outlined" :class="{ 'fill-1': isActive(item) }">
         {{ item.icon }}
       </span>
       <span class="ui-nav-tabs__label">{{ item.label }}</span>
-    </div>
+    </button>
   </nav>
 </template>
 
 <script setup lang="ts">
+import { computed, ref, watch } from 'vue';
+
 import type { NavTabsProps } from './types';
 
 const props = withDefaults(defineProps<NavTabsProps>(), {
   ariaLabel: 'Main navigation'
 });
+
+const emit = defineEmits<{
+  (event: 'update:modelValue', value: string): void;
+  (event: 'change', value: string): void;
+}>();
+
+const internalActiveId = ref(resolveInitialActiveId());
+const activeId = computed(() => props.modelValue ?? internalActiveId.value);
+
+watch(
+  () => props.modelValue,
+  nextValue => {
+    if (nextValue !== undefined) {
+      internalActiveId.value = nextValue;
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => props.items,
+  items => {
+    if (!items.some(item => item.id === activeId.value)) {
+      internalActiveId.value = resolveInitialActiveId();
+    }
+  },
+  { deep: true }
+);
+
+function resolveInitialActiveId() {
+  const preferredItem = props.items.find(item => item.active) ?? props.items[0];
+  return preferredItem?.id ?? '';
+}
+
+function isActive(item: NavTabsProps['items'][number]) {
+  return activeId.value === item.id;
+}
+
+function handleItemClick(id: string) {
+  if (props.modelValue === undefined) {
+    internalActiveId.value = id;
+  }
+  emit('update:modelValue', id);
+  emit('change', id);
+}
 </script>
 
 <style scoped lang="css">
@@ -38,6 +90,9 @@ const props = withDefaults(defineProps<NavTabsProps>(), {
 }
 
 .ui-nav-tabs__item {
+  appearance: none;
+  background: transparent;
+  width: 100%;
   min-height: 56px;
   display: flex;
   flex-direction: column;
@@ -46,6 +101,10 @@ const props = withDefaults(defineProps<NavTabsProps>(), {
   gap: 3px;
   color: var(--ui-nav-tabs-text);
   border-bottom: 2px solid transparent;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  cursor: pointer;
 }
 
 .ui-nav-tabs__item--active {

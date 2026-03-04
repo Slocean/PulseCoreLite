@@ -171,9 +171,22 @@ const store = useAppStore();
 const { t } = useI18n();
 const appVersion = packageJson.version;
 const mainNavItems = computed(() => [
-  { id: 'monitor', label: t('overlay.mainNavMonitor'), icon: 'monitor_heart', active: true },
-  { id: 'toolkit', label: t('overlay.mainNavToolkit'), icon: 'construction' },
-  { id: 'settings', label: t('overlay.mainNavSettings'), icon: 'settings' }
+  {
+    id: 'monitor',
+    label: t('overlay.mainNavMonitor'),
+    icon: 'monitor_heart',
+    active: true
+  },
+  {
+    id: 'toolkit',
+    label: t('overlay.mainNavToolkit'),
+    icon: 'construction'
+  },
+  {
+    id: 'settings',
+    label: t('overlay.mainNavSettings'),
+    icon: 'settings'
+  }
 ]);
 const {
   updateAvailable,

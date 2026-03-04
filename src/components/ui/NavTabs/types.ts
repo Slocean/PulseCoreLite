@@ -7,5 +7,6 @@ export interface NavTabItem {
 
 export interface NavTabsProps {
   items: NavTabItem[];
+  modelValue?: string;
   ariaLabel?: string;
 }
