@@ -44,6 +44,7 @@
     "@typescript-eslint/parser": "^8.56.1",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vitest/coverage-v8": "^4.0.18",
+    "autoprefixer": "^10.4.27",
     "eslint": "8.57.1",
     "eslint-plugin-vue": "^9.32.0",
     "typescript": "~5.7.2",
@@ -51,5 +52,10 @@
     "vitest": "^4.0.18",
     "vue-eslint-parser": "^10.4.0",
     "vue-tsc": "^2.2.0"
-  }
+  },
+  "browserslist": [
+    "last 2 Chrome versions",
+    "last 2 Safari versions",
+    "last 2 Edge versions"
+  ]
 }
