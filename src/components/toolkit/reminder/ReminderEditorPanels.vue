@@ -16,11 +16,11 @@
       </UiButton>
     </template>
     <div class="toolkit-grid">
-      <label class="toolkit-field">
+      <label class="toolkit-field toolkit-field--inline">
         <span>{{ t('toolkit.reminderTaskTitle') }}</span>
         <input v-model.trim="form.title" type="text" maxlength="80" />
       </label>
-      <label class="toolkit-field">
+      <label class="toolkit-field toolkit-field--inline">
         <span>{{ t('toolkit.reminderChannel') }}</span>
         <UiSelect v-model="form.channel" :options="channelOptions" />
       </label>
@@ -41,12 +41,14 @@
     indicator-class="toolkit-collapse-indicator"
     @toggle="emit('contentChange')">
     <div class="toolkit-reminder-block">
-      <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatDaily') }}</div>
-      <div class="toolkit-reminder-inline">
-        <UiTimeInput v-model="dailyInputTimeModel" />
-        <UiButton native-type="button" preset="overlay-primary" @click="emit('addDailyTime')">
-          {{ t('toolkit.reminderAddTime') }}
-        </UiButton>
+      <div class="toolkit-reminder-row">
+        <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatDaily') }}</div>
+        <div class="toolkit-reminder-inline">
+          <UiTimeInput v-model="dailyInputTimeModel" />
+          <UiButton native-type="button" preset="overlay-primary" @click="emit('addDailyTime')">
+            {{ t('toolkit.reminderAddTime') }}
+          </UiButton>
+        </div>
       </div>
       <div class="toolkit-reminder-chip-list">
         <button
@@ -61,13 +63,15 @@
     </div>
 
     <div class="toolkit-reminder-block">
-      <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatWeekly') }}</div>
-      <div class="toolkit-reminder-inline toolkit-reminder-inline--weekly">
-        <UiSelect v-model="weeklyInputDaysModel" :options="weekdayOptions" multiple />
-        <UiTimeInput v-model="weeklyInputTimeModel" class="toolkit-reminder-time-input" />
-        <UiButton native-type="button" preset="overlay-primary" @click="emit('addWeeklySlot')">
-          {{ t('toolkit.reminderAddSlot') }}
-        </UiButton>
+      <div class="toolkit-reminder-row">
+        <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatWeekly') }}</div>
+        <div class="toolkit-reminder-inline toolkit-reminder-inline--weekly">
+          <UiSelect v-model="weeklyInputDaysModel" :options="weekdayOptions" multiple />
+          <UiTimeInput v-model="weeklyInputTimeModel" class="toolkit-reminder-time-input" />
+          <UiButton native-type="button" preset="overlay-primary" @click="emit('addWeeklySlot')">
+            {{ t('toolkit.reminderAddSlot') }}
+          </UiButton>
+        </div>
       </div>
       <div class="toolkit-reminder-chip-list">
         <button
@@ -82,13 +86,15 @@
     </div>
 
     <div class="toolkit-reminder-block">
-      <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatMonthly') }}</div>
-      <div class="toolkit-reminder-inline toolkit-reminder-inline--monthly">
-        <UiSelect v-model="monthlyInputDaysModel" :options="monthlyDayOptions" multiple />
-        <UiTimeInput v-model="monthlyInputTimeModel" />
-        <UiButton native-type="button" preset="overlay-primary" @click="emit('addMonthlySlot')">
-          {{ t('toolkit.reminderAddSlot') }}
-        </UiButton>
+      <div class="toolkit-reminder-row">
+        <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatMonthly') }}</div>
+        <div class="toolkit-reminder-inline toolkit-reminder-inline--monthly">
+          <UiSelect v-model="monthlyInputDaysModel" :options="monthlyDayOptions" multiple />
+          <UiTimeInput v-model="monthlyInputTimeModel" />
+          <UiButton native-type="button" preset="overlay-primary" @click="emit('addMonthlySlot')">
+            {{ t('toolkit.reminderAddSlot') }}
+          </UiButton>
+        </div>
       </div>
       <div class="toolkit-reminder-chip-list">
         <button
@@ -112,7 +118,7 @@
     indicator-class="toolkit-collapse-indicator"
     @toggle="emit('contentChange')">
     <div class="toolkit-grid">
-      <label class="toolkit-field">
+      <label class="toolkit-field toolkit-field--inline">
         <span>{{ t('toolkit.reminderContentType') }}</span>
         <UiSelect v-model="form.contentType" :options="contentTypeOptions" />
       </label>

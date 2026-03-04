@@ -53,7 +53,7 @@
         <span>{{ t('toolkit.reminderAdvancedImage') }}</span>
         <input v-model.trim="advancedSettings.screenImage" type="text" />
       </label>
-      <label class="toolkit-field">
+      <label class="toolkit-field toolkit-field--inline">
         <span>{{ t('toolkit.reminderAdvancedColor') }}</span>
         <input v-model.trim="advancedSettings.screenColor" type="text" />
       </label>
