@@ -1,11 +1,74 @@
 import type { UnlistenFn } from '@tauri-apps/api/event';
 
 const isTauriRuntime = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+const tauriCallbackStorageKey = 'pulsecorelite.tauri.pending-callbacks';
+let tauriCallbackGuardReady = false;
+
+function setupTauriCallbackGuard() {
+  if (tauriCallbackGuardReady || !isTauriRuntime || !import.meta.env.DEV) return;
+  tauriCallbackGuardReady = true;
+
+  const internals = (window as typeof window & { __TAURI_INTERNALS__?: Record<string, unknown> }).__TAURI_INTERNALS__;
+  const transformCallback = internals?.transformCallback as ((cb: (...args: unknown[]) => unknown, once?: boolean) => string) | undefined;
+  if (!transformCallback) return;
+
+  const pendingCallbacks = new Set<string>();
+  const registerNoopCallback = (id: string) => {
+    const key = `_${id}`;
+    if (key in window) return;
+    (window as Record<string, unknown>)[key] = () => {
+      delete (window as Record<string, unknown>)[key];
+    };
+  };
+
+  try {
+    const raw = sessionStorage.getItem(tauriCallbackStorageKey);
+    if (raw) {
+      const stored = JSON.parse(raw);
+      if (Array.isArray(stored)) {
+        stored.forEach(id => typeof id === 'string' && registerNoopCallback(id));
+      }
+    }
+  } catch {
+    // ignore malformed storage
+  } finally {
+    sessionStorage.removeItem(tauriCallbackStorageKey);
+  }
+
+  internals.transformCallback = (callback: (...args: unknown[]) => unknown, once = false) => {
+    const id = transformCallback(callback, once);
+    pendingCallbacks.add(id);
+    const key = `_${id}`;
+    const original = (window as Record<string, unknown>)[key];
+    if (typeof original === 'function') {
+      (window as Record<string, unknown>)[key] = (...args: unknown[]) => {
+        pendingCallbacks.delete(id);
+        return (original as (...inner: unknown[]) => unknown)(...args);
+      };
+    }
+    return id;
+  };
+
+  const storePendingCallbacks = () => {
+    if (!pendingCallbacks.size) return;
+    try {
+      sessionStorage.setItem(tauriCallbackStorageKey, JSON.stringify([...pendingCallbacks]));
+    } catch {
+      // ignore storage failures
+    }
+  };
+
+  window.addEventListener('beforeunload', storePendingCallbacks);
+  if (import.meta.hot) {
+    import.meta.hot.on('vite:beforeFullReload', storePendingCallbacks);
+  }
+}
 
 export async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   if (!isTauriRuntime) {
     throw new Error('Not running inside Tauri runtime.');
   }
+  setupTauriCallbackGuard();
   const { invoke } = await import('@tauri-apps/api/core');
   return invoke<T>(cmd, args);
 }
@@ -14,6 +77,7 @@ export async function listenEvent<T>(event: string, handler: (payload: T) => voi
   if (!isTauriRuntime) {
     return () => undefined;
   }
+  setupTauriCallbackGuard();
   const { listen } = await import('@tauri-apps/api/event');
   return listen<T>(event, e => handler(e.payload));
 }
