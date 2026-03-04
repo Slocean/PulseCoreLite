@@ -305,6 +305,7 @@
     "reminderReset": "重置表单",
     "reminderList": "提醒列表",
     "reminderListEmpty": "暂无任务提醒",
+    "reminderEditing": "编辑中",
     "reminderEditAction": "编辑",
     "reminderTriggerNow": "立即触发",
     "reminderDelete": "删除",

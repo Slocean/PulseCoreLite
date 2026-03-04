@@ -305,6 +305,7 @@
     "reminderReset": "Reset Form",
     "reminderList": "Reminder List",
     "reminderListEmpty": "No task reminder configured.",
+    "reminderEditing": "Editing",
     "reminderEditAction": "Edit",
     "reminderTriggerNow": "Trigger Now",
     "reminderDelete": "Delete",

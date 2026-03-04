@@ -11,9 +11,16 @@
       {{ t('toolkit.reminderListEmpty') }}
     </div>
     <div v-else class="toolkit-reminder-list">
-      <div v-for="item in reminders" :key="item.id" class="toolkit-reminder-item">
+      <div
+        v-for="item in reminders"
+        :key="item.id"
+        class="toolkit-reminder-item"
+        :class="{ 'toolkit-reminder-item--editing': isEditing(item.id) }">
         <div class="toolkit-reminder-item-header">
-          <div class="toolkit-reminder-item-title">{{ item.title }}</div>
+          <div class="toolkit-reminder-item-title">
+            <span>{{ item.title }}</span>
+            <span v-if="isEditing(item.id)" class="toolkit-reminder-item-editing">{{ t('toolkit.reminderEditing') }}</span>
+          </div>
           <UiSwitch
             :model-value="item.enabled"
             :aria-label="t('toolkit.reminderEnabled')"
@@ -52,6 +59,7 @@ const props = defineProps<{
   reminders: TaskReminder[];
   modelValue: boolean;
   title?: string;
+  editingId?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -71,4 +79,5 @@ const open = computed({
   get: () => props.modelValue,
   set: value => emit('update:modelValue', value)
 });
+const isEditing = (id: string) => props.editingId === id;
 </script>

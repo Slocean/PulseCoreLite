@@ -3,6 +3,7 @@
     v-model="sections.list"
     :reminders="reminders"
     :title="reminderListTitle"
+    :editing-id="editingId"
     @content-change="emit('contentChange')"
     @edit-reminder="editReminder"
     @trigger-now="triggerNow"

@@ -95,6 +95,12 @@
   gap: 6px;
 }
 
+.toolkit-reminder-item--editing {
+  border-color: rgba(0, 242, 255, 0.55);
+  box-shadow: 0 0 0 1px rgba(0, 242, 255, 0.35);
+  background: rgba(0, 242, 255, 0.08);
+}
+
 .toolkit-reminder-item-header {
   display: flex;
   align-items: center;
@@ -103,10 +109,24 @@
 }
 
 .toolkit-reminder-item-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
   word-break: break-word;
+}
+
+.toolkit-reminder-item-editing {
+  font-size: 10px;
+  font-weight: 500;
+  border-radius: 999px;
+  padding: 2px 6px;
+  background: rgba(0, 242, 255, 0.18);
+  color: rgba(0, 242, 255, 0.96);
+  border: 1px solid rgba(0, 242, 255, 0.4);
+  white-space: nowrap;
 }
 
 .toolkit-reminder-item-meta {
