@@ -63,8 +63,8 @@ html.window-toolkit body {
   padding: 4px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(8px);
+  /* background: rgba(0, 0, 0, 0.2); */
+  /* backdrop-filter: blur(8px); */
   -webkit-app-region: no-drag;
 }
 
