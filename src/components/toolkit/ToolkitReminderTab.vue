@@ -92,7 +92,7 @@ const sections = reactive({
   task: true,
   schedule: true,
   content: true,
-  list: true
+  list: false
 });
 
 const form = reactive({

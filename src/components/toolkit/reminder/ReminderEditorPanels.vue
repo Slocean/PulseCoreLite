@@ -29,10 +29,6 @@
         <input v-model.trim="form.email" type="email" placeholder="name@example.com" />
       </label>
       <p v-if="form.channel === 'email'" class="toolkit-profile-hint">{{ t('toolkit.reminderEmailHint') }}</p>
-      <div class="overlay-config-row">
-        <span class="overlay-config-label">{{ t('toolkit.reminderEnabled') }}</span>
-        <UiSwitch v-model="form.enabled" :aria-label="t('toolkit.reminderEnabled')" />
-      </div>
     </div>
   </UiCollapsiblePanel>
 
@@ -146,7 +142,6 @@ import { useI18n } from 'vue-i18n';
 import UiButton from '@/components/ui/Button';
 import UiSelect from '@/components/ui/Select';
 import type { SelectOption } from '@/components/ui/Select/types';
-import UiSwitch from '@/components/ui/Switch';
 import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiTimeInput from '@/components/ui/TimeInput';
 import type { MonthlyReminderSlot, WeeklyReminderSlot } from '@/types';
