@@ -1,5 +1,9 @@
 <template>
-  <nav class="ui-nav-tabs" :aria-label="props.ariaLabel" role="tablist">
+  <nav
+    class="ui-nav-tabs"
+    :aria-label="props.ariaLabel"
+    role="tablist"
+    :style="{ '--ui-nav-tabs-columns': String(columnCount) }">
     <button
       v-for="item in props.items"
       :key="item.id"
@@ -34,6 +38,7 @@ const emit = defineEmits<{
 
 const internalActiveId = ref(resolveInitialActiveId());
 const activeId = computed(() => props.modelValue ?? internalActiveId.value);
+const columnCount = computed(() => Math.max(props.items.length, 1));
 
 watch(
   () => props.modelValue,
@@ -81,12 +86,13 @@ function handleItemClick(id: string) {
   --ui-nav-tabs-active: #00f2ff;
   /* --ui-nav-tabs-shadow: 0 -8px 26px rgba(0, 0, 0, 0.34); */
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--ui-nav-tabs-columns, 3), minmax(0, 1fr));
   gap: 0;
   margin-top: 10px;
   border-top: 1px solid var(--ui-nav-tabs-border);
   background: var(--ui-nav-tabs-bg);
   box-shadow: var(--ui-nav-tabs-shadow);
+  margin: 8px 0;
 }
 
 .ui-nav-tabs__item {

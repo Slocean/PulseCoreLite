@@ -19,59 +19,58 @@
       :update-label="t('overlay.updateAvailable')"
       @startDrag="startDragging"
       @minimize="minimizeOverlay"
-      @toggleConfig="showConfig = !showConfig"
+      @toggleConfig="toggleSettingsTab"
       @close="handleClose"
       @versionClick="handleVersionClick" />
+    <UiNavTabs v-model="activeMainTab" :items="mainNavItems" :aria-label="t('overlay.mainNavAriaLabel')" />
 
-    <Transition name="slide">
-      <OverlayConfigPanel
-        v-if="showConfig"
-        v-model:prefs="prefs"
-        v-model:closeToTray="closeToTray"
-        v-model:autoStartEnabled="autoStartEnabled"
-        v-model:memoryTrimEnabled="memoryTrimEnabled"
-        v-model:rememberOverlayPosition="rememberOverlayPosition"
-        v-model:overlayAlwaysOnTop="overlayAlwaysOnTop"
-        v-model:taskbarMonitorEnabled="taskbarMonitorEnabled"
-        v-model:factoryResetHotkey="factoryResetHotkey"
-        v-model:refreshRate="refreshRate"
-        v-model:backgroundOpacity="prefs.backgroundOpacity"
-        :can-uninstall="store.installationMode === 'installed'"
-        :app-version="appVersion"
-        :language="store.settings.language"
-        :themes="themes"
-        :get-theme-preview-url="getThemePreviewUrl"
-        :toolkit-state="toolkitState"
-        :checking-update="checkingUpdate"
-        @setLanguage="setLanguage"
-        @refreshRateChange="handleRefreshRateChange"
-        @factoryReset="handleFactoryReset"
-        @uninstall="handleUninstall"
-        @openBackgroundDialog="openBackgroundDialog"
-        @deleteTheme="requestDeleteTheme"
-        @editTheme="requestEditTheme"
-        @exportConfig="exportConfig"
-        @importConfig="handleImportConfig"
-        @openToolkit="toggleToolkitWindow"
-        @checkUpdate="handleCheckUpdate" />
-    </Transition>
+    <OverlayConfigPanel
+      v-if="activeMainTab === 'settings'"
+      v-model:prefs="prefs"
+      v-model:closeToTray="closeToTray"
+      v-model:autoStartEnabled="autoStartEnabled"
+      v-model:memoryTrimEnabled="memoryTrimEnabled"
+      v-model:rememberOverlayPosition="rememberOverlayPosition"
+      v-model:overlayAlwaysOnTop="overlayAlwaysOnTop"
+      v-model:taskbarMonitorEnabled="taskbarMonitorEnabled"
+      v-model:factoryResetHotkey="factoryResetHotkey"
+      v-model:refreshRate="refreshRate"
+      v-model:backgroundOpacity="prefs.backgroundOpacity"
+      :can-uninstall="store.installationMode === 'installed'"
+      :app-version="appVersion"
+      :language="store.settings.language"
+      :themes="themes"
+      :get-theme-preview-url="getThemePreviewUrl"
+      :toolkit-state="toolkitState"
+      :checking-update="checkingUpdate"
+      @setLanguage="setLanguage"
+      @refreshRateChange="handleRefreshRateChange"
+      @factoryReset="handleFactoryReset"
+      @uninstall="handleUninstall"
+      @openBackgroundDialog="openBackgroundDialog"
+      @deleteTheme="requestDeleteTheme"
+      @editTheme="requestEditTheme"
+      @exportConfig="exportConfig"
+      @importConfig="handleImportConfig"
+      @openToolkit="toggleToolkitWindow"
+      @checkUpdate="handleCheckUpdate" />
+    <template v-else>
+      <OverlayMetricsPanel
+        :prefs="prefs"
+        :metrics="metrics"
+        :getUsageClass="getUsageClass"
+        :getProgressClass="getProgressClass"
+        :diskUsageLabel="diskUsageLabel"
+        :diskPercentLabel="diskPercentLabel"
+        :diskIoLabel="diskIoLabel"
+        :getDiskHardwareLabel="getDiskHardwareLabel" />
 
-    <OverlayMetricsPanel
-      :prefs="prefs"
-      :metrics="metrics"
-      :getUsageClass="getUsageClass"
-      :getProgressClass="getProgressClass"
-      :diskUsageLabel="diskUsageLabel"
-      :diskPercentLabel="diskPercentLabel"
-      :diskIoLabel="diskIoLabel"
-      :getDiskHardwareLabel="getDiskHardwareLabel" />
+      <div class="overlay-divider"></div>
 
-    <div class="overlay-divider"></div>
+      <OverlayNetworkFooter :prefs="prefs" :network="metrics.network" />
 
-    <OverlayNetworkFooter :prefs="prefs" :network="metrics.network" />
-
-    <OverlayStatusBar :uptimeLabel="uptimeLabel" />
-    <UiNavTabs :items="mainNavItems" v-if="false" :aria-label="t('overlay.mainNavAriaLabel')" />
+      <OverlayStatusBar :uptimeLabel="uptimeLabel" />
+    </template>
   </section>
 
   <OverlayThemeDialogs
@@ -174,13 +173,7 @@ const mainNavItems = computed(() => [
   {
     id: 'monitor',
     label: t('overlay.mainNavMonitor'),
-    icon: 'monitor_heart',
-    active: true
-  },
-  {
-    id: 'toolkit',
-    label: t('overlay.mainNavToolkit'),
-    icon: 'construction'
+    icon: 'monitor_heart'
   },
   {
     id: 'settings',
@@ -340,4 +333,15 @@ const {
     void openReminderScreensFromPayload(payload);
   }
 });
+
+const activeMainTab = computed({
+  get: () => (showConfig.value ? 'settings' : 'monitor'),
+  set: value => {
+    showConfig.value = value === 'settings';
+  }
+});
+
+function toggleSettingsTab() {
+  activeMainTab.value = activeMainTab.value === 'settings' ? 'monitor' : 'settings';
+}
 </script>
