@@ -71,7 +71,7 @@
     <OverlayNetworkFooter :prefs="prefs" :network="metrics.network" />
 
     <OverlayStatusBar :uptimeLabel="uptimeLabel" />
-    <UiNavTabs :items="mainNavItems" :aria-label="t('overlay.mainNavAriaLabel')" />
+    <UiNavTabs :items="mainNavItems" v-if="false" :aria-label="t('overlay.mainNavAriaLabel')" />
   </section>
 
   <OverlayThemeDialogs
