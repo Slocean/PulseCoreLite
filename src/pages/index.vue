@@ -147,20 +147,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import type { VNodeRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiNavTabs from '@/components/ui/NavTabs';
 import UiToast from '@/components/ui/Toast';
-import OverlayConfigPanel from '../components/OverlayConfigPanel.vue';
 import OverlayHeader from '../components/OverlayHeader.vue';
 import OverlayMetricsPanel from '../components/OverlayMetricsPanel.vue';
 import OverlayNetworkFooter from '../components/OverlayNetworkFooter.vue';
 import OverlayStatusBar from '../components/OverlayStatusBar.vue';
 import OverlayThemeDialogs from '../components/overlay/OverlayThemeDialogs.vue';
 import OverlaySystemDialogs from '../components/overlay/OverlaySystemDialogs.vue';
-import ToolkitEmbedded from '../components/toolkit/ToolkitEmbedded.vue';
 import { useConfigTransfer } from '../composables/useConfigTransfer';
 import { useFactoryReset } from '../composables/useFactoryReset';
 import { useOverlayMetrics } from '../composables/useOverlayMetrics';
@@ -180,6 +178,8 @@ import { useAppStore } from '../stores/app';
 const store = useAppStore();
 const { t } = useI18n();
 const appVersion = packageJson.version;
+const OverlayConfigPanel = defineAsyncComponent(() => import('../components/OverlayConfigPanel.vue'));
+const ToolkitEmbedded = defineAsyncComponent(() => import('../components/toolkit/ToolkitEmbedded.vue'));
 const mainNavItems = computed(() => [
   {
     id: 'monitor',
