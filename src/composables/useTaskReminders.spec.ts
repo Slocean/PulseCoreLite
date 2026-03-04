@@ -107,14 +107,14 @@ describe('useTaskReminders', () => {
       updatedAt: '2026-01-01T00:00:00.000Z'
     };
 
-    await expect(remindersApi.upsertReminder(baseReminder)).rejects.toThrow('At least one schedule is required.');
+    await expect(remindersApi.upsertReminder(baseReminder)).rejects.toThrow('toolkit.reminderErrorNoSchedule');
 
     await expect(
       remindersApi.upsertReminder({
         ...baseReminder,
         dailyTimes: ['08:00']
       })
-    ).rejects.toThrow('Email is required for email reminder.');
+    ).rejects.toThrow('toolkit.reminderErrorEmailRequired');
   });
 
   it('persists updates when upserting/toggling/removing reminders', async () => {

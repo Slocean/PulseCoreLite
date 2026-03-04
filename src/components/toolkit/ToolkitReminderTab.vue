@@ -264,6 +264,19 @@ function clearTip() {
   errorMessage.value = '';
 }
 
+function formatErrorMessage(error: unknown, fallbackKey: string) {
+  if (error instanceof Error) {
+    const message = error.message.trim();
+    if (message.startsWith('toolkit.')) {
+      return t(message);
+    }
+    if (message) {
+      return message;
+    }
+  }
+  return t(fallbackKey);
+}
+
 function updateDailyInputTime(value: string) {
   dailyInputTime.value = value;
 }
@@ -312,25 +325,25 @@ async function handleAdvancedImageChange(event: Event) {
     canvas.height = Math.max(1, Math.round(bitmap.height * scale));
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      throw new Error('Canvas context unavailable');
+      throw new Error('toolkit.reminderAdvancedUploadCanvasFailed');
     }
     ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     const blob: Blob =
       (await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.86))) ||
       (await new Promise(resolve => canvas.toBlob(resolve, 'image/png')));
     if (!blob) {
-      throw new Error('Failed to encode image');
+      throw new Error('toolkit.reminderAdvancedUploadEncodeFailed');
     }
     const dataUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(String(reader.result || ''));
-      reader.onerror = () => reject(new Error('Failed to read image'));
+      reader.onerror = () => reject(new Error('toolkit.reminderAdvancedUploadReadFailed'));
       reader.readAsDataURL(blob);
     });
     advancedSettings.backgroundImage = dataUrl;
     statusMessage.value = t('toolkit.reminderAdvancedUploadSuccess');
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : t('toolkit.reminderAdvancedUploadFailed');
+    errorMessage.value = formatErrorMessage(error, 'toolkit.reminderAdvancedUploadFailed');
   } finally {
     if (input) {
       input.value = '';
@@ -433,7 +446,7 @@ async function saveSmtpSettings() {
     await saveSmtpConfig({ ...smtpForm });
     statusMessage.value = t('toolkit.reminderSmtpSaveSuccess');
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : t('toolkit.reminderSmtpSaveFailed');
+    errorMessage.value = formatErrorMessage(error, 'toolkit.reminderSmtpSaveFailed');
   }
 }
 
@@ -443,7 +456,7 @@ async function sendSmtpTestEmail() {
     await testSmtpConfig({ ...smtpForm }, smtpTestTo.value);
     statusMessage.value = t('toolkit.reminderSmtpTestSuccess');
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : t('toolkit.reminderSmtpTestFailed');
+    errorMessage.value = formatErrorMessage(error, 'toolkit.reminderSmtpTestFailed');
   }
 }
 
@@ -469,7 +482,7 @@ async function saveReminder() {
     statusMessage.value = t('toolkit.reminderSaveSuccess');
     resetForm();
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : t('toolkit.reminderSaveFailed');
+    errorMessage.value = formatErrorMessage(error, 'toolkit.reminderSaveFailed');
   }
 }
 
@@ -514,7 +527,7 @@ async function triggerNow(item: TaskReminder) {
     await runReminderNow(item);
     statusMessage.value = t('toolkit.reminderTriggerSuccess');
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : t('toolkit.reminderTriggerFailed');
+    errorMessage.value = formatErrorMessage(error, 'toolkit.reminderTriggerFailed');
   }
 }
 </script>

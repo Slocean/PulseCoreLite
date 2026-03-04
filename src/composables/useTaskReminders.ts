@@ -49,10 +49,10 @@ export function useTaskReminders() {
   async function upsertReminder(input: TaskReminder) {
     const normalized = normalizeReminder(input);
     if (!hasAnySchedule(normalized)) {
-      throw new Error('At least one schedule is required.');
+      throw new Error('toolkit.reminderErrorNoSchedule');
     }
     if (normalized.channel === 'email' && !normalized.email.trim()) {
-      throw new Error('Email is required for email reminder.');
+      throw new Error('toolkit.reminderErrorEmailRequired');
     }
 
     const idx = reminders.value.findIndex(item => item.id === normalized.id);
@@ -99,10 +99,10 @@ export function useTaskReminders() {
   async function saveSmtpConfig(config: SmtpEmailConfig) {
     const normalized = normalizeSmtpConfig(config);
     if (!normalized) {
-      throw new Error('Invalid SMTP config.');
+      throw new Error('toolkit.reminderErrorSmtpInvalid');
     }
     if (!normalized.host || !normalized.username || !normalized.password || !normalized.fromEmail) {
-      throw new Error('SMTP config is incomplete.');
+      throw new Error('toolkit.reminderErrorSmtpIncomplete');
     }
     smtpConfig.value = normalized;
     await persist();
@@ -111,10 +111,10 @@ export function useTaskReminders() {
   async function testSmtpConfig(config: SmtpEmailConfig, testTo?: string) {
     const normalized = normalizeSmtpConfig(config);
     if (!normalized) {
-      throw new Error('Invalid SMTP config.');
+      throw new Error('toolkit.reminderErrorSmtpInvalid');
     }
     if (!normalized.host || !normalized.username || !normalized.password || !normalized.fromEmail) {
-      throw new Error('SMTP config is incomplete.');
+      throw new Error('toolkit.reminderErrorSmtpIncomplete');
     }
     const to = (testTo ?? '').trim() || normalized.fromEmail;
     await api.sendReminderEmail({
