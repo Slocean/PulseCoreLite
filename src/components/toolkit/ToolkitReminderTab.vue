@@ -83,7 +83,7 @@
         <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedRequirePassword') }}</span>
         <UiSwitch v-model="advancedSettings.requireClosePassword" :aria-label="t('toolkit.reminderAdvancedRequirePassword')" />
       </div>
-      <label v-if="advancedSettings.requireClosePassword" class="toolkit-field">
+      <label v-if="advancedSettings.requireClosePassword" class="toolkit-field toolkit-field--inline">
         <span>{{ t('toolkit.reminderAdvancedClosePassword') }}</span>
         <input v-model.trim="advancedSettings.closePassword" type="password" />
       </label>
