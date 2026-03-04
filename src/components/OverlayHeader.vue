@@ -1,5 +1,5 @@
 <template>
-  <header>
+  <header class="overlay-header-container">
     <div class="overlay-title">
       <div class="badge">
         {{ t('overlay.badge') }}
@@ -71,4 +71,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 </script>
-
+<style lang="css" scoped>
+.overlay-header-container {
+  margin-bottom: 15px;
+}
+</style>
