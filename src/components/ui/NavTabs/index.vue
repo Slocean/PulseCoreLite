@@ -82,8 +82,9 @@ function handleItemClick(id: string) {
 
 <style scoped lang="css">
 .ui-nav-tabs-container {
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  /* border-top: 1px solid rgba(255, 255, 255, 0.14); */
   border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  margin: 8px 0;
 }
 
 .ui-nav-tabs {
@@ -98,7 +99,6 @@ function handleItemClick(id: string) {
   border-top: 1px solid var(--ui-nav-tabs-border);
   background: var(--ui-nav-tabs-bg);
   box-shadow: var(--ui-nav-tabs-shadow);
-  margin: 8px 0;
 }
 
 .ui-nav-tabs__item {
@@ -126,7 +126,7 @@ function handleItemClick(id: string) {
 
 .ui-nav-tabs__icon {
   font-size: 20px;
-  line-height: 1;
+  /* line-height: 1; */
   margin-bottom: 4px;
 }
 
