@@ -40,6 +40,42 @@
     @update:monthly-input-days="updateMonthlyInputDays"
     @update:monthly-input-time="updateMonthlyInputTime" />
 
+  <UiCollapsiblePanel
+    class="toolkit-card"
+    :title="t('toolkit.reminderAdvancedTitle')"
+    v-model="sections.advanced"
+    single-header-preset="toolkit-collapse"
+    title-class="toolkit-section-title"
+    indicator-class="toolkit-collapse-indicator"
+    @toggle="emit('contentChange')">
+    <div class="toolkit-grid">
+      <label class="toolkit-field">
+        <span>{{ t('toolkit.reminderAdvancedImage') }}</span>
+        <input v-model.trim="advancedSettings.screenImage" type="text" />
+      </label>
+      <label class="toolkit-field">
+        <span>{{ t('toolkit.reminderAdvancedColor') }}</span>
+        <input v-model.trim="advancedSettings.screenColor" type="text" />
+      </label>
+      <div class="overlay-config-row">
+        <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedAllowClose') }}</span>
+        <UiSwitch v-model="advancedSettings.allowClose" :aria-label="t('toolkit.reminderAdvancedAllowClose')" />
+      </div>
+      <div class="overlay-config-row">
+        <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedBlockButtons') }}</span>
+        <UiSwitch v-model="advancedSettings.blockAllButtons" :aria-label="t('toolkit.reminderAdvancedBlockButtons')" />
+      </div>
+      <div class="overlay-config-row">
+        <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedRequirePassword') }}</span>
+        <UiSwitch v-model="advancedSettings.requireClosePassword" :aria-label="t('toolkit.reminderAdvancedRequirePassword')" />
+      </div>
+      <label v-if="advancedSettings.requireClosePassword" class="toolkit-field">
+        <span>{{ t('toolkit.reminderAdvancedClosePassword') }}</span>
+        <input v-model.trim="advancedSettings.closePassword" type="password" />
+      </label>
+    </div>
+  </UiCollapsiblePanel>
+
   <p v-if="statusMessage" class="toolkit-status">{{ statusMessage }}</p>
   <p v-if="errorMessage" class="toolkit-error">{{ errorMessage }}</p>
 
@@ -57,7 +93,9 @@
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import type { SelectOption } from '@/components/ui/Select/types';
+import UiSwitch from '@/components/ui/Switch';
 import { useTaskReminders } from '../../composables/useTaskReminders';
 import ReminderEditorPanels from './reminder/ReminderEditorPanels.vue';
 import ReminderListPanel from './reminder/ReminderListPanel.vue';
@@ -92,7 +130,8 @@ const sections = reactive({
   task: true,
   schedule: true,
   content: true,
-  list: false
+  list: false,
+  advanced: false
 });
 
 const form = reactive({
@@ -122,6 +161,15 @@ const smtpForm = reactive<SmtpEmailConfig>({
   fromEmail: '',
   fromName: '',
   security: 'starttls'
+});
+
+const advancedSettings = reactive({
+  screenImage: '',
+  screenColor: '',
+  allowClose: true,
+  blockAllButtons: false,
+  requireClosePassword: false,
+  closePassword: ''
 });
 
 const weekdayOptions = computed<SelectOption[]>(() => [
