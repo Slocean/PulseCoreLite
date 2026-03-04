@@ -111,6 +111,30 @@
   grid-column: auto;
 }
 
+.toolkit-reminder-advanced-password-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolkit-reminder-advanced-password-input {
+  appearance: none;
+  width: 140px;
+  min-height: 30px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.24));
+  color: rgba(255, 255, 255, 0.92);
+  padding: 5px 6px;
+  font-size: 12px;
+}
+
+.toolkit-reminder-advanced-password-input--hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .toolkit-hidden-file {
   display: none;
 }

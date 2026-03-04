@@ -81,14 +81,19 @@
           <UiSwitch v-model="advancedSettings.blockAllKeys" :aria-label="t('toolkit.reminderAdvancedBlockButtons')" />
         </div>
       </div>
-      <div class="overlay-config-row">
+      <div class="overlay-config-row toolkit-reminder-advanced-password">
         <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedRequirePassword') }}</span>
-        <UiSwitch v-model="advancedSettings.requireClosePassword" :aria-label="t('toolkit.reminderAdvancedRequirePassword')" />
+        <div class="toolkit-reminder-advanced-password-controls">
+          <UiSwitch v-model="advancedSettings.requireClosePassword" :aria-label="t('toolkit.reminderAdvancedRequirePassword')" />
+          <input
+            v-model.trim="advancedSettings.closePassword"
+            class="toolkit-reminder-advanced-password-input"
+            type="password"
+            :aria-label="t('toolkit.reminderAdvancedClosePassword')"
+            :disabled="!advancedSettings.requireClosePassword"
+            :class="{ 'toolkit-reminder-advanced-password-input--hidden': !advancedSettings.requireClosePassword }" />
+        </div>
       </div>
-      <label v-if="advancedSettings.requireClosePassword" class="toolkit-field toolkit-field--inline">
-        <span>{{ t('toolkit.reminderAdvancedClosePassword') }}</span>
-        <input v-model.trim="advancedSettings.closePassword" type="password" />
-      </label>
     </div>
   </UiCollapsiblePanel>
 
