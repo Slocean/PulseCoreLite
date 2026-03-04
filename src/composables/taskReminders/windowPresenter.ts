@@ -33,6 +33,7 @@ export async function openReminderScreensFromPayload(payload: ReminderScreenEven
       title: payload.title ?? 'Task Reminder',
       content: payload.content ?? '',
       contentType: payload.contentType ?? 'text',
+      advancedSettings: payload.advancedSettings,
       timestamp: nowIso()
     };
     storageRepository.setJsonSync(buildReminderScreenStorageKey(token), storagePayload);
@@ -51,6 +52,7 @@ export async function openReminderScreensFromPayload(payload: ReminderScreenEven
     localStorage.setItem('reminder_debug_logs', JSON.stringify(logs.slice(-20)));
 
     const newWindows = [];
+    const backgroundColor = payload.advancedSettings?.backgroundColor || '#05070b';
     for (let index = 0; index < targetMonitors.length; index += 1) {
       const monitor = targetMonitors[index];
       const label = `reminder-screen-${token}-${index}`;
@@ -73,7 +75,7 @@ export async function openReminderScreensFromPayload(payload: ReminderScreenEven
         url: `toolkit.html?reminderScreen=1&token=${encodeURIComponent(token)}&idx=${index}`,
         title: `Reminder Screen ${index + 1}`,
         ...windowConfig,
-        backgroundColor: '#05070b',
+        backgroundColor,
         decorations: false,
         transparent: false,
         resizable: false,
@@ -118,6 +120,7 @@ export function readReminderScreenPayload(token: string | null) {
       title: string;
       content: string;
       contentType: ReminderContentType;
+      advancedSettings?: ReminderScreenEventPayload['advancedSettings'];
       timestamp: string;
     }>(buildReminderScreenStorageKey(token));
     if (!raw) {

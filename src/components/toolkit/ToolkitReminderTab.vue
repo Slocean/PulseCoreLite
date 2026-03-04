@@ -51,11 +51,31 @@
     <div class="toolkit-grid">
       <label class="toolkit-field toolkit-field--inline">
         <span>{{ t('toolkit.reminderAdvancedImage') }}</span>
-        <input v-model.trim="advancedSettings.screenImage" type="text" />
+        <div class="toolkit-reminder-advanced-input">
+          <input v-model.trim="advancedSettings.backgroundImage" type="text" />
+          <input
+            ref="advancedImageInput"
+            class="toolkit-hidden-file"
+            type="file"
+            accept="image/*"
+            @change="handleAdvancedImageChange" />
+          <UiButton
+            native-type="button"
+            preset="overlay-primary"
+            class="toolkit-reminder-advanced-upload"
+            @click="triggerAdvancedImageSelect">
+            {{ t('toolkit.reminderAdvancedUpload') }}
+          </UiButton>
+        </div>
       </label>
+      <p class="toolkit-reminder-advanced-hint">{{ t('toolkit.reminderAdvancedUploadHint') }}</p>
       <label class="toolkit-field toolkit-field--inline">
         <span>{{ t('toolkit.reminderAdvancedColor') }}</span>
-        <input v-model.trim="advancedSettings.screenColor" type="text" />
+        <input v-model.trim="advancedSettings.backgroundColor" type="text" />
+      </label>
+      <label class="toolkit-field toolkit-field--inline">
+        <span>{{ t('toolkit.reminderAdvancedApplyTo') }}</span>
+        <UiSelect v-model="advancedApplyTargets" :options="advancedApplyOptions" multiple />
       </label>
       <div class="overlay-config-row">
         <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedAllowClose') }}</span>
@@ -63,7 +83,7 @@
       </div>
       <div class="overlay-config-row">
         <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedBlockButtons') }}</span>
-        <UiSwitch v-model="advancedSettings.blockAllButtons" :aria-label="t('toolkit.reminderAdvancedBlockButtons')" />
+        <UiSwitch v-model="advancedSettings.blockAllKeys" :aria-label="t('toolkit.reminderAdvancedBlockButtons')" />
       </div>
       <div class="overlay-config-row">
         <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedRequirePassword') }}</span>
@@ -94,13 +114,15 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
+import UiButton from '@/components/ui/Button';
+import UiSelect from '@/components/ui/Select';
 import type { SelectOption } from '@/components/ui/Select/types';
 import UiSwitch from '@/components/ui/Switch';
 import { useTaskReminders } from '../../composables/useTaskReminders';
 import ReminderEditorPanels from './reminder/ReminderEditorPanels.vue';
 import ReminderListPanel from './reminder/ReminderListPanel.vue';
 import ReminderSmtpDialog from './reminder/ReminderSmtpDialog.vue';
-import type { MonthlyReminderSlot, SmtpEmailConfig, TaskReminder, WeeklyReminderSlot } from '../../types';
+import type { MonthlyReminderSlot, ReminderAdvancedSettings, SmtpEmailConfig, TaskReminder, WeeklyReminderSlot } from '../../types';
 
 const emit = defineEmits<{
   (event: 'contentChange'): void;
@@ -117,6 +139,7 @@ const {
   removeReminder,
   toggleReminderEnabled,
   runReminderNow,
+  applyAdvancedSettings,
   saveSmtpConfig,
   testSmtpConfig,
   formatWeekday
@@ -153,6 +176,7 @@ const weeklyInputTime = ref('09:00');
 const monthlyInputDays = ref<number[]>([new Date().getDate()]);
 const monthlyInputTime = ref('09:00');
 const smtpTestTo = ref('');
+const advancedImageInput = ref<HTMLInputElement | null>(null);
 const smtpForm = reactive<SmtpEmailConfig>({
   host: '',
   port: 587,
@@ -163,14 +187,17 @@ const smtpForm = reactive<SmtpEmailConfig>({
   security: 'starttls'
 });
 
-const advancedSettings = reactive({
-  screenImage: '',
-  screenColor: '',
+const defaultAdvancedSettings = (): ReminderAdvancedSettings => ({
+  backgroundImage: '',
+  backgroundColor: '',
   allowClose: true,
-  blockAllButtons: false,
+  blockAllKeys: false,
   requireClosePassword: false,
   closePassword: ''
 });
+
+const advancedSettings = reactive<ReminderAdvancedSettings>(defaultAdvancedSettings());
+const advancedApplyTargets = ref<string[]>([]);
 
 const weekdayOptions = computed<SelectOption[]>(() => [
   { value: 1, label: t('toolkit.weekdayMon') },
@@ -200,6 +227,15 @@ const smtpSecurityOptions = computed<SelectOption[]>(() => [
   { value: 'tls', label: t('toolkit.reminderSmtpSecurityTls') }
 ]);
 
+const advancedApplyOptions = computed<SelectOption[]>(() =>
+  reminders.value
+    .filter(item => item.channel === 'fullscreen' && item.id !== (editingId.value ?? ''))
+    .map(item => ({
+      value: item.id,
+      label: item.title || t('toolkit.reminderTitle')
+    }))
+);
+
 const reminderListTitle = computed(() => {
   const summary = t('toolkit.reminderSummary', { total: reminderCount.value, enabled: enabledCount.value });
   return `${t('toolkit.reminderTitle')} · ${summary}`;
@@ -216,7 +252,7 @@ const monthlyDayOptions = computed<SelectOption[]>(() =>
 );
 
 watch(
-  [reminders, statusMessage, errorMessage, sections],
+  [reminders, statusMessage, errorMessage, sections, advancedSettings, advancedApplyTargets],
   () => {
     nextTick(() => emit('contentChange'));
   },
@@ -259,6 +295,56 @@ function updateMonthlyInputTime(value: string) {
 
 function updateSmtpTestTo(value: string) {
   smtpTestTo.value = value;
+}
+
+function triggerAdvancedImageSelect() {
+  advancedImageInput.value?.click();
+}
+
+async function handleAdvancedImageChange(event: Event) {
+  const input = event.target as HTMLInputElement | null;
+  const file = input?.files?.[0];
+  if (!file) {
+    return;
+  }
+  if (!file.type.startsWith('image/')) {
+    errorMessage.value = t('toolkit.reminderAdvancedUploadInvalid');
+    return;
+  }
+  try {
+    clearTip();
+    const bitmap = await createImageBitmap(file);
+    const maxSize = 1920;
+    const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Canvas context unavailable');
+    }
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob: Blob =
+      (await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.86))) ||
+      (await new Promise(resolve => canvas.toBlob(resolve, 'image/png')));
+    if (!blob) {
+      throw new Error('Failed to encode image');
+    }
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('Failed to read image'));
+      reader.readAsDataURL(blob);
+    });
+    advancedSettings.backgroundImage = dataUrl;
+    statusMessage.value = t('toolkit.reminderAdvancedUploadSuccess');
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : t('toolkit.reminderAdvancedUploadFailed');
+  } finally {
+    if (input) {
+      input.value = '';
+    }
+  }
 }
 
 function addDailyTime() {
@@ -336,6 +422,8 @@ function resetForm() {
   form.monthlySlots = [];
   form.contentType = 'text';
   form.content = '';
+  Object.assign(advancedSettings, defaultAdvancedSettings());
+  advancedApplyTargets.value = [];
   weeklyInputDays.value = [1];
   monthlyInputDays.value = [new Date().getDate()];
 }
@@ -383,10 +471,14 @@ async function saveReminder() {
       monthlySlots: [...form.monthlySlots],
       contentType: form.contentType,
       content: form.content,
+      advancedSettings: { ...advancedSettings },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
     await upsertReminder(payload);
+    if (advancedApplyTargets.value.length) {
+      await applyAdvancedSettings(advancedApplyTargets.value, advancedSettings);
+    }
     statusMessage.value = t('toolkit.reminderSaveSuccess');
     resetForm();
   } catch (error) {
@@ -407,6 +499,8 @@ function editReminder(item: TaskReminder) {
   form.monthlySlots = [...item.monthlySlots];
   form.contentType = item.contentType;
   form.content = item.content;
+  Object.assign(advancedSettings, item.advancedSettings ?? defaultAdvancedSettings());
+  advancedApplyTargets.value = [];
   const editDays = [...new Set(item.weeklySlots.map(slot => slot.weekday))]
     .map(value => Math.round(value))
     .filter(value => value >= 1 && value <= 7)

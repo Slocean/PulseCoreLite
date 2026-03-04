@@ -208,6 +208,27 @@ pub struct MonthlyReminderSlot {
     pub time: String,
 }
 
+fn default_true() -> bool {
+    true
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ReminderAdvancedSettings {
+    #[serde(default)]
+    pub background_image: String,
+    #[serde(default)]
+    pub background_color: String,
+    #[serde(default = "default_true")]
+    pub allow_close: bool,
+    #[serde(default)]
+    pub block_all_keys: bool,
+    #[serde(default)]
+    pub require_close_password: bool,
+    #[serde(default)]
+    pub close_password: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TaskReminder {
@@ -223,6 +244,8 @@ pub struct TaskReminder {
     /// text | markdown | web | image
     pub content_type: String,
     pub content: String,
+    #[serde(default)]
+    pub advanced_settings: Option<ReminderAdvancedSettings>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -240,4 +263,6 @@ pub struct ReminderScreenEventPayload {
     pub title: String,
     pub content: String,
     pub content_type: String,
+    #[serde(default)]
+    pub advanced_settings: Option<ReminderAdvancedSettings>,
 }

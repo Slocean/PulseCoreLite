@@ -11,6 +11,15 @@ export interface MonthlyReminderSlot {
   time: string;
 }
 
+export interface ReminderAdvancedSettings {
+  backgroundImage: string;
+  backgroundColor: string;
+  allowClose: boolean;
+  blockAllKeys: boolean;
+  requireClosePassword: boolean;
+  closePassword: string;
+}
+
 export interface TaskReminder {
   id: string;
   enabled: boolean;
@@ -22,6 +31,7 @@ export interface TaskReminder {
   monthlySlots: MonthlyReminderSlot[];
   contentType: ReminderContentType;
   content: string;
+  advancedSettings?: ReminderAdvancedSettings;
   createdAt: string;
   updatedAt: string;
 }
@@ -52,4 +62,5 @@ export interface ReminderScreenEventPayload {
   title: string;
   content: string;
   contentType: ReminderContentType;
+  advancedSettings?: ReminderAdvancedSettings;
 }

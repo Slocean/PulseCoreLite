@@ -14,9 +14,9 @@ use crate::{
     profiler::{ensure_profile_path, profile_output_dir, ProfileStatus},
     state::SharedState,
     types::{
-        AppBootstrap, MonthlyReminderSlot, ReminderScreenEventPayload, ScheduleShutdownRequest,
-        SendReminderEmailRequest, ShutdownPlan, SmtpEmailConfig, TaskReminder, TaskReminderStore,
-        WeeklyReminderSlot,
+        AppBootstrap, MonthlyReminderSlot, ReminderAdvancedSettings, ReminderScreenEventPayload,
+        ScheduleShutdownRequest, SendReminderEmailRequest, ShutdownPlan, SmtpEmailConfig,
+        TaskReminder, TaskReminderStore, WeeklyReminderSlot,
     },
 };
 
@@ -430,6 +430,8 @@ fn normalize_task_reminder(input: TaskReminder) -> TaskReminder {
     };
     let updated_at = Utc::now().to_rfc3339();
 
+    let advanced_settings = normalize_advanced_settings(input.advanced_settings, &channel);
+
     TaskReminder {
         id: input.id.trim().to_string(),
         enabled: input.enabled,
@@ -441,9 +443,26 @@ fn normalize_task_reminder(input: TaskReminder) -> TaskReminder {
         monthly_slots,
         content_type,
         content: input.content,
+        advanced_settings,
         created_at,
         updated_at,
     }
+}
+
+fn normalize_advanced_settings(
+    input: Option<ReminderAdvancedSettings>,
+    channel: &str,
+) -> Option<ReminderAdvancedSettings> {
+    if !channel.eq_ignore_ascii_case("fullscreen") {
+        return None;
+    }
+    let mut settings = input.unwrap_or_default();
+    settings.background_image = settings.background_image.trim().to_string();
+    settings.background_color = settings.background_color.trim().to_string();
+    if !settings.require_close_password {
+        settings.close_password = String::new();
+    }
+    Some(settings)
 }
 
 pub(crate) fn normalize_task_reminder_store(input: TaskReminderStore) -> TaskReminderStore {
@@ -593,6 +612,7 @@ pub(crate) async fn trigger_task_reminder_backend(
             title: reminder.title.clone(),
             content: reminder.content.clone(),
             content_type: reminder.content_type.clone(),
+            advanced_settings: reminder.advanced_settings.clone(),
         };
         if app.get_webview_window("main").is_some() {
             app.emit_to("main", "reminder://trigger", payload)

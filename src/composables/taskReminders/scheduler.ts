@@ -2,6 +2,7 @@
   MonthlyReminderSlot,
   ReminderChannel,
   ReminderContentType,
+  ReminderAdvancedSettings,
   SmtpEmailConfig,
   TaskReminder,
   WeeklyReminderSlot
@@ -25,6 +26,17 @@ export function normalizeSmtpConfig(input: SmtpEmailConfig | null | undefined): 
     fromEmail: (input.fromEmail ?? '').trim(),
     fromName: input.fromName ?? '',
     security
+  };
+}
+
+export function normalizeAdvancedSettings(input: Partial<ReminderAdvancedSettings> | null | undefined): ReminderAdvancedSettings {
+  return {
+    backgroundImage: (input?.backgroundImage ?? '').trim(),
+    backgroundColor: (input?.backgroundColor ?? '').trim(),
+    allowClose: input?.allowClose !== false,
+    blockAllKeys: Boolean(input?.blockAllKeys),
+    requireClosePassword: Boolean(input?.requireClosePassword),
+    closePassword: input?.closePassword ?? ''
   };
 }
 
@@ -106,6 +118,7 @@ export function normalizeReminder(input: TaskReminder): TaskReminder {
     monthlySlots: normalizeMonthlySlots(input.monthlySlots ?? []),
     contentType: normalizedType,
     content: input.content ?? '',
+    advancedSettings: normalizeAdvancedSettings(input.advancedSettings),
     createdAt: input.createdAt || nowIso(),
     updatedAt: nowIso()
   };

@@ -60,6 +60,49 @@
   font-size: 12px;
 }
 
+.toolkit-reminder-advanced-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.toolkit-reminder-advanced-upload {
+  --btn-padding: 6px 12px;
+  --btn-min-height: 30px;
+  --btn-radius: 8px;
+  --btn-border-style: solid;
+  --btn-border-width: 1px;
+  --btn-border-color: rgba(0, 242, 255, 0.55);
+  --btn-bg: rgba(0, 242, 255, 0.16);
+  --btn-color: rgba(231, 251, 255, 0.98);
+  --btn-hover-border-color: rgba(0, 242, 255, 0.85);
+  --btn-hover-color: #ffffff;
+}
+
+.toolkit-reminder-advanced-upload.ui-button {
+  border: 1px solid rgba(0, 242, 255, 0.55);
+  background: rgba(0, 242, 255, 0.16);
+  color: rgba(231, 251, 255, 0.98);
+  min-height: 30px;
+  padding: 0 12px;
+}
+
+.toolkit-reminder-advanced-upload.ui-button:hover:not(:disabled) {
+  border-color: rgba(0, 242, 255, 0.85);
+  color: #ffffff;
+}
+
+.toolkit-reminder-advanced-hint {
+  margin: 0;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.toolkit-hidden-file {
+  display: none;
+}
+
 .toolkit-field--inline {
   grid-template-columns: 60px minmax(0, 1fr);
   align-items: center;

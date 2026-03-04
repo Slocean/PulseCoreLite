@@ -1,11 +1,12 @@
 ﻿import { computed, ref } from 'vue';
 
 import { api, inTauri } from '../services/tauri';
-import type { SmtpEmailConfig, TaskReminder, TaskReminderStore } from '../types';
+import type { ReminderAdvancedSettings, SmtpEmailConfig, TaskReminder, TaskReminderStore } from '../types';
 import { loadReminderStore, saveReminderStore } from './taskReminders/repository';
 import {
   formatWeekday,
   hasAnySchedule,
+  normalizeAdvancedSettings,
   normalizeReminder,
   normalizeSmtpConfig,
   nowIso
@@ -68,6 +69,7 @@ export function useTaskReminders() {
       reminders.value.unshift(normalized);
     }
     await persist();
+    return normalized;
   }
 
   async function removeReminder(id: string) {
@@ -95,8 +97,32 @@ export function useTaskReminders() {
       await openReminderScreensFromPayload({
         title: normalized.title,
         content: normalized.content,
-        contentType: normalized.contentType
+        contentType: normalized.contentType,
+        advancedSettings: normalized.advancedSettings
       });
+    }
+  }
+
+  async function applyAdvancedSettings(ids: string[], settings: ReminderAdvancedSettings) {
+    const normalized = normalizeAdvancedSettings(settings);
+    const targetIds = new Set(ids);
+    if (!targetIds.size) {
+      return;
+    }
+    let changed = false;
+    reminders.value = reminders.value.map(item => {
+      if (!targetIds.has(item.id) || item.channel !== 'fullscreen') {
+        return item;
+      }
+      changed = true;
+      return {
+        ...item,
+        advancedSettings: normalized,
+        updatedAt: nowIso()
+      };
+    });
+    if (changed) {
+      await persist();
     }
   }
 
@@ -146,6 +172,7 @@ export function useTaskReminders() {
     removeReminder,
     toggleReminderEnabled,
     runReminderNow,
+    applyAdvancedSettings,
     saveSmtpConfig,
     testSmtpConfig,
     formatWeekday

@@ -1,17 +1,25 @@
 <template>
-  <section class="reminder-screen" @contextmenu.prevent>
+  <section class="reminder-screen" :style="screenStyle" @contextmenu.prevent>
     <div class="reminder-screen__inner">
       <div class="reminder-screen__badge">{{ t('toolkit.reminderScreenBadge') }}</div>
       <h1 class="reminder-screen__title">{{ title }}</h1>
       <div class="reminder-screen__content">
         <ReminderContentRenderer :content-type="contentType" :title="title" :content="content" />
       </div>
-      <div class="reminder-screen__hint">{{ t('toolkit.reminderScreenLockedHint') }}</div>
-      <div class="reminder-screen__actions">
+      <div class="reminder-screen__hint">{{ hintText }}</div>
+      <div v-if="showCloseControls" class="reminder-screen__actions">
+        <label v-if="requireClosePassword" class="reminder-screen__password">
+          <span>{{ t('toolkit.reminderScreenPasswordLabel') }}</span>
+          <input
+            v-model="closePasswordInput"
+            type="password"
+            :placeholder="t('toolkit.reminderScreenPasswordPlaceholder')" />
+        </label>
+        <p v-if="passwordError" class="reminder-screen__password-error">{{ passwordError }}</p>
         <button
           class="reminder-screen__close-btn"
           type="button"
-          :disabled="!canClose"
+          :disabled="closeButtonDisabled"
           @click="closeReminderWindows">
           {{ closeButtonText }}
         </button>
@@ -21,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import ReminderContentRenderer from '../components/reminder/ReminderContentRenderer.vue';
@@ -34,25 +42,53 @@ import {
   listenCurrentWindowCloseRequested,
   setCurrentWindowAlwaysOnTop
 } from '../services/windowManager';
-import type { ReminderContentType } from '../types';
+import type { ReminderAdvancedSettings, ReminderContentType } from '../types';
+import { normalizeAdvancedSettings } from '../composables/taskReminders/scheduler';
 
 const { t } = useI18n();
 const contentType = ref<ReminderContentType>('text');
 const title = ref('Task Reminder');
 const content = ref('');
+const advancedSettings = ref<ReminderAdvancedSettings>(normalizeAdvancedSettings(null));
 const token = ref<string | null>(null);
 const canClose = ref(false);
 const closeWaitSeconds = ref(5);
+const closePasswordInput = ref('');
+const passwordError = ref('');
 let closeTimer: number | null = null;
 let unlistenCloseRequested: (() => void) | null = null;
 let storageSignalHandler: ((event: StorageEvent) => void) | null = null;
+let keyBlockHandler: ((event: KeyboardEvent) => void) | null = null;
 let allowSystemClose = false;
 
+const allowClose = computed(() => advancedSettings.value.allowClose && !advancedSettings.value.blockAllKeys);
+const requireClosePassword = computed(() => advancedSettings.value.requireClosePassword);
+const passwordValid = computed(
+  () => !requireClosePassword.value || closePasswordInput.value === advancedSettings.value.closePassword
+);
+const showCloseControls = computed(() => allowClose.value);
+const closeButtonDisabled = computed(() => !canClose.value || !passwordValid.value);
 const closeButtonText = computed(() =>
   canClose.value
     ? t('toolkit.reminderScreenCloseReady')
     : t('toolkit.reminderScreenCloseWait', { seconds: closeWaitSeconds.value })
 );
+const hintText = computed(() =>
+  allowClose.value ? t('toolkit.reminderScreenLockedHint') : t('toolkit.reminderScreenCloseBlocked')
+);
+const screenStyle = computed(() => {
+  const { backgroundImage, backgroundColor } = advancedSettings.value;
+  if (!backgroundImage && !backgroundColor) {
+    return {};
+  }
+  if (backgroundImage && backgroundColor) {
+    return { background: `url("${backgroundImage}") center / cover no-repeat, ${backgroundColor}` };
+  }
+  if (backgroundImage) {
+    return { background: `url("${backgroundImage}") center / cover no-repeat` };
+  }
+  return { background: backgroundColor };
+});
 
 onMounted(async () => {
   const params = new URLSearchParams(window.location.search);
@@ -62,6 +98,7 @@ onMounted(async () => {
     title.value = payload.title || title.value;
     content.value = payload.content || '';
     contentType.value = payload.contentType;
+    advancedSettings.value = normalizeAdvancedSettings(payload.advancedSettings);
   }
 
   if ('keyboard' in navigator && typeof (navigator as any).keyboard?.lock === 'function') {
@@ -72,10 +109,18 @@ onMounted(async () => {
     }
   }
 
+  if (advancedSettings.value.blockAllKeys) {
+    keyBlockHandler = event => {
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    window.addEventListener('keydown', keyBlockHandler, { capture: true });
+  }
+
   void setCurrentWindowAlwaysOnTop(true);
   void focusCurrentWindow();
   unlistenCloseRequested = await listenCurrentWindowCloseRequested(event => {
-    if (!canClose.value && !allowSystemClose) {
+    if ((!allowClose.value || !canClose.value) && !allowSystemClose) {
       event.preventDefault();
     }
   });
@@ -92,18 +137,20 @@ onMounted(async () => {
   };
   window.addEventListener('storage', storageSignalHandler);
 
-  closeTimer = window.setInterval(() => {
-    if (closeWaitSeconds.value <= 1) {
-      closeWaitSeconds.value = 0;
-      canClose.value = true;
-      if (closeTimer != null) {
-        window.clearInterval(closeTimer);
-        closeTimer = null;
+  if (allowClose.value) {
+    closeTimer = window.setInterval(() => {
+      if (closeWaitSeconds.value <= 1) {
+        closeWaitSeconds.value = 0;
+        canClose.value = true;
+        if (closeTimer != null) {
+          window.clearInterval(closeTimer);
+          closeTimer = null;
+        }
+        return;
       }
-      return;
-    }
-    closeWaitSeconds.value -= 1;
-  }, 1000);
+      closeWaitSeconds.value -= 1;
+    }, 1000);
+  }
 });
 
 onUnmounted(() => {
@@ -119,10 +166,18 @@ onUnmounted(() => {
     window.removeEventListener('storage', storageSignalHandler);
     storageSignalHandler = null;
   }
+  if (keyBlockHandler) {
+    window.removeEventListener('keydown', keyBlockHandler, { capture: true });
+    keyBlockHandler = null;
+  }
 });
 
 async function closeReminderWindows() {
-  if (!canClose.value || !token.value) {
+  if (!canClose.value || !allowClose.value || !token.value) {
+    return;
+  }
+  if (requireClosePassword.value && !passwordValid.value) {
+    passwordError.value = t('toolkit.reminderScreenPasswordInvalid');
     return;
   }
   allowSystemClose = true;
@@ -153,6 +208,12 @@ async function closeCurrentWindowBySignal() {
   }
   await closeCurrentWindow();
 }
+
+watch(closePasswordInput, () => {
+  if (passwordError.value) {
+    passwordError.value = '';
+  }
+});
 </script>
 
 <style scoped>
@@ -221,6 +282,34 @@ async function closeCurrentWindowBySignal() {
 .reminder-screen__actions {
   display: flex;
   justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.reminder-screen__password {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.reminder-screen__password input {
+  min-width: min(320px, 90vw);
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.45);
+  color: rgba(255, 255, 255, 0.96);
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.reminder-screen__password-error {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255, 120, 120, 0.95);
 }
 
 .reminder-screen__close-btn {
