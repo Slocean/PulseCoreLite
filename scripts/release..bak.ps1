@@ -1,6 +1,5 @@
 param(
   [switch]$SkipBuild,
-  [switch]$BuildLocal,
   [switch]$NoPush,
   [switch]$Force
 )
@@ -40,8 +39,7 @@ function Get-ReleaseNotes {
   if ($notesText -notmatch [regex]::Escape($historyUrl)) {
     if ($notesText) {
       $notesText = "$notesText`n`n$historyLine"
-    }
-    else {
+    } else {
       $notesText = $historyLine
     }
   }
@@ -52,8 +50,7 @@ function Resolve-RepoInfo {
   $origin = ""
   try {
     $origin = (git remote get-url origin 2>$null).Trim()
-  }
-  catch {
+  } catch {
     return $null
   }
   if (-not $origin) {
@@ -62,7 +59,7 @@ function Resolve-RepoInfo {
   if ($origin -match 'github\.com[:/](?<owner>[^/]+)/(?<repo>[^/]+?)(\.git)?$') {
     return @{
       Owner = $Matches.owner
-      Repo  = $Matches.repo
+      Repo = $Matches.repo
     }
   }
   return $null
@@ -96,7 +93,7 @@ if ($existingTag) {
   throw "Tag already exists: $tag"
 }
 
-if ($BuildLocal -and -not $SkipBuild) {
+if (-not $SkipBuild) {
   $repoInfo = Resolve-RepoInfo
   if ($repoInfo) {
     $env:GITHUB_OWNER = $repoInfo.Owner
@@ -108,9 +105,6 @@ if ($BuildLocal -and -not $SkipBuild) {
   if ($LASTEXITCODE -ne 0) {
     throw "pack:release failed with exit code $LASTEXITCODE"
   }
-}
-else {
-  Write-Host "[release] Skipping local package build. CI release workflow will build artifacts from the pushed tag."
 }
 
 Write-Host "[release] Creating git tag $tag"
