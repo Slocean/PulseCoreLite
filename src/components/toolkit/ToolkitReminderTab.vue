@@ -39,6 +39,7 @@
     @update:monthly-input-time="updateMonthlyInputTime" />
 
   <UiCollapsiblePanel
+    v-if="form.channel === 'fullscreen'"
     class="toolkit-card"
     :title="t('toolkit.reminderAdvancedTitle')"
     v-model="sections.advanced"

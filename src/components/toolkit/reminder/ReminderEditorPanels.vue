@@ -40,7 +40,12 @@
     title-class="toolkit-section-title"
     indicator-class="toolkit-collapse-indicator"
     @toggle="emit('contentChange')">
-    <div class="toolkit-reminder-block">
+    <label class="toolkit-field toolkit-field--inline">
+      <span>{{ t('toolkit.reminderFrequency') }}</span>
+      <UiSelect v-model="frequencyModel" :options="frequencyOptions" />
+    </label>
+
+    <div v-if="frequencyModel === 'daily'" class="toolkit-reminder-block">
       <div class="toolkit-reminder-row">
         <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatDaily') }}</div>
         <div class="toolkit-reminder-inline">
@@ -62,7 +67,7 @@
       </div>
     </div>
 
-    <div class="toolkit-reminder-block">
+    <div v-else-if="frequencyModel === 'weekly'" class="toolkit-reminder-block">
       <div class="toolkit-reminder-row">
         <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatWeekly') }}</div>
         <div class="toolkit-reminder-inline toolkit-reminder-inline--weekly">
@@ -85,7 +90,7 @@
       </div>
     </div>
 
-    <div class="toolkit-reminder-block">
+    <div v-else class="toolkit-reminder-block">
       <div class="toolkit-reminder-row">
         <div class="toolkit-reminder-subtitle">{{ t('toolkit.repeatMonthly') }}</div>
         <div class="toolkit-reminder-inline toolkit-reminder-inline--monthly">
@@ -123,7 +128,7 @@
         <UiSelect v-model="form.contentType" :options="contentTypeOptions" />
       </label>
 
-      <label class="toolkit-field">
+      <label class="toolkit-field toolkit-field--inline">
         <span>{{ t('toolkit.reminderContentValue') }}</span>
         <textarea v-if="form.contentType === 'text' || form.contentType === 'markdown'" v-model="form.content" rows="4" />
         <input v-else v-model.trim="form.content" type="text" />
@@ -134,7 +139,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
@@ -230,4 +235,66 @@ const monthlyDayOptions = computed(() => props.monthlyDayOptions);
 const contentTypeOptions = computed(() => props.contentTypeOptions);
 const editingId = computed(() => props.editingId);
 const formatWeekday = computed(() => props.formatWeekday);
+
+type FrequencyValue = 'daily' | 'weekly' | 'monthly';
+
+const frequencyOptions = computed<SelectOption[]>(() => [
+  { value: 'daily', label: t('toolkit.repeatDaily') },
+  { value: 'weekly', label: t('toolkit.repeatWeekly') },
+  { value: 'monthly', label: t('toolkit.repeatMonthly') }
+]);
+
+const frequency = ref<FrequencyValue>('daily');
+
+const frequencyModel = computed<FrequencyValue>({
+  get: () => frequency.value,
+  set: value => {
+    frequency.value = value;
+    if (value === 'daily') {
+      form.value.weeklySlots = [];
+      form.value.monthlySlots = [];
+      return;
+    }
+    if (value === 'weekly') {
+      form.value.dailyTimes = [];
+      form.value.monthlySlots = [];
+      return;
+    }
+    form.value.dailyTimes = [];
+    form.value.weeklySlots = [];
+  }
+});
+
+watch(
+  () => props.editingId,
+  () => {
+    if (form.value.dailyTimes.length) {
+      frequency.value = 'daily';
+    } else if (form.value.weeklySlots.length) {
+      frequency.value = 'weekly';
+    } else if (form.value.monthlySlots.length) {
+      frequency.value = 'monthly';
+    } else {
+      frequency.value = 'daily';
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => [form.value.dailyTimes.length, form.value.weeklySlots.length, form.value.monthlySlots.length] as const,
+  ([daily, weekly, monthly]) => {
+    if (daily > 0) {
+      frequency.value = 'daily';
+      return;
+    }
+    if (weekly > 0) {
+      frequency.value = 'weekly';
+      return;
+    }
+    if (monthly > 0) {
+      frequency.value = 'monthly';
+    }
+  }
+);
 </script>
