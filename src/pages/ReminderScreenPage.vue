@@ -113,8 +113,12 @@ onMounted(async () => {
     keyBlockHandler = event => {
       event.preventDefault();
       event.stopPropagation();
+      event.stopImmediatePropagation();
+      return false;
     };
     window.addEventListener('keydown', keyBlockHandler, { capture: true });
+    window.addEventListener('keyup', keyBlockHandler, { capture: true });
+    window.addEventListener('keypress', keyBlockHandler, { capture: true });
   }
 
   void setCurrentWindowAlwaysOnTop(true);
@@ -168,6 +172,8 @@ onUnmounted(() => {
   }
   if (keyBlockHandler) {
     window.removeEventListener('keydown', keyBlockHandler, { capture: true });
+    window.removeEventListener('keyup', keyBlockHandler, { capture: true });
+    window.removeEventListener('keypress', keyBlockHandler, { capture: true });
     keyBlockHandler = null;
   }
 });
