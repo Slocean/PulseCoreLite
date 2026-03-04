@@ -1,7 +1,7 @@
 <template>
   <UiCollapsiblePanel
     class="toolkit-card"
-    :title="t('toolkit.reminderList')"
+    :title="panelTitle"
     v-model="open"
     single-header-preset="toolkit-collapse"
     title-class="toolkit-section-title"
@@ -51,6 +51,7 @@ import type { TaskReminder } from '@/types';
 const props = defineProps<{
   reminders: TaskReminder[];
   modelValue: boolean;
+  title?: string;
 }>();
 
 const emit = defineEmits<{
@@ -65,6 +66,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 const reminders = computed(() => props.reminders);
+const panelTitle = computed(() => props.title ?? t('toolkit.reminderList'));
 const open = computed({
   get: () => props.modelValue,
   set: value => emit('update:modelValue', value)

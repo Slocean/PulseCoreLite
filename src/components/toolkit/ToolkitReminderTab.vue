@@ -1,16 +1,13 @@
 ﻿<template>
-  <UiCollapsiblePanel
-    class="toolkit-card"
-    :title="t('toolkit.reminderTitle')"
-    v-model="sections.summary"
-    single-header-preset="toolkit-collapse"
-    title-class="toolkit-section-title"
-    indicator-class="toolkit-collapse-indicator"
-    @toggle="emit('contentChange')">
-    <div class="toolkit-reminder-count">
-      <span>{{ t('toolkit.reminderSummary', { total: reminderCount, enabled: enabledCount }) }}</span>
-    </div>
-  </UiCollapsiblePanel>
+  <ReminderListPanel
+    v-model="sections.list"
+    :reminders="reminders"
+    :title="reminderListTitle"
+    @content-change="emit('contentChange')"
+    @edit-reminder="editReminder"
+    @trigger-now="triggerNow"
+    @delete-reminder="deleteReminder"
+    @toggle-enabled="toggleReminderEnabled" />
 
   <ReminderEditorPanels
     :editing-id="editingId"
@@ -42,15 +39,6 @@
     @update:monthly-input-days="updateMonthlyInputDays"
     @update:monthly-input-time="updateMonthlyInputTime" />
 
-  <ReminderListPanel
-    v-model="sections.list"
-    :reminders="reminders"
-    @content-change="emit('contentChange')"
-    @edit-reminder="editReminder"
-    @trigger-now="triggerNow"
-    @delete-reminder="deleteReminder"
-    @toggle-enabled="toggleReminderEnabled" />
-
   <p v-if="statusMessage" class="toolkit-status">{{ statusMessage }}</p>
   <p v-if="errorMessage" class="toolkit-error">{{ errorMessage }}</p>
 
@@ -68,7 +56,6 @@
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import type { SelectOption } from '@/components/ui/Select/types';
 import { useTaskReminders } from '../../composables/useTaskReminders';
 import ReminderEditorPanels from './reminder/ReminderEditorPanels.vue';
@@ -101,7 +88,6 @@ const smtpDialogOpen = ref(false);
 const statusMessage = ref('');
 const errorMessage = ref('');
 const sections = reactive({
-  summary: true,
   task: true,
   schedule: true,
   content: true,
@@ -164,6 +150,11 @@ const smtpSecurityOptions = computed<SelectOption[]>(() => [
   { value: 'starttls', label: t('toolkit.reminderSmtpSecurityStarttls') },
   { value: 'tls', label: t('toolkit.reminderSmtpSecurityTls') }
 ]);
+
+const reminderListTitle = computed(() => {
+  const summary = t('toolkit.reminderSummary', { total: reminderCount.value, enabled: enabledCount.value });
+  return `${t('toolkit.reminderTitle')} · ${summary}`;
+});
 
 const monthlyDayOptions = computed<SelectOption[]>(() =>
   Array.from({ length: 31 }, (_, index) => {
