@@ -310,7 +310,7 @@
     "reminderAdvancedAllowClose": "允许关闭",
     "reminderAdvancedBlockButtons": "屏蔽所有按键",
     "reminderAdvancedRequirePassword": "关闭密码",
-    "reminderAdvancedClosePassword": "关闭密码",
+    "reminderAdvancedClosePassword": "密码",
     "reminderAdvancedUpload": "上传",
     "reminderAdvancedUploadHint": "自动压缩为 WebP，最长边 1920px",
     "reminderAdvancedUploadInvalid": "请选择图片文件",
