@@ -71,13 +71,15 @@
       <p v-if="advancedBackgroundTypeModel === 'image'" class="toolkit-reminder-advanced-hint">
         {{ t('toolkit.reminderAdvancedUploadHint') }}
       </p>
-      <div class="overlay-config-row">
-        <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedAllowClose') }}</span>
-        <UiSwitch v-model="advancedSettings.allowClose" :aria-label="t('toolkit.reminderAdvancedAllowClose')" />
-      </div>
-      <div class="overlay-config-row">
-        <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedBlockButtons') }}</span>
-        <UiSwitch v-model="advancedSettings.blockAllKeys" :aria-label="t('toolkit.reminderAdvancedBlockButtons')" />
+      <div class="toolkit-reminder-advanced-duo">
+        <div class="overlay-config-row">
+          <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedAllowClose') }}</span>
+          <UiSwitch v-model="advancedSettings.allowClose" :aria-label="t('toolkit.reminderAdvancedAllowClose')" />
+        </div>
+        <div class="overlay-config-row">
+          <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedBlockButtons') }}</span>
+          <UiSwitch v-model="advancedSettings.blockAllKeys" :aria-label="t('toolkit.reminderAdvancedBlockButtons')" />
+        </div>
       </div>
       <div class="overlay-config-row">
         <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedRequirePassword') }}</span>
