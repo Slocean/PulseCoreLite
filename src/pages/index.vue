@@ -18,13 +18,18 @@
         :app-usage-label="appUsageLabel"
         :update-available="updateAvailable"
         :update-label="t('overlay.updateAvailable')"
+        :tabs-expanded="showMainTabs"
         @startDrag="startDragging"
         @minimize="minimizeOverlay"
-        @toggleConfig="toggleSettingsTab"
+        @toggleTabs="toggleTabs"
         @close="handleClose"
         @versionClick="handleVersionClick" />
     </div>
-    <UiNavTabs v-model="activeMainTab" :items="mainNavItems" :aria-label="t('overlay.mainNavAriaLabel')" />
+    <UiNavTabs
+      v-if="showMainTabs"
+      v-model="activeMainTab"
+      :items="mainNavItems"
+      :aria-label="t('overlay.mainNavAriaLabel')" />
 
     <div class="overlay-pane overlay-pane--content">
       <OverlayConfigPanel
@@ -347,6 +352,7 @@ const {
 
 const activeMainTab = ref<'monitor' | 'toolkit' | 'settings'>('monitor');
 const lastNonSettingsTab = ref<'monitor' | 'toolkit'>('monitor');
+const showMainTabs = ref(true);
 
 watch(
   activeMainTab,
@@ -359,7 +365,7 @@ watch(
   { immediate: true }
 );
 
-function toggleSettingsTab() {
-  activeMainTab.value = activeMainTab.value === 'settings' ? lastNonSettingsTab.value : 'settings';
+function toggleTabs() {
+  showMainTabs.value = !showMainTabs.value;
 }
 </script>

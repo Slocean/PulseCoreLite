@@ -130,7 +130,9 @@
     "mainNavAriaLabel": "主导航",
     "mainNavMonitor": "监控",
     "mainNavToolkit": "工具箱",
-    "mainNavSettings": "设置"
+    "mainNavSettings": "设置",
+    "mainTabsExpand": "展开标签页",
+    "mainTabsCollapse": "收起标签页"
   },
   "toolkit": {
     "title": "工具箱",

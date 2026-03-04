@@ -130,7 +130,9 @@
     "mainNavAriaLabel": "Main navigation",
     "mainNavMonitor": "Monitor",
     "mainNavToolkit": "Toolkit",
-    "mainNavSettings": "Settings"
+    "mainNavSettings": "Settings",
+    "mainTabsExpand": "Expand tabs",
+    "mainTabsCollapse": "Collapse tabs"
   },
   "toolkit": {
     "title": "Toolkit",

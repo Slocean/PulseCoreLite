@@ -24,9 +24,9 @@
         native-type="button"
         preset="overlay-action-primary"
         @mousedown.stop
-        @click="emit('toggleConfig')"
-        :title="t('overlay.configure')">
-        <span class="material-symbols-outlined">settings</span>
+        @click="emit('toggleTabs')"
+        :title="resolvedTabsExpanded ? t('overlay.mainTabsCollapse') : t('overlay.mainTabsExpand')">
+        <span class="material-symbols-outlined">{{ resolvedTabsExpanded ? 'expand_less' : 'expand_more' }}</span>
       </UiButton>
       <UiButton
         native-type="button"
@@ -49,22 +49,26 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import UiButton from '@/components/ui/Button';
 import OverlayVersionButton from '@/components/overlay/OverlayVersionButton.vue';
 
-defineProps<{
+const props = defineProps<{
   showDragHandle: boolean;
   appVersion: string;
   appUsageLabel: string;
   updateAvailable?: boolean;
   updateLabel?: string;
+  tabsExpanded?: boolean;
 }>();
+
+const resolvedTabsExpanded = computed(() => props.tabsExpanded ?? true);
 
 const emit = defineEmits<{
   (e: 'startDrag'): void;
   (e: 'minimize'): void;
-  (e: 'toggleConfig'): void;
+  (e: 'toggleTabs'): void;
   (e: 'close'): void;
   (e: 'versionClick'): void;
 }>();
