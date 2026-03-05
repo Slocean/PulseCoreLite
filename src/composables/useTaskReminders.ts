@@ -15,6 +15,7 @@ const reminders = ref<TaskReminder[]>([]);
 const loaded = ref(false);
 const running = ref(true);
 const smtpConfig = ref<SmtpEmailConfig | null>(null);
+const UNTITLED_REMINDER = 'Untitled Reminder';
 
 function toStorePayload(): TaskReminderStore {
   return {
@@ -28,6 +29,33 @@ export { buildReminderCloseSignalKey, buildReminderScreenStorageKey, formatWeekd
 export function useTaskReminders() {
   const reminderCount = computed(() => reminders.value.length);
   const enabledCount = computed(() => reminders.value.filter(item => item.enabled).length);
+
+  function getNextUntitledIndex(excludeId?: string) {
+    const used = new Set<number>();
+    for (const item of reminders.value) {
+      if (item.id === excludeId) {
+        continue;
+      }
+      const title = (item.title ?? '').trim();
+      if (title === UNTITLED_REMINDER) {
+        used.add(1);
+        continue;
+      }
+      const match = title.match(/^Untitled Reminder\s+#(\d+)$/);
+      if (!match) {
+        continue;
+      }
+      const value = Number(match[1]);
+      if (Number.isFinite(value) && value > 0) {
+        used.add(Math.floor(value));
+      }
+    }
+    let next = 1;
+    while (used.has(next)) {
+      next += 1;
+    }
+    return next;
+  }
 
   async function load() {
     if (loaded.value) {
@@ -47,12 +75,23 @@ export function useTaskReminders() {
   }
 
   async function upsertReminder(input: TaskReminder) {
-    const normalized = normalizeReminder(input);
+    const inputTitle = (input.title ?? '').trim();
+    let normalized = normalizeReminder({ ...input, title: inputTitle });
     if (!hasAnySchedule(normalized)) {
       throw new Error('toolkit.reminderErrorNoSchedule');
     }
     if (normalized.channel === 'email' && !normalized.email.trim()) {
       throw new Error('toolkit.reminderErrorEmailRequired');
+    }
+
+    if (!inputTitle) {
+      const existing = reminders.value.find(item => item.id === normalized.id);
+      if (existing && (existing.title ?? '').trim().startsWith(UNTITLED_REMINDER)) {
+        normalized = { ...normalized, title: existing.title };
+      } else {
+        const index = getNextUntitledIndex(normalized.id);
+        normalized = { ...normalized, title: `${UNTITLED_REMINDER} #${index}` };
+      }
     }
 
     const idx = reminders.value.findIndex(item => item.id === normalized.id);
