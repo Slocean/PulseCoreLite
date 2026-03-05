@@ -76,6 +76,9 @@
           <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedAllowClose') }}</span>
           <UiSwitch v-model="advancedSettings.allowClose" :aria-label="t('toolkit.reminderAdvancedAllowClose')" />
         </div>
+        <!-- <span v-if="!advancedSettings.allowClose" class="toolkit-reminder-advanced-hint">
+          {{ t('toolkit.reminderAdvancedRequirePasswordHint') }}
+        </span> -->
         <div class="overlay-config-row">
           <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedBlockButtons') }}</span>
           <UiSwitch
@@ -88,13 +91,14 @@
         <div class="toolkit-reminder-advanced-password-controls">
           <UiSwitch
             v-model="advancedSettings.requireClosePassword"
-            :aria-label="t('toolkit.reminderAdvancedRequirePassword')" />
+            :aria-label="t('toolkit.reminderAdvancedRequirePassword')"
+            :disabled="!advancedSettings.allowClose" />
           <input
             v-model.trim="advancedSettings.closePassword"
             class="toolkit-reminder-advanced-password-input"
             type="password"
             :aria-label="t('toolkit.reminderAdvancedClosePassword')"
-            :disabled="!advancedSettings.requireClosePassword"
+            :disabled="!advancedSettings.allowClose || !advancedSettings.requireClosePassword"
             :class="{
               'toolkit-reminder-advanced-password-input--hidden': !advancedSettings.requireClosePassword
             }" />
@@ -309,6 +313,15 @@ watch(
     nextTick(() => emit('contentChange'));
   },
   { deep: true, immediate: true }
+);
+
+watch(
+  () => advancedSettings.allowClose,
+  value => {
+    if (value) return;
+    advancedSettings.requireClosePassword = false;
+    advancedSettings.closePassword = '';
+  }
 );
 
 onMounted(async () => {
@@ -592,6 +605,11 @@ async function saveReminder() {
 function editReminder(item: TaskReminder) {
   clearTip();
   editingId.value = item.id;
+  sections.task = true;
+  sections.schedule = true;
+  sections.content = true;
+  sections.list = true;
+  sections.advanced = true;
   form.id = item.id;
   form.enabled = item.enabled;
   form.title = item.title;
