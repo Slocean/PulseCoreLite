@@ -1,3 +1,23 @@
+## v1.8.8
+
+- 提醒高级设置重构：完善背景配置与频率选择，支持图片上传/预览并更新布局
+- 提醒管理体验增强：列表与编辑布局优化，补充未命名标题生成与交互细节
+- 提醒逻辑完善：基于可见性启动倒计时，简化关闭信号监听并增强清理流程
+- 状态管理抽离：提醒页签与背景类型同步整理为 composable
+- 任务栏右键菜单新增“退出应用”
+- 偏好持久化优化：悬浮窗/任务栏偏好改为防抖写入
+- Tauri 调试增强：新增调试日志与运行时回调保护
+- 开发体验改进：dev-runner 端口扫描逻辑与默认步骤优化
+
+- Refactor reminder advanced settings with improved background config, frequency selection, and image upload/preview
+- Enhance reminder management UX with list/edit layout updates plus untitled title generation
+- Improve reminder logic: start countdown based on visibility, simplify close listeners, and strengthen cleanup
+- Extract reminder tab/background sync into composables for clearer state management
+- Add "Exit App" to the taskbar context menu
+- Debounce overlay/taskbar preference persistence to reduce frequent writes
+- Add Tauri debug logging and runtime callback guards
+- Improve dev-runner port scanning and default steps
+
 ## v1.8.7
 
 - 主页面新增三段式导航：统一切换监控、工具箱、设置视图，降低功能跳转成本
