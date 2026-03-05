@@ -12,6 +12,7 @@ export interface MonthlyReminderSlot {
 }
 
 export interface ReminderAdvancedSettings {
+  backgroundType?: 'image' | 'color';
   backgroundImage: string;
   backgroundColor: string;
   allowClose: boolean;

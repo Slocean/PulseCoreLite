@@ -235,8 +235,9 @@ const smtpForm = reactive<SmtpEmailConfig>({
 });
 
 const defaultAdvancedSettings = (): ReminderAdvancedSettings => ({
+  backgroundType: 'image',
   backgroundImage: '',
-  backgroundColor: '',
+  backgroundColor: '#000000',
   allowClose: true,
   blockAllKeys: false,
   requireClosePassword: false,
@@ -278,6 +279,7 @@ const advancedBackgroundTypeModel = computed<'image' | 'color'>({
   set: value => {
     if (value === advancedBackgroundType.value) return;
     advancedBackgroundType.value = value;
+    advancedSettings.backgroundType = value;
     if (value === 'image') {
       advancedSettings.backgroundColor = '';
       return;
@@ -378,6 +380,10 @@ function updateSmtpTestTo(value: string) {
 }
 
 function syncAdvancedBackgroundType() {
+  if (advancedSettings.backgroundType) {
+    advancedBackgroundType.value = advancedSettings.backgroundType;
+    return;
+  }
   if (advancedSettings.backgroundImage) {
     advancedBackgroundType.value = 'image';
     return;

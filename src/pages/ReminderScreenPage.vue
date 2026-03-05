@@ -113,14 +113,13 @@ const screenStyle = computed(() => {
     return {};
   }
   const style: Record<string, string> = {};
-  if (backgroundColor) {
-    style.backgroundColor = backgroundColor;
-  }
   if (backgroundImage) {
     style.backgroundImage = `url("${backgroundImage}")`;
     style.backgroundRepeat = 'no-repeat';
     style.backgroundPosition = 'center';
     style.backgroundSize = 'cover';
+  } else if (backgroundColor) {
+    style.background = backgroundColor;
   }
   return style;
 });
