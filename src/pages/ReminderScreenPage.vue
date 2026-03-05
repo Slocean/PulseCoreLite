@@ -61,7 +61,7 @@ let storageSignalHandler: ((event: StorageEvent) => void) | null = null;
 let keyBlockHandler: ((event: KeyboardEvent) => void) | null = null;
 let allowSystemClose = false;
 
-const allowClose = computed(() => advancedSettings.value.allowClose && !advancedSettings.value.blockAllKeys);
+const allowClose = computed(() => advancedSettings.value.allowClose);
 const requireClosePassword = computed(() => advancedSettings.value.requireClosePassword);
 const passwordValid = computed(
   () => !requireClosePassword.value || closePasswordInput.value === advancedSettings.value.closePassword
