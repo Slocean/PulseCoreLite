@@ -205,23 +205,23 @@ onMounted(async () => {
   window.addEventListener('storage', storageSignalHandler);
 
   if (inTauri()) {
-    try {
-      unlistenReminderCloseEvent = await listenEvent<{ token?: string; reason?: string }>(
-        'reminder://close',
-        payload => {
-          if (!token.value) {
-            return;
-          }
-          if (payload?.token && payload.token !== token.value) {
-            return;
-          }
-          pushDebugLog('reminderClose:event', { reason: payload?.reason });
-          void closeCurrentWindowBySignal();
+    listenEvent<{ token?: string; reason?: string }>(
+      'reminder://close',
+      payload => {
+        if (!token.value) {
+          return;
         }
-      );
-    } catch (err) {
+        if (payload?.token && payload.token !== token.value) {
+          return;
+        }
+        pushDebugLog('reminderClose:event', { reason: payload?.reason });
+        void closeCurrentWindowBySignal();
+      }
+    ).then(unlisten => {
+      unlistenReminderCloseEvent = unlisten;
+    }).catch(err => {
       pushDebugLog('listenEvent:failed', { error: String(err) });
-    }
+    });
   }
 
   pushDebugLog('onMounted:end', { allowClose: allowClose.value });
