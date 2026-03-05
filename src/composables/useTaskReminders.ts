@@ -3,7 +3,13 @@
 import { api, inTauri } from '../services/tauri';
 import type { SmtpEmailConfig, TaskReminder, TaskReminderStore } from '../types';
 import { loadReminderStore, saveReminderStore } from './taskReminders/repository';
-import { formatWeekday, hasAnySchedule, normalizeReminder, normalizeSmtpConfig, nowIso } from './taskReminders/scheduler';
+import {
+  formatWeekday,
+  hasAnySchedule,
+  normalizeReminder,
+  normalizeSmtpConfig,
+  nowIso
+} from './taskReminders/scheduler';
 import {
   buildReminderCloseSignalKey,
   buildReminderScreenStorageKey,
@@ -24,7 +30,13 @@ function toStorePayload(): TaskReminderStore {
   };
 }
 
-export { buildReminderCloseSignalKey, buildReminderScreenStorageKey, formatWeekday, openReminderScreensFromPayload, readReminderScreenPayload };
+export {
+  buildReminderCloseSignalKey,
+  buildReminderScreenStorageKey,
+  formatWeekday,
+  openReminderScreensFromPayload,
+  readReminderScreenPayload
+};
 
 export function useTaskReminders() {
   const reminderCount = computed(() => reminders.value.length);
@@ -96,7 +108,11 @@ export function useTaskReminders() {
 
     const idx = reminders.value.findIndex(item => item.id === normalized.id);
     if (idx >= 0) {
-      reminders.value.splice(idx, 1, { ...normalized, createdAt: reminders.value[idx].createdAt, updatedAt: nowIso() });
+      reminders.value.splice(idx, 1, {
+        ...normalized,
+        createdAt: reminders.value[idx].createdAt,
+        updatedAt: nowIso()
+      });
     } else {
       reminders.value.unshift(normalized);
     }

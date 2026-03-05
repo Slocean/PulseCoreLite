@@ -212,9 +212,15 @@ fn default_true() -> bool {
     true
 }
 
+fn default_background_type() -> String {
+    "image".to_string()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ReminderAdvancedSettings {
+    #[serde(default = "default_background_type")]
+    pub background_type: String,
     #[serde(default)]
     pub background_image: String,
     #[serde(default)]

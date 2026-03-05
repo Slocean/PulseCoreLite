@@ -380,19 +380,8 @@ function updateSmtpTestTo(value: string) {
 }
 
 function syncAdvancedBackgroundType() {
-  if (advancedSettings.backgroundType) {
-    advancedBackgroundType.value = advancedSettings.backgroundType;
-    return;
-  }
-  if (advancedSettings.backgroundImage) {
-    advancedBackgroundType.value = 'image';
-    return;
-  }
-  if (advancedSettings.backgroundColor) {
-    advancedBackgroundType.value = 'color';
-    return;
-  }
-  advancedBackgroundType.value = 'image';
+  advancedBackgroundType.value = advancedSettings.backgroundType || 'image';
+  advancedBackgroundTypeModel.value = advancedSettings.backgroundType || 'image';
 }
 
 function closeAllowCloseWarning() {

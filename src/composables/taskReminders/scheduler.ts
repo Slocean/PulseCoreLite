@@ -29,8 +29,11 @@ export function normalizeSmtpConfig(input: SmtpEmailConfig | null | undefined): 
   };
 }
 
-export function normalizeAdvancedSettings(input: Partial<ReminderAdvancedSettings> | null | undefined): ReminderAdvancedSettings {
+export function normalizeAdvancedSettings(
+  input: Partial<ReminderAdvancedSettings> | null | undefined
+): ReminderAdvancedSettings {
   return {
+    backgroundType: input?.backgroundType || 'image',
     backgroundImage: (input?.backgroundImage ?? '').trim(),
     backgroundColor: (input?.backgroundColor ?? '').trim(),
     allowClose: input?.allowClose !== false,
@@ -105,7 +108,9 @@ export function normalizeReminder(input: TaskReminder): TaskReminder {
     ? input.contentType
     : 'text';
   const dailyTimes = Array.from(
-    new Set((input.dailyTimes ?? []).map(item => normalizeTime(item)).filter((item): item is string => Boolean(item)))
+    new Set(
+      (input.dailyTimes ?? []).map(item => normalizeTime(item)).filter((item): item is string => Boolean(item))
+    )
   );
   return {
     id: input.id || createId(),

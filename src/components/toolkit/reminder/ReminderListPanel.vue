@@ -19,7 +19,9 @@
         <div class="toolkit-reminder-item-header">
           <div class="toolkit-reminder-item-title">
             <span>{{ item.title }}</span>
-            <span v-if="isEditing(item.id)" class="toolkit-reminder-item-editing">{{ t('toolkit.reminderEditing') }}</span>
+            <span v-if="isEditing(item.id)" class="toolkit-reminder-item-editing">
+              {{ t('toolkit.reminderEditing') }}
+            </span>
           </div>
           <UiSwitch
             :model-value="item.enabled"
@@ -28,7 +30,13 @@
         </div>
         <div class="toolkit-reminder-item-footer">
           <div class="toolkit-reminder-item-meta">
-            <span>{{ item.channel === 'email' ? t('toolkit.reminderChannelEmail') : t('toolkit.reminderChannelFullscreen') }}</span>
+            <span>
+              {{
+                item.channel === 'email'
+                  ? t('toolkit.reminderChannelEmail')
+                  : t('toolkit.reminderChannelFullscreen')
+              }}
+            </span>
             <span v-if="item.channel === 'email'">{{ item.email }}</span>
           </div>
           <div class="toolkit-reminder-item-actions">
@@ -63,7 +71,6 @@ const props = defineProps<{
   title?: string;
   editingId?: string | null;
 }>();
-
 const emit = defineEmits<{
   (event: 'update:modelValue', value: boolean): void;
   (event: 'contentChange'): void;
