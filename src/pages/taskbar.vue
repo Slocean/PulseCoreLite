@@ -73,6 +73,7 @@ import { resolveMetricWarningLevel } from '../composables/metricWarningPolicy';
 import { useTopmostGuard } from '../composables/useTopmostGuard';
 import { useTaskbarWindow } from '../composables/useTaskbarWindow';
 import { api, inTauri } from '../services/tauri';
+import { listenSyncEvent } from '../services/syncBus';
 import { getPrimaryMonitor, setCurrentWindowAlwaysOnTop } from '../services/windowManager';
 import { useAppStore } from '../stores/app';
 import { formatNetworkLatencyMs, formatNetworkSpeedMbps } from '../utils/networkFormatter';
@@ -90,6 +91,8 @@ const positionLocked = computed(() => store.settings.taskbarPositionLocked);
 const showWarning = computed(() => overlayPrefs.showWarning);
 const { barRef, handleMouseDown, scheduleResize } = useTaskbarWindow({ rememberPosition, positionLocked });
 const contextMenuRef = ref<{ open: (event: MouseEvent) => void } | null>(null);
+const reminderTopmostPauseCount = ref(0);
+let unlistenReminderSync: (() => void) | null = null;
 
 const snapshot = computed(() => store.snapshot);
 
@@ -333,9 +336,14 @@ async function syncTaskbarHeightVar() {
 
 onMounted(() => {
   void syncTaskbarHeightVar();
+  void setupReminderTopmostPauseListener();
 });
 
 onUnmounted(() => {
+  if (unlistenReminderSync) {
+    unlistenReminderSync();
+    unlistenReminderSync = null;
+  }
   stopTopmostGuard();
 });
 
@@ -343,6 +351,9 @@ watch(
   alwaysOnTop,
   enabled => {
     if (!inTauri()) return;
+    if (reminderTopmostPauseCount.value > 0) {
+      return;
+    }
     if (fullscreenSuppressed.value) {
       return;
     }
@@ -355,4 +366,41 @@ watch(
   },
   { immediate: true }
 );
+
+async function applyReminderTopmostPauseState() {
+  if (!inTauri()) {
+    return;
+  }
+  if (reminderTopmostPauseCount.value > 0) {
+    pauseTopmostGuard();
+    await applyTaskbarTopmost(false);
+    return;
+  }
+  resumeTopmostGuard();
+  if (fullscreenSuppressed.value) {
+    return;
+  }
+  await applyTaskbarTopmost(alwaysOnTop.value);
+  if (alwaysOnTop.value) {
+    void startTopmostGuard();
+  } else {
+    stopTopmostGuard();
+  }
+}
+
+async function setupReminderTopmostPauseListener() {
+  if (!inTauri() || unlistenReminderSync) {
+    return;
+  }
+  unlistenReminderSync = await listenSyncEvent<{ active?: boolean }>('reminder://fullscreen', payload => {
+    if (payload?.active === true) {
+      reminderTopmostPauseCount.value += 1;
+    } else if (payload?.active === false) {
+      reminderTopmostPauseCount.value = Math.max(0, reminderTopmostPauseCount.value - 1);
+    } else {
+      return;
+    }
+    void applyReminderTopmostPauseState();
+  });
+}
 </script>

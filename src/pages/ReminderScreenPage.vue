@@ -39,7 +39,7 @@ import {
   readReminderScreenPayload
 } from '../composables/useTaskReminders';
 import { storageRepository } from '../services/storageRepository';
-import { api, inTauri } from '../services/tauri';
+import { api, inTauri, listenEvent } from '../services/tauri';
 import {
   closeCurrentWindow,
   focusCurrentWindow,
@@ -60,7 +60,11 @@ const closeWaitSeconds = ref(5);
 const closePasswordInput = ref('');
 const passwordError = ref('');
 let closeTimer: number | null = null;
+let closeDeadlineMs: number | null = null;
+let closeCountdownTick: (() => void) | null = null;
+let closeReadyTimer: number | null = null;
 let unlistenCloseRequested: (() => void) | null = null;
+let unlistenReminderCloseEvent: (() => void) | null = null;
 let storageSignalHandler: ((event: StorageEvent) => void) | null = null;
 let keyBlockHandler: ((event: KeyboardEvent) => void) | null = null;
 let emergencyKeydownHandler: ((event: KeyboardEvent) => void) | null = null;
@@ -68,6 +72,22 @@ let emergencyKeyupHandler: ((event: KeyboardEvent) => void) | null = null;
 let allowSystemClose = false;
 const emergencyKeys = { f9: false, f12: false };
 let emergencyCloseTriggered = false;
+const DEBUG_LOG_KEY = 'reminder_debug_close_logs';
+
+function pushDebugLog(action: string, data?: Record<string, unknown>) {
+  try {
+    const logs = JSON.parse(localStorage.getItem(DEBUG_LOG_KEY) || '[]');
+    logs.push({
+      time: new Date().toISOString(),
+      action,
+      token: token.value,
+      data
+    });
+    localStorage.setItem(DEBUG_LOG_KEY, JSON.stringify(logs.slice(-60)));
+  } catch {
+    // ignore
+  }
+}
 
 const allowClose = computed(() => advancedSettings.value.allowClose);
 const requireClosePassword = computed(() => advancedSettings.value.requireClosePassword);
@@ -89,13 +109,17 @@ const screenStyle = computed(() => {
   if (!backgroundImage && !backgroundColor) {
     return {};
   }
-  if (backgroundImage && backgroundColor) {
-    return { background: `url("${backgroundImage}") center / cover no-repeat, ${backgroundColor}` };
+  const style: Record<string, string> = {};
+  if (backgroundColor) {
+    style.backgroundColor = backgroundColor;
   }
   if (backgroundImage) {
-    return { background: `url("${backgroundImage}") center / cover no-repeat` };
+    style.backgroundImage = `url("${backgroundImage}")`;
+    style.backgroundRepeat = 'no-repeat';
+    style.backgroundPosition = 'center';
+    style.backgroundSize = 'cover';
   }
-  return { background: backgroundColor };
+  return style;
 });
 
 onMounted(async () => {
@@ -108,6 +132,13 @@ onMounted(async () => {
     contentType.value = payload.contentType;
     advancedSettings.value = normalizeAdvancedSettings(payload.advancedSettings);
   }
+  pushDebugLog('mounted', {
+    idx: params.get('idx'),
+    allowClose: advancedSettings.value.allowClose,
+    requireClosePassword: advancedSettings.value.requireClosePassword,
+    blockAllKeys: advancedSettings.value.blockAllKeys,
+    inTauri: inTauri()
+  });
 
   if ('keyboard' in navigator && typeof (navigator as any).keyboard?.lock === 'function') {
     try {
@@ -142,7 +173,18 @@ onMounted(async () => {
   void focusCurrentWindow();
   unlistenCloseRequested = await listenCurrentWindowCloseRequested(event => {
     if ((!allowClose.value || !canClose.value) && !allowSystemClose) {
+      pushDebugLog('closeRequested:blocked', {
+        allowClose: allowClose.value,
+        canClose: canClose.value,
+        allowSystemClose
+      });
       event.preventDefault();
+    } else {
+      pushDebugLog('closeRequested:allowed', {
+        allowClose: allowClose.value,
+        canClose: canClose.value,
+        allowSystemClose
+      });
     }
   });
 
@@ -154,23 +196,29 @@ onMounted(async () => {
     if (event.key !== key) {
       return;
     }
+    pushDebugLog('storageCloseSignal', { key, value: event.newValue });
     void closeCurrentWindowBySignal();
   };
   window.addEventListener('storage', storageSignalHandler);
 
-  if (allowClose.value) {
-    closeTimer = window.setInterval(() => {
-      if (closeWaitSeconds.value <= 1) {
-        closeWaitSeconds.value = 0;
-        canClose.value = true;
-        if (closeTimer != null) {
-          window.clearInterval(closeTimer);
-          closeTimer = null;
+  if (inTauri()) {
+    unlistenReminderCloseEvent = await listenEvent<{ token?: string; reason?: string }>(
+      'reminder://close',
+      payload => {
+        if (!token.value) {
+          return;
         }
-        return;
+        if (payload?.token && payload.token !== token.value) {
+          return;
+        }
+        pushDebugLog('reminderClose:event', { reason: payload?.reason });
+        void closeCurrentWindowBySignal();
       }
-      closeWaitSeconds.value -= 1;
-    }, 1000);
+    );
+  }
+
+  if (allowClose.value) {
+    startCloseCountdown();
   }
 });
 
@@ -179,9 +227,22 @@ onUnmounted(() => {
     window.clearInterval(closeTimer);
     closeTimer = null;
   }
+  if (closeReadyTimer != null) {
+    window.clearTimeout(closeReadyTimer);
+    closeReadyTimer = null;
+  }
+  if (closeCountdownTick) {
+    window.removeEventListener('visibilitychange', closeCountdownTick);
+    window.removeEventListener('focus', closeCountdownTick);
+    closeCountdownTick = null;
+  }
   if (unlistenCloseRequested) {
     unlistenCloseRequested();
     unlistenCloseRequested = null;
+  }
+  if (unlistenReminderCloseEvent) {
+    unlistenReminderCloseEvent();
+    unlistenReminderCloseEvent = null;
   }
   if (storageSignalHandler) {
     window.removeEventListener('storage', storageSignalHandler);
@@ -203,6 +264,57 @@ onUnmounted(() => {
   }
 });
 
+function startCloseCountdown() {
+  canClose.value = false;
+  if (closeCountdownTick) {
+    window.removeEventListener('visibilitychange', closeCountdownTick);
+    window.removeEventListener('focus', closeCountdownTick);
+    closeCountdownTick = null;
+  }
+  closeDeadlineMs = Date.now() + closeWaitSeconds.value * 1000;
+  if (closeReadyTimer != null) {
+    window.clearTimeout(closeReadyTimer);
+  }
+  closeReadyTimer = window.setTimeout(() => {
+    closeWaitSeconds.value = 0;
+    canClose.value = true;
+    closeDeadlineMs = null;
+    pushDebugLog('closeReady');
+    if (closeTimer != null) {
+      window.clearInterval(closeTimer);
+      closeTimer = null;
+    }
+  }, Math.max(0, closeWaitSeconds.value * 1000) + 50);
+  const tick = () => {
+    if (closeDeadlineMs == null) {
+      return;
+    }
+    const remaining = Math.max(0, Math.ceil((closeDeadlineMs - Date.now()) / 1000));
+    closeWaitSeconds.value = remaining;
+    if (remaining <= 0) {
+      canClose.value = true;
+      closeDeadlineMs = null;
+      pushDebugLog('closeReady');
+      if (closeTimer != null) {
+        window.clearInterval(closeTimer);
+        closeTimer = null;
+      }
+      if (closeReadyTimer != null) {
+        window.clearTimeout(closeReadyTimer);
+        closeReadyTimer = null;
+      }
+    }
+  };
+  closeCountdownTick = tick;
+  tick();
+  if (closeTimer != null) {
+    window.clearInterval(closeTimer);
+  }
+  closeTimer = window.setInterval(tick, 300);
+  window.addEventListener('visibilitychange', tick);
+  window.addEventListener('focus', tick);
+}
+
 function updateEmergencyKeyState(event: KeyboardEvent, pressed: boolean) {
   const key = event.key.toLowerCase();
   if (key === 'f9') {
@@ -218,6 +330,7 @@ function updateEmergencyKeyState(event: KeyboardEvent, pressed: boolean) {
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
+    pushDebugLog('emergencyClose:triggered');
     void emergencyCloseReminderWindows();
     return;
   }
@@ -228,62 +341,122 @@ function updateEmergencyKeyState(event: KeyboardEvent, pressed: boolean) {
 }
 
 async function closeReminderWindows() {
+  pushDebugLog('closeButton:clicked', {
+    allowClose: allowClose.value,
+    canClose: canClose.value,
+    requireClosePassword: requireClosePassword.value,
+    passwordValid: passwordValid.value
+  });
   if (!canClose.value || !allowClose.value || !token.value) {
+    pushDebugLog('closeButton:blocked', {
+      allowClose: allowClose.value,
+      canClose: canClose.value,
+      hasToken: Boolean(token.value)
+    });
     return;
   }
   if (requireClosePassword.value && !passwordValid.value) {
     passwordError.value = t('toolkit.reminderScreenPasswordInvalid');
+    pushDebugLog('closeButton:passwordInvalid');
     return;
   }
   allowSystemClose = true;
+  void emitReminderCloseEvent('closeButton');
   if (inTauri()) {
     try {
       void api.forceCloseReminderScreens(token.value);
+      pushDebugLog('forceClose:invoked');
     } catch {
       // ignore backend close failures and continue with frontend signal fallback
+      pushDebugLog('forceClose:failed');
     }
   }
   try {
     storageRepository.setStringSync(buildReminderCloseSignalKey(token.value), String(Date.now()));
+    pushDebugLog('closeSignal:sent');
   } catch {
     // ignore
+    pushDebugLog('closeSignal:failed');
   }
   await closeCurrentWindowBySignal();
 }
 
 async function emergencyCloseReminderWindows() {
+  pushDebugLog('emergencyClose:begin', {
+    hasToken: Boolean(token.value),
+    allowClose: allowClose.value,
+    canClose: canClose.value
+  });
   if (!token.value) {
     allowSystemClose = true;
+    pushDebugLog('emergencyClose:noToken');
     await closeCurrentWindow();
     return;
   }
   allowSystemClose = true;
+  void emitReminderCloseEvent('emergency');
   if (inTauri()) {
     try {
       void api.forceCloseReminderScreens(token.value);
+      pushDebugLog('forceClose:invoked');
     } catch {
       // ignore backend close failures and continue with frontend signal fallback
+      pushDebugLog('forceClose:failed');
     }
   }
   try {
     storageRepository.setStringSync(buildReminderCloseSignalKey(token.value), String(Date.now()));
+    pushDebugLog('closeSignal:sent');
   } catch {
     // ignore
+    pushDebugLog('closeSignal:failed');
   }
   await closeCurrentWindowBySignal();
 }
 
+async function emitReminderCloseEvent(reason: string) {
+  if (!token.value || !inTauri()) {
+    return;
+  }
+  try {
+    const { getAllWebviewWindows } = await import('@tauri-apps/api/webviewWindow');
+    const windows = await getAllWebviewWindows();
+    const prefix = `reminder-screen-${token.value}-`;
+    const targets = windows.filter(win => win.label.startsWith(prefix));
+    await Promise.allSettled(
+      targets.map(win => win.emit('reminder://close', { token: token.value, reason }))
+    );
+    pushDebugLog('reminderClose:emitted', { reason, count: targets.length });
+  } catch {
+    pushDebugLog('reminderClose:emitFailed', { reason });
+  }
+}
+
 async function closeCurrentWindowBySignal() {
   allowSystemClose = true;
+  pushDebugLog('closeCurrentWindowBySignal:begin');
   if (token.value) {
     try {
-      storageRepository.removeSync(buildReminderCloseSignalKey(token.value));
-      storageRepository.removeSync(buildReminderScreenStorageKey(token.value));
+      const closeKey = buildReminderCloseSignalKey(token.value);
+      const screenKey = buildReminderScreenStorageKey(token.value);
+      // Delay cleanup so other reminder windows can receive the storage close signal.
+      window.setTimeout(() => {
+        try {
+          storageRepository.removeSync(closeKey);
+          storageRepository.removeSync(screenKey);
+          pushDebugLog('closeSignal:cleared');
+        } catch {
+          // ignore
+          pushDebugLog('closeSignal:clearFailed');
+        }
+      }, 1200);
     } catch {
       // ignore
+      pushDebugLog('closeSignal:clearFailed');
     }
   }
   await closeCurrentWindow();
+  pushDebugLog('closeCurrentWindowBySignal:requested');
 }
 
 watch(closePasswordInput, () => {
@@ -291,6 +464,16 @@ watch(closePasswordInput, () => {
     passwordError.value = '';
   }
 });
+
+watch(
+  allowClose,
+  enabled => {
+    if (enabled && !canClose.value) {
+      startCloseCountdown();
+    }
+  },
+  { immediate: false }
+);
 </script>
 
 <style scoped>
