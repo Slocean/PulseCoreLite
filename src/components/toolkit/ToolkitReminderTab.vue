@@ -68,9 +68,9 @@
         </div>
         <input v-else v-model.trim="advancedSettings.backgroundColor" type="color" />
       </label>
-      <p v-if="advancedBackgroundTypeModel === 'image'" class="toolkit-reminder-advanced-hint">
+      <!-- <p v-if="advancedBackgroundTypeModel === 'image'" class="toolkit-reminder-advanced-hint">
         {{ t('toolkit.reminderAdvancedUploadHint') }}
-      </p>
+      </p> -->
       <div class="toolkit-reminder-advanced-duo">
         <div class="overlay-config-row">
           <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedAllowClose') }}</span>
@@ -78,20 +78,26 @@
         </div>
         <div class="overlay-config-row">
           <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedBlockButtons') }}</span>
-          <UiSwitch v-model="advancedSettings.blockAllKeys" :aria-label="t('toolkit.reminderAdvancedBlockButtons')" />
+          <UiSwitch
+            v-model="advancedSettings.blockAllKeys"
+            :aria-label="t('toolkit.reminderAdvancedBlockButtons')" />
         </div>
       </div>
       <div class="overlay-config-row toolkit-reminder-advanced-password">
         <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedRequirePassword') }}</span>
         <div class="toolkit-reminder-advanced-password-controls">
-          <UiSwitch v-model="advancedSettings.requireClosePassword" :aria-label="t('toolkit.reminderAdvancedRequirePassword')" />
+          <UiSwitch
+            v-model="advancedSettings.requireClosePassword"
+            :aria-label="t('toolkit.reminderAdvancedRequirePassword')" />
           <input
             v-model.trim="advancedSettings.closePassword"
             class="toolkit-reminder-advanced-password-input"
             type="password"
             :aria-label="t('toolkit.reminderAdvancedClosePassword')"
             :disabled="!advancedSettings.requireClosePassword"
-            :class="{ 'toolkit-reminder-advanced-password-input--hidden': !advancedSettings.requireClosePassword }" />
+            :class="{
+              'toolkit-reminder-advanced-password-input--hidden': !advancedSettings.requireClosePassword
+            }" />
         </div>
       </div>
     </div>
@@ -99,6 +105,23 @@
 
   <p v-if="statusMessage" class="toolkit-status">{{ statusMessage }}</p>
   <p v-if="errorMessage" class="toolkit-error">{{ errorMessage }}</p>
+
+  <UiDialog
+    v-model:open="allowCloseWarningOpen"
+    :title="t('toolkit.reminderAllowCloseWarningTitle')"
+    :message="t('toolkit.reminderAllowCloseWarningMessage')"
+    :close-label="t('toolkit.reminderAllowCloseWarningClose')"
+    @confirm="closeAllowCloseWarning"
+    @cancel="closeAllowCloseWarning">
+    <template #actions>
+      <UiButton native-type="button" preset="overlay-chip" @click="closeAllowCloseWarning">
+        {{ t('toolkit.reminderAllowCloseWarningClose') }}
+      </UiButton>
+      <UiButton native-type="button" preset="overlay-primary" @click="dismissAllowCloseWarning">
+        {{ t('toolkit.reminderAllowCloseWarningDontShow') }}
+      </UiButton>
+    </template>
+  </UiDialog>
 
   <div class="toolkit-profile-actions">
     <UiButton native-type="button" preset="overlay-primary" @click="saveReminder">
@@ -125,6 +148,7 @@ import { useI18n } from 'vue-i18n';
 
 import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiButton from '@/components/ui/Button';
+import UiDialog from '@/components/ui/Dialog';
 import UiSelect from '@/components/ui/Select';
 import type { SelectOption } from '@/components/ui/Select/types';
 import UiSwitch from '@/components/ui/Switch';
@@ -132,7 +156,14 @@ import { useTaskReminders } from '../../composables/useTaskReminders';
 import ReminderEditorPanels from './reminder/ReminderEditorPanels.vue';
 import ReminderListPanel from './reminder/ReminderListPanel.vue';
 import ReminderSmtpDialog from './reminder/ReminderSmtpDialog.vue';
-import type { MonthlyReminderSlot, ReminderAdvancedSettings, SmtpEmailConfig, TaskReminder, WeeklyReminderSlot } from '../../types';
+import type {
+  MonthlyReminderSlot,
+  ReminderAdvancedSettings,
+  SmtpEmailConfig,
+  TaskReminder,
+  WeeklyReminderSlot
+} from '../../types';
+import { storageKeys, storageRepository } from '../../services/storageRepository';
 
 const emit = defineEmits<{
   (event: 'contentChange'): void;
@@ -158,6 +189,8 @@ const editingId = ref<string | null>(null);
 const smtpDialogOpen = ref(false);
 const statusMessage = ref('');
 const errorMessage = ref('');
+const allowCloseWarningOpen = ref(false);
+const allowCloseWarningDismissed = ref(false);
 const sections = reactive({
   task: true,
   schedule: true,
@@ -207,6 +240,7 @@ const defaultAdvancedSettings = (): ReminderAdvancedSettings => ({
 });
 
 const advancedSettings = reactive<ReminderAdvancedSettings>(defaultAdvancedSettings());
+let allowCloseBaseline = advancedSettings.allowClose;
 
 const weekdayOptions = computed<SelectOption[]>(() => [
   { value: 1, label: t('toolkit.weekdayMon') },
@@ -278,6 +312,8 @@ watch(
 );
 
 onMounted(async () => {
+  allowCloseWarningDismissed.value =
+    storageRepository.getStringSync(storageKeys.reminderAllowCloseWarningDismissed) === '1';
   await load();
   if (smtpConfig.value) {
     Object.assign(smtpForm, smtpConfig.value);
@@ -338,6 +374,28 @@ function syncAdvancedBackgroundType() {
     return;
   }
   advancedBackgroundType.value = 'image';
+}
+
+function closeAllowCloseWarning() {
+  allowCloseWarningOpen.value = false;
+}
+
+function dismissAllowCloseWarning() {
+  allowCloseWarningDismissed.value = true;
+  storageRepository.setStringSync(storageKeys.reminderAllowCloseWarningDismissed, '1');
+  allowCloseWarningOpen.value = false;
+}
+
+function maybeOpenAllowCloseWarning() {
+  if (allowCloseWarningDismissed.value) {
+    return;
+  }
+  if (form.channel !== 'fullscreen') {
+    return;
+  }
+  if (!advancedSettings.allowClose && allowCloseBaseline) {
+    allowCloseWarningOpen.value = true;
+  }
 }
 
 function triggerAdvancedImageSelect() {
@@ -420,7 +478,9 @@ function addWeeklySlot() {
     changed = true;
   }
   if (!changed) return;
-  form.weeklySlots.sort((a, b) => (a.weekday === b.weekday ? a.time.localeCompare(b.time) : a.weekday - b.weekday));
+  form.weeklySlots.sort((a, b) =>
+    a.weekday === b.weekday ? a.time.localeCompare(b.time) : a.weekday - b.weekday
+  );
 }
 
 function removeWeeklySlot(weekday: number, time: string) {
@@ -466,6 +526,7 @@ function resetForm() {
   form.contentType = 'text';
   form.content = '';
   Object.assign(advancedSettings, defaultAdvancedSettings());
+  allowCloseBaseline = advancedSettings.allowClose;
   syncAdvancedBackgroundType();
   weeklyInputDays.value = [1];
   monthlyInputDays.value = [new Date().getDate()];
@@ -520,6 +581,8 @@ async function saveReminder() {
     };
     await upsertReminder(payload);
     statusMessage.value = t('toolkit.reminderSaveSuccess');
+    maybeOpenAllowCloseWarning();
+    allowCloseBaseline = advancedSettings.allowClose;
     resetForm();
   } catch (error) {
     errorMessage.value = formatErrorMessage(error, 'toolkit.reminderSaveFailed');
@@ -540,6 +603,7 @@ function editReminder(item: TaskReminder) {
   form.contentType = item.contentType;
   form.content = item.content;
   Object.assign(advancedSettings, item.advancedSettings ?? defaultAdvancedSettings());
+  allowCloseBaseline = advancedSettings.allowClose;
   syncAdvancedBackgroundType();
   const editDays = [...new Set(item.weeklySlots.map(slot => slot.weekday))]
     .map(value => Math.round(value))

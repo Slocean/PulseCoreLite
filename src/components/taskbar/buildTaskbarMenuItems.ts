@@ -45,6 +45,7 @@ type BuildTaskbarMenuItemsInput = {
     down: string;
     up: string;
     closeTaskbarMonitor: string;
+    exitApp: string;
   };
   actions: {
     toggleMainWindow: (isMainVisible: boolean) => void | Promise<void>;
@@ -61,6 +62,7 @@ type BuildTaskbarMenuItemsInput = {
     toggleShowDown: (next: boolean) => void | Promise<void>;
     toggleShowUp: (next: boolean) => void | Promise<void>;
     closeTaskbarMonitor: () => void | Promise<void>;
+    exitApp: () => void | Promise<void>;
   };
 };
 
@@ -187,6 +189,12 @@ export function buildTaskbarMenuItems(input: BuildTaskbarMenuItemsInput): Taskba
       id: 'close-taskbar',
       text: labels.closeTaskbarMonitor,
       onTrigger: () => actions.closeTaskbarMonitor()
+    },
+    {
+      kind: 'action',
+      id: 'exit-app',
+      text: labels.exitApp,
+      onTrigger: () => actions.exitApp()
     }
   ];
 }

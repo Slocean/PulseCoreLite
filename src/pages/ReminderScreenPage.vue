@@ -63,7 +63,11 @@ let closeTimer: number | null = null;
 let unlistenCloseRequested: (() => void) | null = null;
 let storageSignalHandler: ((event: StorageEvent) => void) | null = null;
 let keyBlockHandler: ((event: KeyboardEvent) => void) | null = null;
+let emergencyKeydownHandler: ((event: KeyboardEvent) => void) | null = null;
+let emergencyKeyupHandler: ((event: KeyboardEvent) => void) | null = null;
 let allowSystemClose = false;
+const emergencyKeys = { f9: false, f12: false };
+let emergencyCloseTriggered = false;
 
 const allowClose = computed(() => advancedSettings.value.allowClose);
 const requireClosePassword = computed(() => advancedSettings.value.requireClosePassword);
@@ -112,6 +116,15 @@ onMounted(async () => {
       // ignore
     }
   }
+
+  emergencyKeydownHandler = event => {
+    updateEmergencyKeyState(event, true);
+  };
+  emergencyKeyupHandler = event => {
+    updateEmergencyKeyState(event, false);
+  };
+  window.addEventListener('keydown', emergencyKeydownHandler, { capture: true });
+  window.addEventListener('keyup', emergencyKeyupHandler, { capture: true });
 
   if (advancedSettings.value.blockAllKeys) {
     keyBlockHandler = event => {
@@ -180,7 +193,39 @@ onUnmounted(() => {
     window.removeEventListener('keypress', keyBlockHandler, { capture: true });
     keyBlockHandler = null;
   }
+  if (emergencyKeydownHandler) {
+    window.removeEventListener('keydown', emergencyKeydownHandler, { capture: true });
+    emergencyKeydownHandler = null;
+  }
+  if (emergencyKeyupHandler) {
+    window.removeEventListener('keyup', emergencyKeyupHandler, { capture: true });
+    emergencyKeyupHandler = null;
+  }
 });
+
+function updateEmergencyKeyState(event: KeyboardEvent, pressed: boolean) {
+  const key = event.key.toLowerCase();
+  if (key === 'f9') {
+    emergencyKeys.f9 = pressed;
+  } else if (key === 'f12') {
+    emergencyKeys.f12 = pressed;
+  } else {
+    return;
+  }
+
+  if (emergencyKeys.f9 && emergencyKeys.f12 && !emergencyCloseTriggered) {
+    emergencyCloseTriggered = true;
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    void emergencyCloseReminderWindows();
+    return;
+  }
+
+  if (!emergencyKeys.f9 || !emergencyKeys.f12) {
+    emergencyCloseTriggered = false;
+  }
+}
 
 async function closeReminderWindows() {
   if (!canClose.value || !allowClose.value || !token.value) {
@@ -188,6 +233,28 @@ async function closeReminderWindows() {
   }
   if (requireClosePassword.value && !passwordValid.value) {
     passwordError.value = t('toolkit.reminderScreenPasswordInvalid');
+    return;
+  }
+  allowSystemClose = true;
+  if (inTauri()) {
+    try {
+      void api.forceCloseReminderScreens(token.value);
+    } catch {
+      // ignore backend close failures and continue with frontend signal fallback
+    }
+  }
+  try {
+    storageRepository.setStringSync(buildReminderCloseSignalKey(token.value), String(Date.now()));
+  } catch {
+    // ignore
+  }
+  await closeCurrentWindowBySignal();
+}
+
+async function emergencyCloseReminderWindows() {
+  if (!token.value) {
+    allowSystemClose = true;
+    await closeCurrentWindow();
     return;
   }
   allowSystemClose = true;

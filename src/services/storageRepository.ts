@@ -13,6 +13,7 @@ export const storageKeys = {
   overlayPosition: `${STORAGE_NAMESPACE}.overlay_pos`,
   taskbarPosition: `${STORAGE_NAMESPACE}.taskbar_pos`,
   refreshRate: `${STORAGE_NAMESPACE}.refresh_rate`,
+  reminderAllowCloseWarningDismissed: `${STORAGE_NAMESPACE}.reminder_allow_close_warning_dismissed`,
   reminderScreenPrefix: `${STORAGE_NAMESPACE}.reminder-screen.`,
   reminderClosePrefix: `${STORAGE_NAMESPACE}.reminder-close.`
 } as const;

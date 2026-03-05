@@ -112,7 +112,8 @@ async function open(event: MouseEvent) {
         app: t('overlay.app'),
         down: t('overlay.down'),
         up: t('overlay.up'),
-        closeTaskbarMonitor: t('overlay.closeTaskbarMonitor')
+        closeTaskbarMonitor: t('overlay.closeTaskbarMonitor'),
+        exitApp: t('overlay.exitApp')
       },
       actions: {
         toggleMainWindow: isMainVisible => (isMainVisible ? props.hideMainWindow() : props.showMainWindow()),
@@ -154,6 +155,9 @@ async function open(event: MouseEvent) {
           } catch {
             // ignore
           }
+        },
+        exitApp: async () => {
+          await store.exitApp();
         }
       }
     });
