@@ -12,6 +12,7 @@
           <span>{{ t('toolkit.reminderScreenPasswordLabel') }}</span>
           <input
             v-model="closePasswordInput"
+            class="reminder-screen__password-input"
             type="password"
             :placeholder="t('toolkit.reminderScreenPasswordPlaceholder')" />
         </label>
@@ -76,6 +77,7 @@ let allowSystemClose = false;
 const emergencyKeys = { f9: false, f12: false };
 let emergencyCloseTriggered = false;
 const DEBUG_LOG_KEY = 'reminder_debug_close_logs';
+const PASSWORD_INPUT_CLASS = 'reminder-screen__password-input';
 
 function pushDebugLog(action: string, data?: Record<string, unknown>) {
   try {
@@ -161,6 +163,9 @@ onMounted(async () => {
 
   if (advancedSettings.value.blockAllKeys) {
     keyBlockHandler = event => {
+      if (shouldAllowPasswordInput(event)) {
+        return;
+      }
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
@@ -404,6 +409,20 @@ function updateEmergencyKeyState(event: KeyboardEvent, pressed: boolean) {
   if (!emergencyKeys.f9 || !emergencyKeys.f12) {
     emergencyCloseTriggered = false;
   }
+}
+
+function shouldAllowPasswordInput(event: KeyboardEvent) {
+  if (!requireClosePassword.value) {
+    return false;
+  }
+  const target = event.target as HTMLElement | null;
+  if (!target) {
+    return false;
+  }
+  if (target.classList.contains(PASSWORD_INPUT_CLASS)) {
+    return true;
+  }
+  return Boolean(target.closest?.(`.${PASSWORD_INPUT_CLASS}`));
 }
 
 async function closeReminderWindows() {
