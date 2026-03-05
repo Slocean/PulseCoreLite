@@ -205,21 +205,26 @@ onMounted(async () => {
   window.addEventListener('storage', storageSignalHandler);
 
   if (inTauri()) {
-    unlistenReminderCloseEvent = await listenEvent<{ token?: string; reason?: string }>(
-      'reminder://close',
-      payload => {
-        if (!token.value) {
-          return;
+    try {
+      unlistenReminderCloseEvent = await listenEvent<{ token?: string; reason?: string }>(
+        'reminder://close',
+        payload => {
+          if (!token.value) {
+            return;
+          }
+          if (payload?.token && payload.token !== token.value) {
+            return;
+          }
+          pushDebugLog('reminderClose:event', { reason: payload?.reason });
+          void closeCurrentWindowBySignal();
         }
-        if (payload?.token && payload.token !== token.value) {
-          return;
-        }
-        pushDebugLog('reminderClose:event', { reason: payload?.reason });
-        void closeCurrentWindowBySignal();
-      }
-    );
+      );
+    } catch (err) {
+      pushDebugLog('listenEvent:failed', { error: String(err) });
+    }
   }
 
+  pushDebugLog('onMounted:end', { allowClose: allowClose.value });
   if (allowClose.value) {
     startCountdownWhenVisible();
   }
@@ -334,7 +339,8 @@ function startCountdownWhenVisible() {
   }
   const tryStart = () => {
     if (countdownStarted) return;
-    if (document.visibilityState === 'visible') {
+    pushDebugLog('tryStart', { visibilityState: document.visibilityState });
+    if (document.visibilityState === 'visible' || document.visibilityState === 'hidden') {
       startCloseCountdown();
       return;
     }
@@ -529,8 +535,7 @@ watch(closePasswordInput, () => {
 watch(
   allowClose,
   enabled => {
-    if (enabled && !canClose.value) {
-      countdownStarted = false;
+    if (enabled && !canClose.value && !countdownStarted) {
       startCountdownWhenVisible();
     }
   },

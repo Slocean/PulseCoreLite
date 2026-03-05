@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const DEFAULT_PORT = 9000;
-const MAX_SCAN_STEPS = 50;
+const DEFAULT_SCAN_STEPS = 200;
 
 function parsePort(rawPort) {
   const parsed = Number(rawPort);
@@ -11,6 +11,14 @@ function parsePort(rawPort) {
     return parsed;
   }
   return DEFAULT_PORT;
+}
+
+function parseScanSteps(rawSteps) {
+  const parsed = Number(rawSteps);
+  if (Number.isInteger(parsed) && parsed > 0) {
+    return parsed;
+  }
+  return DEFAULT_SCAN_STEPS;
 }
 
 function checkPortAvailable(port) {
@@ -25,7 +33,8 @@ function checkPortAvailable(port) {
 }
 
 async function findOpenPort(startPort) {
-  for (let offset = 0; offset <= MAX_SCAN_STEPS; offset += 1) {
+  const maxScanSteps = parseScanSteps(process.env.VITE_PORT_SCAN);
+  for (let offset = 0; offset <= maxScanSteps; offset += 1) {
     const candidate = startPort + offset;
     if (candidate >= 65536) {
       break;
@@ -35,7 +44,7 @@ async function findOpenPort(startPort) {
       return candidate;
     }
   }
-  throw new Error(`No available port found in range ${startPort}-${Math.min(startPort + MAX_SCAN_STEPS, 65535)}.`);
+  throw new Error(`No available port found in range ${startPort}-${Math.min(startPort + maxScanSteps, 65535)}.`);
 }
 
 async function run() {
