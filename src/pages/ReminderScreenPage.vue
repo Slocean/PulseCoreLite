@@ -11,6 +11,7 @@
         <label v-if="requireClosePassword" class="reminder-screen__password">
           <span>{{ t('toolkit.reminderScreenPasswordLabel') }}</span>
           <input
+            ref="passwordInputRef"
             v-model="closePasswordInput"
             class="reminder-screen__password-input"
             type="password"
@@ -30,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import ReminderContentRenderer from '../components/reminder/ReminderContentRenderer.vue';
@@ -59,6 +60,7 @@ const token = ref<string | null>(null);
 const canClose = ref(false);
 const closeWaitSeconds = ref(5);
 const closePasswordInput = ref('');
+const passwordInputRef = ref<HTMLInputElement | null>(null);
 const passwordError = ref('');
 let closeTimer: number | null = null;
 let closeDeadlineMs: number | null = null;
@@ -125,6 +127,15 @@ const screenStyle = computed(() => {
   }
   return style;
 });
+
+function focusPasswordInput() {
+  if (!requireClosePassword.value) {
+    return;
+  }
+  void nextTick(() => {
+    passwordInputRef.value?.focus();
+  });
+}
 
 onMounted(async () => {
   const params = new URLSearchParams(window.location.search);
@@ -232,6 +243,7 @@ onMounted(async () => {
   if (allowClose.value) {
     startCountdownWhenVisible();
   }
+  focusPasswordInput();
 });
 
 onUnmounted(() => {
@@ -549,6 +561,16 @@ watch(closePasswordInput, () => {
     passwordError.value = '';
   }
 });
+
+watch(
+  requireClosePassword,
+  enabled => {
+    if (enabled) {
+      focusPasswordInput();
+    }
+  },
+  { immediate: false }
+);
 
 watch(
   allowClose,
