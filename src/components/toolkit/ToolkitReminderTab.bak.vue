@@ -433,9 +433,9 @@ async function handleAdvancedImageChange(event: Event) {
       throw new Error('toolkit.reminderAdvancedUploadCanvasFailed');
     }
     ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const blob: Blob =
-      (await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.86))) ||
-      (await new Promise(resolve => canvas.toBlob(resolve, 'image/png')));
+    const blob =
+      (await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', 0.86))) ||
+      (await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png')));
     if (!blob) {
       throw new Error('toolkit.reminderAdvancedUploadEncodeFailed');
     }

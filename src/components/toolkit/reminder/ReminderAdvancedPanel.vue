@@ -13,7 +13,7 @@
         <div v-if="backgroundTypeModel === 'image'" class="toolkit-reminder-advanced-input">
           <input v-model.trim="advancedSettings.backgroundImage" type="text" />
           <input
-            :ref="advancedImageInput"
+            ref="advancedImageInput"
             class="toolkit-hidden-file"
             type="file"
             accept="image/*"
@@ -22,7 +22,7 @@
             native-type="button"
             preset="overlay-primary"
             class="toolkit-reminder-advanced-upload"
-            @click="emit('triggerAdvancedImageSelect')">
+            @click="triggerAdvancedImageSelect">
             {{ t('toolkit.reminderAdvancedUpload') }}
           </UiButton>
         </div>
@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { SelectOption } from '@/components/ui/Select/types';
@@ -79,25 +79,22 @@ import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiSelect from '@/components/ui/Select';
 import UiSwitch from '@/components/ui/Switch';
 
-import type { Ref } from 'vue';
-
 const props = defineProps<{
   modelValue: boolean;
   advancedBackgroundType: 'image' | 'color';
   advancedBackgroundOptions: SelectOption[];
   advancedSettings: ReminderAdvancedSettings;
-  advancedImageInput: Ref<HTMLInputElement | null>;
 }>();
 
 const emit = defineEmits<{
   (event: 'update:modelValue', value: boolean): void;
   (event: 'update:advancedBackgroundType', value: 'image' | 'color'): void;
   (event: 'contentChange'): void;
-  (event: 'triggerAdvancedImageSelect'): void;
   (event: 'advancedImageChange', value: Event): void;
 }>();
 
 const { t } = useI18n();
+const advancedImageInput = ref<HTMLInputElement | null>(null);
 
 const openModel = computed({
   get: () => props.modelValue,
@@ -108,4 +105,8 @@ const backgroundTypeModel = computed({
   get: () => props.advancedBackgroundType,
   set: value => emit('update:advancedBackgroundType', value)
 });
+
+function triggerAdvancedImageSelect() {
+  advancedImageInput.value?.click();
+}
 </script>

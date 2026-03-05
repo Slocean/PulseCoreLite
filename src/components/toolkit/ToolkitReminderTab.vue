@@ -44,9 +44,7 @@
     v-model:advanced-background-type="advancedBackgroundTypeModel"
     :advanced-background-options="advancedBackgroundOptions"
     :advanced-settings="advancedSettings"
-    :advanced-image-input="advancedImageInput"
     @content-change="emit('contentChange')"
-    @trigger-advanced-image-select="triggerAdvancedImageSelect"
     @advanced-image-change="handleAdvancedImageChange" />
 
   <p v-if="statusMessage" class="toolkit-status">{{ statusMessage }}</p>
@@ -129,7 +127,6 @@ const {
   smtpSecurityOptions,
   formatWeekday,
   toggleReminderEnabled,
-  advancedImageInput,
   updateDailyInputTime,
   updateWeeklyInputDays,
   updateWeeklyInputTime,
@@ -138,7 +135,6 @@ const {
   updateSmtpTestTo,
   closeAllowCloseWarning,
   dismissAllowCloseWarning,
-  triggerAdvancedImageSelect,
   handleAdvancedImageChange,
   addDailyTime,
   removeDailyTime,

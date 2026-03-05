@@ -8,16 +8,21 @@ function setupTauriCallbackGuard() {
   if (tauriCallbackGuardReady || !isTauriRuntime || !import.meta.env.DEV) return;
   tauriCallbackGuardReady = true;
 
-  const internals = (window as typeof window & { __TAURI_INTERNALS__?: Record<string, unknown> }).__TAURI_INTERNALS__;
-  const transformCallback = internals?.transformCallback as ((cb: (...args: unknown[]) => unknown, once?: boolean) => string) | undefined;
-  if (!transformCallback) return;
+  const windowRecord = window as unknown as Record<string, unknown>;
+  const internals = (window as typeof window & {
+    __TAURI_INTERNALS__?: {
+      transformCallback?: (cb: (...args: unknown[]) => unknown, once?: boolean) => string;
+    };
+  }).__TAURI_INTERNALS__;
+  const transformCallback = internals?.transformCallback;
+  if (!internals || !transformCallback) return;
 
   const pendingCallbacks = new Set<string>();
   const registerNoopCallback = (id: string) => {
     const key = `_${id}`;
-    if (key in window) return;
-    (window as Record<string, unknown>)[key] = () => {
-      delete (window as Record<string, unknown>)[key];
+    if (key in windowRecord) return;
+    windowRecord[key] = () => {
+      delete windowRecord[key];
     };
   };
 
@@ -39,9 +44,9 @@ function setupTauriCallbackGuard() {
     const id = transformCallback(callback, once);
     pendingCallbacks.add(id);
     const key = `_${id}`;
-    const original = (window as Record<string, unknown>)[key];
+    const original = windowRecord[key];
     if (typeof original === 'function') {
-      (window as Record<string, unknown>)[key] = (...args: unknown[]) => {
+      windowRecord[key] = (...args: unknown[]) => {
         pendingCallbacks.delete(id);
         return (original as (...inner: unknown[]) => unknown)(...args);
       };

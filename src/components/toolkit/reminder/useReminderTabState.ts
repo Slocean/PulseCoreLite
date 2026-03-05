@@ -64,7 +64,6 @@ export function useReminderTabState(emit: ReminderTabEmit) {
   const monthlyInputDays = ref<number[]>([new Date().getDate()]);
   const monthlyInputTime = ref('09:00');
   const smtpTestTo = ref('');
-  const advancedImageInput = ref<HTMLInputElement | null>(null);
   const smtpForm = reactive<SmtpEmailConfig>({
     host: '',
     port: 587,
@@ -230,10 +229,6 @@ export function useReminderTabState(emit: ReminderTabEmit) {
     }
   }
 
-  function triggerAdvancedImageSelect() {
-    advancedImageInput.value?.click();
-  }
-
   async function handleAdvancedImageChange(event: Event) {
     const input = event.target as HTMLInputElement | null;
     const file = input?.files?.[0];
@@ -257,9 +252,9 @@ export function useReminderTabState(emit: ReminderTabEmit) {
         throw new Error('toolkit.reminderAdvancedUploadCanvasFailed');
       }
       ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      const blob: Blob =
-        (await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.86))) ||
-        (await new Promise(resolve => canvas.toBlob(resolve, 'image/png')));
+      const blob =
+        (await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', 0.86))) ||
+        (await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png')));
       if (!blob) {
         throw new Error('toolkit.reminderAdvancedUploadEncodeFailed');
       }
@@ -511,7 +506,6 @@ export function useReminderTabState(emit: ReminderTabEmit) {
     smtpSecurityOptions,
     formatWeekday,
     toggleReminderEnabled,
-    advancedImageInput,
     updateDailyInputTime,
     updateWeeklyInputDays,
     updateWeeklyInputTime,
@@ -520,7 +514,6 @@ export function useReminderTabState(emit: ReminderTabEmit) {
     updateSmtpTestTo,
     closeAllowCloseWarning,
     dismissAllowCloseWarning,
-    triggerAdvancedImageSelect,
     handleAdvancedImageChange,
     addDailyTime,
     removeDailyTime,
