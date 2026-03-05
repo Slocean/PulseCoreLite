@@ -223,6 +223,7 @@ const monthlyInputDays = ref<number[]>([new Date().getDate()]);
 const monthlyInputTime = ref('09:00');
 const smtpTestTo = ref('');
 const advancedImageInput = ref<HTMLInputElement | null>(null);
+const advancedBackgroundType = ref<'image' | 'color'>('image');
 const smtpForm = reactive<SmtpEmailConfig>({
   host: '',
   port: 587,
@@ -274,9 +275,10 @@ const advancedBackgroundOptions = computed<SelectOption[]>(() => [
 ]);
 
 const advancedBackgroundTypeModel = computed<'image' | 'color'>({
-  get: () => (advancedSettings.backgroundType || 'image') as 'image' | 'color',
+  get: () => advancedBackgroundType.value,
   set: value => {
-    if (value === advancedSettings.backgroundType) return;
+    if (value === advancedBackgroundType.value) return;
+    advancedBackgroundType.value = value;
     advancedSettings.backgroundType = value;
     if (value === 'image') {
       advancedSettings.backgroundColor = '';
@@ -353,18 +355,34 @@ function formatErrorMessage(error: unknown, fallbackKey: string) {
   return t(fallbackKey);
 }
 
-const makeRefUpdater =
-  <T,>(target: { value: T }) =>
-  (value: T) => {
-    target.value = value;
-  };
+function updateDailyInputTime(value: string) {
+  dailyInputTime.value = value;
+}
 
-const updateDailyInputTime = makeRefUpdater(dailyInputTime);
-const updateWeeklyInputDays = makeRefUpdater(weeklyInputDays);
-const updateWeeklyInputTime = makeRefUpdater(weeklyInputTime);
-const updateMonthlyInputDays = makeRefUpdater(monthlyInputDays);
-const updateMonthlyInputTime = makeRefUpdater(monthlyInputTime);
-const updateSmtpTestTo = makeRefUpdater(smtpTestTo);
+function updateWeeklyInputDays(value: number[]) {
+  weeklyInputDays.value = value;
+}
+
+function updateWeeklyInputTime(value: string) {
+  weeklyInputTime.value = value;
+}
+
+function updateMonthlyInputDays(value: number[]) {
+  monthlyInputDays.value = value;
+}
+
+function updateMonthlyInputTime(value: string) {
+  monthlyInputTime.value = value;
+}
+
+function updateSmtpTestTo(value: string) {
+  smtpTestTo.value = value;
+}
+
+function syncAdvancedBackgroundType() {
+  advancedBackgroundType.value = advancedSettings.backgroundType || 'image';
+  advancedBackgroundTypeModel.value = advancedSettings.backgroundType || 'image';
+}
 
 function closeAllowCloseWarning() {
   allowCloseWarningOpen.value = false;
@@ -454,7 +472,9 @@ function removeDailyTime(time: string) {
 function addWeeklySlot() {
   clearTip();
   if (!weeklyInputTime.value) return;
-  const days = normalizeDays(weeklyInputDays.value);
+  const days = [...new Set(weeklyInputDays.value)]
+    .map(value => Math.round(value))
+    .filter(value => value >= 1 && value <= 7);
   if (!days.length) return;
 
   let changed = false;
@@ -478,7 +498,9 @@ function removeWeeklySlot(weekday: number, time: string) {
 function addMonthlySlot() {
   clearTip();
   if (!monthlyInputTime.value) return;
-  const days = normalizeMonthDays(monthlyInputDays.value);
+  const days = [...new Set(monthlyInputDays.value)]
+    .map(value => Math.round(value))
+    .filter(value => value >= 1 && value <= 31);
   if (!days.length) return;
 
   let changed = false;
@@ -498,60 +520,24 @@ function removeMonthlySlot(day: number, time: string) {
   form.monthlySlots = form.monthlySlots.filter(item => !(item.day === day && item.time === time));
 }
 
-function normalizeDays(values: number[]) {
-  return [...new Set(values)]
-    .map(value => Math.round(value))
-    .filter(value => value >= 1 && value <= 7)
-    .sort((a, b) => a - b);
-}
-
-function normalizeMonthDays(values: number[]) {
-  return [...new Set(values)]
-    .map(value => Math.round(value))
-    .filter(value => value >= 1 && value <= 31)
-    .sort((a, b) => a - b);
-}
-
-function applyReminderToForm(item?: TaskReminder) {
-  if (!item) {
-    form.id = '';
-    form.enabled = true;
-    form.title = '';
-    form.channel = 'fullscreen';
-    form.email = '';
-    form.dailyTimes = [];
-    form.weeklySlots = [];
-    form.monthlySlots = [];
-    form.contentType = 'text';
-    form.content = '';
-    Object.assign(advancedSettings, defaultAdvancedSettings());
-    allowCloseBaseline = advancedSettings.allowClose;
-    weeklyInputDays.value = [1];
-    monthlyInputDays.value = [new Date().getDate()];
-    return;
-  }
-  form.id = item.id;
-  form.enabled = item.enabled;
-  form.title = item.title;
-  form.channel = item.channel;
-  form.email = item.email;
-  form.dailyTimes = [...item.dailyTimes];
-  form.weeklySlots = [...item.weeklySlots];
-  form.monthlySlots = [...item.monthlySlots];
-  form.contentType = item.contentType;
-  form.content = item.content;
-  Object.assign(advancedSettings, item.advancedSettings ?? defaultAdvancedSettings());
-  allowCloseBaseline = advancedSettings.allowClose;
-  weeklyInputDays.value = normalizeDays(item.weeklySlots.map(slot => slot.weekday));
-  if (!weeklyInputDays.value.length) weeklyInputDays.value = [1];
-  monthlyInputDays.value = normalizeMonthDays(item.monthlySlots.map(slot => slot.day));
-  if (!monthlyInputDays.value.length) monthlyInputDays.value = [new Date().getDate()];
-}
-
 function resetForm() {
   clearTip();
   editingId.value = null;
-  applyReminderToForm();
+  form.id = '';
+  form.enabled = true;
+  form.title = '';
+  form.channel = 'fullscreen';
+  form.email = '';
+  form.dailyTimes = [];
+  form.weeklySlots = [];
+  form.monthlySlots = [];
+  form.contentType = 'text';
+  form.content = '';
+  Object.assign(advancedSettings, defaultAdvancedSettings());
+  allowCloseBaseline = advancedSettings.allowClose;
+  syncAdvancedBackgroundType();
+  weeklyInputDays.value = [1];
+  monthlyInputDays.value = [new Date().getDate()];
 }
 
 function openSmtpDialog() {
@@ -619,7 +605,29 @@ function editReminder(item: TaskReminder) {
   sections.content = true;
   sections.list = true;
   sections.advanced = true;
-  applyReminderToForm(item);
+  form.id = item.id;
+  form.enabled = item.enabled;
+  form.title = item.title;
+  form.channel = item.channel;
+  form.email = item.email;
+  form.dailyTimes = [...item.dailyTimes];
+  form.weeklySlots = [...item.weeklySlots];
+  form.monthlySlots = [...item.monthlySlots];
+  form.contentType = item.contentType;
+  form.content = item.content;
+  Object.assign(advancedSettings, item.advancedSettings ?? defaultAdvancedSettings());
+  allowCloseBaseline = advancedSettings.allowClose;
+  syncAdvancedBackgroundType();
+  const editDays = [...new Set(item.weeklySlots.map(slot => slot.weekday))]
+    .map(value => Math.round(value))
+    .filter(value => value >= 1 && value <= 7)
+    .sort((a, b) => a - b);
+  weeklyInputDays.value = editDays.length ? editDays : [1];
+  const editMonthDays = [...new Set(item.monthlySlots.map(slot => slot.day))]
+    .map(value => Math.round(value))
+    .filter(value => value >= 1 && value <= 31)
+    .sort((a, b) => a - b);
+  monthlyInputDays.value = editMonthDays.length ? editMonthDays : [new Date().getDate()];
 }
 
 async function deleteReminder(id: string) {
