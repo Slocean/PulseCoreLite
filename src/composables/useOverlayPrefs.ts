@@ -3,6 +3,7 @@ import { onMounted, onUnmounted, reactive, watch } from 'vue';
 import { storageKeys, storageRepository } from '../services/storageRepository';
 import { emitSyncEvent, listenSyncEvent } from '../services/syncBus';
 import { normalizeImageRef } from '../utils/imageStore';
+import { debounce as createDebounce } from '../utils/debounce';
 
 const PREFS_SYNC_EVENT = 'pulsecorelite://prefs-sync';
 
@@ -101,6 +102,10 @@ export function useOverlayPrefs() {
   let readyToPersist = false;
   let isSyncing = false; // Prevent sync event loops
   let unlistenSync: (() => void) | null = null;
+  const persistPrefs = createDebounce((snapshot: OverlayPrefs) => {
+    void storageRepository.setJson(storageKeys.overlayPrefs, snapshot);
+    void broadcastPrefsSync();
+  }, 400);
 
   watch(
     prefs,
@@ -109,8 +114,7 @@ export function useOverlayPrefs() {
 
       // Avoid IndexedDB structured-clone issues with Vue proxies by persisting a JSON snapshot.
       const snapshot = JSON.parse(JSON.stringify(next)) as OverlayPrefs;
-      void storageRepository.setJson(storageKeys.overlayPrefs, snapshot);
-      void broadcastPrefsSync();
+      persistPrefs(snapshot);
     },
     { deep: true }
   );
@@ -183,6 +187,7 @@ export function useOverlayPrefs() {
       unlistenSync();
       unlistenSync = null;
     }
+    persistPrefs.flush();
   });
 
   return { prefs };

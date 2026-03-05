@@ -1,7 +1,8 @@
-﻿import { onMounted, onUnmounted, reactive, watch } from 'vue';
+import { onMounted, onUnmounted, reactive, watch } from 'vue';
 
 import { storageKeys, storageRepository } from '../services/storageRepository';
 import { emitSyncEvent, listenSyncEvent } from '../services/syncBus';
+import { debounce as createDebounce } from '../utils/debounce';
 
 const TASKBAR_PREFS_SYNC_EVENT = 'pulsecorelite://taskbar-prefs-sync';
 
@@ -88,6 +89,10 @@ export function useTaskbarPrefs() {
   let readyToPersist = false;
   let isSyncing = false;
   let unlistenSync: (() => void) | null = null;
+  const persistPrefs = createDebounce((snapshot: TaskbarPrefs) => {
+    void storageRepository.setJson(storageKeys.taskbarPrefs, snapshot);
+    void broadcastTaskbarPrefsSync();
+  }, 400);
 
   watch(
     prefs,
@@ -96,8 +101,7 @@ export function useTaskbarPrefs() {
         return;
       }
       const snapshot = JSON.parse(JSON.stringify(next)) as TaskbarPrefs;
-      void storageRepository.setJson(storageKeys.taskbarPrefs, snapshot);
-      void broadcastTaskbarPrefsSync();
+      persistPrefs(snapshot);
     },
     { deep: true }
   );
@@ -139,6 +143,7 @@ export function useTaskbarPrefs() {
       unlistenSync();
       unlistenSync = null;
     }
+    persistPrefs.flush();
   });
 
   return { prefs };

@@ -1,16 +1,20 @@
-import { onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 import { storageKeys, storageRepository } from '../services/storageRepository';
+import { debounce as createDebounce } from '../utils/debounce';
 
 export function useOverlayRefreshRate(store: { setRefreshRate: (rateMs: number) => Promise<void> | void }) {
   const refreshRate = ref(1000);
   const clampRefreshRate = (value: number) => Math.max(10, Math.min(2000, Math.round(value)));
+  const persistRefreshRate = createDebounce((next: number) => {
+    void storageRepository.setString(storageKeys.refreshRate, String(next));
+  }, 400);
 
   const applyRefreshRate = (value: number) => {
     const next = clampRefreshRate(value);
     refreshRate.value = next;
     store.setRefreshRate(next);
-    void storageRepository.setString(storageKeys.refreshRate, String(next));
+    persistRefreshRate(next);
   };
 
   const handleRefreshRateChange = () => {
@@ -33,6 +37,10 @@ export function useOverlayRefreshRate(store: { setRefreshRate: (rateMs: number) 
       refreshRate.value = next;
       store.setRefreshRate(next);
     })();
+  });
+
+  onUnmounted(() => {
+    persistRefreshRate.flush();
   });
 
   return { refreshRate, handleRefreshRateChange };
