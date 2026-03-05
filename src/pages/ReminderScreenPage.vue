@@ -63,6 +63,9 @@ let closeTimer: number | null = null;
 let closeDeadlineMs: number | null = null;
 let closeCountdownTick: (() => void) | null = null;
 let closeReadyTimer: number | null = null;
+let countdownStarted = false;
+let countdownStartListener: (() => void) | null = null;
+let unlistenCountdownFocus: (() => void) | null = null;
 let unlistenCloseRequested: (() => void) | null = null;
 let unlistenReminderCloseEvent: (() => void) | null = null;
 let storageSignalHandler: ((event: StorageEvent) => void) | null = null;
@@ -218,7 +221,7 @@ onMounted(async () => {
   }
 
   if (allowClose.value) {
-    startCloseCountdown();
+    startCountdownWhenVisible();
   }
 });
 
@@ -230,6 +233,15 @@ onUnmounted(() => {
   if (closeReadyTimer != null) {
     window.clearTimeout(closeReadyTimer);
     closeReadyTimer = null;
+  }
+  if (countdownStartListener) {
+    window.removeEventListener('visibilitychange', countdownStartListener);
+    window.removeEventListener('focus', countdownStartListener);
+    countdownStartListener = null;
+  }
+  if (unlistenCountdownFocus) {
+    unlistenCountdownFocus();
+    unlistenCountdownFocus = null;
   }
   if (closeCountdownTick) {
     window.removeEventListener('visibilitychange', closeCountdownTick);
@@ -266,6 +278,7 @@ onUnmounted(() => {
 
 function startCloseCountdown() {
   canClose.value = false;
+  countdownStarted = true;
   if (closeCountdownTick) {
     window.removeEventListener('visibilitychange', closeCountdownTick);
     window.removeEventListener('focus', closeCountdownTick);
@@ -313,6 +326,54 @@ function startCloseCountdown() {
   closeTimer = window.setInterval(tick, 300);
   window.addEventListener('visibilitychange', tick);
   window.addEventListener('focus', tick);
+}
+
+function startCountdownWhenVisible() {
+  if (countdownStarted) {
+    return;
+  }
+  const tryStart = () => {
+    if (countdownStarted) return;
+    if (document.visibilityState === 'visible') {
+      startCloseCountdown();
+      return;
+    }
+  };
+
+  tryStart();
+  if (countdownStarted) {
+    return;
+  }
+
+  countdownStartListener = () => {
+    tryStart();
+    if (countdownStarted && countdownStartListener) {
+      window.removeEventListener('visibilitychange', countdownStartListener);
+      window.removeEventListener('focus', countdownStartListener);
+      countdownStartListener = null;
+      if (unlistenCountdownFocus) {
+        unlistenCountdownFocus();
+        unlistenCountdownFocus = null;
+      }
+    }
+  };
+  window.addEventListener('visibilitychange', countdownStartListener);
+  window.addEventListener('focus', countdownStartListener);
+
+  if (inTauri()) {
+    void (async () => {
+      try {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        unlistenCountdownFocus = await getCurrentWindow().onFocusChanged(({ payload }) => {
+          if (payload) {
+            countdownStartListener?.();
+          }
+        });
+      } catch {
+        // ignore
+      }
+    })();
+  }
 }
 
 function updateEmergencyKeyState(event: KeyboardEvent, pressed: boolean) {
@@ -469,7 +530,8 @@ watch(
   allowClose,
   enabled => {
     if (enabled && !canClose.value) {
-      startCloseCountdown();
+      countdownStarted = false;
+      startCountdownWhenVisible();
     }
   },
   { immediate: false }
