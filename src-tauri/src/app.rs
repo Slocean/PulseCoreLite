@@ -311,6 +311,7 @@ pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Bu
         commands::open_profile_output_path,
         commands::send_reminder_email,
         commands::force_close_reminder_screens,
+        commands::debug_log,
         commands::get_task_reminder_store,
         commands::save_task_reminder_store,
         commands::trigger_task_reminder_now

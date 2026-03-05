@@ -33,7 +33,11 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import ReminderContentRenderer from '../components/reminder/ReminderContentRenderer.vue';
-import { buildReminderCloseSignalKey, buildReminderScreenStorageKey, readReminderScreenPayload } from '../composables/useTaskReminders';
+import {
+  buildReminderCloseSignalKey,
+  buildReminderScreenStorageKey,
+  readReminderScreenPayload
+} from '../composables/useTaskReminders';
 import { storageRepository } from '../services/storageRepository';
 import { api, inTauri } from '../services/tauri';
 import {

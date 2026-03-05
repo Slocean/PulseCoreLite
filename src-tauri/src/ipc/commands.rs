@@ -700,6 +700,27 @@ pub fn force_close_reminder_screens(app: AppHandle, token: String) -> CmdResult<
 }
 
 #[tauri::command]
+pub fn debug_log(level: String, message: String) -> CmdResult<()> {
+    use std::io::Write;
+    let tag = "[Frontend]";
+    match level.as_str() {
+        "warn" => {
+            eprintln!("{tag} {message}");
+            let _ = std::io::stderr().flush();
+        }
+        "error" => {
+            eprintln!("{tag} {message}");
+            let _ = std::io::stderr().flush();
+        }
+        _ => {
+            println!("{tag} {message}");
+            let _ = std::io::stdout().flush();
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
 pub fn set_auto_start_enabled(enabled: bool) -> CmdResult<bool> {
     #[cfg(windows)]
     {

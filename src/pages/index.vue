@@ -150,7 +150,6 @@
 import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import type { VNodeRef } from 'vue';
 import { useI18n } from 'vue-i18n';
-
 import UiNavTabs from '@/components/ui/NavTabs';
 import UiToast from '@/components/ui/Toast';
 import OverlayHeader from '../components/OverlayHeader.vue';
@@ -174,7 +173,6 @@ import { useToolkitLauncher } from '../composables/useToolkitLauncher';
 import { useUpdater } from '../composables/useUpdater';
 import packageJson from '../../package.json';
 import { useAppStore } from '../stores/app';
-
 const store = useAppStore();
 const { t } = useI18n();
 const appVersion = packageJson.version;
