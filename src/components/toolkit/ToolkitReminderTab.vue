@@ -38,74 +38,16 @@
     @update:monthly-input-days="updateMonthlyInputDays"
     @update:monthly-input-time="updateMonthlyInputTime" />
 
-  <UiCollapsiblePanel
+  <ReminderAdvancedPanel
     v-if="form.channel === 'fullscreen'"
-    class="toolkit-card"
-    :title="t('toolkit.reminderAdvancedTitle')"
     v-model="sections.advanced"
-    single-header-preset="toolkit-collapse"
-    title-class="toolkit-section-title"
-    indicator-class="toolkit-collapse-indicator"
-    @toggle="emit('contentChange')">
-    <div class="toolkit-grid">
-      <label class="toolkit-field toolkit-field--inline toolkit-field--inline-select">
-        <UiSelect v-model="advancedBackgroundTypeModel" :options="advancedBackgroundOptions" />
-        <div v-if="advancedBackgroundTypeModel === 'image'" class="toolkit-reminder-advanced-input">
-          <input v-model.trim="advancedSettings.backgroundImage" type="text" />
-          <input
-            ref="advancedImageInput"
-            class="toolkit-hidden-file"
-            type="file"
-            accept="image/*"
-            @change="handleAdvancedImageChange" />
-          <UiButton
-            native-type="button"
-            preset="overlay-primary"
-            class="toolkit-reminder-advanced-upload"
-            @click="triggerAdvancedImageSelect">
-            {{ t('toolkit.reminderAdvancedUpload') }}
-          </UiButton>
-        </div>
-        <input v-else v-model.trim="advancedSettings.backgroundColor" type="color" />
-      </label>
-      <!-- <p v-if="advancedBackgroundTypeModel === 'image'" class="toolkit-reminder-advanced-hint">
-        {{ t('toolkit.reminderAdvancedUploadHint') }}
-      </p> -->
-      <div class="toolkit-reminder-advanced-duo">
-        <div class="overlay-config-row">
-          <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedAllowClose') }}</span>
-          <UiSwitch v-model="advancedSettings.allowClose" :aria-label="t('toolkit.reminderAdvancedAllowClose')" />
-        </div>
-        <!-- <span v-if="!advancedSettings.allowClose" class="toolkit-reminder-advanced-hint">
-          {{ t('toolkit.reminderAdvancedRequirePasswordHint') }}
-        </span> -->
-        <div class="overlay-config-row">
-          <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedBlockButtons') }}</span>
-          <UiSwitch
-            v-model="advancedSettings.blockAllKeys"
-            :aria-label="t('toolkit.reminderAdvancedBlockButtons')" />
-        </div>
-      </div>
-      <div class="overlay-config-row toolkit-reminder-advanced-password">
-        <span class="overlay-config-label">{{ t('toolkit.reminderAdvancedRequirePassword') }}</span>
-        <div class="toolkit-reminder-advanced-password-controls">
-          <UiSwitch
-            v-model="advancedSettings.requireClosePassword"
-            :aria-label="t('toolkit.reminderAdvancedRequirePassword')"
-            :disabled="!advancedSettings.allowClose" />
-          <input
-            v-model.trim="advancedSettings.closePassword"
-            class="toolkit-reminder-advanced-password-input"
-            type="password"
-            :aria-label="t('toolkit.reminderAdvancedClosePassword')"
-            :disabled="!advancedSettings.allowClose || !advancedSettings.requireClosePassword"
-            :class="{
-              'toolkit-reminder-advanced-password-input--hidden': !advancedSettings.requireClosePassword
-            }" />
-        </div>
-      </div>
-    </div>
-  </UiCollapsiblePanel>
+    v-model:advanced-background-type="advancedBackgroundTypeModel"
+    :advanced-background-options="advancedBackgroundOptions"
+    :advanced-settings="advancedSettings"
+    :advanced-image-input="advancedImageInput"
+    @content-change="emit('contentChange')"
+    @trigger-advanced-image-select="triggerAdvancedImageSelect"
+    @advanced-image-change="handleAdvancedImageChange" />
 
   <p v-if="statusMessage" class="toolkit-status">{{ statusMessage }}</p>
   <p v-if="errorMessage" class="toolkit-error">{{ errorMessage }}</p>
@@ -147,11 +89,9 @@
 </template>
 
 <script setup lang="ts">
-import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiButton from '@/components/ui/Button';
 import UiDialog from '@/components/ui/Dialog';
-import UiSelect from '@/components/ui/Select';
-import UiSwitch from '@/components/ui/Switch';
+import ReminderAdvancedPanel from './reminder/ReminderAdvancedPanel.vue';
 import ReminderEditorPanels from './reminder/ReminderEditorPanels.vue';
 import ReminderListPanel from './reminder/ReminderListPanel.vue';
 import ReminderSmtpDialog from './reminder/ReminderSmtpDialog.vue';
