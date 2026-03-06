@@ -86,6 +86,8 @@ function buildNativeTaskbarConfig(settings: AppSettings) {
     language: settings.language,
     alwaysOnTop: settings.taskbarAlwaysOnTop,
     autoHideOnFullscreen: settings.taskbarAutoHideOnFullscreen,
+    rememberPosition: settings.rememberOverlayPosition,
+    positionLocked: settings.taskbarPositionLocked,
     showCpu: prefs.showCpu,
     showCpuFreq: prefs.showCpuFreq,
     showCpuTemp: prefs.showCpuTemp,

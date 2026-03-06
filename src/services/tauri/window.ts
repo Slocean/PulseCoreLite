@@ -5,6 +5,8 @@ interface NativeTaskbarConfig {
   language: string;
   alwaysOnTop: boolean;
   autoHideOnFullscreen: boolean;
+  rememberPosition: boolean;
+  positionLocked: boolean;
   showCpu: boolean;
   showCpuFreq: boolean;
   showCpuTemp: boolean;

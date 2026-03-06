@@ -137,6 +137,10 @@ pub struct NativeTaskbarConfig {
     pub always_on_top: bool,
     #[serde(rename = "autoHideOnFullscreen")]
     pub auto_hide_on_fullscreen: bool,
+    #[serde(rename = "rememberPosition")]
+    pub remember_position: bool,
+    #[serde(rename = "positionLocked")]
+    pub position_locked: bool,
     #[serde(rename = "showCpu")]
     pub show_cpu: bool,
     #[serde(rename = "showCpuFreq")]

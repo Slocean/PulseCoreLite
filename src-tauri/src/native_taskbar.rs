@@ -19,13 +19,14 @@ mod imp {
         time::Duration,
     };
 
-    use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
+    use serde::Serialize;
+    use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
     use windows_sys::Win32::{
-        Foundation::{COLORREF, HINSTANCE, HWND, LPARAM, LRESULT, RECT, WPARAM},
+        Foundation::{COLORREF, HINSTANCE, HWND, LPARAM, LRESULT, RECT, SIZE, WPARAM},
         Graphics::Gdi::{
-            BeginPaint, CreateSolidBrush, DEFAULT_GUI_FONT, DT_END_ELLIPSIS, DT_LEFT,
-            DT_NOPREFIX, DT_SINGLELINE, DT_VCENTER, DeleteObject, DrawTextW, EndPaint, FillRect,
-            GetStockObject, PAINTSTRUCT, SelectObject, SetBkMode, SetTextColor, TRANSPARENT,
+            BeginPaint, CreateSolidBrush, DEFAULT_GUI_FONT, DeleteObject, EndPaint, FillRect,
+            GetStockObject, GetTextExtentPoint32W, PAINTSTRUCT, SelectObject, SetBkMode,
+            SetTextColor, TextOutW, ANSI_FIXED_FONT, TRANSPARENT,
         },
         UI::{
             Shell::{ABM_GETTASKBARPOS, APPBARDATA, SHAppBarMessage},
@@ -35,10 +36,11 @@ mod imp {
                 PostMessageW, PostQuitMessage, RegisterClassW, SetLayeredWindowAttributes,
                 SetWindowPos, ShowWindow, TrackPopupMenu, TranslateMessage, CS_DBLCLKS,
                 CW_USEDEFAULT, HMENU, HTCAPTION, HWND_NOTOPMOST, HWND_TOPMOST, IDC_ARROW,
-                LWA_ALPHA, MF_SEPARATOR, MF_STRING, MSG, SW_HIDE, SW_SHOWNOACTIVATE,
-                SWP_NOACTIVATE, TPM_LEFTALIGN, TPM_RETURNCMD, TPM_RIGHTBUTTON, WM_APP,
-                WM_DESTROY, WM_LBUTTONDBLCLK, WM_NCHITTEST, WM_PAINT, WM_RBUTTONUP,
-                WNDCLASSW, WS_EX_LAYERED, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
+                LWA_ALPHA, MF_CHECKED, MF_SEPARATOR, MF_STRING, MF_UNCHECKED, MSG, SW_HIDE,
+                SW_SHOWNOACTIVATE, SWP_NOACTIVATE, TPM_LEFTALIGN, TPM_RETURNCMD,
+                TPM_RIGHTBUTTON, WM_APP, WM_DESTROY, WM_EXITSIZEMOVE, WM_LBUTTONDBLCLK,
+                WM_MOVE, WM_NCHITTEST, WM_PAINT, WM_RBUTTONUP, WNDCLASSW, WS_EX_LAYERED,
+                WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
             },
         },
     };
@@ -54,7 +56,26 @@ mod imp {
     const WINDOW_TITLE: &str = "PulseCoreLite Native Taskbar";
     const WM_APPLY_COMMANDS: u32 = WM_APP + 0x52;
     const MENU_SHOW_OR_HIDE_MAIN: usize = 1001;
-    const MENU_EXIT_APP: usize = 1002;
+    const MENU_ALWAYS_ON_TOP: usize = 1002;
+    const MENU_AUTO_HIDE_FULLSCREEN: usize = 1003;
+    const MENU_REMEMBER_POSITION: usize = 1004;
+    const MENU_POSITION_LOCK: usize = 1005;
+    const MENU_TWO_LINE: usize = 1006;
+    const MENU_THEME_TRANSPARENT: usize = 1007;
+    const MENU_THEME_DARK: usize = 1008;
+    const MENU_THEME_LIGHT: usize = 1009;
+    const MENU_SHOW_CPU: usize = 1010;
+    const MENU_SHOW_GPU: usize = 1011;
+    const MENU_SHOW_MEMORY: usize = 1012;
+    const MENU_SHOW_APP: usize = 1013;
+    const MENU_SHOW_DOWN: usize = 1014;
+    const MENU_SHOW_UP: usize = 1015;
+    const MENU_SHOW_CPU_FREQ: usize = 1016;
+    const MENU_SHOW_CPU_TEMP: usize = 1017;
+    const MENU_SHOW_GPU_TEMP: usize = 1018;
+    const MENU_SHOW_LATENCY: usize = 1019;
+    const MENU_CLOSE_TASKBAR: usize = 1020;
+    const MENU_EXIT_APP: usize = 1021;
 
     #[derive(Clone)]
     enum NativeTaskbarCommand {
@@ -63,10 +84,27 @@ mod imp {
         Close,
     }
 
+    #[derive(Clone, Copy)]
+    enum SegmentTone {
+        Normal,
+        Muted,
+        Cyan,
+        Pink,
+        Orange,
+        Red,
+    }
+
+    #[derive(Clone, Default)]
+    struct NativeTaskbarSegment {
+        label: String,
+        value: String,
+        extra: Option<String>,
+        value_tone: SegmentTone,
+    }
+
     #[derive(Clone, Default)]
     struct NativeTaskbarModel {
-        line1: String,
-        line2: String,
+        rows: Vec<Vec<NativeTaskbarSegment>>,
     }
 
     struct NativeTaskbarShared {
@@ -77,6 +115,9 @@ mod imp {
         state: Mutex<Option<SharedState>>,
         config: Mutex<Option<NativeTaskbarConfig>>,
         model: Mutex<NativeTaskbarModel>,
+        manual_position: Mutex<Option<(i32, i32)>>,
+        locked_position: Mutex<Option<(i32, i32)>>,
+        programmatic_move: AtomicBool,
     }
 
     impl NativeTaskbarShared {
@@ -89,6 +130,9 @@ mod imp {
                 state: Mutex::new(None),
                 config: Mutex::new(None),
                 model: Mutex::new(NativeTaskbarModel::default()),
+                manual_position: Mutex::new(None),
+                locked_position: Mutex::new(None),
+                programmatic_move: AtomicBool::new(false),
             }
         }
 
@@ -243,53 +287,328 @@ mod imp {
         }
     }
 
-    fn build_segments(snapshot: &TelemetrySnapshot, config: &NativeTaskbarConfig) -> Vec<String> {
+    #[derive(Clone, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct NativeTaskbarSyncSettings {
+        taskbar_always_on_top: bool,
+        taskbar_auto_hide_on_fullscreen: bool,
+        remember_overlay_position: bool,
+        taskbar_position_locked: bool,
+        native_taskbar_monitor_enabled: bool,
+    }
+
+    #[derive(Clone, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct NativeTaskbarSyncPrefs {
+        show_cpu: bool,
+        show_cpu_freq: bool,
+        show_cpu_temp: bool,
+        show_gpu: bool,
+        show_gpu_temp: bool,
+        show_memory: bool,
+        show_app: bool,
+        show_down: bool,
+        show_up: bool,
+        show_latency: bool,
+        two_line_mode: bool,
+        background_mode: String,
+    }
+
+    #[derive(Clone, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct NativeTaskbarSyncPayload {
+        settings: NativeTaskbarSyncSettings,
+        prefs: NativeTaskbarSyncPrefs,
+    }
+
+    struct MenuText {
+        show_main_window: &'static str,
+        hide_main_window: &'static str,
+        always_on_top: &'static str,
+        auto_hide_on_fullscreen: &'static str,
+        remember_position: &'static str,
+        lock_position: &'static str,
+        unlock_position: &'static str,
+        two_line: &'static str,
+        theme_transparent: &'static str,
+        theme_dark: &'static str,
+        theme_light: &'static str,
+        cpu: &'static str,
+        cpu_freq: &'static str,
+        cpu_temp: &'static str,
+        gpu: &'static str,
+        gpu_temp: &'static str,
+        memory: &'static str,
+        app: &'static str,
+        down: &'static str,
+        up: &'static str,
+        latency: &'static str,
+        close_taskbar: &'static str,
+        exit_app: &'static str,
+    }
+
+    fn menu_text(language: &str) -> MenuText {
+        if language == "zh-CN" {
+            MenuText {
+                show_main_window: "显示主窗口",
+                hide_main_window: "隐藏主窗口",
+                always_on_top: "常驻置顶",
+                auto_hide_on_fullscreen: "全屏时自动隐藏",
+                remember_position: "记住位置",
+                lock_position: "锁定任务栏位置",
+                unlock_position: "解除任务栏位置锁定",
+                two_line: "双行显示",
+                theme_transparent: "透明主题",
+                theme_dark: "暗色主题",
+                theme_light: "亮色主题",
+                cpu: "CPU",
+                cpu_freq: "CPU 频率",
+                cpu_temp: "CPU 温度",
+                gpu: "GPU",
+                gpu_temp: "GPU 温度",
+                memory: "内存",
+                app: "APP",
+                down: "下行",
+                up: "上行",
+                latency: "延迟",
+                close_taskbar: "关闭任务栏监控",
+                exit_app: "退出",
+            }
+        } else {
+            MenuText {
+                show_main_window: "Show Main Window",
+                hide_main_window: "Hide Main Window",
+                always_on_top: "Always On Top",
+                auto_hide_on_fullscreen: "Auto Hide In Fullscreen",
+                remember_position: "Remember Position",
+                lock_position: "Lock Taskbar Position",
+                unlock_position: "Unlock Taskbar Position",
+                two_line: "Two-line Mode",
+                theme_transparent: "Transparent Theme",
+                theme_dark: "Dark Theme",
+                theme_light: "Light Theme",
+                cpu: "CPU",
+                cpu_freq: "CPU Frequency",
+                cpu_temp: "CPU Temperature",
+                gpu: "GPU",
+                gpu_temp: "GPU Temperature",
+                memory: "Memory",
+                app: "APP",
+                down: "Down",
+                up: "Up",
+                latency: "Latency",
+                close_taskbar: "Close Taskbar Monitor",
+                exit_app: "Exit",
+            }
+        }
+    }
+
+    impl Default for SegmentTone {
+        fn default() -> Self {
+            Self::Normal
+        }
+    }
+
+    fn usage_tone(value: f64, gpu: bool) -> SegmentTone {
+        if value >= 90.0 {
+            SegmentTone::Red
+        } else if value >= 75.0 {
+            SegmentTone::Orange
+        } else if gpu {
+            SegmentTone::Pink
+        } else {
+            SegmentTone::Cyan
+        }
+    }
+
+    fn get_window_rect(hwnd: HWND) -> Option<RECT> {
+        let mut rect: RECT = unsafe { std::mem::zeroed() };
+        if unsafe { windows_sys::Win32::UI::WindowsAndMessaging::GetWindowRect(hwnd, &mut rect) } == 0 {
+            return None;
+        }
+        Some(rect)
+    }
+
+    fn capture_current_position(shared: &NativeTaskbarShared, hwnd: HWND) {
+        let Some(rect) = get_window_rect(hwnd) else {
+            return;
+        };
+        let next = (rect.left, rect.top);
+        if let Ok(mut slot) = shared.manual_position.lock() {
+            *slot = Some(next);
+        }
+        let locked = with_state_settings(shared, |settings| settings.taskbar_position_locked).unwrap_or(false);
+        if locked {
+            if let Ok(mut slot) = shared.locked_position.lock() {
+                *slot = Some(next);
+            }
+        }
+    }
+
+    fn sync_payload(shared: &NativeTaskbarShared, config: &NativeTaskbarConfig, enabled: bool) -> NativeTaskbarSyncPayload {
+        let settings = with_state_settings(shared, |settings| NativeTaskbarSyncSettings {
+            taskbar_always_on_top: settings.taskbar_always_on_top,
+            taskbar_auto_hide_on_fullscreen: settings.taskbar_auto_hide_on_fullscreen,
+            remember_overlay_position: settings.remember_overlay_position,
+            taskbar_position_locked: settings.taskbar_position_locked,
+            native_taskbar_monitor_enabled: enabled,
+        })
+        .unwrap_or(NativeTaskbarSyncSettings {
+            taskbar_always_on_top: config.always_on_top,
+            taskbar_auto_hide_on_fullscreen: config.auto_hide_on_fullscreen,
+            remember_overlay_position: config.remember_position,
+            taskbar_position_locked: config.position_locked,
+            native_taskbar_monitor_enabled: enabled,
+        });
+        NativeTaskbarSyncPayload {
+            settings,
+            prefs: NativeTaskbarSyncPrefs {
+                show_cpu: config.show_cpu,
+                show_cpu_freq: config.show_cpu_freq,
+                show_cpu_temp: config.show_cpu_temp,
+                show_gpu: config.show_gpu,
+                show_gpu_temp: config.show_gpu_temp,
+                show_memory: config.show_memory,
+                show_app: config.show_app,
+                show_down: config.show_down,
+                show_up: config.show_up,
+                show_latency: config.show_latency,
+                two_line_mode: config.two_line_mode,
+                background_mode: config.background_mode.clone(),
+            },
+        }
+    }
+
+    fn emit_native_taskbar_sync(shared: &NativeTaskbarShared, config: &NativeTaskbarConfig, enabled: bool) {
+        let Some(app) = shared.app.lock().ok().and_then(|guard| guard.clone()) else {
+            return;
+        };
+        let payload = sync_payload(shared, config, enabled);
+        for label in ["main", "taskbar", "toolkit"] {
+            let _ = app.emit_to(label, "pulsecorelite://native-taskbar-sync", payload.clone());
+        }
+    }
+
+    fn with_config_mut<T>(shared: &NativeTaskbarShared, map: impl FnOnce(&mut NativeTaskbarConfig) -> T) -> Option<T> {
+        let mut guard = shared.config.lock().ok()?;
+        let config = guard.as_mut()?;
+        Some(map(config))
+    }
+
+    fn refresh_from_latest_snapshot(shared: &NativeTaskbarShared) {
+        let Some(state) = shared.state.lock().ok().and_then(|guard| guard.clone()) else {
+            return;
+        };
+        let snapshot = tauri::async_runtime::block_on(async { state.latest_snapshot.read().await.clone() });
+        push_command(NativeTaskbarCommand::UpdateSnapshot(snapshot));
+    }
+
+    fn apply_runtime_config_change(shared: &NativeTaskbarShared, updater: impl FnOnce(&mut NativeTaskbarConfig)) {
+        let next_config = with_config_mut(shared, |config| {
+            updater(config);
+            config.clone()
+        });
+        let Some(config) = next_config else {
+            return;
+        };
+        emit_native_taskbar_sync(shared, &config, true);
+        push_command(NativeTaskbarCommand::ApplyConfig(config));
+        refresh_from_latest_snapshot(shared);
+    }
+
+    fn update_settings(shared: &NativeTaskbarShared, updater: impl FnOnce(&mut AppSettings)) {
+        let Some(state) = shared.state.lock().ok().and_then(|guard| guard.clone()) else {
+            return;
+        };
+        tauri::async_runtime::block_on(async {
+            let mut settings = state.settings.write().await;
+            updater(&mut settings);
+        });
+    }
+
+    fn build_segments(snapshot: &TelemetrySnapshot, config: &NativeTaskbarConfig) -> Vec<NativeTaskbarSegment> {
         let mut parts = Vec::new();
         if config.show_cpu {
-            let mut text = format!("CPU {:.0}%", snapshot.cpu.usage_pct);
+            let mut extras = Vec::new();
             if config.show_cpu_freq {
                 if let Some(freq) = snapshot.cpu.frequency_mhz {
-                    text.push_str(&format!(" {}MHz", freq));
+                    extras.push(format!("{}MHz", freq));
                 }
             }
             if config.show_cpu_temp {
                 if let Some(temp) = snapshot.cpu.temperature_c {
-                    text.push_str(&format!(" {:.0}°C", temp));
+                    extras.push(format!("{:.0}°C", temp));
                 }
             }
-            parts.push(text);
+            parts.push(NativeTaskbarSegment {
+                label: "CPU".to_string(),
+                value: format!("{:.0}%", snapshot.cpu.usage_pct),
+                extra: (!extras.is_empty()).then(|| extras.join(" ")),
+                value_tone: usage_tone(snapshot.cpu.usage_pct, false),
+            });
         }
         if config.show_gpu {
             let usage = snapshot.gpu.usage_pct.unwrap_or(0.0);
-            let mut text = format!("GPU {:.0}%", usage);
+            let mut extras = Vec::new();
             if config.show_gpu_temp {
                 if let Some(temp) = snapshot.gpu.temperature_c {
-                    text.push_str(&format!(" {:.0}°C", temp));
+                    extras.push(format!("{:.0}°C", temp));
                 }
             }
-            parts.push(text);
+            parts.push(NativeTaskbarSegment {
+                label: "GPU".to_string(),
+                value: format!("{:.0}%", usage),
+                extra: (!extras.is_empty()).then(|| extras.join(" ")),
+                value_tone: usage_tone(usage, true),
+            });
         }
         if config.show_memory {
-            parts.push(format!("RAM {:.0}%", snapshot.memory.usage_pct));
+            parts.push(NativeTaskbarSegment {
+                label: "RAM".to_string(),
+                value: format!("{:.0}%", snapshot.memory.usage_pct),
+                extra: None,
+                value_tone: usage_tone(snapshot.memory.usage_pct, false),
+            });
         }
         if config.show_app {
-            let mut text = format!("APP {:.1}%", snapshot.app_cpu_usage_pct.unwrap_or(0.0));
-            if let Some(mem) = snapshot.app_memory_mb {
-                text.push_str(&format!(" {:.0}MB", mem));
-            }
-            parts.push(text);
+            parts.push(NativeTaskbarSegment {
+                label: "APP".to_string(),
+                value: format!("{:.1}%", snapshot.app_cpu_usage_pct.unwrap_or(0.0)),
+                extra: snapshot.app_memory_mb.map(|mem| format!("{:.0}MB", mem)),
+                value_tone: SegmentTone::Cyan,
+            });
         }
         if config.show_down {
-            parts.push(format!("↓ {}", format_speed(snapshot.network.download_bytes_per_sec)));
+            parts.push(NativeTaskbarSegment {
+                label: "↓".to_string(),
+                value: format_speed(snapshot.network.download_bytes_per_sec),
+                extra: None,
+                value_tone: SegmentTone::Normal,
+            });
         }
         if config.show_up {
-            parts.push(format!("↑ {}", format_speed(snapshot.network.upload_bytes_per_sec)));
+            parts.push(NativeTaskbarSegment {
+                label: "↑".to_string(),
+                value: format_speed(snapshot.network.upload_bytes_per_sec),
+                extra: None,
+                value_tone: SegmentTone::Normal,
+            });
         }
         if config.show_latency {
-            parts.push(format!("L {}", format_latency(snapshot.network.latency_ms, &config.language)));
+            parts.push(NativeTaskbarSegment {
+                label: if config.language == "zh-CN" { "延迟" } else { "LAT" }.to_string(),
+                value: format_latency(snapshot.network.latency_ms, &config.language),
+                extra: None,
+                value_tone: SegmentTone::Normal,
+            });
         }
         if parts.is_empty() {
-            parts.push("PulseCoreLite".to_string());
+            parts.push(NativeTaskbarSegment {
+                label: "PulseCoreLite".to_string(),
+                value: String::new(),
+                extra: None,
+                value_tone: SegmentTone::Muted,
+            });
         }
         parts
     }
@@ -300,13 +619,113 @@ mod imp {
             let split = ((parts.len() as f64) / 2.0).ceil() as usize;
             let (top, bottom) = parts.split_at(split.max(1).min(parts.len()));
             NativeTaskbarModel {
-                line1: top.join("   "),
-                line2: bottom.join("   "),
+                rows: vec![top.to_vec(), bottom.to_vec()],
             }
         } else {
             NativeTaskbarModel {
-                line1: parts.join("  |  "),
-                line2: String::new(),
+                rows: vec![parts],
+            }
+        }
+    }
+
+    fn estimate_model_width(model: &NativeTaskbarModel, config: &NativeTaskbarConfig) -> i32 {
+        let chars = model
+            .rows
+            .iter()
+            .map(|row| {
+                row.iter()
+                    .map(|segment| {
+                        segment.label.len()
+                            + 1
+                            + segment.value.len()
+                            + segment.extra.as_ref().map(|extra| 1 + extra.len()).unwrap_or(0)
+                    })
+                    .sum::<usize>()
+                    + row.len().saturating_sub(1) * 3
+            })
+            .max()
+            .unwrap_or(28) as i32;
+        let per_char = if config.two_line_mode { 8 } else { 9 };
+        (chars * per_char + 28).clamp(240, 1080)
+    }
+
+    fn tone_color(config: &NativeTaskbarConfig, tone: SegmentTone) -> COLORREF {
+        match tone {
+            SegmentTone::Muted => match config.background_mode.as_str() {
+                "light" => rgb(60, 68, 78),
+                _ => rgb(208, 214, 222),
+            },
+            SegmentTone::Cyan => rgb(0, 242, 255),
+            SegmentTone::Pink => rgb(188, 19, 254),
+            SegmentTone::Orange => rgb(255, 165, 0),
+            SegmentTone::Red => rgb(255, 59, 59),
+            SegmentTone::Normal => match config.background_mode.as_str() {
+                "light" => rgb(24, 29, 38),
+                _ => rgb(240, 243, 246),
+            },
+        }
+    }
+
+    fn measure_text(hdc: *mut core::ffi::c_void, text: &str) -> i32 {
+        if text.is_empty() {
+            return 0;
+        }
+        let wide = to_wide(text);
+        let mut size = SIZE { cx: 0, cy: 0 };
+        unsafe {
+            GetTextExtentPoint32W(hdc, wide.as_ptr(), (wide.len() - 1) as i32, &mut size as *mut SIZE);
+        }
+        size.cx
+    }
+
+    fn draw_text_piece(
+        hdc: *mut core::ffi::c_void,
+        x: &mut i32,
+        y: i32,
+        text: &str,
+        color: COLORREF,
+        font: *mut core::ffi::c_void,
+    ) {
+        if text.is_empty() {
+            return;
+        }
+        let wide = to_wide(text);
+        unsafe {
+            SelectObject(hdc, font);
+            SetTextColor(hdc, color);
+            TextOutW(hdc, *x, y, wide.as_ptr(), (wide.len() - 1) as i32);
+        }
+        *x += measure_text(hdc, text);
+    }
+
+    fn draw_row(
+        hdc: *mut core::ffi::c_void,
+        config: &NativeTaskbarConfig,
+        row: &[NativeTaskbarSegment],
+        top: i32,
+    ) {
+        let label_font = unsafe { GetStockObject(DEFAULT_GUI_FONT) };
+        let value_font = unsafe { GetStockObject(ANSI_FIXED_FONT) };
+        let label_color = tone_color(config, SegmentTone::Muted);
+        let sep_color = match config.background_mode.as_str() {
+            "light" => rgb(120, 128, 138),
+            _ => rgb(150, 158, 168),
+        };
+        let extra_color = tone_color(config, SegmentTone::Muted);
+        let mut x = 10;
+
+        for (index, segment) in row.iter().enumerate() {
+            if index > 0 {
+                draw_text_piece(hdc, &mut x, top, " | ", sep_color, label_font);
+            }
+            draw_text_piece(hdc, &mut x, top, &segment.label, label_color, label_font);
+            if !segment.value.is_empty() {
+                draw_text_piece(hdc, &mut x, top, " ", label_color, label_font);
+                draw_text_piece(hdc, &mut x, top, &segment.value, tone_color(config, segment.value_tone), value_font);
+            }
+            if let Some(extra) = &segment.extra {
+                draw_text_piece(hdc, &mut x, top, " ", extra_color, label_font);
+                draw_text_piece(hdc, &mut x, top, extra, extra_color, value_font);
             }
         }
     }
@@ -374,35 +793,47 @@ mod imp {
             return;
         }
         let taskbar_info = get_taskbar_info_inner();
-        let width = 640;
-        let height = if config.two_line_mode || !model.line2.is_empty() { 48 } else { 28 };
-        let (mut x, mut y) = (CW_USEDEFAULT, CW_USEDEFAULT);
+        let width = estimate_model_width(model, config);
+        let height = if config.two_line_mode || model.rows.len() > 1 { 48 } else { 28 };
+        let shared = shared();
+        let locked_position = shared.locked_position.lock().ok().and_then(|guard| *guard);
+        let manual_position = shared.manual_position.lock().ok().and_then(|guard| *guard);
+        let (mut x, mut y) = if config.position_locked {
+            locked_position.or(manual_position).unwrap_or((CW_USEDEFAULT, CW_USEDEFAULT))
+        } else if config.remember_position {
+            manual_position.unwrap_or((CW_USEDEFAULT, CW_USEDEFAULT))
+        } else {
+            (CW_USEDEFAULT, CW_USEDEFAULT)
+        };
         if let Some(info) = taskbar_info {
-            match info.edge {
-                3 => {
-                    x = info.right - width - 8;
-                    y = info.top - height;
-                }
-                1 => {
-                    x = info.right - width - 8;
-                    y = info.bottom;
-                }
-                0 => {
-                    x = info.right;
-                    y = info.bottom - height - 8;
-                }
-                2 => {
-                    x = info.left - width;
-                    y = info.bottom - height - 8;
-                }
-                _ => {
-                    x = info.right - width - 8;
-                    y = info.top - height;
+            if x == CW_USEDEFAULT || y == CW_USEDEFAULT {
+                match info.edge {
+                    3 => {
+                        x = info.right - width - 8;
+                        y = info.top - height;
+                    }
+                    1 => {
+                        x = info.right - width - 8;
+                        y = info.bottom;
+                    }
+                    0 => {
+                        x = info.right;
+                        y = info.bottom - height - 8;
+                    }
+                    2 => {
+                        x = info.left - width;
+                        y = info.bottom - height - 8;
+                    }
+                    _ => {
+                        x = info.right - width - 8;
+                        y = info.top - height;
+                    }
                 }
             }
         }
 
         let insert_after = if config.always_on_top { HWND_TOPMOST } else { HWND_NOTOPMOST };
+        shared.programmatic_move.store(true, Ordering::Relaxed);
         unsafe {
             SetWindowPos(hwnd, insert_after, x, y, width, height, SWP_NOACTIVATE);
             SetLayeredWindowAttributes(hwnd, 0, config_colors(config).2, LWA_ALPHA);
@@ -417,6 +848,7 @@ mod imp {
                 UpdateWindow(hwnd);
             }
         }
+        shared.programmatic_move.store(false, Ordering::Relaxed);
     }
 
     fn drain_commands(hwnd: HWND) {
@@ -473,6 +905,11 @@ mod imp {
         let Some(app) = shared.app.lock().ok().and_then(|guard| guard.clone()) else {
             return;
         };
+        let config = shared.config.lock().ok().and_then(|guard| guard.clone());
+        let Some(config) = config else {
+            return;
+        };
+        let text = menu_text(&config.language);
 
         let main_visible = app
             .get_webview_window("main")
@@ -484,16 +921,144 @@ mod imp {
             return;
         }
 
-        let toggle_text = if main_visible {
-            "Hide Main Window"
-        } else {
-            "Show Main Window"
-        };
+        let toggle_text = if main_visible { text.hide_main_window } else { text.show_main_window };
         let toggle_text_w = to_wide(toggle_text);
-        let exit_text_w = to_wide("Exit App");
+        let always_on_top_text = to_wide(text.always_on_top);
+        let auto_hide_text = to_wide(text.auto_hide_on_fullscreen);
+        let remember_position_text = to_wide(text.remember_position);
+        let position_lock_text = to_wide(if config.position_locked {
+            text.unlock_position
+        } else {
+            text.lock_position
+        });
+        let two_line_text = to_wide(text.two_line);
+        let theme_transparent_text = to_wide(text.theme_transparent);
+        let theme_dark_text = to_wide(text.theme_dark);
+        let theme_light_text = to_wide(text.theme_light);
+        let cpu_text = to_wide(text.cpu);
+        let cpu_freq_text = to_wide(text.cpu_freq);
+        let cpu_temp_text = to_wide(text.cpu_temp);
+        let gpu_text = to_wide(text.gpu);
+        let gpu_temp_text = to_wide(text.gpu_temp);
+        let memory_text = to_wide(text.memory);
+        let app_text = to_wide(text.app);
+        let down_text = to_wide(text.down);
+        let up_text = to_wide(text.up);
+        let latency_text = to_wide(text.latency);
+        let close_taskbar_text = to_wide(text.close_taskbar);
+        let exit_text_w = to_wide(text.exit_app);
         unsafe {
             AppendMenuW(menu, MF_STRING, MENU_SHOW_OR_HIDE_MAIN, toggle_text_w.as_ptr());
             AppendMenuW(menu, MF_SEPARATOR, 0, ptr::null());
+            AppendMenuW(
+                menu,
+                MF_STRING | if config.always_on_top { MF_CHECKED } else { MF_UNCHECKED },
+                MENU_ALWAYS_ON_TOP,
+                always_on_top_text.as_ptr(),
+            );
+            AppendMenuW(
+                menu,
+                MF_STRING | if config.auto_hide_on_fullscreen { MF_CHECKED } else { MF_UNCHECKED },
+                MENU_AUTO_HIDE_FULLSCREEN,
+                auto_hide_text.as_ptr(),
+            );
+            AppendMenuW(
+                menu,
+                MF_STRING | if config.remember_position { MF_CHECKED } else { MF_UNCHECKED },
+                MENU_REMEMBER_POSITION,
+                remember_position_text.as_ptr(),
+            );
+            AppendMenuW(menu, MF_STRING, MENU_POSITION_LOCK, position_lock_text.as_ptr());
+            AppendMenuW(menu, MF_SEPARATOR, 0, ptr::null());
+            AppendMenuW(
+                menu,
+                MF_STRING | if config.two_line_mode { MF_CHECKED } else { MF_UNCHECKED },
+                MENU_TWO_LINE,
+                two_line_text.as_ptr(),
+            );
+            AppendMenuW(menu, MF_SEPARATOR, 0, ptr::null());
+            AppendMenuW(
+                menu,
+                MF_STRING | if config.background_mode == "transparent" { MF_CHECKED } else { MF_UNCHECKED },
+                MENU_THEME_TRANSPARENT,
+                theme_transparent_text.as_ptr(),
+            );
+            AppendMenuW(
+                menu,
+                MF_STRING | if config.background_mode == "dark" { MF_CHECKED } else { MF_UNCHECKED },
+                MENU_THEME_DARK,
+                theme_dark_text.as_ptr(),
+            );
+            AppendMenuW(
+                menu,
+                MF_STRING | if config.background_mode == "light" { MF_CHECKED } else { MF_UNCHECKED },
+                MENU_THEME_LIGHT,
+                theme_light_text.as_ptr(),
+            );
+            AppendMenuW(menu, MF_SEPARATOR, 0, ptr::null());
+            AppendMenuW(
+                menu,
+                MF_STRING | if config.show_cpu { MF_CHECKED } else { MF_UNCHECKED },
+                MENU_SHOW_CPU,
+                cpu_text.as_ptr(),
+            );
+            AppendMenuW(
+                menu,
+                MF_STRING | if config.show_cpu_freq { MF_CHECKED } else { MF_UNCHECKED },
+                MENU_SHOW_CPU_FREQ,
+                cpu_freq_text.as_ptr(),
+            );
+            AppendMenuW(
+                menu,
+                MF_STRING | if config.show_cpu_temp { MF_CHECKED } else { MF_UNCHECKED },
+                MENU_SHOW_CPU_TEMP,
+                cpu_temp_text.as_ptr(),
+            );
+            AppendMenuW(
+                menu,
+                MF_STRING | if config.show_gpu { MF_CHECKED } else { MF_UNCHECKED },
+                MENU_SHOW_GPU,
+                gpu_text.as_ptr(),
+            );
+            AppendMenuW(
+                menu,
+                MF_STRING | if config.show_gpu_temp { MF_CHECKED } else { MF_UNCHECKED },
+                MENU_SHOW_GPU_TEMP,
+                gpu_temp_text.as_ptr(),
+            );
+            AppendMenuW(
+                menu,
+                MF_STRING | if config.show_memory { MF_CHECKED } else { MF_UNCHECKED },
+                MENU_SHOW_MEMORY,
+                memory_text.as_ptr(),
+            );
+            AppendMenuW(
+                menu,
+                MF_STRING | if config.show_app { MF_CHECKED } else { MF_UNCHECKED },
+                MENU_SHOW_APP,
+                app_text.as_ptr(),
+            );
+            AppendMenuW(menu, MF_SEPARATOR, 0, ptr::null());
+            AppendMenuW(
+                menu,
+                MF_STRING | if config.show_down { MF_CHECKED } else { MF_UNCHECKED },
+                MENU_SHOW_DOWN,
+                down_text.as_ptr(),
+            );
+            AppendMenuW(
+                menu,
+                MF_STRING | if config.show_up { MF_CHECKED } else { MF_UNCHECKED },
+                MENU_SHOW_UP,
+                up_text.as_ptr(),
+            );
+            AppendMenuW(
+                menu,
+                MF_STRING | if config.show_latency { MF_CHECKED } else { MF_UNCHECKED },
+                MENU_SHOW_LATENCY,
+                latency_text.as_ptr(),
+            );
+            AppendMenuW(menu, MF_SEPARATOR, 0, ptr::null());
+            AppendMenuW(menu, MF_STRING, MENU_CLOSE_TASKBAR, close_taskbar_text.as_ptr());
             AppendMenuW(menu, MF_STRING, MENU_EXIT_APP, exit_text_w.as_ptr());
         }
 
@@ -515,6 +1080,101 @@ mod imp {
 
         match selected as usize {
             MENU_SHOW_OR_HIDE_MAIN => toggle_main_window(&app, &shared),
+            MENU_ALWAYS_ON_TOP => {
+                update_settings(&shared, |settings| {
+                    settings.taskbar_always_on_top = !settings.taskbar_always_on_top;
+                });
+                apply_runtime_config_change(&shared, |config| {
+                    config.always_on_top = !config.always_on_top;
+                });
+            }
+            MENU_AUTO_HIDE_FULLSCREEN => {
+                update_settings(&shared, |settings| {
+                    settings.taskbar_auto_hide_on_fullscreen = !settings.taskbar_auto_hide_on_fullscreen;
+                });
+                apply_runtime_config_change(&shared, |config| {
+                    config.auto_hide_on_fullscreen = !config.auto_hide_on_fullscreen;
+                });
+            }
+            MENU_REMEMBER_POSITION => {
+                let enabled = !config.remember_position;
+                update_settings(&shared, |settings| {
+                    settings.remember_overlay_position = enabled;
+                });
+                if enabled {
+                    capture_current_position(&shared, hwnd);
+                } else if !config.position_locked {
+                    if let Ok(mut slot) = shared.manual_position.lock() {
+                        *slot = None;
+                    }
+                }
+                apply_runtime_config_change(&shared, |config| {
+                    config.remember_position = enabled;
+                });
+            }
+            MENU_POSITION_LOCK => {
+                let enabled = !config.position_locked;
+                update_settings(&shared, |settings| {
+                    settings.taskbar_position_locked = enabled;
+                });
+                if enabled {
+                    capture_current_position(&shared, hwnd);
+                } else if let Ok(mut slot) = shared.locked_position.lock() {
+                    *slot = None;
+                }
+                apply_runtime_config_change(&shared, |config| {
+                    config.position_locked = enabled;
+                });
+            }
+            MENU_TWO_LINE => apply_runtime_config_change(&shared, |config| {
+                config.two_line_mode = !config.two_line_mode;
+            }),
+            MENU_THEME_TRANSPARENT => apply_runtime_config_change(&shared, |config| {
+                config.background_mode = "transparent".to_string();
+            }),
+            MENU_THEME_DARK => apply_runtime_config_change(&shared, |config| {
+                config.background_mode = "dark".to_string();
+            }),
+            MENU_THEME_LIGHT => apply_runtime_config_change(&shared, |config| {
+                config.background_mode = "light".to_string();
+            }),
+            MENU_SHOW_CPU => apply_runtime_config_change(&shared, |config| {
+                config.show_cpu = !config.show_cpu;
+            }),
+            MENU_SHOW_CPU_FREQ => apply_runtime_config_change(&shared, |config| {
+                config.show_cpu_freq = !config.show_cpu_freq;
+            }),
+            MENU_SHOW_CPU_TEMP => apply_runtime_config_change(&shared, |config| {
+                config.show_cpu_temp = !config.show_cpu_temp;
+            }),
+            MENU_SHOW_GPU => apply_runtime_config_change(&shared, |config| {
+                config.show_gpu = !config.show_gpu;
+            }),
+            MENU_SHOW_GPU_TEMP => apply_runtime_config_change(&shared, |config| {
+                config.show_gpu_temp = !config.show_gpu_temp;
+            }),
+            MENU_SHOW_MEMORY => apply_runtime_config_change(&shared, |config| {
+                config.show_memory = !config.show_memory;
+            }),
+            MENU_SHOW_APP => apply_runtime_config_change(&shared, |config| {
+                config.show_app = !config.show_app;
+            }),
+            MENU_SHOW_DOWN => apply_runtime_config_change(&shared, |config| {
+                config.show_down = !config.show_down;
+            }),
+            MENU_SHOW_UP => apply_runtime_config_change(&shared, |config| {
+                config.show_up = !config.show_up;
+            }),
+            MENU_SHOW_LATENCY => apply_runtime_config_change(&shared, |config| {
+                config.show_latency = !config.show_latency;
+            }),
+            MENU_CLOSE_TASKBAR => {
+                update_settings(&shared, |settings| {
+                    settings.native_taskbar_monitor_enabled = false;
+                });
+                emit_native_taskbar_sync(&shared, &config, false);
+                push_command(NativeTaskbarCommand::Close);
+            }
             MENU_EXIT_APP => app.exit(0),
             _ => {}
         }
@@ -535,13 +1195,33 @@ mod imp {
                 drain_commands(hwnd);
                 0
             }
-            WM_NCHITTEST => HTCAPTION as LRESULT,
+            WM_NCHITTEST => {
+                let shared = shared();
+                let locked = shared
+                    .config
+                    .lock()
+                    .ok()
+                    .and_then(|guard| guard.as_ref().map(|config| config.position_locked))
+                    .unwrap_or(false);
+                if locked {
+                    DefWindowProcW(hwnd, msg, wparam, lparam)
+                } else {
+                    HTCAPTION as LRESULT
+                }
+            }
             WM_LBUTTONDBLCLK => {
                 let shared = shared();
                 if let Some(app) = shared.app.lock().ok().and_then(|guard| guard.clone()) {
                     show_or_create_main_window(&app, &shared);
                 }
                 0
+            }
+            WM_MOVE | WM_EXITSIZEMOVE => {
+                let shared = shared();
+                if !shared.programmatic_move.load(Ordering::Relaxed) {
+                    capture_current_position(&shared, hwnd);
+                }
+                DefWindowProcW(hwnd, msg, wparam, lparam)
             }
             WM_RBUTTONUP => {
                 show_context_menu(hwnd);
@@ -558,6 +1238,8 @@ mod imp {
                         language: "en-US".to_string(),
                         always_on_top: true,
                         auto_hide_on_fullscreen: false,
+                        remember_position: true,
+                        position_locked: false,
                         show_cpu: true,
                         show_cpu_freq: true,
                         show_cpu_temp: true,
@@ -572,46 +1254,18 @@ mod imp {
                         background_mode: "dark".to_string(),
                     };
                     let config = config.unwrap_or(fallback);
-                    let (bg, fg, _) = config_colors(&config);
+                    let (bg, _fg, _) = config_colors(&config);
                     let brush = CreateSolidBrush(bg);
                     let mut rect: RECT = std::mem::zeroed();
                     GetClientRect(hwnd, &mut rect as *mut RECT);
                     FillRect(hdc, &rect as *const RECT, brush);
                     SetBkMode(hdc, TRANSPARENT as i32);
-                    SetTextColor(hdc, fg);
-                    let font = GetStockObject(DEFAULT_GUI_FONT);
-                    SelectObject(hdc, font);
+                    let row1 = model.rows.first().cloned().unwrap_or_default();
+                    draw_row(hdc, &config, &row1, 6);
 
-                    let mut line1_rect = RECT {
-                        left: 10,
-                        top: 4,
-                        right: rect.right - 10,
-                        bottom: if config.two_line_mode || !model.line2.is_empty() { 24 } else { rect.bottom - 4 },
-                    };
-                    let line1 = to_wide(&model.line1);
-                    DrawTextW(
-                        hdc,
-                        line1.as_ptr(),
-                        -1,
-                        &mut line1_rect as *mut RECT,
-                        DT_LEFT | DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX | DT_END_ELLIPSIS,
-                    );
-
-                    if config.two_line_mode || !model.line2.is_empty() {
-                        let mut line2_rect = RECT {
-                            left: 10,
-                            top: 22,
-                            right: rect.right - 10,
-                            bottom: rect.bottom - 4,
-                        };
-                        let line2 = to_wide(&model.line2);
-                        DrawTextW(
-                            hdc,
-                            line2.as_ptr(),
-                            -1,
-                            &mut line2_rect as *mut RECT,
-                            DT_LEFT | DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX | DT_END_ELLIPSIS,
-                        );
+                    if config.two_line_mode || model.rows.len() > 1 {
+                        let row2 = model.rows.get(1).cloned().unwrap_or_default();
+                        draw_row(hdc, &config, &row2, 24);
                     }
 
                     DeleteObject(brush);

@@ -2,12 +2,38 @@ import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
 
 import { api, inTauri, listenEvent } from '../services/tauri';
+import { storageKeys, storageRepository } from '../services/storageRepository';
 import type { AppBootstrap, TelemetrySnapshot } from '../types';
 import { defaultSettings, emptyHardware, emptySnapshot } from './modules/appStateDomain';
 import { useSettingsStore } from './settingsStore';
 import { useSystemStore } from './systemStore';
 import { useTelemetryStore } from './telemetryStore';
 import { useWindowStore } from './windowStore';
+import { emitSyncEvent } from '../services/syncBus';
+
+type NativeTaskbarSyncPayload = {
+  settings?: Partial<{
+    taskbarAlwaysOnTop: boolean;
+    taskbarAutoHideOnFullscreen: boolean;
+    rememberOverlayPosition: boolean;
+    taskbarPositionLocked: boolean;
+    nativeTaskbarMonitorEnabled: boolean;
+  }>;
+  prefs?: Partial<{
+    showCpu: boolean;
+    showCpuFreq: boolean;
+    showCpuTemp: boolean;
+    showGpu: boolean;
+    showGpuTemp: boolean;
+    showMemory: boolean;
+    showApp: boolean;
+    showDown: boolean;
+    showUp: boolean;
+    showLatency: boolean;
+    twoLineMode: boolean;
+    backgroundMode: 'transparent' | 'dark' | 'light';
+  }>;
+};
 
 async function getCurrentWindowLabel(): Promise<string | null> {
   if (!inTauri()) {
@@ -63,6 +89,31 @@ export const useAppStore = defineStore('app', () => {
     unlisteners.value.push(
       await listenEvent<null>('pulsecorelite://taskbar-prefs-sync', () => {
         void syncNativeTaskbarMonitor();
+      })
+    );
+    unlisteners.value.push(
+      await listenEvent<NativeTaskbarSyncPayload>('pulsecorelite://native-taskbar-sync', payload => {
+        const nextSettings = payload?.settings;
+        if (nextSettings && Object.keys(nextSettings).length > 0) {
+          settingsStore.hydrateSettings({
+            ...settingsStore.settings,
+            ...nextSettings
+          });
+          settingsStore.persistAndSync();
+        }
+
+        const nextPrefs = payload?.prefs;
+        if (nextPrefs && Object.keys(nextPrefs).length > 0) {
+          const currentPrefs =
+            storageRepository.getJsonSync<Record<string, unknown>>(storageKeys.taskbarPrefs) ?? {};
+          const mergedPrefs = { ...currentPrefs, ...nextPrefs };
+          storageRepository.setJsonSync(storageKeys.taskbarPrefs, mergedPrefs);
+          void storageRepository.setJson(storageKeys.taskbarPrefs, mergedPrefs);
+          void emitSyncEvent<null>('pulsecorelite://taskbar-prefs-sync', null, {
+            labels: ['main', 'taskbar', 'toolkit']
+          });
+          void syncNativeTaskbarMonitor();
+        }
       })
     );
   }
