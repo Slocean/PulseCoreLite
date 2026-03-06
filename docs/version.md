@@ -1,3 +1,17 @@
+## v1.8.9
+
+- 硬件评分算法升级：优化 CPU/GPU 评分计算与硬件升级建议逻辑
+- 新增硬件评分文档与权重评估报告（算法 2.0、游戏评分算法）
+- 提醒内容支持图片上传：新增图片输入组件并完善上传流程
+- 更新检查异常处理改进：优化悬浮窗更新失败提示与处理
+- 新增性能采集报告（2026-03-05）
+
+- Upgrade hardware scoring with refined CPU/GPU calculations and upgrade advice logic
+- Add hardware scoring docs and weight evaluation report (Algorithm 2.0, game scoring)
+- Reminder content now supports image upload with a dedicated image input component
+- Improve overlay update error handling
+- Add performance profiling report (2026-03-05)
+
 ## v1.8.8
 
 - 提醒高级设置重构：完善背景配置与频率选择，支持图片上传/预览并更新布局
