@@ -215,6 +215,17 @@ mod imp {
         wake_window(&shared);
     }
 
+    fn retain_pending_commands(mut predicate: impl FnMut(&NativeTaskbarCommand) -> bool) {
+        let shared = shared();
+        {
+            let mut queue = match shared.queue.lock() {
+                Ok(queue) => queue,
+                Err(_) => return,
+            };
+            queue.retain(|command| predicate(command));
+        }
+    }
+
     fn format_speed(bytes_per_sec: f64) -> String {
         format!("{:.1} MB/s", bytes_per_sec / 1024.0 / 1024.0)
     }
@@ -705,12 +716,19 @@ mod imp {
             *slot = Some(state.clone());
         }
         if enabled {
+            retain_pending_commands(|command| !matches!(command, NativeTaskbarCommand::Close));
             ensure_thread();
             push_command(NativeTaskbarCommand::ApplyConfig(config));
             let snapshot = state.latest_snapshot.read().await.clone();
             push_command(NativeTaskbarCommand::UpdateSnapshot(snapshot));
         } else {
-            push_command(NativeTaskbarCommand::Close);
+            let has_window = !shared.hwnd().is_null();
+            if shared.running.load(Ordering::Relaxed) || has_window {
+                retain_pending_commands(|command| !matches!(command, NativeTaskbarCommand::Close));
+                push_command(NativeTaskbarCommand::Close);
+            } else {
+                retain_pending_commands(|command| !matches!(command, NativeTaskbarCommand::Close));
+            }
         }
         Ok(())
     }

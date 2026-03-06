@@ -13,7 +13,12 @@
   </div>
 
   <div class="overlay-config-row">
-    <UiCheckbox v-model="nativeTaskbarMonitorEnabled">{{ t('overlay.nativeTaskbarMonitor') }}</UiCheckbox>
+    <div class="overlay-config-taskbar overlay-config-taskbar--compact">
+      <span class="overlay-config-label">{{ t('overlay.nativeTaskbarMonitor') }}</span>
+      <UiSwitch
+        v-model="nativeTaskbarMonitorEnabled"
+        :aria-label="t('overlay.nativeTaskbarMonitor')" />
+    </div>
   </div>
 
   <div class="overlay-config-language">
