@@ -35,6 +35,7 @@
     "alwaysOnTop": "Always on Top",
     "taskbarFullscreenAutoHide": "Auto-hide on Fullscreen",
     "taskbarMonitor": "Taskbar Monitor",
+    "nativeTaskbarMonitor": "Native Taskbar Monitor (Experimental)",
     "taskbarMonitorOpen": "Enable",
     "taskbarMonitorClose": "Disable",
     "backgroundOpacity": "Background Opacity",

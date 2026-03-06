@@ -313,6 +313,30 @@ export const useSettingsStore = defineStore('settings', {
         }
       }
     },
+    async setNativeTaskbarMonitorEnabled(nativeTaskbarMonitorEnabled: boolean) {
+      if (this.settings.nativeTaskbarMonitorEnabled === nativeTaskbarMonitorEnabled) {
+        return;
+      }
+      this.settings = {
+        ...this.settings,
+        nativeTaskbarMonitorEnabled
+      };
+      this.persistAndSync();
+
+      if (!inTauri()) {
+        return;
+      }
+
+      const label = await getCurrentWindowLabel();
+      if (label !== 'main') {
+        try {
+          const { getCurrentWindow } = await import('@tauri-apps/api/window');
+          await getCurrentWindow().emitTo('main', 'pulsecorelite://settings-sync', null);
+        } catch {
+          // best-effort; ignore
+        }
+      }
+    },
     setFactoryResetHotkey(factoryResetHotkey: string | null) {
       if (this.settings.factoryResetHotkey === factoryResetHotkey) {
         return;

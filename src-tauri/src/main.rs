@@ -3,6 +3,7 @@
 mod app;
 mod core;
 mod ipc;
+mod native_taskbar;
 mod profiler;
 mod state;
 mod types;

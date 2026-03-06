@@ -83,6 +83,8 @@ function readStoredSettings(): Partial<AppSettings> | null {
   const hasOverlayAlwaysOnTop = hasOwn('overlayAlwaysOnTop') && typeof parsed.overlayAlwaysOnTop === 'boolean';
   const hasTaskbarMonitorEnabled =
     hasOwn('taskbarMonitorEnabled') && typeof parsed.taskbarMonitorEnabled === 'boolean';
+  const hasNativeTaskbarMonitorEnabled =
+    hasOwn('nativeTaskbarMonitorEnabled') && typeof parsed.nativeTaskbarMonitorEnabled === 'boolean';
   const hasTaskbarAlwaysOnTop = hasOwn('taskbarAlwaysOnTop') && typeof parsed.taskbarAlwaysOnTop === 'boolean';
   const hasTaskbarAutoHideOnFullscreen =
     hasOwn('taskbarAutoHideOnFullscreen') && typeof parsed.taskbarAutoHideOnFullscreen === 'boolean';
@@ -103,6 +105,7 @@ function readStoredSettings(): Partial<AppSettings> | null {
     hasRememberOverlayPosition ||
     hasOverlayAlwaysOnTop ||
     hasTaskbarMonitorEnabled ||
+    hasNativeTaskbarMonitorEnabled ||
     hasTaskbarAlwaysOnTop ||
     hasTaskbarAutoHideOnFullscreen ||
     hasTaskbarPositionLocked ||
@@ -119,6 +122,9 @@ function readStoredSettings(): Partial<AppSettings> | null {
       ...(hasRememberOverlayPosition ? { rememberOverlayPosition: parsed.rememberOverlayPosition } : {}),
       ...(hasOverlayAlwaysOnTop ? { overlayAlwaysOnTop: parsed.overlayAlwaysOnTop } : {}),
       ...(hasTaskbarMonitorEnabled ? { taskbarMonitorEnabled: parsed.taskbarMonitorEnabled } : {}),
+      ...(hasNativeTaskbarMonitorEnabled
+        ? { nativeTaskbarMonitorEnabled: parsed.nativeTaskbarMonitorEnabled }
+        : {}),
       ...(hasTaskbarAlwaysOnTop ? { taskbarAlwaysOnTop: parsed.taskbarAlwaysOnTop } : {}),
       ...(hasTaskbarAutoHideOnFullscreen
         ? { taskbarAutoHideOnFullscreen: parsed.taskbarAutoHideOnFullscreen }
@@ -142,6 +148,7 @@ export function resolveSettings(settings?: AppSettings | null): AppSettings {
     rememberOverlayPosition: true,
     overlayAlwaysOnTop: true,
     taskbarMonitorEnabled: false,
+    nativeTaskbarMonitorEnabled: false,
     taskbarAlwaysOnTop: true,
     taskbarAutoHideOnFullscreen: false,
     taskbarPositionLocked: false,
@@ -177,6 +184,10 @@ export function resolveSettings(settings?: AppSettings | null): AppSettings {
       typeof candidate.taskbarMonitorEnabled === 'boolean'
         ? candidate.taskbarMonitorEnabled
         : fallback.taskbarMonitorEnabled,
+    nativeTaskbarMonitorEnabled:
+      typeof candidate.nativeTaskbarMonitorEnabled === 'boolean'
+        ? candidate.nativeTaskbarMonitorEnabled
+        : fallback.nativeTaskbarMonitorEnabled,
     taskbarAlwaysOnTop:
       typeof candidate.taskbarAlwaysOnTop === 'boolean'
         ? candidate.taskbarAlwaysOnTop
@@ -214,6 +225,8 @@ export function resolveSettings(settings?: AppSettings | null): AppSettings {
     rememberOverlayPosition: stored.rememberOverlayPosition ?? base.rememberOverlayPosition,
     overlayAlwaysOnTop: stored.overlayAlwaysOnTop ?? base.overlayAlwaysOnTop,
     taskbarMonitorEnabled: stored.taskbarMonitorEnabled ?? base.taskbarMonitorEnabled,
+    nativeTaskbarMonitorEnabled:
+      stored.nativeTaskbarMonitorEnabled ?? base.nativeTaskbarMonitorEnabled,
     taskbarAlwaysOnTop: stored.taskbarAlwaysOnTop ?? base.taskbarAlwaysOnTop,
     taskbarAutoHideOnFullscreen: stored.taskbarAutoHideOnFullscreen ?? base.taskbarAutoHideOnFullscreen,
     taskbarPositionLocked: stored.taskbarPositionLocked ?? base.taskbarPositionLocked,

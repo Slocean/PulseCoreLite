@@ -67,6 +67,10 @@ export function useOverlayPageController({
     get: () => store.settings.taskbarMonitorEnabled,
     set: value => void store.setTaskbarMonitorEnabled(value)
   });
+  const nativeTaskbarMonitorEnabled = computed({
+    get: () => store.settings.nativeTaskbarMonitorEnabled,
+    set: value => void store.setNativeTaskbarMonitorEnabled(value)
+  });
   const factoryResetHotkey = computed({
     get: () => store.settings.factoryResetHotkey,
     set: value => store.setFactoryResetHotkey(value)
@@ -249,6 +253,7 @@ export function useOverlayPageController({
     rememberOverlayPosition,
     overlayAlwaysOnTop,
     taskbarMonitorEnabled,
+    nativeTaskbarMonitorEnabled,
     factoryResetHotkey,
     appUsageLabel,
     updateDialogOpen,

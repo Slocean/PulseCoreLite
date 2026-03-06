@@ -18,6 +18,7 @@ interface AppStoreLike {
     taskbarPositionLocked: boolean;
     factoryResetHotkey: string | null;
     taskbarMonitorEnabled: boolean;
+    nativeTaskbarMonitorEnabled: boolean;
     autoStartEnabled: boolean;
     memoryTrimEnabled: boolean;
     memoryTrimSystemEnabled: boolean;
@@ -33,6 +34,7 @@ interface AppStoreLike {
   setTaskbarPositionLocked: (value: boolean) => void;
   setFactoryResetHotkey: (value: string | null) => void;
   setTaskbarMonitorEnabled: (value: boolean) => Promise<void>;
+  setNativeTaskbarMonitorEnabled: (value: boolean) => Promise<void>;
   setAutoStartEnabled: (value: boolean) => Promise<void>;
   setMemoryTrimEnabled: (value: boolean) => Promise<void> | void;
   setMemoryTrimSystemEnabled: (value: boolean) => Promise<void> | void;
@@ -320,6 +322,11 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
       }
       if (typeof settings.taskbarMonitorEnabled === 'boolean') {
         pushSettingCommitter(() => store.setTaskbarMonitorEnabled(settings.taskbarMonitorEnabled as boolean));
+      }
+      if (typeof settings.nativeTaskbarMonitorEnabled === 'boolean') {
+        pushSettingCommitter(() =>
+          store.setNativeTaskbarMonitorEnabled(settings.nativeTaskbarMonitorEnabled as boolean)
+        );
       }
       if (typeof settings.autoStartEnabled === 'boolean') {
         pushSettingCommitter(() => store.setAutoStartEnabled(settings.autoStartEnabled as boolean));

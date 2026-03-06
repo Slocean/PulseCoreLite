@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 
 import { api, inTauri } from '../services/tauri';
+import { storageKeys, storageRepository } from '../services/storageRepository';
 import type { AppSettings } from '../types';
 
 const FULLSCREEN_POLL_MS = 800;
@@ -23,6 +24,81 @@ let fullscreenSettingsResolver: (() => AppSettings) | null = null;
 
 function resolveTrayText(language: AppSettings['language']) {
   return TRAY_TEXT[language] ?? TRAY_TEXT['en-US'];
+}
+
+type NativeTaskbarPrefs = {
+  showCpu: boolean;
+  showCpuFreq: boolean;
+  showCpuTemp: boolean;
+  showGpu: boolean;
+  showGpuTemp: boolean;
+  showMemory: boolean;
+  showApp: boolean;
+  showDown: boolean;
+  showUp: boolean;
+  showLatency: boolean;
+  twoLineMode: boolean;
+  backgroundMode: 'transparent' | 'dark' | 'light';
+};
+
+const DEFAULT_NATIVE_TASKBAR_PREFS: NativeTaskbarPrefs = {
+  showCpu: true,
+  showCpuFreq: true,
+  showCpuTemp: true,
+  showGpu: true,
+  showGpuTemp: true,
+  showMemory: true,
+  showApp: true,
+  showDown: true,
+  showUp: true,
+  showLatency: false,
+  twoLineMode: false,
+  backgroundMode: 'transparent'
+};
+
+function readNativeTaskbarPrefs(): NativeTaskbarPrefs {
+  const parsed = storageRepository.getJsonSync<Partial<NativeTaskbarPrefs>>(storageKeys.taskbarPrefs);
+  const prefs = parsed ?? {};
+  return {
+    showCpu: prefs.showCpu ?? DEFAULT_NATIVE_TASKBAR_PREFS.showCpu,
+    showCpuFreq: prefs.showCpuFreq ?? DEFAULT_NATIVE_TASKBAR_PREFS.showCpuFreq,
+    showCpuTemp: prefs.showCpuTemp ?? DEFAULT_NATIVE_TASKBAR_PREFS.showCpuTemp,
+    showGpu: prefs.showGpu ?? DEFAULT_NATIVE_TASKBAR_PREFS.showGpu,
+    showGpuTemp: prefs.showGpuTemp ?? DEFAULT_NATIVE_TASKBAR_PREFS.showGpuTemp,
+    showMemory: prefs.showMemory ?? DEFAULT_NATIVE_TASKBAR_PREFS.showMemory,
+    showApp: prefs.showApp ?? DEFAULT_NATIVE_TASKBAR_PREFS.showApp,
+    showDown: prefs.showDown ?? DEFAULT_NATIVE_TASKBAR_PREFS.showDown,
+    showUp: prefs.showUp ?? DEFAULT_NATIVE_TASKBAR_PREFS.showUp,
+    showLatency: prefs.showLatency ?? DEFAULT_NATIVE_TASKBAR_PREFS.showLatency,
+    twoLineMode: prefs.twoLineMode ?? DEFAULT_NATIVE_TASKBAR_PREFS.twoLineMode,
+    backgroundMode:
+      prefs.backgroundMode === 'dark' ||
+      prefs.backgroundMode === 'light' ||
+      prefs.backgroundMode === 'transparent'
+        ? prefs.backgroundMode
+        : DEFAULT_NATIVE_TASKBAR_PREFS.backgroundMode
+  };
+}
+
+function buildNativeTaskbarConfig(settings: AppSettings) {
+  const prefs = readNativeTaskbarPrefs();
+  return {
+    language: settings.language,
+    alwaysOnTop: settings.taskbarAlwaysOnTop,
+    autoHideOnFullscreen: settings.taskbarAutoHideOnFullscreen,
+    showCpu: prefs.showCpu,
+    showCpuFreq: prefs.showCpuFreq,
+    showCpuTemp: prefs.showCpuTemp,
+    showGpu: prefs.showGpu,
+    showGpuTemp: prefs.showGpuTemp,
+    showMemory: prefs.showMemory,
+    showApp: prefs.showApp,
+    showDown: prefs.showDown,
+    showUp: prefs.showUp,
+    showLatency: prefs.showLatency,
+    twoLineMode: prefs.twoLineMode,
+    backgroundMode: prefs.backgroundMode
+  };
 }
 
 export const useWindowStore = defineStore('window', {
@@ -278,6 +354,12 @@ export const useWindowStore = defineStore('window', {
       } else {
         await this.closeTaskbarMonitor();
       }
+    },
+    async syncNativeTaskbarMonitor(settings: AppSettings) {
+      if (!inTauri()) {
+        return;
+      }
+      await api.configureNativeTaskbarMonitor(settings.nativeTaskbarMonitorEnabled, buildNativeTaskbarConfig(settings));
     },
     async openTaskbarMonitor(settings: AppSettings) {
       if (!inTauri()) {

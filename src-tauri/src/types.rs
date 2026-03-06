@@ -89,6 +89,8 @@ pub struct AppSettings {
     pub overlay_always_on_top: bool,
     #[serde(rename = "taskbarMonitorEnabled")]
     pub taskbar_monitor_enabled: bool,
+    #[serde(rename = "nativeTaskbarMonitorEnabled")]
+    pub native_taskbar_monitor_enabled: bool,
     #[serde(rename = "taskbarAlwaysOnTop")]
     pub taskbar_always_on_top: bool,
     #[serde(rename = "taskbarAutoHideOnFullscreen")]
@@ -112,6 +114,7 @@ impl Default for AppSettings {
             remember_overlay_position: true,
             overlay_always_on_top: true,
             taskbar_monitor_enabled: false,
+            native_taskbar_monitor_enabled: false,
             taskbar_always_on_top: true,
             taskbar_auto_hide_on_fullscreen: false,
             taskbar_position_locked: false,
@@ -125,6 +128,39 @@ pub struct AppBootstrap {
     pub settings: AppSettings,
     pub hardware_info: HardwareInfo,
     pub latest_snapshot: TelemetrySnapshot,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NativeTaskbarConfig {
+    pub language: String,
+    #[serde(rename = "alwaysOnTop")]
+    pub always_on_top: bool,
+    #[serde(rename = "autoHideOnFullscreen")]
+    pub auto_hide_on_fullscreen: bool,
+    #[serde(rename = "showCpu")]
+    pub show_cpu: bool,
+    #[serde(rename = "showCpuFreq")]
+    pub show_cpu_freq: bool,
+    #[serde(rename = "showCpuTemp")]
+    pub show_cpu_temp: bool,
+    #[serde(rename = "showGpu")]
+    pub show_gpu: bool,
+    #[serde(rename = "showGpuTemp")]
+    pub show_gpu_temp: bool,
+    #[serde(rename = "showMemory")]
+    pub show_memory: bool,
+    #[serde(rename = "showApp")]
+    pub show_app: bool,
+    #[serde(rename = "showDown")]
+    pub show_down: bool,
+    #[serde(rename = "showUp")]
+    pub show_up: bool,
+    #[serde(rename = "showLatency")]
+    pub show_latency: bool,
+    #[serde(rename = "twoLineMode")]
+    pub two_line_mode: bool,
+    #[serde(rename = "backgroundMode")]
+    pub background_mode: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

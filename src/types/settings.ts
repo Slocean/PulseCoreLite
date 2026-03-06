@@ -11,6 +11,7 @@ export interface AppSettings {
   rememberOverlayPosition: boolean;
   overlayAlwaysOnTop: boolean;
   taskbarMonitorEnabled: boolean;
+  nativeTaskbarMonitorEnabled: boolean;
   taskbarAlwaysOnTop: boolean;
   taskbarAutoHideOnFullscreen: boolean;
   taskbarPositionLocked: boolean;

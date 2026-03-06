@@ -12,6 +12,10 @@
     </div>
   </div>
 
+  <div class="overlay-config-row">
+    <UiCheckbox v-model="nativeTaskbarMonitorEnabled">{{ t('overlay.nativeTaskbarMonitor') }}</UiCheckbox>
+  </div>
+
   <div class="overlay-config-language">
     <span class="overlay-config-label">{{ t('overlay.language') }}</span>
     <div class="overlay-lang-buttons">
@@ -50,6 +54,7 @@ const rememberOverlayPosition = defineModel<boolean>('rememberOverlayPosition', 
 const overlayAlwaysOnTop = defineModel<boolean>('overlayAlwaysOnTop', { required: true });
 const closeToTray = defineModel<boolean>('closeToTray', { required: true });
 const taskbarMonitorEnabled = defineModel<boolean>('taskbarMonitorEnabled', { required: true });
+const nativeTaskbarMonitorEnabled = defineModel<boolean>('nativeTaskbarMonitorEnabled', { required: true });
 
 const emit = defineEmits<{
   (e: 'setLanguage', value: 'zh-CN' | 'en-US'): void;

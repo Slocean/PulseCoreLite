@@ -14,7 +14,8 @@ use crate::{
     profiler::{ensure_profile_path, profile_output_dir, ProfileStatus},
     state::SharedState,
     types::{
-        AppBootstrap, MonthlyReminderSlot, ReminderAdvancedSettings, ReminderScreenEventPayload,
+        AppBootstrap, MonthlyReminderSlot, NativeTaskbarConfig, ReminderAdvancedSettings,
+        ReminderScreenEventPayload,
         ScheduleShutdownRequest, SendReminderEmailRequest, ShutdownPlan, SmtpEmailConfig,
         TaskReminder, TaskReminderStore, WeeklyReminderSlot,
     },
@@ -157,6 +158,16 @@ pub async fn get_initial_state(state: State<'_, SharedState>) -> CmdResult<AppBo
         hardware_info: state.hardware_info.read().await.clone(),
         latest_snapshot: state.latest_snapshot.read().await.clone(),
     })
+}
+
+#[tauri::command]
+pub async fn configure_native_taskbar_monitor(
+    app: AppHandle,
+    state: State<'_, SharedState>,
+    enabled: bool,
+    config: NativeTaskbarConfig,
+) -> CmdResult<()> {
+    crate::native_taskbar::configure(app, state.inner().clone(), enabled, config).await
 }
 
 #[tauri::command]

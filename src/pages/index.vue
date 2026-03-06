@@ -41,6 +41,7 @@
         v-model:rememberOverlayPosition="rememberOverlayPosition"
         v-model:overlayAlwaysOnTop="overlayAlwaysOnTop"
         v-model:taskbarMonitorEnabled="taskbarMonitorEnabled"
+        v-model:nativeTaskbarMonitorEnabled="nativeTaskbarMonitorEnabled"
         v-model:factoryResetHotkey="factoryResetHotkey"
         v-model:refreshRate="refreshRate"
         v-model:backgroundOpacity="prefs.backgroundOpacity"
@@ -320,6 +321,7 @@ const {
   rememberOverlayPosition,
   overlayAlwaysOnTop,
   taskbarMonitorEnabled,
+  nativeTaskbarMonitorEnabled,
   factoryResetHotkey,
   appUsageLabel,
   updateDialogOpen,

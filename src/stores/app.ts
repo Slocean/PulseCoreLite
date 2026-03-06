@@ -60,6 +60,11 @@ export const useAppStore = defineStore('app', () => {
         void ensureTray();
       })
     );
+    unlisteners.value.push(
+      await listenEvent<null>('pulsecorelite://taskbar-prefs-sync', () => {
+        void syncNativeTaskbarMonitor();
+      })
+    );
   }
 
   async function bootstrap() {
@@ -74,6 +79,7 @@ export const useAppStore = defineStore('app', () => {
       if (label === 'main') {
         void ensureTray();
         void ensureTaskbarMonitor();
+        void syncNativeTaskbarMonitor();
         void syncAutoStartEnabled();
         void syncMemoryTrimEnabled();
         void syncMemoryTrimSystemEnabled();
@@ -85,6 +91,20 @@ export const useAppStore = defineStore('app', () => {
             () => {
               void ensureTaskbarMonitor();
             }
+          )
+        );
+        unlisteners.value.push(
+          watch(
+            () => [
+              settingsStore.settings.nativeTaskbarMonitorEnabled,
+              settingsStore.settings.taskbarAlwaysOnTop,
+              settingsStore.settings.taskbarAutoHideOnFullscreen,
+              settingsStore.settings.language
+            ],
+            () => {
+              void syncNativeTaskbarMonitor();
+            },
+            { immediate: true }
           )
         );
       }
@@ -178,6 +198,10 @@ export const useAppStore = defineStore('app', () => {
     await settingsStore.setTaskbarMonitorEnabled(taskbarMonitorEnabled);
   }
 
+  async function setNativeTaskbarMonitorEnabled(nativeTaskbarMonitorEnabled: boolean) {
+    await settingsStore.setNativeTaskbarMonitorEnabled(nativeTaskbarMonitorEnabled);
+  }
+
   function setFactoryResetHotkey(factoryResetHotkey: string | null) {
     settingsStore.setFactoryResetHotkey(factoryResetHotkey);
   }
@@ -232,6 +256,10 @@ export const useAppStore = defineStore('app', () => {
 
   async function ensureTaskbarMonitor() {
     await windowStore.ensureTaskbarMonitor(settingsStore.settings);
+  }
+
+  async function syncNativeTaskbarMonitor() {
+    await windowStore.syncNativeTaskbarMonitor(settingsStore.settings);
   }
 
   async function openTaskbarMonitor() {
@@ -290,6 +318,7 @@ export const useAppStore = defineStore('app', () => {
     setTaskbarAutoHideOnFullscreen,
     setTaskbarPositionLocked,
     setTaskbarMonitorEnabled,
+    setNativeTaskbarMonitorEnabled,
     setFactoryResetHotkey,
     syncAutoStartEnabled,
     syncMemoryTrimEnabled,
@@ -304,6 +333,7 @@ export const useAppStore = defineStore('app', () => {
     startTaskbarFullscreenMonitor,
     stopTaskbarFullscreenMonitor,
     ensureTaskbarMonitor,
+    syncNativeTaskbarMonitor,
     openTaskbarMonitor,
     closeTaskbarMonitor,
     closeToolkitWindow,

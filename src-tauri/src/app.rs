@@ -31,6 +31,7 @@ pub fn start_telemetry_loop(app: AppHandle, state: SharedState) {
             let snapshot = state.collect_snapshot(current_rate).await;
 
             state.record_snapshot(snapshot.clone()).await;
+            crate::native_taskbar::refresh(snapshot.clone());
 
             if has_visible_consumer {
                 for label in &visible_labels {
@@ -285,6 +286,7 @@ fn visible_consumer_labels(app: &AppHandle) -> Vec<&'static str> {
 pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
     builder.invoke_handler(tauri::generate_handler![
         commands::get_initial_state,
+        commands::configure_native_taskbar_monitor,
         commands::get_hardware_info,
         commands::get_taskbar_info,
         commands::is_fullscreen_window_active,

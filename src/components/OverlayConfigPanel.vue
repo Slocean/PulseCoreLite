@@ -21,6 +21,7 @@
         v-model:overlay-always-on-top="overlayAlwaysOnTop"
         v-model:close-to-tray="closeToTray"
         v-model:taskbar-monitor-enabled="taskbarMonitorEnabled"
+        v-model:native-taskbar-monitor-enabled="nativeTaskbarMonitorEnabled"
         @set-language="emit('setLanguage', $event)" />
 
       <OverlayConfigThemeSection
@@ -75,6 +76,7 @@ const memoryTrimEnabled = defineModel<boolean>('memoryTrimEnabled', { required: 
 const rememberOverlayPosition = defineModel<boolean>('rememberOverlayPosition', { required: true });
 const overlayAlwaysOnTop = defineModel<boolean>('overlayAlwaysOnTop', { required: true });
 const taskbarMonitorEnabled = defineModel<boolean>('taskbarMonitorEnabled', { required: true });
+const nativeTaskbarMonitorEnabled = defineModel<boolean>('nativeTaskbarMonitorEnabled', { required: true });
 const factoryResetHotkey = defineModel<string | null>('factoryResetHotkey', { required: true });
 const refreshRate = defineModel<number>('refreshRate', { required: true });
 const backgroundOpacity = defineModel<number>('backgroundOpacity', { required: true });
