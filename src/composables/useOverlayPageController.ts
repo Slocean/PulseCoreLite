@@ -178,6 +178,10 @@ export function useOverlayPageController({
   }
 
   function handleClose() {
+    if (closeToTray.value) {
+      void store.minimizeToTray();
+      return;
+    }
     void store.exitApp();
   }
 
