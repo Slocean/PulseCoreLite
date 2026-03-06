@@ -89,98 +89,60 @@ export function detectDiskType(models: string[]): DiskType {
 
 export function calcCpuScore(model: string, maxFreqMhz: number | null, currentFreqMhz: number | null) {
   const freq = maxFreqMhz ?? currentFreqMhz ?? 3200;
-  const base = ((freq - 1200) / (6000 - 1200)) * 100;
+  const base = ((freq - 800) / (5200 - 800)) * 100;
   const name = (model ?? '').toLowerCase();
   let boost = 0;
-  if (/(threadripper|epyc|xeon w|xeon gold|i9|ryzen 9)/i.test(name)) boost = 12;
-  else if (/(i7|ryzen 7)/i.test(name)) boost = 6;
-  else if (/(i5|ryzen 5)/i.test(name)) boost = 2;
-  else if (/(i3|ryzen 3)/i.test(name)) boost = -6;
-  else if (/(celeron|pentium|athlon)/i.test(name)) boost = -14;
-  else if (/\bm[1-3]\b|\bm2\b|\bm3\b/i.test(name)) boost = 8;
+  if (/(threadripper|epyc|xeon w|xeon gold|i9|ryzen 9)/i.test(name)) boost = 18;
+  else if (/(i7|ryzen 7)/i.test(name)) boost = 12;
+  else if (/(i5|ryzen 5)/i.test(name)) boost = 8;
+  else if (/(i3|ryzen 3)/i.test(name)) boost = 0;
+  else if (/(celeron|pentium|athlon)/i.test(name)) boost = -12;
+  else if (/\bm[1-3]\b|\bm2\b|\bm3\b/i.test(name)) boost = 15;
   return clampScore(base + boost);
 }
 
-export function calcGpuScore(model: string, vramGb: number | null) {
-  const normalized = (model ?? '').trim().toLowerCase();
-  if (!normalized || normalized === 'n/a' || normalized === 'unknown') {
-    const fallback = calcVramScore(vramGb);
-    return clampScore(fallback ?? 25);
-  }
-  const candidates = (model ?? '')
-    .split('/')
-    .map(item => item.trim())
-    .filter(Boolean);
-  const modelScore = candidates.reduce((best, name) => {
-    const score = gpuModelScore(name);
-    if (score == null) return best;
-    return Math.max(best ?? 0, score);
-  }, null as number | null);
-  const vramScore = calcVramScore(vramGb);
-  if (modelScore != null && vramScore != null) {
-    return clampScore(modelScore * 0.7 + vramScore * 0.3);
-  }
-  if (modelScore != null) return clampScore(modelScore);
-  if (vramScore != null) return clampScore(vramScore);
-  return 50;
+export function calcGpuScore(vramGb: number | null, freqMhz: number | null) {
+  const vramScore = calcVramScoreForGaming(vramGb) ?? 40;
+  const freqScore = calcGpuFreqScore(freqMhz);
+  const baseScore = vramScore * 0.7 + freqScore * 0.3;
+
+  const vramBonus = (vramGb ?? 0) >= 12 ? 8 : (vramGb ?? 0) < 6 ? -12 : 0;
+  return clampScore(baseScore + vramBonus);
 }
 
-function gpuModelScore(name: string): number | null {
-  const text = name.toLowerCase();
-  const table: Array<[RegExp, number]> = [
-    [/rtx\s?4090/, 100],
-    [/rtx\s?4080/, 95],
-    [/rtx\s?4070\s?ti/, 88],
-    [/rtx\s?4070/, 84],
-    [/rtx\s?4060\s?ti/, 78],
-    [/rtx\s?4060/, 74],
-    [/rtx\s?3090/, 90],
-    [/rtx\s?3080/, 86],
-    [/rtx\s?3070/, 80],
-    [/rtx\s?3060/, 72],
-    [/rtx\s?3050/, 62],
-    [/rtx\s?2080/, 78],
-    [/rtx\s?2070/, 72],
-    [/rtx\s?2060/, 66],
-    [/gtx\s?1660/, 58],
-    [/gtx\s?1650/, 50],
-    [/gtx\s?1060/, 50],
-    [/gtx\s?1050/, 40],
-    [/arc\s?a770/, 78],
-    [/arc\s?a750/, 74],
-    [/arc\s?a580/, 68],
-    [/arc\s?a380/, 55],
-    [/7900\s?xtx/, 96],
-    [/7900\s?xt/, 92],
-    [/7800\s?xt/, 86],
-    [/7700\s?xt/, 80],
-    [/7600/, 72],
-    [/6950\s?xt/, 88],
-    [/6900\s?xt/, 86],
-    [/6800\s?xt/, 84],
-    [/6700\s?xt/, 78],
-    [/6600/, 68],
-    [/6500/, 58],
-    [/quadro|tesla|rtx\s?a\d{3,4}/, 78],
-    [/iris|uhd|hd graphics|intel graphics/, 30],
-    [/radeon graphics|vega|rx vega|apu/, 34]
-  ];
-  for (const [regex, score] of table) {
-    if (regex.test(text)) return score;
-  }
-  return null;
+function calcGpuFreqScore(freqMhz: number | null): number {
+  if (freqMhz == null || freqMhz <= 0) return 65;
+  if (freqMhz >= 2500) return 100;
+  if (freqMhz >= 2200) return 92;
+  if (freqMhz >= 1900) return 84;
+  if (freqMhz >= 1600) return 76;
+  if (freqMhz >= 1300) return 68;
+  if (freqMhz >= 1000) return 58;
+  return 48;
+}
+
+function calcVramScoreForGaming(vramGb: number | null) {
+  if (vramGb == null) return null;
+  if (vramGb >= 24) return 100;
+  if (vramGb >= 16) return 94;
+  if (vramGb >= 12) return 87;
+  if (vramGb >= 8) return 80;
+  if (vramGb >= 6) return 72;
+  if (vramGb >= 4) return 62;
+  if (vramGb >= 2) return 48;
+  return 32;
 }
 
 function calcVramScore(vramGb: number | null) {
   if (vramGb == null) return null;
   if (vramGb >= 24) return 92;
-  if (vramGb >= 16) return 84;
-  if (vramGb >= 12) return 76;
-  if (vramGb >= 8) return 68;
-  if (vramGb >= 6) return 60;
-  if (vramGb >= 4) return 50;
-  if (vramGb >= 2) return 35;
-  return 25;
+  if (vramGb >= 16) return 82;
+  if (vramGb >= 12) return 72;
+  if (vramGb >= 8) return 60;
+  if (vramGb >= 6) return 50;
+  if (vramGb >= 4) return 40;
+  if (vramGb >= 2) return 30;
+  return 20;
 }
 
 export function calcRamScore(totalGb: number, freqMhz: number | null) {
@@ -217,15 +179,9 @@ export function calcBalanceScore(cpu: number, gpu: number, ram: number, diskType
   return clampScore(score);
 }
 
-export function calcLlmScore(
-  vramGb: number | null,
-  gpuModelScore: number,
-  ramScore: number,
-  diskScore: number,
-  diskType: DiskType
-) {
+export function calcLlmScore(vramGb: number | null, ramScore: number, cpuScore: number, diskScore: number, diskType: DiskType) {
   const vramScore = calcVramScore(vramGb) ?? 30;
-  let score = vramScore * 0.55 + gpuModelScore * 0.25 + ramScore * 0.15 + diskScore * 0.05;
+  let score = vramScore * 0.5 + ramScore * 0.25 + cpuScore * 0.15 + diskScore * 0.1;
   if (diskType === 'hdd') score -= 15;
   return clampScore(score);
 }
@@ -238,8 +194,16 @@ export function calcProductivityScore(cpu: number, gpu: number, ram: number, dis
   return clampScore(cpu * 0.35 + ram * 0.3 + diskScore * 0.2 + gpu * 0.15);
 }
 
-export function calcCodingScore(cpuScore: number, ramScore: number, diskScore: number) {
-  return clampScore(cpuScore * 0.45 + ramScore * 0.35 + diskScore * 0.2);
+export function calcCodingScore(ramGb: number, diskType: DiskType) {
+  let score = 0;
+  if (ramGb >= 64) score = 100;
+  else if (ramGb >= 32) score = 95;
+  else if (ramGb >= 16) score = 80;
+  else if (ramGb >= 8) score = 60;
+  else if (ramGb >= 4) score = 40;
+  else score = 25;
+  if (diskType === 'hdd') score -= 10;
+  return clampScore(score);
 }
 
 export function isCudaSupported(model: string) {

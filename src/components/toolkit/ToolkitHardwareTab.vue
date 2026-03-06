@@ -118,7 +118,7 @@ const cudaSupported = computed(() => isCudaSupported(hardwareInfo.value.gpu_mode
 const cpuScore = computed(() =>
   calcCpuScore(hardwareInfo.value.cpu_model, hardwareInfo.value.cpu_max_freq_mhz, snapshot.value.cpu.frequency_mhz)
 );
-const gpuScore = computed(() => calcGpuScore(hardwareInfo.value.gpu_model, vramGb.value));
+const gpuScore = computed(() => calcGpuScore(vramGb.value, snapshot.value.gpu.frequency_mhz));
 const ramScore = computed(() => calcRamScore(ramTotalGb.value, ramFreqMhz.value));
 const diskScore = computed(() => calcDiskScore(diskType.value));
 
@@ -138,23 +138,27 @@ const balanceParts = computed(() => {
 });
 
 const balanceScore = computed(() => calcBalanceScore(cpuScore.value, gpuScore.value, ramScore.value, diskType.value));
-const gameScore = computed(() => clampScore(gpuScore.value * 0.8 + cpuScore.value * 0.15 + ramScore.value * 0.05));
+const gameScore = computed(() => {
+  const base = gpuScore.value * 0.6 + cpuScore.value * 0.2 + ramScore.value * 0.15 + diskScore.value * 0.05;
+  const bottleneck = Math.abs(gpuScore.value - cpuScore.value) > 30 || ramTotalGb.value < 8 ? 0.9 : 1.0;
+  return clampScore(base * bottleneck);
+});
 const llmScore = computed(() =>
-  calcLlmScore(vramGb.value, gpuScore.value, ramScore.value, diskScore.value, diskType.value)
+  calcLlmScore(vramGb.value, ramScore.value, cpuScore.value, diskScore.value, diskType.value)
 );
 const overallScore = computed(() => calcOverallScore(cpuScore.value, gpuScore.value, ramScore.value, diskScore.value));
 const productivityScore = computed(() =>
   calcProductivityScore(cpuScore.value, gpuScore.value, ramScore.value, diskScore.value)
 );
-const codingScore = computed(() => calcCodingScore(cpuScore.value, ramScore.value, diskScore.value));
+const codingScore = computed(() => calcCodingScore(ramTotalGb.value, diskType.value));
 
 const totalScore = computed(() => {
   const value =
-    balanceScore.value * 0.18 +
-    gameScore.value * 0.18 +
-    llmScore.value * 0.18 +
-    overallScore.value * 0.2 +
-    productivityScore.value * 0.16 +
+    balanceScore.value * 0.15 +
+    gameScore.value * 0.25 +
+    llmScore.value * 0.1 +
+    overallScore.value * 0.25 +
+    productivityScore.value * 0.15 +
     codingScore.value * 0.1;
   return clampScore(value);
 });
@@ -193,10 +197,10 @@ const balanceInfo = computed(() => {
 });
 
 const gameInfo = computed(() => {
-  if (gameScore.value >= 90) return { label: t('toolkit.gameTier4k'), summary: t('toolkit.gameSummary4k') };
-  if (gameScore.value >= 70) return { label: t('toolkit.gameTier2k'), summary: t('toolkit.gameSummary2k') };
-  if (gameScore.value >= 50) return { label: t('toolkit.gameTier1080'), summary: t('toolkit.gameSummary1080') };
-  if (gameScore.value >= 30) return { label: t('toolkit.gameTierEntry'), summary: t('toolkit.gameSummaryEntry') };
+  if (gameScore.value >= 88) return { label: t('toolkit.gameTier4k'), summary: t('toolkit.gameSummary4k') };
+  if (gameScore.value >= 72) return { label: t('toolkit.gameTier2k'), summary: t('toolkit.gameSummary2k') };
+  if (gameScore.value >= 58) return { label: t('toolkit.gameTier1080'), summary: t('toolkit.gameSummary1080') };
+  if (gameScore.value >= 38) return { label: t('toolkit.gameTierEntry'), summary: t('toolkit.gameSummaryEntry') };
   return { label: t('toolkit.gameTierNo'), summary: t('toolkit.gameSummaryNo') };
 });
 
