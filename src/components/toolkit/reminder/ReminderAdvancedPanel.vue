@@ -10,22 +10,11 @@
     <div class="toolkit-grid">
       <label class="toolkit-field toolkit-field--inline toolkit-field--inline-select">
         <UiSelect v-model="backgroundTypeModel" :options="advancedBackgroundOptions" />
-        <div v-if="backgroundTypeModel === 'image'" class="toolkit-reminder-advanced-input">
-          <input v-model.trim="advancedSettings.backgroundImage" type="text" />
-          <input
-            ref="advancedImageInput"
-            class="toolkit-hidden-file"
-            type="file"
-            accept="image/*"
-            @change="emit('advancedImageChange', $event)" />
-          <UiButton
-            native-type="button"
-            preset="overlay-primary"
-            class="toolkit-reminder-advanced-upload"
-            @click="triggerAdvancedImageSelect">
-            {{ t('toolkit.reminderAdvancedUpload') }}
-          </UiButton>
-        </div>
+        <ReminderImageInput
+          v-if="backgroundTypeModel === 'image'"
+          v-model="advancedSettings.backgroundImage"
+          :upload-label="t('toolkit.reminderAdvancedUpload')"
+          @file-change="emit('advancedImageChange', $event)" />
         <input v-else v-model.trim="advancedSettings.backgroundColor" type="color" />
       </label>
       <!-- <p v-if="backgroundTypeModel === 'image'" class="toolkit-reminder-advanced-hint">
@@ -69,15 +58,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { SelectOption } from '@/components/ui/Select/types';
 import type { ReminderAdvancedSettings } from '@/types';
-import UiButton from '@/components/ui/Button';
 import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiSelect from '@/components/ui/Select';
 import UiSwitch from '@/components/ui/Switch';
+import ReminderImageInput from './ReminderImageInput.vue';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -94,8 +83,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const advancedImageInput = ref<HTMLInputElement | null>(null);
-
 const openModel = computed({
   get: () => props.modelValue,
   set: value => emit('update:modelValue', value)
@@ -105,8 +92,4 @@ const backgroundTypeModel = computed({
   get: () => props.advancedBackgroundType,
   set: value => emit('update:advancedBackgroundType', value)
 });
-
-function triggerAdvancedImageSelect() {
-  advancedImageInput.value?.click();
-}
 </script>

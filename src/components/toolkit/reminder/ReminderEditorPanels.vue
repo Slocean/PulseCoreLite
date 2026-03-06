@@ -126,22 +126,11 @@
       <label class="toolkit-field toolkit-field--inline toolkit-field--inline-select">
         <UiSelect v-model="form.contentType" :options="contentTypeOptions" :aria-label="t('toolkit.reminderContentType')" />
         <textarea v-if="form.contentType === 'text' || form.contentType === 'markdown'" v-model="form.content" rows="4" />
-        <div v-else-if="form.contentType === 'image'" class="toolkit-reminder-advanced-input">
-          <input v-model.trim="form.content" type="text" />
-          <input
-            ref="contentImageInput"
-            class="toolkit-hidden-file"
-            type="file"
-            accept="image/*"
-            @change="emit('contentImageChange', $event)" />
-          <UiButton
-            native-type="button"
-            preset="overlay-primary"
-            class="toolkit-reminder-advanced-upload"
-            @click="triggerContentImageSelect">
-            {{ t('toolkit.reminderAdvancedUpload') }}
-          </UiButton>
-        </div>
+        <ReminderImageInput
+          v-else-if="form.contentType === 'image'"
+          v-model="form.content"
+          :upload-label="t('toolkit.reminderAdvancedUpload')"
+          @file-change="emit('contentImageChange', $event)" />
         <input v-else v-model.trim="form.content" type="text" />
       </label>
     </div>
@@ -159,6 +148,7 @@ import type { SelectOption } from '@/components/ui/Select/types';
 import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiTimeInput from '@/components/ui/TimeInput';
 import type { MonthlyReminderSlot, WeeklyReminderSlot } from '@/types';
+import ReminderImageInput from './ReminderImageInput.vue';
 
 type ReminderFormModel = {
   enabled: boolean;
@@ -212,7 +202,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const contentImageInput = ref<HTMLInputElement | null>(null);
 
 const form = computed(() => props.form);
 const sections = computed(() => props.sections);
@@ -248,10 +237,6 @@ const monthlyDayOptions = computed(() => props.monthlyDayOptions);
 const contentTypeOptions = computed(() => props.contentTypeOptions);
 const editingId = computed(() => props.editingId);
 const formatWeekday = computed(() => props.formatWeekday);
-
-function triggerContentImageSelect() {
-  contentImageInput.value?.click();
-}
 
 type FrequencyValue = 'daily' | 'weekly' | 'monthly';
 
