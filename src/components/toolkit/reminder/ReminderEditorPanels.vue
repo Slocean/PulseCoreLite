@@ -126,6 +126,22 @@
       <label class="toolkit-field toolkit-field--inline toolkit-field--inline-select">
         <UiSelect v-model="form.contentType" :options="contentTypeOptions" :aria-label="t('toolkit.reminderContentType')" />
         <textarea v-if="form.contentType === 'text' || form.contentType === 'markdown'" v-model="form.content" rows="4" />
+        <div v-else-if="form.contentType === 'image'" class="toolkit-reminder-advanced-input">
+          <input v-model.trim="form.content" type="text" />
+          <input
+            ref="contentImageInput"
+            class="toolkit-hidden-file"
+            type="file"
+            accept="image/*"
+            @change="emit('contentImageChange', $event)" />
+          <UiButton
+            native-type="button"
+            preset="overlay-primary"
+            class="toolkit-reminder-advanced-upload"
+            @click="triggerContentImageSelect">
+            {{ t('toolkit.reminderAdvancedUpload') }}
+          </UiButton>
+        </div>
         <input v-else v-model.trim="form.content" type="text" />
       </label>
     </div>
@@ -192,9 +208,11 @@ const emit = defineEmits<{
   (event: 'update:weeklyInputTime', value: string): void;
   (event: 'update:monthlyInputDays', value: number[]): void;
   (event: 'update:monthlyInputTime', value: string): void;
+  (event: 'contentImageChange', value: Event): void;
 }>();
 
 const { t } = useI18n();
+const contentImageInput = ref<HTMLInputElement | null>(null);
 
 const form = computed(() => props.form);
 const sections = computed(() => props.sections);
@@ -230,6 +248,10 @@ const monthlyDayOptions = computed(() => props.monthlyDayOptions);
 const contentTypeOptions = computed(() => props.contentTypeOptions);
 const editingId = computed(() => props.editingId);
 const formatWeekday = computed(() => props.formatWeekday);
+
+function triggerContentImageSelect() {
+  contentImageInput.value?.click();
+}
 
 type FrequencyValue = 'daily' | 'weekly' | 'monthly';
 

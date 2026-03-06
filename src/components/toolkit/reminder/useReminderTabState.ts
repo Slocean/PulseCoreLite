@@ -207,6 +207,35 @@ export function useReminderTabState(emit: ReminderTabEmit) {
   const updateMonthlyInputTime = makeRefUpdater(monthlyInputTime);
   const updateSmtpTestTo = makeRefUpdater(smtpTestTo);
 
+  async function processImageFile(
+    file: File,
+    errorKeys: { canvas: string; encode: string; read: string }
+  ) {
+    const bitmap = await createImageBitmap(file);
+    const maxSize = 1920;
+    const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error(errorKeys.canvas);
+    }
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob =
+      (await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', 0.86))) ||
+      (await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png')));
+    if (!blob) {
+      throw new Error(errorKeys.encode);
+    }
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error(errorKeys.read));
+      reader.readAsDataURL(blob);
+    });
+  }
+
   function closeAllowCloseWarning() {
     allowCloseWarningOpen.value = false;
   }
@@ -241,33 +270,43 @@ export function useReminderTabState(emit: ReminderTabEmit) {
     }
     try {
       clearTip();
-      const bitmap = await createImageBitmap(file);
-      const maxSize = 1920;
-      const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        throw new Error('toolkit.reminderAdvancedUploadCanvasFailed');
-      }
-      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      const blob =
-        (await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', 0.86))) ||
-        (await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png')));
-      if (!blob) {
-        throw new Error('toolkit.reminderAdvancedUploadEncodeFailed');
-      }
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result || ''));
-        reader.onerror = () => reject(new Error('toolkit.reminderAdvancedUploadReadFailed'));
-        reader.readAsDataURL(blob);
+      const dataUrl = await processImageFile(file, {
+        canvas: 'toolkit.reminderAdvancedUploadCanvasFailed',
+        encode: 'toolkit.reminderAdvancedUploadEncodeFailed',
+        read: 'toolkit.reminderAdvancedUploadReadFailed'
       });
       advancedSettings.backgroundImage = dataUrl;
       statusMessage.value = t('toolkit.reminderAdvancedUploadSuccess');
     } catch (error) {
       errorMessage.value = formatErrorMessage(error, 'toolkit.reminderAdvancedUploadFailed');
+    } finally {
+      if (input) {
+        input.value = '';
+      }
+    }
+  }
+
+  async function handleContentImageChange(event: Event) {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!file) {
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      errorMessage.value = t('toolkit.reminderContentUploadInvalid');
+      return;
+    }
+    try {
+      clearTip();
+      const dataUrl = await processImageFile(file, {
+        canvas: 'toolkit.reminderContentUploadCanvasFailed',
+        encode: 'toolkit.reminderContentUploadEncodeFailed',
+        read: 'toolkit.reminderContentUploadReadFailed'
+      });
+      form.content = dataUrl;
+      statusMessage.value = t('toolkit.reminderContentUploadSuccess');
+    } catch (error) {
+      errorMessage.value = formatErrorMessage(error, 'toolkit.reminderContentUploadFailed');
     } finally {
       if (input) {
         input.value = '';
@@ -515,6 +554,7 @@ export function useReminderTabState(emit: ReminderTabEmit) {
     closeAllowCloseWarning,
     dismissAllowCloseWarning,
     handleAdvancedImageChange,
+    handleContentImageChange,
     addDailyTime,
     removeDailyTime,
     addWeeklySlot,

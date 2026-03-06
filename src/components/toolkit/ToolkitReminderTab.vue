@@ -36,7 +36,8 @@
     @update:weekly-input-days="updateWeeklyInputDays"
     @update:weekly-input-time="updateWeeklyInputTime"
     @update:monthly-input-days="updateMonthlyInputDays"
-    @update:monthly-input-time="updateMonthlyInputTime" />
+    @update:monthly-input-time="updateMonthlyInputTime"
+    @content-image-change="handleContentImageChange" />
 
   <ReminderAdvancedPanel
     v-if="form.channel === 'fullscreen'"
@@ -136,6 +137,7 @@ const {
   closeAllowCloseWarning,
   dismissAllowCloseWarning,
   handleAdvancedImageChange,
+  handleContentImageChange,
   addDailyTime,
   removeDailyTime,
   addWeeklySlot,
