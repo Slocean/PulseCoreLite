@@ -355,16 +355,24 @@ const hardwareSummaryRows = computed(() => {
 
 const adviceList = computed(() => {
   const list: string[] = [];
-  if (ramTotalGb.value < 16) {
-    list.push(t('toolkit.adviceRamUpgrade', { target: 16 }));
+  const ramTarget =
+    ramTotalGb.value < 16 ? 16 : ramTotalGb.value < 32 ? 32 : ramTotalGb.value < 64 ? 64 : 64;
+  const ramNeedsUpgrade = ramScore.value < 80;
+  const diskNeedsUpgrade = diskType.value === 'hdd';
+  const gpuNeedsUpgrade =
+    gpuScore.value < 70 || gameScore.value < 58 || (vramGb.value != null && vramGb.value < 8);
+  const balanceNeedsUpgrade = balanceScore.value < 70;
+
+  if (ramNeedsUpgrade) {
+    list.push(t('toolkit.adviceRamUpgrade', { target: ramTarget }));
   }
-  if (diskType.value === 'hdd') {
+  if (diskNeedsUpgrade) {
     list.push(t('toolkit.adviceDiskUpgrade'));
   }
-  if (vramGb.value != null && vramGb.value < 8) {
+  if (gpuNeedsUpgrade) {
     list.push(t('toolkit.adviceGpuUpgrade'));
   }
-  if (balanceParts.value.diff >= 25) {
+  if (balanceNeedsUpgrade) {
     list.push(t('toolkit.adviceBalanceWeak', { weak: balanceParts.value.min.label }));
   }
   if (!cudaSupported.value) {
