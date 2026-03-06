@@ -217,31 +217,29 @@ export function calcBalanceScore(cpu: number, gpu: number, ram: number, diskType
   return clampScore(score);
 }
 
-export function calcLlmScore(vramGb: number | null, ramScore: number, cpuScore: number, diskScore: number, diskType: DiskType) {
+export function calcLlmScore(
+  vramGb: number | null,
+  gpuModelScore: number,
+  ramScore: number,
+  diskScore: number,
+  diskType: DiskType
+) {
   const vramScore = calcVramScore(vramGb) ?? 30;
-  let score = vramScore * 0.5 + ramScore * 0.25 + cpuScore * 0.15 + diskScore * 0.1;
+  let score = vramScore * 0.55 + gpuModelScore * 0.25 + ramScore * 0.15 + diskScore * 0.05;
   if (diskType === 'hdd') score -= 15;
   return clampScore(score);
 }
 
 export function calcOverallScore(cpu: number, gpu: number, ram: number, diskScore: number) {
-  return clampScore(cpu * 0.35 + gpu * 0.35 + ram * 0.2 + diskScore * 0.1);
+  return clampScore(cpu * 0.32 + gpu * 0.32 + ram * 0.22 + diskScore * 0.14);
 }
 
 export function calcProductivityScore(cpu: number, gpu: number, ram: number, diskScore: number) {
-  return clampScore(cpu * 0.4 + ram * 0.3 + diskScore * 0.2 + gpu * 0.1);
+  return clampScore(cpu * 0.35 + ram * 0.3 + diskScore * 0.2 + gpu * 0.15);
 }
 
-export function calcCodingScore(ramGb: number, diskType: DiskType) {
-  let score = 0;
-  if (ramGb >= 64) score = 100;
-  else if (ramGb >= 32) score = 95;
-  else if (ramGb >= 16) score = 80;
-  else if (ramGb >= 8) score = 60;
-  else if (ramGb >= 4) score = 40;
-  else score = 25;
-  if (diskType === 'hdd') score -= 10;
-  return clampScore(score);
+export function calcCodingScore(cpuScore: number, ramScore: number, diskScore: number) {
+  return clampScore(cpuScore * 0.45 + ramScore * 0.35 + diskScore * 0.2);
 }
 
 export function isCudaSupported(model: string) {

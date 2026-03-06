@@ -138,21 +138,23 @@ const balanceParts = computed(() => {
 });
 
 const balanceScore = computed(() => calcBalanceScore(cpuScore.value, gpuScore.value, ramScore.value, diskType.value));
-const gameScore = computed(() => clampScore(gpuScore.value * 0.7 + cpuScore.value * 0.2 + ramScore.value * 0.1));
-const llmScore = computed(() => calcLlmScore(vramGb.value, ramScore.value, cpuScore.value, diskScore.value, diskType.value));
+const gameScore = computed(() => clampScore(gpuScore.value * 0.8 + cpuScore.value * 0.15 + ramScore.value * 0.05));
+const llmScore = computed(() =>
+  calcLlmScore(vramGb.value, gpuScore.value, ramScore.value, diskScore.value, diskType.value)
+);
 const overallScore = computed(() => calcOverallScore(cpuScore.value, gpuScore.value, ramScore.value, diskScore.value));
 const productivityScore = computed(() =>
   calcProductivityScore(cpuScore.value, gpuScore.value, ramScore.value, diskScore.value)
 );
-const codingScore = computed(() => calcCodingScore(ramTotalGb.value, diskType.value));
+const codingScore = computed(() => calcCodingScore(cpuScore.value, ramScore.value, diskScore.value));
 
 const totalScore = computed(() => {
   const value =
-    balanceScore.value * 0.15 +
-    gameScore.value * 0.2 +
-    llmScore.value * 0.2 +
+    balanceScore.value * 0.18 +
+    gameScore.value * 0.18 +
+    llmScore.value * 0.18 +
     overallScore.value * 0.2 +
-    productivityScore.value * 0.15 +
+    productivityScore.value * 0.16 +
     codingScore.value * 0.1;
   return clampScore(value);
 });
