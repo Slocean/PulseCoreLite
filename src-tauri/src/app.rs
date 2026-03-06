@@ -201,14 +201,71 @@ fn collect_due_slots(
 
 #[cfg(windows)]
 fn trim_working_set() -> anyhow::Result<()> {
+    use std::collections::{HashMap, HashSet};
+
+    use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
+    use windows_sys::Win32::System::Diagnostics::ToolHelp::{
+        CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W,
+        TH32CS_SNAPPROCESS,
+    };
     use windows_sys::Win32::System::ProcessStatus::EmptyWorkingSet;
-    use windows_sys::Win32::System::Threading::GetCurrentProcess;
+    use windows_sys::Win32::System::Threading::{
+        GetCurrentProcessId, OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_SET_QUOTA,
+    };
 
     unsafe {
-        let handle = GetCurrentProcess();
-        let ok = EmptyWorkingSet(handle);
-        if ok == 0 {
-            return Err(anyhow::anyhow!(std::io::Error::last_os_error()));
+        let root_pid = GetCurrentProcessId();
+        let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if snapshot == INVALID_HANDLE_VALUE {
+            return Err(anyhow::anyhow!("CreateToolhelp32Snapshot failed"));
+        }
+
+        let mut children_by_parent: HashMap<u32, Vec<u32>> = HashMap::new();
+        let mut entry: PROCESSENTRY32W = std::mem::zeroed();
+        entry.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
+
+        if Process32FirstW(snapshot, &mut entry) != 0 {
+            loop {
+                children_by_parent
+                    .entry(entry.th32ParentProcessID)
+                    .or_default()
+                    .push(entry.th32ProcessID);
+
+                if Process32NextW(snapshot, &mut entry) == 0 {
+                    break;
+                }
+            }
+        }
+
+        CloseHandle(snapshot);
+
+        let mut process_stack = vec![root_pid];
+        let mut visited = HashSet::new();
+        let mut trimmed_any = false;
+
+        while let Some(pid) = process_stack.pop() {
+            if !visited.insert(pid) {
+                continue;
+            }
+
+            if let Some(children) = children_by_parent.get(&pid) {
+                process_stack.extend(children.iter().copied());
+            }
+
+            let handle = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_SET_QUOTA, 0, pid);
+            if handle.is_null() {
+                continue;
+            }
+
+            let ok = EmptyWorkingSet(handle);
+            CloseHandle(handle);
+            if ok != 0 {
+                trimmed_any = true;
+            }
+        }
+
+        if !trimmed_any {
+            return Err(anyhow::anyhow!("EmptyWorkingSet failed for app process tree"));
         }
     }
 
