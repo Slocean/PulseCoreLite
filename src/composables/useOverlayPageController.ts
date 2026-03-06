@@ -142,9 +142,11 @@ export function useOverlayPageController({
       openUpdateDialog();
       return;
     }
-    if (!updateError.value) {
-      showUpdateToast(t('overlay.updateUpToDate'));
+    if (updateError.value) {
+      showUpdateToast(t('overlay.updateCheckFailed', { message: updateError.value }));
+      return;
     }
+    showUpdateToast(t('overlay.updateUpToDate'));
   }
 
   async function handleVersionClick() {

@@ -90,6 +90,7 @@
     "update": "Updates",
     "checkUpdate": "Check for Updates",
     "updateChecking": "Checking...",
+    "updateCheckFailed": "Update check failed: {message}",
     "updateUpToDate": "You're up to date.",
     "updateAvailable": "Update available",
     "updateTitle": "Update available",
