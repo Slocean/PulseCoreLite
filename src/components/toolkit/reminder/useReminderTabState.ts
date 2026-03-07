@@ -36,8 +36,7 @@ export function useReminderTabState(emit: ReminderTabEmit) {
   const viewMode = ref<'list' | 'form'>('list');
   const editingId = ref<string | null>(null);
   const smtpDialogOpen = ref(false);
-  const statusMessage = ref('');
-  const errorMessage = ref('');
+  const smtpSaving = ref(false);
   const allowCloseWarningOpen = ref(false);
   const smtpTestSending = ref(false);
   const allowCloseWarningDismissed = ref(false);
@@ -153,7 +152,7 @@ export function useReminderTabState(emit: ReminderTabEmit) {
   );
 
   watch(
-    [reminders, statusMessage, errorMessage, sections, advancedSettings, viewMode],
+    [reminders, sections, advancedSettings, viewMode],
     () => {
       nextTick(() => emit('contentChange'));
     },
@@ -181,8 +180,11 @@ export function useReminderTabState(emit: ReminderTabEmit) {
   });
 
   function clearTip() {
-    statusMessage.value = '';
-    errorMessage.value = '';
+    hideToast();
+  }
+
+  function notify(message: string, variant: 'success' | 'primary' | 'info' | 'warning' | 'error', durationMs?: number) {
+    showToast(message, { variant, durationMs, closable: true });
   }
 
   function formatErrorMessage(error: unknown, fallbackKey: string) {
@@ -282,7 +284,7 @@ export function useReminderTabState(emit: ReminderTabEmit) {
       return;
     }
     if (!file.type.startsWith('image/')) {
-      errorMessage.value = t('toolkit.reminderAdvancedUploadInvalid');
+      notify(t('toolkit.reminderAdvancedUploadInvalid'), 'warning');
       return;
     }
     try {
@@ -293,9 +295,9 @@ export function useReminderTabState(emit: ReminderTabEmit) {
         read: 'toolkit.reminderAdvancedUploadReadFailed'
       });
       advancedSettings.backgroundImage = dataUrl;
-      statusMessage.value = t('toolkit.reminderAdvancedUploadSuccess');
+      notify(t('toolkit.reminderAdvancedUploadSuccess'), 'success');
     } catch (error) {
-      errorMessage.value = formatErrorMessage(error, 'toolkit.reminderAdvancedUploadFailed');
+      notify(formatErrorMessage(error, 'toolkit.reminderAdvancedUploadFailed'), 'error');
     } finally {
       if (input) {
         input.value = '';
@@ -310,7 +312,7 @@ export function useReminderTabState(emit: ReminderTabEmit) {
       return;
     }
     if (!file.type.startsWith('image/')) {
-      errorMessage.value = t('toolkit.reminderContentUploadInvalid');
+      notify(t('toolkit.reminderContentUploadInvalid'), 'warning');
       return;
     }
     try {
@@ -321,9 +323,9 @@ export function useReminderTabState(emit: ReminderTabEmit) {
         read: 'toolkit.reminderContentUploadReadFailed'
       });
       form.content = dataUrl;
-      statusMessage.value = t('toolkit.reminderContentUploadSuccess');
+      notify(t('toolkit.reminderContentUploadSuccess'), 'success');
     } catch (error) {
-      errorMessage.value = formatErrorMessage(error, 'toolkit.reminderContentUploadFailed');
+      notify(formatErrorMessage(error, 'toolkit.reminderContentUploadFailed'), 'error');
     } finally {
       if (input) {
         input.value = '';
@@ -486,26 +488,30 @@ export function useReminderTabState(emit: ReminderTabEmit) {
 
   async function saveSmtpSettings() {
     clearTip();
+    smtpSaving.value = true;
     try {
       await saveSmtpConfig({ ...smtpForm });
       smtpTestTo.value = smtpTestTo.value || smtpForm.fromEmail || '';
-      statusMessage.value = t('toolkit.reminderSmtpSaveSuccess');
+      smtpDialogOpen.value = false;
+      notify(t('toolkit.reminderSmtpSaveSuccess'), 'success');
     } catch (error) {
-      errorMessage.value = formatErrorMessage(error, 'toolkit.reminderSmtpSaveFailed');
+      notify(formatErrorMessage(error, 'toolkit.reminderSmtpSaveFailed'), 'error');
+    } finally {
+      smtpSaving.value = false;
     }
   }
 
   async function sendSmtpTestEmail() {
     clearTip();
     smtpTestSending.value = true;
-    showToast(t('toolkit.reminderSmtpTesting'), { durationMs: 0 });
+    showToast(t('toolkit.reminderSmtpTesting'), { variant: 'primary', durationMs: 0, closable: true });
     try {
       await testSmtpConfig({ ...smtpForm }, smtpTestTo.value);
       hideToast();
-      statusMessage.value = t('toolkit.reminderSmtpTestSuccess');
+      notify(t('toolkit.reminderSmtpTestSuccess'), 'success');
     } catch (error) {
       hideToast();
-      errorMessage.value = formatErrorMessage(error, 'toolkit.reminderSmtpTestFailed');
+      notify(formatErrorMessage(error, 'toolkit.reminderSmtpTestFailed'), 'error');
     } finally {
       smtpTestSending.value = false;
     }
@@ -530,13 +536,13 @@ export function useReminderTabState(emit: ReminderTabEmit) {
         updatedAt: new Date().toISOString()
       };
       await upsertReminder(payload);
-      statusMessage.value = t('toolkit.reminderSaveSuccess');
+      notify(t('toolkit.reminderSaveSuccess'), 'success');
       maybeOpenAllowCloseWarning();
       allowCloseBaseline = advancedSettings.allowClose;
       resetForm();
       showListView();
     } catch (error) {
-      errorMessage.value = formatErrorMessage(error, 'toolkit.reminderSaveFailed');
+      notify(formatErrorMessage(error, 'toolkit.reminderSaveFailed'), 'error');
     }
   }
 
@@ -553,16 +559,16 @@ export function useReminderTabState(emit: ReminderTabEmit) {
     if (editingId.value === id) {
       resetForm();
     }
-    statusMessage.value = t('toolkit.reminderDeleteSuccess');
+    notify(t('toolkit.reminderDeleteSuccess'), 'success');
   }
 
   async function triggerNow(item: TaskReminder) {
     clearTip();
     try {
       await runReminderNow(item);
-      statusMessage.value = t('toolkit.reminderTriggerSuccess');
+      notify(t('toolkit.reminderTriggerSuccess'), 'success');
     } catch (error) {
-      errorMessage.value = formatErrorMessage(error, 'toolkit.reminderTriggerFailed');
+      notify(formatErrorMessage(error, 'toolkit.reminderTriggerFailed'), 'error');
     }
   }
 
@@ -586,10 +592,9 @@ export function useReminderTabState(emit: ReminderTabEmit) {
     advancedBackgroundTypeModel,
     advancedBackgroundOptions,
     advancedSettings,
-    statusMessage,
-    errorMessage,
     allowCloseWarningOpen,
     smtpDialogOpen,
+    smtpSaving,
     smtpForm,
     smtpTestTo,
     smtpTestSending,

@@ -142,6 +142,7 @@
 
   <ReminderSmtpDialog
     v-model:open="smtpDialogOpen"
+    :saving="false"
     :smtp-form="smtpForm"
     :smtp-security-options="smtpSecurityOptions"
     @save="saveSmtpSettings" />

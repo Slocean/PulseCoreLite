@@ -1,10 +1,10 @@
-<template>
+﻿<template>
   <UiDialog
     v-model:open="openModel"
     :title="t('toolkit.reminderSmtpConfig')"
     :close-label="t('overlay.dialogClose')"
     :autofocus-confirm="false"
-    @confirm="emit('save')">
+    :close-on-confirm="false">
     <template #body>
       <div class="toolkit-grid">
         <label class="toolkit-field">
@@ -37,11 +37,11 @@
         </label>
       </div>
     </template>
-    <template #actions>
-      <UiButton native-type="button" preset="overlay-chip" @click="openModel = false">
+    <template #actions="{ cancel }">
+      <UiButton native-type="button" preset="overlay-chip" :disabled="saving" @click="cancel">
         {{ t('overlay.dialogCancel') }}
       </UiButton>
-      <UiButton native-type="button" preset="overlay-primary" @click="emit('save')">
+      <UiButton native-type="button" preset="overlay-primary" :loading="saving" @click="emit('save')">
         {{ t('overlay.dialogConfirm') }}
       </UiButton>
     </template>
@@ -60,6 +60,7 @@ import type { SmtpEmailConfig } from '@/types';
 
 const props = defineProps<{
   open: boolean;
+  saving: boolean;
   smtpForm: SmtpEmailConfig;
   smtpSecurityOptions: SelectOption[];
 }>();
@@ -78,4 +79,5 @@ const openModel = computed({
 
 const smtpForm = computed(() => props.smtpForm);
 const smtpSecurityOptions = computed(() => props.smtpSecurityOptions);
+const saving = computed(() => props.saving);
 </script>

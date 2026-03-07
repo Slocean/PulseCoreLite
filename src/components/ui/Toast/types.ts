@@ -1,6 +1,12 @@
+﻿export type ToastVariant = 'success' | 'primary' | 'info' | 'warning' | 'error';
+
 export interface ToastProps {
   open?: boolean;
   message?: string;
   channel?: string;
-  ariaLive?: "off" | "polite" | "assertive";
+  variant?: ToastVariant;
+  closable?: boolean;
+  pinnable?: boolean;
+  durationMs?: number;
+  ariaLive?: 'off' | 'polite' | 'assertive';
 }

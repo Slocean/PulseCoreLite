@@ -78,9 +78,6 @@
     </div>
   </template>
 
-  <p v-if="statusMessage" class="toolkit-status">{{ statusMessage }}</p>
-  <p v-if="errorMessage" class="toolkit-error">{{ errorMessage }}</p>
-
   <UiDialog
     v-model:open="allowCloseWarningOpen"
     :title="t('toolkit.reminderAllowCloseWarningTitle')"
@@ -100,6 +97,7 @@
 
   <ReminderSmtpDialog
     v-model:open="smtpDialogOpen"
+    :saving="smtpSaving"
     :smtp-form="smtpForm"
     :smtp-security-options="smtpSecurityOptions"
     @save="saveSmtpSettings" />
@@ -139,10 +137,9 @@ const {
   advancedBackgroundTypeModel,
   advancedBackgroundOptions,
   advancedSettings,
-  statusMessage,
-  errorMessage,
   allowCloseWarningOpen,
   smtpDialogOpen,
+  smtpSaving,
   smtpForm,
   smtpTestTo,
   smtpTestSending,

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Teleport to="body">
     <Transition name="overlay-dialog">
       <div v-if="open" class="overlay-dialog-backdrop" role="presentation" @mousedown.self="handleCancel">
@@ -47,6 +47,7 @@ import type { DialogProps, DialogSlots } from './types';
 const props = withDefaults(defineProps<DialogProps>(), {
   closeLabel: 'Close',
   closeOnEsc: true,
+  closeOnConfirm: true,
   autofocusConfirm: true,
   showActions: true,
   confirmText: 'Confirm',
@@ -63,7 +64,9 @@ const emit = defineEmits<{
 defineSlots<DialogSlots>();
 
 function handleConfirm() {
-  open.value = false;
+  if (props.closeOnConfirm) {
+    open.value = false;
+  }
   emit('confirm');
 }
 
