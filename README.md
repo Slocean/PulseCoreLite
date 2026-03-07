@@ -15,28 +15,36 @@ PulseCoreLite 是一个面向桌面端可观测性与运维场景的高性能客
 ## 2. Technical Stack | 技术栈
 
 ### Frontend | 前端
-- `Vue 3.5` + `TypeScript`
-- `Pinia` (state domain modeling)
-- `vue-i18n` (built-in `zh-CN` / `en-US`)
-- `Vite 6` multi-entry build (`main`, `taskbar`, `toolkit`)
-- UI tokenized CSS architecture (`src/styles/tokens/*`)
+![Vue](https://img.shields.io/badge/Vue-3.5-42b883?logo=vuedotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?logo=typescript&logoColor=white)
+![Pinia](https://img.shields.io/badge/Pinia-2.3-f7c63d?logo=pinia&logoColor=black)
+![Vue I18n](https://img.shields.io/badge/vue--i18n-9.14-4fc08d)
+![Vite](https://img.shields.io/badge/Vite-6.0-646cff?logo=vite&logoColor=white)
+![CSS Tokens](https://img.shields.io/badge/CSS-Tokenized%20Design-264de4?logo=css3&logoColor=white)
 
 ### Desktop Native Runtime | 原生桌面运行时
-- `Tauri 2.5` (Rust host + WebView)
-- Plugins: `dialog`, `process`, `updater`
-- Windows integration via `windows-sys` / `windows` APIs
+![Tauri](https://img.shields.io/badge/Tauri-2.5-24c8db?logo=tauri&logoColor=white)
+![Rust](https://img.shields.io/badge/Rust-2021-000000?logo=rust&logoColor=white)
+![WebView](https://img.shields.io/badge/WebView-Desktop%20Runtime-0f172a)
+![Plugin Dialog](https://img.shields.io/badge/Tauri%20Plugin-dialog-2563eb)
+![Plugin Process](https://img.shields.io/badge/Tauri%20Plugin-process-2563eb)
+![Plugin Updater](https://img.shields.io/badge/Tauri%20Plugin-updater-2563eb)
+![Windows API](https://img.shields.io/badge/Windows%20API-windows--sys%20%2B%20windows-0078d4?logo=windows&logoColor=white)
 
 ### Backend (Rust) | 原生后端（Rust）
-- `tokio` async runtime
-- `sysinfo` hardware/system telemetry collection
-- `tracing` + `tracing-subscriber` diagnostics
-- `lettre` SMTP email delivery
-- Persistent JSON state under app data directory
+![Tokio](https://img.shields.io/badge/tokio-1.43-000000?logo=tokio&logoColor=white)
+![Sysinfo](https://img.shields.io/badge/sysinfo-0.33-334155)
+![Tracing](https://img.shields.io/badge/tracing-0.1-475569)
+![Tracing Subscriber](https://img.shields.io/badge/tracing--subscriber-0.3-475569)
+![Lettre](https://img.shields.io/badge/lettre-0.11-0ea5e9)
+![JSON Persistence](https://img.shields.io/badge/Persistence-JSON%20State-16a34a)
 
 ### Engineering Toolchain | 工程工具链
-- `ESLint` + `vue-tsc`
-- `Vitest` (unit/spec tests)
-- Release packaging via `tauri build` + PowerShell scripts
+![ESLint](https://img.shields.io/badge/ESLint-8.57-4b32c3?logo=eslint&logoColor=white)
+![vue-tsc](https://img.shields.io/badge/vue--tsc-2.2-3178c6)
+![Vitest](https://img.shields.io/badge/Vitest-4.0-6e9f18?logo=vitest&logoColor=white)
+![Tauri Build](https://img.shields.io/badge/Build-tauri%20build-24c8db?logo=tauri&logoColor=white)
+![PowerShell](https://img.shields.io/badge/Release-PowerShell-5391fe?logo=powershell&logoColor=white)
 
 ## 3. Core Features | 核心功能
 
