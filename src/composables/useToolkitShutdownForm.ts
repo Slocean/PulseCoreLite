@@ -29,6 +29,7 @@ export function useToolkitShutdownForm(options: UseToolkitShutdownFormOptions) {
   const plan = ref<ShutdownPlan | null>(null);
   const statusMessage = ref('');
   const errorMessage = ref('');
+  const suspendDateSync = ref(false);
 
   const weekdayOptions = computed(() => [
     { value: 1, label: t('toolkit.weekdayMon') },
@@ -78,6 +79,9 @@ export function useToolkitShutdownForm(options: UseToolkitShutdownFormOptions) {
   );
 
   watch([appointmentDate, appointmentTime], ([dateValue, timeValue]) => {
+    if (suspendDateSync.value) {
+      return;
+    }
     const date = parseAppointment(dateValue, timeValue);
     if (!date) return;
     weeklyDay.value = dayToWeekday(date);
@@ -103,7 +107,7 @@ export function useToolkitShutdownForm(options: UseToolkitShutdownFormOptions) {
 
   async function scheduleCountdown() {
     clearTips();
-    if (!inTauri()) return;
+    if (!inTauri()) return false;
 
     const totalSeconds =
       sanitizeNonNegative(countdownHours.value) * 3600 +
@@ -112,10 +116,10 @@ export function useToolkitShutdownForm(options: UseToolkitShutdownFormOptions) {
 
     if (totalSeconds <= 0) {
       errorMessage.value = t('toolkit.invalidCountdown');
-      return;
+      return false;
     }
 
-    await submitSchedule({
+    return await submitSchedule({
       mode: 'countdown',
       delaySeconds: totalSeconds
     });
@@ -123,12 +127,12 @@ export function useToolkitShutdownForm(options: UseToolkitShutdownFormOptions) {
 
   async function scheduleByDatetime() {
     clearTips();
-    if (!inTauri()) return;
+    if (!inTauri()) return false;
 
     const date = parseAppointment(appointmentDate.value, appointmentTime.value);
     if (!date) {
       errorMessage.value = t('toolkit.invalidDatetime');
-      return;
+      return false;
     }
 
     const hhmm = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
@@ -137,7 +141,7 @@ export function useToolkitShutdownForm(options: UseToolkitShutdownFormOptions) {
     if (repeatMode.value === 'none') {
       if (date.getTime() <= Date.now()) {
         errorMessage.value = t('toolkit.datetimeMustFuture');
-        return;
+        return false;
       }
       request = {
         mode: 'once',
@@ -162,7 +166,7 @@ export function useToolkitShutdownForm(options: UseToolkitShutdownFormOptions) {
       };
     }
 
-    await submitSchedule(request);
+    return await submitSchedule(request);
   }
 
   async function cancelPlan() {
@@ -182,9 +186,95 @@ export function useToolkitShutdownForm(options: UseToolkitShutdownFormOptions) {
     try {
       plan.value = await api.scheduleShutdown(request);
       statusMessage.value = t('toolkit.scheduleSuccess');
+      return true;
     } catch (error) {
       errorMessage.value = error instanceof Error && error.message ? error.message : t('toolkit.scheduleFailed');
+      return false;
     }
+  }
+
+  function withDateSyncSuspended(callback: () => void) {
+    suspendDateSync.value = true;
+    try {
+      callback();
+    } finally {
+      suspendDateSync.value = false;
+    }
+  }
+
+  function setAppointmentFromDate(date: Date) {
+    appointmentDate.value = formatDateLocal(date);
+    appointmentTime.value = formatTimeLocal(date);
+  }
+
+  function resetForm() {
+    clearTips();
+    const initial = nextQuarterHourDate();
+    withDateSyncSuspended(() => {
+      countdownHours.value = 0;
+      countdownMinutes.value = 30;
+      countdownSeconds.value = 0;
+      setAppointmentFromDate(initial);
+      repeatMode.value = 'none';
+      weeklyDay.value = dayToWeekday(initial);
+      monthlyDay.value = initial.getDate();
+    });
+  }
+
+  function applyPlanToForm(currentPlan: ShutdownPlan | null) {
+    if (!currentPlan) {
+      resetForm();
+      return;
+    }
+
+    clearTips();
+    const initial = nextQuarterHourDate();
+    withDateSyncSuspended(() => {
+      countdownHours.value = 0;
+      countdownMinutes.value = 30;
+      countdownSeconds.value = 0;
+      setAppointmentFromDate(initial);
+      repeatMode.value = 'none';
+      weeklyDay.value = dayToWeekday(initial);
+      monthlyDay.value = initial.getDate();
+    });
+
+    if (currentPlan.mode === 'countdown') {
+      const total = Math.max(0, Math.round(currentPlan.countdownSeconds ?? 0));
+      countdownHours.value = Math.min(999, Math.floor(total / 3600));
+      countdownMinutes.value = Math.min(59, Math.floor((total % 3600) / 60));
+      countdownSeconds.value = Math.min(59, total % 60);
+      return;
+    }
+
+    if (currentPlan.mode === 'once') {
+      const target = currentPlan.executeAt ? new Date(currentPlan.executeAt) : null;
+      if (target && !Number.isNaN(target.getTime())) {
+        withDateSyncSuspended(() => {
+          setAppointmentFromDate(target);
+          weeklyDay.value = dayToWeekday(target);
+          monthlyDay.value = target.getDate();
+          repeatMode.value = 'none';
+        });
+      }
+      return;
+    }
+
+    const timeParts = parseTimeParts(currentPlan.time);
+    const base = new Date();
+    if (timeParts) {
+      base.setHours(timeParts.hour, timeParts.minute, 0, 0);
+    }
+    withDateSyncSuspended(() => {
+      setAppointmentFromDate(base);
+      repeatMode.value = currentPlan.mode;
+      if (currentPlan.mode === 'weekly') {
+        weeklyDay.value = clampInt(currentPlan.weekday ?? weeklyDay.value, 1, 7);
+      }
+      if (currentPlan.mode === 'monthly') {
+        monthlyDay.value = clampInt(currentPlan.dayOfMonth ?? monthlyDay.value, 1, 31);
+      }
+    });
   }
 
   function onNumberWheel(event: WheelEvent, field: 'hours' | 'minutes' | 'seconds', min: number, max: number) {
@@ -224,6 +314,8 @@ export function useToolkitShutdownForm(options: UseToolkitShutdownFormOptions) {
     scheduleCountdown,
     scheduleByDatetime,
     cancelPlan,
+    resetForm,
+    applyPlanToForm,
     onNumberWheel
   };
 }
@@ -297,4 +389,20 @@ function dayToWeekday(date: Date) {
 function sanitizeNonNegative(value: number) {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.round(value));
+}
+
+function parseTimeParts(value: string | null) {
+  if (!value) return null;
+  const match = value.match(/^(\d{2}):(\d{2})$/);
+  if (!match) return null;
+  const hour = Number.parseInt(match[1], 10);
+  const minute = Number.parseInt(match[2], 10);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  return { hour, minute };
+}
+
+function clampInt(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, Math.round(value)));
 }

@@ -108,6 +108,23 @@
   justify-content: flex-end;
 }
 
+.toolkit-actions--compact {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.toolkit-add-plan {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.toolkit-add-plan .material-symbols-outlined {
+  font-size: 16px;
+  line-height: 1;
+}
+
 .toolkit-card .ui-button--preset-overlay-primary,
 .toolkit-card .ui-button--preset-overlay-danger {
   line-height: 1;
