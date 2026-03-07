@@ -64,6 +64,7 @@
         :aria-label="t('toolkit.reminderCreate')"
         @click="emit('createReminder')">
         <span class="material-symbols-outlined">add</span>
+        <span>{{ t('toolkit.reminderCreate') }}</span>
       </UiButton>
     </div>
   </UiCollapsiblePanel>

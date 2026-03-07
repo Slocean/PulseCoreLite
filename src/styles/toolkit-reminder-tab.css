@@ -142,10 +142,13 @@
 }
 
 .toolkit-reminder-create {
-  --btn-min-height: 22px;
-  --btn-padding: 2px 6px;
+  --btn-min-height: 24px;
+  --btn-padding: 4px 10px;
   --btn-radius: 8px;
   --btn-letter-spacing: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .toolkit-reminder-create .material-symbols-outlined {

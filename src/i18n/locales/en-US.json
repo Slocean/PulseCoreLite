@@ -289,7 +289,7 @@
     "reminderTitle": "Reminder List",
     "reminderSummary": "Total {total} reminders, {enabled} enabled",
     "reminderBack": "Back to List",
-    "reminderCreate": "Create Reminder",
+    "reminderCreate": "Add Reminder",
     "reminderEdit": "Edit Reminder",
     "reminderTaskTitle": "Task Title",
     "reminderChannel": "Reminder Channel",
