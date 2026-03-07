@@ -2,8 +2,6 @@
   <UiDialog
     v-model:open="openModel"
     :title="t('toolkit.reminderSmtpConfig')"
-    :confirm-text="t('overlay.dialogConfirm')"
-    :cancel-text="t('overlay.dialogCancel')"
     :close-label="t('overlay.dialogClose')"
     :autofocus-confirm="false"
     @confirm="emit('save')">
@@ -37,16 +35,15 @@
           <span>{{ t('toolkit.reminderSmtpFromName') }}</span>
           <input v-model="smtpForm.fromName" type="text" />
         </label>
-        <label class="toolkit-field">
-          <span>{{ t('toolkit.reminderSmtpTestTo') }}</span>
-          <input v-model.trim="smtpTestToModel" type="email" />
-        </label>
-        <div class="toolkit-actions">
-          <UiButton native-type="button" preset="overlay-primary" @click="emit('test')">
-            {{ t('toolkit.reminderSmtpSendTest') }}
-          </UiButton>
-        </div>
       </div>
+    </template>
+    <template #actions>
+      <UiButton native-type="button" preset="overlay-chip" @click="openModel = false">
+        {{ t('overlay.dialogCancel') }}
+      </UiButton>
+      <UiButton native-type="button" preset="overlay-primary" @click="emit('save')">
+        {{ t('overlay.dialogConfirm') }}
+      </UiButton>
     </template>
   </UiDialog>
 </template>
@@ -55,24 +52,21 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import UiButton from '@/components/ui/Button';
 import UiSelect from '@/components/ui/Select';
 import type { SelectOption } from '@/components/ui/Select/types';
 import UiDialog from '@/components/ui/Dialog';
+import UiButton from '@/components/ui/Button';
 import type { SmtpEmailConfig } from '@/types';
 
 const props = defineProps<{
   open: boolean;
   smtpForm: SmtpEmailConfig;
-  smtpTestTo: string;
   smtpSecurityOptions: SelectOption[];
 }>();
 
 const emit = defineEmits<{
   (event: 'update:open', value: boolean): void;
-  (event: 'update:smtpTestTo', value: string): void;
   (event: 'save'): void;
-  (event: 'test'): void;
 }>();
 
 const { t } = useI18n();
@@ -84,8 +78,4 @@ const openModel = computed({
 
 const smtpForm = computed(() => props.smtpForm);
 const smtpSecurityOptions = computed(() => props.smtpSecurityOptions);
-const smtpTestToModel = computed({
-  get: () => props.smtpTestTo,
-  set: value => emit('update:smtpTestTo', value)
-});
 </script>

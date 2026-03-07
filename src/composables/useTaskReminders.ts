@@ -1,4 +1,4 @@
-﻿import { computed, ref } from 'vue';
+import { computed, ref } from 'vue';
 
 import { api, inTauri } from '../services/tauri';
 import type { SmtpEmailConfig, TaskReminder, TaskReminderStore } from '../types';
@@ -91,9 +91,6 @@ export function useTaskReminders() {
     let normalized = normalizeReminder({ ...input, title: inputTitle });
     if (!hasAnySchedule(normalized)) {
       throw new Error('toolkit.reminderErrorNoSchedule');
-    }
-    if (normalized.channel === 'email' && !normalized.email.trim()) {
-      throw new Error('toolkit.reminderErrorEmailRequired');
     }
 
     if (!inputTitle) {

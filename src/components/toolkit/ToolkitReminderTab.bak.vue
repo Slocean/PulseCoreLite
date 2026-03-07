@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <ReminderListPanel
     v-model="sections.list"
     :reminders="reminders"
@@ -19,6 +19,8 @@
     :weekly-input-time="weeklyInputTime"
     :monthly-input-days="monthlyInputDays"
     :monthly-input-time="monthlyInputTime"
+    :smtp-test-to="smtpTestTo"
+    :smtp-testing="false"
     :channel-options="channelOptions"
     :weekday-options="weekdayOptions"
     :monthly-day-options="monthlyDayOptions"
@@ -36,7 +38,9 @@
     @update:weekly-input-days="updateWeeklyInputDays"
     @update:weekly-input-time="updateWeeklyInputTime"
     @update:monthly-input-days="updateMonthlyInputDays"
-    @update:monthly-input-time="updateMonthlyInputTime" />
+    @update:monthly-input-time="updateMonthlyInputTime"
+    @update:smtp-test-to="updateSmtpTestTo"
+    @send-smtp-test-email="sendSmtpTestEmail" />
 
   <UiCollapsiblePanel
     v-if="form.channel === 'fullscreen'"
@@ -139,11 +143,8 @@
   <ReminderSmtpDialog
     v-model:open="smtpDialogOpen"
     :smtp-form="smtpForm"
-    :smtp-test-to="smtpTestTo"
     :smtp-security-options="smtpSecurityOptions"
-    @update:smtp-test-to="updateSmtpTestTo"
-    @save="saveSmtpSettings"
-    @test="sendSmtpTestEmail" />
+    @save="saveSmtpSettings" />
 </template>
 
 <script setup lang="ts">

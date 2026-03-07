@@ -1,4 +1,5 @@
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
+import { useToastService } from '@/composables/useToastService';
 import { useI18n } from 'vue-i18n';
 
 import type { SelectOption } from '@/components/ui/Select/types';
@@ -16,6 +17,7 @@ type ReminderTabEmit = (event: 'contentChange') => void;
 
 export function useReminderTabState(emit: ReminderTabEmit) {
   const { t } = useI18n();
+  const { showToast, hideToast } = useToastService('toolkit');
   const {
     reminders,
     smtpConfig,
@@ -37,6 +39,7 @@ export function useReminderTabState(emit: ReminderTabEmit) {
   const statusMessage = ref('');
   const errorMessage = ref('');
   const allowCloseWarningOpen = ref(false);
+  const smtpTestSending = ref(false);
   const allowCloseWarningDismissed = ref(false);
   const sections = reactive({
     task: false,
@@ -183,6 +186,10 @@ export function useReminderTabState(emit: ReminderTabEmit) {
   }
 
   function formatErrorMessage(error: unknown, fallbackKey: string) {
+    if (typeof error === 'string') {
+      const message = error.trim();
+      return message || t(fallbackKey);
+    }
     if (error instanceof Error) {
       const message = error.message.trim();
       if (message.startsWith('toolkit.')) {
@@ -190,6 +197,15 @@ export function useReminderTabState(emit: ReminderTabEmit) {
       }
       if (message) {
         return message;
+      }
+    }
+    if (error && typeof error === 'object') {
+      const record = error as Record<string, unknown>;
+      for (const key of ['message', 'msg', 'error', 'cause']) {
+        const value = record[key];
+        if (typeof value === 'string' && value.trim()) {
+          return value.trim();
+        }
       }
     }
     return t(fallbackKey);
@@ -463,7 +479,7 @@ export function useReminderTabState(emit: ReminderTabEmit) {
     clearTip();
     if (smtpConfig.value) {
       Object.assign(smtpForm, smtpConfig.value);
-      smtpTestTo.value = smtpConfig.value.fromEmail ?? '';
+      smtpTestTo.value = smtpTestTo.value || smtpConfig.value.fromEmail || '';
     }
     smtpDialogOpen.value = true;
   }
@@ -472,6 +488,7 @@ export function useReminderTabState(emit: ReminderTabEmit) {
     clearTip();
     try {
       await saveSmtpConfig({ ...smtpForm });
+      smtpTestTo.value = smtpTestTo.value || smtpForm.fromEmail || '';
       statusMessage.value = t('toolkit.reminderSmtpSaveSuccess');
     } catch (error) {
       errorMessage.value = formatErrorMessage(error, 'toolkit.reminderSmtpSaveFailed');
@@ -480,11 +497,17 @@ export function useReminderTabState(emit: ReminderTabEmit) {
 
   async function sendSmtpTestEmail() {
     clearTip();
+    smtpTestSending.value = true;
+    showToast(t('toolkit.reminderSmtpTesting'), { durationMs: 0 });
     try {
       await testSmtpConfig({ ...smtpForm }, smtpTestTo.value);
+      hideToast();
       statusMessage.value = t('toolkit.reminderSmtpTestSuccess');
     } catch (error) {
+      hideToast();
       errorMessage.value = formatErrorMessage(error, 'toolkit.reminderSmtpTestFailed');
+    } finally {
+      smtpTestSending.value = false;
     }
   }
 
@@ -569,6 +592,7 @@ export function useReminderTabState(emit: ReminderTabEmit) {
     smtpDialogOpen,
     smtpForm,
     smtpTestTo,
+    smtpTestSending,
     smtpSecurityOptions,
     formatWeekday,
     toggleReminderEnabled,

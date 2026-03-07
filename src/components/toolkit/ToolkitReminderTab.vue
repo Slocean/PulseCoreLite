@@ -1,4 +1,6 @@
 ﻿<template>
+  <UiToast channel="toolkit" />
+
   <ReminderListPanel
     v-if="viewMode === 'list'"
     v-model="sections.list"
@@ -33,6 +35,8 @@
       :weekly-input-time="weeklyInputTime"
       :monthly-input-days="monthlyInputDays"
       :monthly-input-time="monthlyInputTime"
+      :smtp-test-to="smtpTestTo"
+      :smtp-testing="smtpTestSending"
       :channel-options="channelOptions"
       :weekday-options="weekdayOptions"
       :monthly-day-options="monthlyDayOptions"
@@ -51,6 +55,8 @@
       @update:weekly-input-time="updateWeeklyInputTime"
       @update:monthly-input-days="updateMonthlyInputDays"
       @update:monthly-input-time="updateMonthlyInputTime"
+      @update:smtp-test-to="updateSmtpTestTo"
+      @send-smtp-test-email="sendSmtpTestEmail"
       @content-image-change="handleContentImageChange" />
 
     <ReminderAdvancedPanel
@@ -95,16 +101,14 @@
   <ReminderSmtpDialog
     v-model:open="smtpDialogOpen"
     :smtp-form="smtpForm"
-    :smtp-test-to="smtpTestTo"
     :smtp-security-options="smtpSecurityOptions"
-    @update:smtp-test-to="updateSmtpTestTo"
-    @save="saveSmtpSettings"
-    @test="sendSmtpTestEmail" />
+    @save="saveSmtpSettings" />
 </template>
 
 <script setup lang="ts">
 import UiButton from '@/components/ui/Button';
 import UiDialog from '@/components/ui/Dialog';
+import UiToast from '@/components/ui/Toast';
 import ReminderAdvancedPanel from './reminder/ReminderAdvancedPanel.vue';
 import ReminderEditorPanels from './reminder/ReminderEditorPanels.vue';
 import ReminderListPanel from './reminder/ReminderListPanel.vue';
@@ -141,6 +145,7 @@ const {
   smtpDialogOpen,
   smtpForm,
   smtpTestTo,
+  smtpTestSending,
   smtpSecurityOptions,
   formatWeekday,
   toggleReminderEnabled,

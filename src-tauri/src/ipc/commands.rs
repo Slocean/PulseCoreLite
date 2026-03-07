@@ -641,15 +641,18 @@ pub(crate) async fn trigger_task_reminder_backend(
         }
         return Ok(());
     }
-
-    let target = reminder.email.trim();
-    if target.is_empty() {
-        return Err("email is required for email reminder".to_string());
-    }
     let smtp = smtp_config.ok_or_else(|| "SMTP config is required.".to_string())?;
+    let target = if reminder.email.trim().is_empty() {
+        smtp.from_email.trim().to_string()
+    } else {
+        reminder.email.trim().to_string()
+    };
+    if target.is_empty() {
+        return Err("recipient email is empty; configure SMTP from email first".to_string());
+    }
     let request = SendReminderEmailRequest {
         smtp,
-        to: target.to_string(),
+        to: target,
         subject: format!("[PulseCore] {}", reminder.title),
         body: if reminder.content.trim().is_empty() {
             reminder.title.clone()

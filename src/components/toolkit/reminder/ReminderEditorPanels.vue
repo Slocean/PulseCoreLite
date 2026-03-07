@@ -24,11 +24,18 @@
         <span>{{ t('toolkit.reminderChannel') }}</span>
         <UiSelect v-model="form.channel" :options="channelOptions" />
       </label>
-      <label v-if="form.channel === 'email'" class="toolkit-field">
-        <span>{{ t('toolkit.reminderEmail') }}</span>
-        <input v-model.trim="form.email" type="email" placeholder="name@example.com" />
-      </label>
       <p v-if="form.channel === 'email'" class="toolkit-profile-hint">{{ t('toolkit.reminderEmailHint') }}</p>
+      <template v-if="form.channel === 'email'">
+        <label class="toolkit-field">
+          <span>{{ t('toolkit.reminderSmtpTestTo') }}</span>
+          <input v-model.trim="smtpTestToModel" type="email" placeholder="name@example.com" />
+        </label>
+        <div class="toolkit-actions">
+          <UiButton native-type="button" preset="overlay-primary" :loading="smtpTesting" @click="emit('sendSmtpTestEmail')">
+            {{ t('toolkit.reminderSmtpSendTest') }}
+          </UiButton>
+        </div>
+      </template>
     </div>
   </UiCollapsiblePanel>
 
@@ -177,6 +184,8 @@ const props = defineProps<{
   weeklyInputTime: string;
   monthlyInputDays: number[];
   monthlyInputTime: string;
+  smtpTestTo: string;
+  smtpTesting: boolean;
   channelOptions: SelectOption[];
   weekdayOptions: SelectOption[];
   monthlyDayOptions: SelectOption[];
@@ -198,6 +207,8 @@ const emit = defineEmits<{
   (event: 'update:weeklyInputTime', value: string): void;
   (event: 'update:monthlyInputDays', value: number[]): void;
   (event: 'update:monthlyInputTime', value: string): void;
+  (event: 'update:smtpTestTo', value: string): void;
+  (event: 'sendSmtpTestEmail'): void;
   (event: 'contentImageChange', value: Event): void;
 }>();
 
@@ -231,12 +242,18 @@ const monthlyInputTimeModel = computed({
   set: value => emit('update:monthlyInputTime', value)
 });
 
+const smtpTestToModel = computed({
+  get: () => props.smtpTestTo,
+  set: value => emit('update:smtpTestTo', value)
+});
+
 const channelOptions = computed(() => props.channelOptions);
 const weekdayOptions = computed(() => props.weekdayOptions);
 const monthlyDayOptions = computed(() => props.monthlyDayOptions);
 const contentTypeOptions = computed(() => props.contentTypeOptions);
 const editingId = computed(() => props.editingId);
 const formatWeekday = computed(() => props.formatWeekday);
+const smtpTesting = computed(() => props.smtpTesting);
 
 type FrequencyValue = 'daily' | 'weekly' | 'monthly';
 
