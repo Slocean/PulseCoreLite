@@ -4,11 +4,7 @@
       <div class="ui-toast" :class="[`ui-toast--${effectiveVariant}`, { 'ui-toast--pinned': effectivePinned }]">
         <div class="ui-toast__message">{{ effectiveMessage }}</div>
         <div class="ui-toast__actions">
-          <button
-            type="button"
-            class="ui-toast__action"
-            :aria-label="copyLabel"
-            @click="handleCopy">
+          <button type="button" class="ui-toast__action" :aria-label="copyLabel" @click="handleCopy">
             <span class="material-symbols-outlined">content_copy</span>
           </button>
           <button
@@ -122,8 +118,7 @@ async function handleCopy() {
       await navigator.clipboard.writeText(message);
       return;
     }
-  } catch {
-  }
+  } catch {}
 
   if (typeof document === 'undefined') {
     return;
@@ -143,7 +138,7 @@ async function handleCopy() {
 <style scoped>
 .ui-toast-layer {
   position: fixed;
-  top: 8px;
+  top: 61px;
   left: 0;
   right: 0;
   display: flex;
@@ -157,6 +152,7 @@ async function handleCopy() {
 .ui-toast {
   pointer-events: auto;
   width: min(720px, 100%);
+  max-height: 400px;
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -169,14 +165,18 @@ async function handleCopy() {
   letter-spacing: 0.01em;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16);
   backdrop-filter: blur(10px);
+  overflow: hidden;
 }
 
 .ui-toast__message {
   flex: 1;
   min-width: 0;
+  max-height: calc(400px - 20px);
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .ui-toast__actions {
