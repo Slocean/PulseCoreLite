@@ -129,19 +129,12 @@ Design assets are maintained in `design/product_picture/new`.
 
 ### Gallery
 
-| # | Preview |
-|---|---|
-| 1 | ![Product 1](design/product_picture/new/1.png) |
-| 2 | ![Product 2](design/product_picture/new/2.png) |
-| 3 | ![Product 3](design/product_picture/new/3.png) |
-| 4 | ![Product 4](design/product_picture/new/4.png) |
-| 5 | ![Product 5](design/product_picture/new/5.png) |
-| 6 | ![Product 6](design/product_picture/new/6.png) |
-| 7 | ![Product 7](design/product_picture/new/7.png) |
-| 8 | ![Product 8](design/product_picture/new/8.png) |
-| 9 | ![Product 9](design/product_picture/new/9.png) |
-| 10 | ![Product 10](design/product_picture/new/10.png) |
-| 11 | ![Product 11](design/product_picture/new/11.png) |
+| Preview A | Preview B | Preview C |
+|---|---|---|
+| ![Product 1](design/product_picture/new/1.png) | ![Product 2](design/product_picture/new/2.png) | ![Product 3](design/product_picture/new/3.png) |
+| ![Product 4](design/product_picture/new/4.png) | ![Product 5](design/product_picture/new/5.png) | ![Product 6](design/product_picture/new/6.png) |
+| ![Product 7](design/product_picture/new/7.png) | ![Product 8](design/product_picture/new/8.png) | ![Product 9](design/product_picture/new/9.png) |
+| ![Product 10](design/product_picture/new/10.png) | ![Product 11](design/product_picture/new/11.png) |  |
 
 ## 7. Build, QA, and Release | 构建、质量与发布
 
