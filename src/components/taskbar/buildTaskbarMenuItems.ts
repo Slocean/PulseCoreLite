@@ -184,12 +184,16 @@ export function buildTaskbarMenuItems(input: BuildTaskbarMenuItemsInput): Taskba
       onTrigger: () => actions.toggleShowUp(!prefs.showUp)
     },
     { kind: 'separator', id: 'sep-close' },
-    {
-      kind: 'action',
-      id: 'close-taskbar',
-      text: labels.closeTaskbarMonitor,
-      onTrigger: () => actions.closeTaskbarMonitor()
-    },
+    ...(input.mainVisible
+      ? [
+          {
+            kind: 'action' as const,
+            id: 'close-taskbar',
+            text: labels.closeTaskbarMonitor,
+            onTrigger: () => actions.closeTaskbarMonitor()
+          }
+        ]
+      : []),
     {
       kind: 'action',
       id: 'exit-app',

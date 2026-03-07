@@ -285,6 +285,7 @@
     "tabReminder": "任务提醒",
     "reminderTitle": "提醒列表",
     "reminderSummary": "共 {total} 个提醒，启用 {enabled} 个",
+    "reminderBack": "返回列表",
     "reminderCreate": "创建提醒",
     "reminderEdit": "编辑提醒",
     "reminderTaskTitle": "任务标题",

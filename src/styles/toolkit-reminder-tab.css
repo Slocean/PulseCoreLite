@@ -135,6 +135,41 @@
   pointer-events: none;
 }
 
+.toolkit-reminder-list-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.toolkit-reminder-create {
+  --btn-min-height: 22px;
+  --btn-padding: 2px 6px;
+  --btn-radius: 8px;
+  --btn-letter-spacing: 0;
+}
+
+.toolkit-reminder-create .material-symbols-outlined {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.toolkit-reminder-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.toolkit-reminder-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolkit-reminder-back .material-symbols-outlined {
+  font-size: 16px;
+  line-height: 1;
+}
+
 .toolkit-hidden-file {
   display: none;
 }

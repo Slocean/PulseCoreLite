@@ -3,7 +3,10 @@
     class="toolkit-card"
     :title="panelTitle"
     v-model="open"
-    single-header-preset="toolkit-collapse"
+    header-mode="split"
+    header-class="toolkit-section-header"
+    split-title-preset="toolkit-collapse-title"
+    split-toggle-preset="toolkit-collapse-icon"
     title-class="toolkit-section-title"
     indicator-class="toolkit-collapse-indicator"
     @toggle="emit('contentChange')">
@@ -53,6 +56,16 @@
         </div>
       </div>
     </div>
+    <div class="toolkit-reminder-list-actions">
+      <UiButton
+        native-type="button"
+        preset="overlay-primary"
+        class="toolkit-reminder-create"
+        :aria-label="t('toolkit.reminderCreate')"
+        @click="emit('createReminder')">
+        <span class="material-symbols-outlined">add</span>
+      </UiButton>
+    </div>
   </UiCollapsiblePanel>
 </template>
 
@@ -74,6 +87,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'update:modelValue', value: boolean): void;
   (event: 'contentChange'): void;
+  (event: 'createReminder'): void;
   (event: 'editReminder', item: TaskReminder): void;
   (event: 'triggerNow', item: TaskReminder): void;
   (event: 'deleteReminder', id: string): void;

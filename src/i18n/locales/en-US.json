@@ -285,6 +285,7 @@
     "loadFailed": "Failed to load shutdown plan.",
     "reminderTitle": "Reminder List",
     "reminderSummary": "Total {total} reminders, {enabled} enabled",
+    "reminderBack": "Back to List",
     "reminderCreate": "Create Reminder",
     "reminderEdit": "Edit Reminder",
     "reminderTaskTitle": "Task Title",

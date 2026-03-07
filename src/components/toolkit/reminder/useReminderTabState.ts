@@ -31,6 +31,7 @@ export function useReminderTabState(emit: ReminderTabEmit) {
     formatWeekday
   } = useTaskReminders();
 
+  const viewMode = ref<'list' | 'form'>('list');
   const editingId = ref<string | null>(null);
   const smtpDialogOpen = ref(false);
   const statusMessage = ref('');
@@ -38,10 +39,10 @@ export function useReminderTabState(emit: ReminderTabEmit) {
   const allowCloseWarningOpen = ref(false);
   const allowCloseWarningDismissed = ref(false);
   const sections = reactive({
-    task: true,
-    schedule: true,
-    content: true,
-    list: false,
+    task: false,
+    schedule: false,
+    content: false,
+    list: true,
     advanced: false
   });
 
@@ -149,7 +150,7 @@ export function useReminderTabState(emit: ReminderTabEmit) {
   );
 
   watch(
-    [reminders, statusMessage, errorMessage, sections, advancedSettings],
+    [reminders, statusMessage, errorMessage, sections, advancedSettings, viewMode],
     () => {
       nextTick(() => emit('contentChange'));
     },
@@ -430,6 +431,34 @@ export function useReminderTabState(emit: ReminderTabEmit) {
     applyReminderToForm();
   }
 
+  function showListView() {
+    viewMode.value = 'list';
+    sections.list = true;
+    sections.task = false;
+    sections.schedule = false;
+    sections.content = false;
+    sections.advanced = false;
+  }
+
+  function showEditorView() {
+    viewMode.value = 'form';
+    sections.task = true;
+    sections.schedule = true;
+    sections.content = true;
+  }
+
+  function startCreateReminder() {
+    clearTip();
+    editingId.value = null;
+    applyReminderToForm();
+    showEditorView();
+  }
+
+  function returnToList() {
+    resetForm();
+    showListView();
+  }
+
   function openSmtpDialog() {
     clearTip();
     if (smtpConfig.value) {
@@ -482,6 +511,7 @@ export function useReminderTabState(emit: ReminderTabEmit) {
       maybeOpenAllowCloseWarning();
       allowCloseBaseline = advancedSettings.allowClose;
       resetForm();
+      showListView();
     } catch (error) {
       errorMessage.value = formatErrorMessage(error, 'toolkit.reminderSaveFailed');
     }
@@ -490,12 +520,8 @@ export function useReminderTabState(emit: ReminderTabEmit) {
   function editReminder(item: TaskReminder) {
     clearTip();
     editingId.value = item.id;
-    sections.task = true;
-    sections.schedule = true;
-    sections.content = true;
-    sections.list = true;
-    sections.advanced = true;
     applyReminderToForm(item);
+    showEditorView();
   }
 
   async function deleteReminder(id: string) {
@@ -521,6 +547,7 @@ export function useReminderTabState(emit: ReminderTabEmit) {
     t,
     reminders,
     reminderListTitle,
+    viewMode,
     editingId,
     sections,
     form,
@@ -566,6 +593,9 @@ export function useReminderTabState(emit: ReminderTabEmit) {
     sendSmtpTestEmail,
     saveReminder,
     resetForm,
+    startCreateReminder,
+    returnToList,
+    showListView,
     editReminder,
     deleteReminder,
     triggerNow
