@@ -1,7 +1,11 @@
 ﻿<template>
   <Transition name="toast">
     <div v-if="effectiveOpen && effectiveMessage" class="ui-toast-layer" :aria-live="props.ariaLive">
-      <div class="ui-toast" :class="[`ui-toast--${effectiveVariant}`, { 'ui-toast--pinned': effectivePinned }]">
+      <div
+        ref="toastElement"
+        class="ui-toast"
+        :class="[`ui-toast--${effectiveVariant}`, { 'ui-toast--pinned': effectivePinned }]"
+        :style="toastStyle">
         <div class="ui-toast__message">{{ effectiveMessage }}</div>
         <div class="ui-toast__actions">
           <button type="button" class="ui-toast__action" :aria-label="copyLabel" @click="handleCopy">
@@ -31,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import type { PropType } from 'vue';
 import { useToastService } from '@/composables/useToastService';
 import type { ToastProps } from './types';
@@ -104,9 +108,55 @@ const effectiveVariant = computed(() => renderState.value.variant);
 const effectiveClosable = computed(() => renderState.value.closable);
 const effectivePinnable = computed(() => renderState.value.pinnable);
 const effectivePinned = computed(() => renderState.value.pinned ?? false);
+const toastElement = ref<HTMLElement | null>(null);
+const lockedHeight = ref<number | null>(null);
+const toastStyle = computed(() => {
+  if (!lockedHeight.value) {
+    return undefined;
+  }
+
+  return {
+    minHeight: `${lockedHeight.value}px`
+  };
+});
 const closeLabel = 'Close notification';
 const copyLabel = 'Copy notification';
 const pinLabel = computed(() => (effectivePinned.value ? 'Unpin notification' : 'Pin notification'));
+
+let syncHeightToken = 0;
+
+async function syncToastHeight() {
+  const token = ++syncHeightToken;
+  await nextTick();
+
+  if (token !== syncHeightToken || !effectiveOpen.value) {
+    return;
+  }
+
+  const height = toastElement.value?.offsetHeight;
+  if (!height) {
+    return;
+  }
+
+  lockedHeight.value = Math.max(lockedHeight.value ?? 0, height);
+}
+
+watch(
+  [effectiveOpen, effectiveMessage],
+  ([open]) => {
+    if (!open) {
+      lockedHeight.value = null;
+      return;
+    }
+
+    void syncToastHeight();
+  },
+  { immediate: true }
+);
+
+onBeforeUnmount(() => {
+  syncHeightToken += 1;
+});
 
 async function handleCopy() {
   const message = effectiveMessage.value;
