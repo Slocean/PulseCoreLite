@@ -769,16 +769,16 @@ mod imp {
         }
     }
 
-    fn close_main_window(app: &AppHandle) {
+    fn hide_main_window(app: &AppHandle) {
         if let Some(win) = app.get_webview_window("main") {
-            let _ = win.close();
+            let _ = win.hide();
         }
     }
 
     fn toggle_main_window(app: &AppHandle, shared: &NativeTaskbarShared) {
         if let Some(win) = app.get_webview_window("main") {
             if win.is_visible().unwrap_or(false) {
-                close_main_window(app);
+                hide_main_window(app);
             } else {
                 let _ = win.show();
                 let _ = win.set_focus();

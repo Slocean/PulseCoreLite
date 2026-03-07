@@ -5,6 +5,7 @@ import { storageKeys, storageRepository } from '../services/storageRepository';
 import type { AppSettings } from '../types';
 
 const FULLSCREEN_POLL_MS = 800;
+const APP_TRAY_ID = 'pulsecorelite-main-tray';
 const TRAY_TEXT = {
   'zh-CN': {
     show: '显示主窗口',
@@ -159,20 +160,7 @@ export const useWindowStore = defineStore('window', {
       if (!inTauri()) {
         return;
       }
-      try {
-        const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
-        const existing = await WebviewWindow.getByLabel('main');
-        if (!existing) {
-          return;
-        }
-        try {
-          await existing.close();
-        } catch {
-          // ignore
-        }
-      } catch {
-        // ignore
-      }
+      await this.toggleOverlay(false);
     },
     async ensureTray(settings: AppSettings) {
       if (!inTauri() || this.trayReady) {
@@ -184,6 +172,11 @@ export const useWindowStore = defineStore('window', {
           import('@tauri-apps/api/menu'),
           import('@tauri-apps/api/app')
         ]);
+        const existingTray = await TrayIcon.getById(APP_TRAY_ID);
+        if (existingTray) {
+          this.trayReady = true;
+          return true;
+        }
         const showWindow = async () => {
           await this.ensureMainWindow(settings);
         };
@@ -199,6 +192,7 @@ export const useWindowStore = defineStore('window', {
         });
         const icon = await defaultWindowIcon();
         const trayOptions: Parameters<typeof TrayIcon.new>[0] = {
+          id: APP_TRAY_ID,
           menu,
           menuOnLeftClick: true,
           tooltip: 'PulseCoreLite',
@@ -247,11 +241,6 @@ export const useWindowStore = defineStore('window', {
         return;
       }
       await this.ensureTray(settings);
-      const canHandoff = await this.handoffTrayToOtherWindow();
-      if (canHandoff) {
-        await this.closeMainWindow();
-        return;
-      }
       await this.toggleOverlay(false);
     },
     async minimizeOverlay() {
