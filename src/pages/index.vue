@@ -46,7 +46,6 @@
         v-model:refreshRate="refreshRate"
         v-model:backgroundOpacity="prefs.backgroundOpacity"
         :can-uninstall="store.installationMode === 'installed'"
-        :app-version="appVersion"
         :language="store.settings.language"
         :themes="themes"
         :get-theme-preview-url="getThemePreviewUrl"

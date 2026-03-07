@@ -135,7 +135,26 @@
     "mainNavToolkit": "工具箱",
     "mainNavSettings": "设置",
     "mainTabsExpand": "展开标签页",
-    "mainTabsCollapse": "收起标签页"
+    "mainTabsCollapse": "收起标签页",
+    "feedbackTitle": "反馈",
+    "feedbackHint": "欢迎提交 Bug、需求或体验建议，我们会根据影响优先处理。",
+    "feedbackType": "类型",
+    "feedbackTypeBug": "Bug",
+    "feedbackTypeFeature": "新功能",
+    "feedbackTypeExperience": "体验",
+    "feedbackTypeOther": "其他",
+    "feedbackContact": "联系方式",
+    "feedbackContactPlaceholder": "邮箱或社媒账号（可选）",
+    "feedbackMessagePlaceholder": "请描述你遇到的问题或想要的功能...",
+    "feedbackIncludeSystem": "包含系统信息",
+    "feedbackCopy": "复制",
+    "feedbackCopySuccess": "反馈内容已复制。",
+    "feedbackCopyFailed": "复制失败，请重试。",
+    "feedbackOpenIssue": "打开 GitHub",
+    "feedbackOpenSuccess": "已打开反馈页面。",
+    "feedbackOpenFailed": "打开反馈页面失败。",
+    "feedbackSubmit": "提交",
+    "feedbackPrivacy": "我们仅用于改进产品。"
   },
   "toolkit": {
     "title": "工具箱",
@@ -379,7 +398,8 @@
     "reminderScreenCloseReady": "关闭提醒",
     "reminderScreenCloseWait": "{seconds} 秒后可关闭",
     "reminderScreenWebBlocked": "该网页地址不在安全白名单内，已阻止嵌入。",
-    "reminderScreenImageBlocked": "该图片地址不符合安全策略，已阻止加载。"
+    "reminderScreenImageBlocked": "该图片地址不符合安全策略，已阻止加载。",
+    "tabFeedback": "反馈"
   },
   "ui": {
     "dateInput": {

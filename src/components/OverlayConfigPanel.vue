@@ -44,6 +44,7 @@
         @factory-reset="confirmFactoryReset"
         @open-toolkit="handleToolkitToggle"
         @uninstall="emit('uninstall')" />
+
     </UiCollapsiblePanel>
   </div>
 </template>
@@ -60,7 +61,6 @@ import type { OverlayPrefs } from '../composables/useOverlayPrefs';
 import type { OverlayTheme } from '@/components/overlay/config/types';
 
 const props = defineProps<{
-  appVersion: string;
   language: 'zh-CN' | 'en-US';
   canUninstall: boolean;
   themes: OverlayTheme[];
