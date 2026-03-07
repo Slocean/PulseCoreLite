@@ -1,3 +1,18 @@
+## v1.8.10
+
+- 新增原生任务栏监测窗口（Windows 实验功能），支持 CPU/GPU/内存/网速/延迟等指标与单双行显示
+- 优化任务栏监测同步与右键菜单逻辑，主窗口隐藏时不再显示“关闭任务栏监测”
+- 关闭主窗口支持最小化到托盘，并优化托盘与窗口管理
+- 内存清理改为处理进程树 working set，提升稳定性
+- 定时关机改为计划列表 + 添加/编辑模式，体验更一致
+- 任务提醒列表“+”按钮新增“添加提醒”文案
+- Add native taskbar monitor window (Windows, experimental) with live CPU/GPU/memory/network/latency metrics and single/dual-line modes
+- Improve taskbar monitor sync and context menu behavior (hide "Close Taskbar Monitor" when main window is hidden)
+- Support minimize-to-tray on close and refine tray/window management
+- Memory trimming now targets the process tree working set for more reliable cleanup
+- Scheduled shutdown UX redesigned with current-plan view plus add/edit flow (aligned with reminders)
+- Reminder list “+” button now shows “Add Reminder”
+
 ## v1.8.9
 
 - 硬件评分算法升级：优化 CPU/GPU 评分计算与硬件升级建议逻辑
