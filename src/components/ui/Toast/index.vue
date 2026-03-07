@@ -1,37 +1,39 @@
-﻿<template>
-  <Transition name="toast">
-    <div v-if="effectiveOpen && effectiveMessage" class="ui-toast-layer" :aria-live="props.ariaLive">
-      <div
-        ref="toastElement"
-        class="ui-toast"
-        :class="[`ui-toast--${effectiveVariant}`, { 'ui-toast--pinned': effectivePinned }]"
-        :style="toastStyle">
-        <div class="ui-toast__message">{{ effectiveMessage }}</div>
-        <div class="ui-toast__actions">
-          <button type="button" class="ui-toast__action" :aria-label="copyLabel" @click="handleCopy">
-            <span class="material-symbols-outlined">content_copy</span>
-          </button>
-          <button
-            v-if="effectivePinnable"
-            type="button"
-            class="ui-toast__action"
-            :class="{ 'ui-toast__action--active': effectivePinned }"
-            :aria-label="pinLabel"
-            @click="setPinned(!effectivePinned, props.channel ?? 'global')">
-            <span class="material-symbols-outlined">push_pin</span>
-          </button>
-          <button
-            v-if="effectiveClosable"
-            type="button"
-            class="ui-toast__action"
-            :aria-label="closeLabel"
-            @click="hideToast(props.channel ?? 'global')">
-            <span class="material-symbols-outlined">close</span>
-          </button>
+<template>
+  <Teleport to="body">
+    <Transition name="toast">
+      <div v-if="effectiveOpen && effectiveMessage" class="ui-toast-layer" :aria-live="props.ariaLive">
+        <div
+          ref="toastElement"
+          class="ui-toast"
+          :class="[`ui-toast--${effectiveVariant}`, { 'ui-toast--pinned': effectivePinned }]"
+          :style="toastStyle">
+          <div class="ui-toast__message">{{ effectiveMessage }}</div>
+          <div class="ui-toast__actions">
+            <button type="button" class="ui-toast__action" :aria-label="copyLabel" @click="handleCopy">
+              <span class="material-symbols-outlined">content_copy</span>
+            </button>
+            <button
+              v-if="effectivePinnable"
+              type="button"
+              class="ui-toast__action"
+              :class="{ 'ui-toast__action--active': effectivePinned }"
+              :aria-label="pinLabel"
+              @click="setPinned(!effectivePinned, props.channel ?? 'global')">
+              <span class="material-symbols-outlined">push_pin</span>
+            </button>
+            <button
+              v-if="effectiveClosable"
+              type="button"
+              class="ui-toast__action"
+              :aria-label="closeLabel"
+              @click="hideToast(props.channel ?? 'global')">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  </Transition>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -291,3 +293,5 @@ async function handleCopy() {
   border-color: rgba(248, 113, 113, 0.26);
 }
 </style>
+
+
