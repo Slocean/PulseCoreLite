@@ -64,9 +64,9 @@ PulseCoreLite 是一个面向桌面端可观测性与运维场景的高性能客
 ```mermaid
 flowchart LR
   subgraph UI[Vue Multi-Window UI]
-    A[Overlay main]\nindex.html
-    B[Taskbar]\ntaskbar.html
-    C[Toolkit]\ntoolkit.html
+    A["Overlay main\nindex.html"]
+    B["Taskbar\ntaskbar.html"]
+    C["Toolkit\ntoolkit.html"]
   end
 
   subgraph FE[TypeScript Services/Stores]
