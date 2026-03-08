@@ -267,7 +267,11 @@ export function useToolkitShutdownForm(options: UseToolkitShutdownFormOptions) {
     }
     withDateSyncSuspended(() => {
       setAppointmentFromDate(base);
-      repeatMode.value = currentPlan.mode;
+      if (currentPlan.mode === 'daily' || currentPlan.mode === 'weekly' || currentPlan.mode === 'monthly') {
+        repeatMode.value = currentPlan.mode;
+      } else {
+        repeatMode.value = 'none';
+      }
       if (currentPlan.mode === 'weekly') {
         weeklyDay.value = clampInt(currentPlan.weekday ?? weeklyDay.value, 1, 7);
       }
