@@ -1,17 +1,18 @@
 ## v1.8.10
 
-- 新增原生任务栏监测窗口（Windows 实验功能），支持 CPU/GPU/内存/网速/延迟等指标与单双行显示
-- 优化任务栏监测同步与右键菜单逻辑，主窗口隐藏时不再显示“关闭任务栏监测”
-- 关闭主窗口支持最小化到托盘，并优化托盘与窗口管理
-- 内存清理改为处理进程树 working set，提升稳定性
-- 定时关机改为计划列表 + 添加/编辑模式，体验更一致
-- 任务提醒列表“+”按钮新增“添加提醒”文案
-- Add native taskbar monitor window (Windows, experimental) with live CPU/GPU/memory/network/latency metrics and single/dual-line modes
-- Improve taskbar monitor sync and context menu behavior (hide "Close Taskbar Monitor" when main window is hidden)
-- Support minimize-to-tray on close and refine tray/window management
-- Memory trimming now targets the process tree working set for more reliable cleanup
-- Scheduled shutdown UX redesigned with current-plan view plus add/edit flow (aligned with reminders)
-- Reminder list “+” button now shows “Add Reminder”
+- 新增 Windows 原生任务栏监测窗口（实验）：基于 Win32 创建透明置顶窗口，支持 CPU/GPU/内存/网速/延迟等 12 项指标实时展示，并可切换单双行布局
+- 任务栏与窗口联动增强：完善原生任务栏配置同步、窗口管理与托盘接力逻辑，支持关闭主窗口时最小化到托盘，并优化显隐与退出流程
+- Windows 内存优化：新增进程树级别的 working set trim，减少主进程及其子进程的内存占用
+- 提醒功能升级：重构提醒页交互体验，优化新建提醒入口与多语言文案，并增强 SMTP 配置与发送测试流程
+- 工具箱能力扩展：关机页新增计划管理，并加入用户反馈入口
+- Toast 提示组件重构：优化样式与交互，支持动态高度和 Teleport 渲染，提升提示显示稳定性
+
+- Add an experimental native Windows taskbar monitor using a transparent topmost Win32 window, with real-time display for 12 metrics including CPU, GPU, memory, network speed, and latency, plus single-line/two-line layouts
+- Strengthen taskbar and window coordination with improved native taskbar config sync, window management, and tray handoff logic; closing the main window can now minimize it to the tray with smoother show/hide and exit flows
+- Improve memory usage on Windows by trimming the working set for the full process tree, reducing memory pressure from the app and its child processes
+- Upgrade reminders with a refactored reminder-tab experience, a better create-reminder entry, updated localization, and stronger SMTP configuration and test-send workflows
+- Expand toolkit capabilities with plan management in the shutdown tab and a new feedback entry
+- Rework the Toast component with improved styling and interactions, dynamic height support, and Teleport-based rendering for more stable notifications
 
 ## v1.8.9
 
