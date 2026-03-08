@@ -127,14 +127,14 @@ export const useAppStore = defineStore('app', () => {
       const bootstrapPayload = await api.getInitialState();
       applyBootstrap(bootstrapPayload);
       const label = await getCurrentWindowLabel();
+      void syncMemoryTrimEnabled();
+      void syncMemoryTrimSystemEnabled();
+      void syncMemoryTrimInterval();
       if (label === 'main') {
         void ensureTray();
         void ensureTaskbarMonitor();
         void syncNativeTaskbarMonitor();
         void syncAutoStartEnabled();
-        void syncMemoryTrimEnabled();
-        void syncMemoryTrimSystemEnabled();
-        void syncMemoryTrimInterval();
         void systemStore.detectInstallationMode();
         unlisteners.value.push(
           watch(
