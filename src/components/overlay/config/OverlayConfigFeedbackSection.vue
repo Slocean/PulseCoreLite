@@ -1,7 +1,6 @@
 <template>
   <div class="overlay-config-item--wide overlay-config-feedback">
     <div class="overlay-config-feedback-header">
-      <span class="overlay-config-label">{{ t('overlay.feedbackTitle') }}</span>
       <span class="overlay-config-feedback-subtitle">{{ t('overlay.feedbackHint') }}</span>
     </div>
 

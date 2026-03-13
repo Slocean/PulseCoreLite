@@ -1,8 +1,8 @@
 <template>
   <UiCheckbox v-model="autoStartEnabled">{{ t('overlay.autoStart') }}</UiCheckbox>
-  <UiCheckbox v-model="memoryTrimEnabled">{{ t('overlay.memoryTrim') }}</UiCheckbox>
-  <UiCheckbox v-model="rememberOverlayPosition">{{ t('overlay.rememberPosition') }}</UiCheckbox>
   <UiCheckbox v-model="overlayAlwaysOnTop">{{ t('overlay.mainWindowAlwaysOnTop') }}</UiCheckbox>
+  <UiCheckbox v-model="rememberOverlayPosition">{{ t('overlay.rememberPosition') }}</UiCheckbox>
+  <UiCheckbox v-model="memoryTrimEnabled">{{ t('overlay.memoryTrim') }}</UiCheckbox>
 
   <div class="overlay-config-row">
     <UiCheckbox v-model="closeToTray">{{ t('overlay.closeToTray') }}</UiCheckbox>
