@@ -43,6 +43,7 @@ async function flushPromises() {
 
 describe('useOverlayPrefs', () => {
   beforeEach(() => {
+    vi.useFakeTimers();
     vi.resetModules();
     getJsonSyncMock.mockReset();
     getJsonMock.mockReset();
@@ -80,11 +81,16 @@ describe('useOverlayPrefs', () => {
     setJsonMock.mockClear();
     prefs.showMemory = false;
     await flushPromises();
+    await vi.advanceTimersByTimeAsync(500);
 
     expect(setJsonMock).toHaveBeenCalled();
     expect(setJsonMock).toHaveBeenLastCalledWith(
       'pulsecorelite.overlay_prefs',
       expect.objectContaining({ showMemory: false })
     );
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 });

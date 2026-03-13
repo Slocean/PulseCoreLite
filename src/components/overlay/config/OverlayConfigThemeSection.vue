@@ -13,7 +13,7 @@
           class="overlay-config-system-theme-select"
           :model-value="selectedSystemThemeId"
           :options="systemThemeOptions"
-          :placeholder="t('overlay.themeSystem')"
+          :placeholder="t('overlay.themeDefault')"
           :aria-label="t('overlay.themeSystem')"
           width="116px"
           @update:model-value="selectSystemTheme" />
@@ -24,7 +24,7 @@
             class="overlay-theme-chip"
             :class="{ 'overlay-theme-chip--active': isThemeActive(theme) }"
             :data-name="theme.name"
-            @click="selectTheme(theme)">
+            @click="selectCustomTheme(theme)">
             <span class="overlay-theme-thumb" :style="{ backgroundImage: `url(${getThemePreviewUrl(theme)})` }"></span>
             <CornerAction
               preset="overlay-corner-danger"
@@ -62,6 +62,7 @@ import {
   DEFAULT_BACKGROUND_GLASS_STRENGTH,
   type OverlayPrefs
 } from '@/composables/useOverlayPrefs';
+import { SYSTEM_DEFAULT_THEME_ID } from '@/composables/themeManager/systemThemes';
 import type { OverlayTheme } from './types';
 
 const props = defineProps<{
@@ -84,31 +85,22 @@ const { t } = useI18n();
 const themes = computed(() => props.themes);
 const canAddTheme = computed(() => props.themes.length < 3);
 const systemThemeOptions = computed(() => [
-  { label: t('overlay.themeSystemDefault'), value: 'system-default' },
+  { label: t('overlay.themeSystemDefault'), value: SYSTEM_DEFAULT_THEME_ID },
   ...props.systemThemes.map(theme => ({
     label: theme.name,
     value: theme.id
   }))
 ]);
-const selectedSystemThemeId = computed(() => {
-  if (
-    !props.prefs.backgroundImage &&
-    props.prefs.backgroundBlurPx === 0 &&
-    props.prefs.backgroundEffect === DEFAULT_BACKGROUND_EFFECT &&
-    props.prefs.backgroundGlassStrength === DEFAULT_BACKGROUND_GLASS_STRENGTH
-  ) {
-    return 'system-default';
+const selectedSystemThemeId = computed<string | null>(() => {
+  if (!props.prefs.backgroundThemeId) {
+    return props.prefs.backgroundImage ? null : SYSTEM_DEFAULT_THEME_ID;
   }
-  return props.systemThemes.find(theme => isThemeActive(theme))?.id ?? null;
+  return props.systemThemes.some(theme => theme.id === props.prefs.backgroundThemeId) ? props.prefs.backgroundThemeId : null;
 });
 
 function selectDefaultTheme() {
-  if (
-    !props.prefs.backgroundImage &&
-    props.prefs.backgroundBlurPx === 0 &&
-    props.prefs.backgroundEffect === DEFAULT_BACKGROUND_EFFECT &&
-    props.prefs.backgroundGlassStrength === DEFAULT_BACKGROUND_GLASS_STRENGTH
-  ) {
+  props.prefs.backgroundThemeId = null;
+  if (!props.prefs.backgroundImage) {
     return;
   }
   props.prefs.backgroundImage = null;
@@ -121,7 +113,7 @@ function selectSystemTheme(value: string | number | Array<string | number> | nul
   if (value == null || Array.isArray(value)) {
     return;
   }
-  if (value === 'system-default') {
+  if (value === SYSTEM_DEFAULT_THEME_ID) {
     selectDefaultTheme();
     return;
   }
@@ -129,14 +121,19 @@ function selectSystemTheme(value: string | number | Array<string | number> | nul
   if (!theme) {
     return;
   }
-  selectTheme(theme);
+  applyTheme(theme);
 }
 
-function selectTheme(theme: OverlayTheme) {
+function selectCustomTheme(theme: OverlayTheme) {
+  applyTheme(theme);
+}
+
+function applyTheme(theme: OverlayTheme) {
   const nextBlur = clampBlurPx(theme.blurPx);
   const nextEffect = normalizeBackgroundEffect(theme.effect);
   const nextGlass = clampGlassStrength(theme.glassStrength);
   if (
+    props.prefs.backgroundThemeId === theme.id &&
     props.prefs.backgroundImage === theme.image &&
     clampBlurPx(props.prefs.backgroundBlurPx) === nextBlur &&
     normalizeBackgroundEffect(props.prefs.backgroundEffect) === nextEffect &&
@@ -144,6 +141,7 @@ function selectTheme(theme: OverlayTheme) {
   ) {
     return;
   }
+  props.prefs.backgroundThemeId = theme.id;
   props.prefs.backgroundImage = theme.image;
   props.prefs.backgroundBlurPx = nextBlur;
   props.prefs.backgroundEffect = nextEffect;
@@ -151,12 +149,7 @@ function selectTheme(theme: OverlayTheme) {
 }
 
 function isThemeActive(theme: OverlayTheme) {
-  return (
-    props.prefs.backgroundImage === theme.image &&
-    clampBlurPx(props.prefs.backgroundBlurPx) === clampBlurPx(theme.blurPx) &&
-    normalizeBackgroundEffect(props.prefs.backgroundEffect) === normalizeBackgroundEffect(theme.effect) &&
-    clampGlassStrength(props.prefs.backgroundGlassStrength) === clampGlassStrength(theme.glassStrength)
-  );
+  return props.prefs.backgroundThemeId === theme.id;
 }
 
 function normalizeBackgroundEffect(value: unknown) {

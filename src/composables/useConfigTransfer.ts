@@ -488,6 +488,9 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
     if (typeof parsed.backgroundOpacity === 'number' && Number.isFinite(parsed.backgroundOpacity)) {
       next.backgroundOpacity = Math.max(0, Math.min(100, Math.round(parsed.backgroundOpacity)));
     }
+    if (parsed.backgroundThemeId === null || typeof parsed.backgroundThemeId === 'string') {
+      next.backgroundThemeId = parsed.backgroundThemeId;
+    }
     if (parsed.backgroundImage === null || typeof parsed.backgroundImage === 'string') {
       const normalized = await normalizeImageRef(parsed.backgroundImage);
       next.backgroundImage = normalized;

@@ -26,6 +26,7 @@ export interface OverlayPrefs {
   showWarning: boolean;
   showDragHandle: boolean;
   backgroundOpacity: number;
+  backgroundThemeId: string | null;
   backgroundImage: string | null;
   // Blur strength for background image effects (in CSS px).
   backgroundBlurPx: number;
@@ -49,6 +50,7 @@ const fallbackPrefs: OverlayPrefs = {
   showWarning: true,
   showDragHandle: false,
   backgroundOpacity: 100,
+  backgroundThemeId: null,
   backgroundImage: null,
   backgroundBlurPx: 0,
   backgroundEffect: DEFAULT_BACKGROUND_EFFECT,
@@ -75,6 +77,7 @@ function sanitizePrefs(input: Partial<OverlayPrefs> | null | undefined): Overlay
     showWarning: parsed.showWarning ?? fallbackPrefs.showWarning,
     showDragHandle: parsed.showDragHandle ?? fallbackPrefs.showDragHandle,
     backgroundOpacity: parsed.backgroundOpacity ?? fallbackPrefs.backgroundOpacity,
+    backgroundThemeId: typeof parsed.backgroundThemeId === 'string' ? parsed.backgroundThemeId : null,
     backgroundImage: parsed.backgroundImage ?? fallbackPrefs.backgroundImage,
     backgroundBlurPx:
       typeof parsed.backgroundBlurPx === 'number' && Number.isFinite(parsed.backgroundBlurPx)
@@ -151,6 +154,7 @@ export function useOverlayPrefs() {
           // Only update values that are different to avoid unnecessary reactivity triggers
           const keys: (keyof OverlayPrefs)[] = [
             'backgroundOpacity',
+            'backgroundThemeId',
             'backgroundImage',
             'backgroundBlurPx',
             'backgroundEffect',

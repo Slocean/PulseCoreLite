@@ -86,6 +86,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     canvasHeight: 0
   });
 
+  const systemThemesRef = ref<OverlayTheme[]>(systemThemes);
   const themes = ref<OverlayTheme[]>([]);
   const themeNameDialogOpen = ref(false);
   const themeNameInput = ref('');
@@ -143,7 +144,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
         backgroundImageRef = null;
       }
       if (previous && previous !== value) {
-        await cleanupOldBackgroundImage(previous, value, themes.value, prefs.backgroundImage);
+        await cleanupOldBackgroundImage(previous, value, themes.value, prefs.backgroundImage, systemThemesRef.value);
       }
       if (!value) {
         backgroundImageUrl.value = null;
@@ -193,6 +194,21 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
       }
     },
     { immediate: true }
+  );
+
+  watch(
+    () => [
+      prefs.backgroundThemeId,
+      prefs.backgroundImage,
+      prefs.backgroundBlurPx,
+      prefs.backgroundEffect,
+      prefs.backgroundGlassStrength,
+      systemThemesRef.value.map(theme => theme.id).join('|'),
+      themes.value.map(theme => theme.id).join('|')
+    ],
+    () => {
+      syncBackgroundThemeId();
+    }
   );
 
   const overlayBackgroundStyle = computed(() => {
@@ -330,6 +346,38 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     void cleanupRemovedThemeImages(previous, next, prefs.backgroundImage);
   }
 
+  function matchesTheme(theme: OverlayTheme) {
+    return (
+      prefs.backgroundImage === theme.image &&
+      clampBlurPx(prefs.backgroundBlurPx) === clampBlurPx(theme.blurPx) &&
+      normalizeBackgroundEffect(prefs.backgroundEffect) === normalizeBackgroundEffect(theme.effect) &&
+      clampGlassStrength(prefs.backgroundGlassStrength) === clampGlassStrength(theme.glassStrength)
+    );
+  }
+
+  function resolveAppliedThemeId() {
+    const allThemes = [...systemThemesRef.value, ...themes.value];
+    return allThemes.find(theme => matchesTheme(theme))?.id ?? null;
+  }
+
+  function syncBackgroundThemeId() {
+    if (!prefs.backgroundImage) {
+      if (prefs.backgroundThemeId !== null) {
+        prefs.backgroundThemeId = null;
+      }
+      return;
+    }
+
+    if (prefs.backgroundThemeId) {
+      const appliedTheme = [...systemThemesRef.value, ...themes.value].find(theme => theme.id === prefs.backgroundThemeId);
+      if (appliedTheme && matchesTheme(appliedTheme)) {
+        return;
+      }
+    }
+
+    prefs.backgroundThemeId = resolveAppliedThemeId();
+  }
+
   async function migrateStoredThemes() {
     const current = themes.value;
     if (!current.length) {
@@ -352,7 +400,22 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     }
   }
 
+  async function hydrateSystemThemes() {
+    const nextThemes = await Promise.all(
+      systemThemes.map(async theme => {
+        const normalized = await normalizeImageRef(theme.image);
+        if (normalized && normalized !== theme.image) {
+          return { ...theme, image: normalized };
+        }
+        return theme;
+      })
+    );
+    systemThemesRef.value = nextThemes;
+  }
+
   async function hydrateThemes() {
+    await hydrateSystemThemes();
+
     const parsed = await readThemesFromKv(sanitizeThemes);
     if (parsed.length) {
       themes.value = parsed;
@@ -362,6 +425,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
 
     await migrateStoredThemes();
     removeLegacyThemesFromLocalStorage();
+    syncBackgroundThemeId();
   }
 
   function getThemePreviewUrl(theme: OverlayTheme) {
@@ -383,12 +447,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
   }
 
   function isThemeApplied(theme: OverlayTheme) {
-    return (
-      prefs.backgroundImage === theme.image &&
-      clampBlurPx(prefs.backgroundBlurPx) === clampBlurPx(theme.blurPx) &&
-      normalizeBackgroundEffect(prefs.backgroundEffect) === normalizeBackgroundEffect(theme.effect) &&
-      clampGlassStrength(prefs.backgroundGlassStrength) === clampGlassStrength(theme.glassStrength)
-    );
+    return prefs.backgroundThemeId === theme.id || (!prefs.backgroundThemeId && matchesTheme(theme));
   }
 
   function confirmDeleteTheme() {
@@ -401,6 +460,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     const nextThemes = themes.value.filter(theme => theme.id !== target.id);
     updateThemes(nextThemes);
     if (wasApplied) {
+      prefs.backgroundThemeId = null;
       prefs.backgroundImage = null;
       prefs.backgroundBlurPx = 0;
       prefs.backgroundEffect = DEFAULT_BACKGROUND_EFFECT;
@@ -463,6 +523,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     updateThemes(nextThemes);
 
     if (wasApplied) {
+      prefs.backgroundThemeId = target.id;
       prefs.backgroundBlurPx = nextBlur;
       prefs.backgroundEffect = nextEffect;
       prefs.backgroundGlassStrength = nextGlassStrength;
@@ -735,6 +796,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
       return;
     }
     prefs.backgroundImage = imageRef;
+    prefs.backgroundThemeId = null;
     prefs.backgroundBlurPx = clampBlurPx(backgroundBlurPx.value);
     prefs.backgroundEffect = normalizeBackgroundEffect(backgroundEffect.value);
     prefs.backgroundGlassStrength = clampGlassStrength(backgroundGlassStrength.value);
@@ -754,6 +816,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
       return;
     }
     prefs.backgroundImage = imageRef;
+    prefs.backgroundThemeId = null;
     prefs.backgroundBlurPx = clampBlurPx(backgroundBlurPx.value);
     prefs.backgroundEffect = normalizeBackgroundEffect(backgroundEffect.value);
     prefs.backgroundGlassStrength = clampGlassStrength(backgroundGlassStrength.value);
@@ -817,7 +880,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
   });
 
   return {
-    systemThemes,
+    systemThemes: systemThemesRef,
     themes,
     updateThemes,
     getThemePreviewUrl,

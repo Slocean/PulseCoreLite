@@ -40,7 +40,7 @@
     "taskbarMonitorClose": "Disable",
     "backgroundOpacity": "Background Opacity",
     "backgroundImage": "Theme",
-    "themeDefault": "System",
+    "themeDefault": "Default",
     "themeSystem": "System",
     "themeSystemDefault": "Default",
     "backgroundImageButton": "Custom",

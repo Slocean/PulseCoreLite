@@ -38,12 +38,13 @@ export async function cleanupOldBackgroundImage(
   oldValue: string | null | undefined,
   nextValue: string | null | undefined,
   themes: OverlayTheme[],
-  backgroundImage: string | null | undefined
+  backgroundImage: string | null | undefined,
+  systemThemes: OverlayTheme[] = []
 ) {
   if (!isImageRef(oldValue) || oldValue === nextValue) {
     return;
   }
-  const inUse = collectInUseImageRefs(backgroundImage, themes);
+  const inUse = collectInUseImageRefs(backgroundImage, [...systemThemes, ...themes]);
   if (!inUse.has(oldValue)) {
     await deleteImageRef(oldValue);
   }
