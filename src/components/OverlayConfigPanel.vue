@@ -82,21 +82,6 @@
         @uninstall="emit('uninstall')" />
     </UiCollapsiblePanel>
 
-    <UiCollapsiblePanel
-      v-model="feedbackSectionOpen"
-      class="overlay-config overlay-config-section"
-      :title="t('overlay.settingsSectionFeedback')"
-      :framed="true"
-      single-header-preset="toolkit-collapse"
-      title-class="toolkit-section-title"
-      indicator-class="toolkit-collapse-indicator"
-      content-class="overlay-config-content overlay-config--single-column"
-      @mousedown.stop>
-      <OverlayConfigFeedbackSection
-        :app-version="appVersion"
-        :language="language"
-        toast-channel="overlay" />
-    </UiCollapsiblePanel>
   </div>
 </template>
 
@@ -105,7 +90,6 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import OverlayConfigDisplaySection from '@/components/overlay/config/OverlayConfigDisplaySection.vue';
-import OverlayConfigFeedbackSection from '@/components/overlay/config/OverlayConfigFeedbackSection.vue';
 import OverlayConfigSystemSection from '@/components/overlay/config/OverlayConfigSystemSection.vue';
 import OverlayConfigThemeSection from '@/components/overlay/config/OverlayConfigThemeSection.vue';
 import OverlayConfigToolsSection from '@/components/overlay/config/OverlayConfigToolsSection.vue';
@@ -156,7 +140,6 @@ const displaySectionOpen = ref(true);
 const systemSectionOpen = ref(true);
 const themeSectionOpen = ref(true);
 const toolsSectionOpen = ref(true);
-const feedbackSectionOpen = ref(false);
 
 const toolkitSwitchOn = computed(() => props.toolkitState !== 'closed');
 

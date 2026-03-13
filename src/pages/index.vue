@@ -64,6 +64,11 @@
         @importConfig="handleImportConfig"
         @openToolkit="toggleToolkitWindow"
         @checkUpdate="handleCheckUpdate" />
+      <OverlayConfigFeedbackSection
+        v-else-if="activeMainTab === 'feedback'"
+        :app-version="appVersion"
+        :language="store.settings.language"
+        toast-channel="overlay" />
       <ToolkitEmbedded v-else-if="activeMainTab === 'toolkit'" @openStandalone="openToolkitWindow" />
       <template v-else>
         <OverlayMetricsPanel
@@ -158,6 +163,7 @@ import OverlayHeader from '../components/OverlayHeader.vue';
 import OverlayMetricsPanel from '../components/OverlayMetricsPanel.vue';
 import OverlayNetworkFooter from '../components/OverlayNetworkFooter.vue';
 import OverlayStatusBar from '../components/OverlayStatusBar.vue';
+import OverlayConfigFeedbackSection from '../components/overlay/config/OverlayConfigFeedbackSection.vue';
 import OverlayThemeDialogs from '../components/overlay/OverlayThemeDialogs.vue';
 import OverlaySystemDialogs from '../components/overlay/OverlaySystemDialogs.vue';
 import { useConfigTransfer } from '../composables/useConfigTransfer';
@@ -195,6 +201,11 @@ const mainNavItems = computed(() => [
     id: 'settings',
     label: t('overlay.mainNavSettings'),
     icon: 'settings'
+  },
+  {
+    id: 'feedback',
+    label: t('overlay.mainNavFeedback'),
+    icon: 'forum'
   }
 ]);
 const {
@@ -352,8 +363,8 @@ const {
   }
 });
 
-const activeMainTab = ref<'monitor' | 'toolkit' | 'settings'>('monitor');
-const lastNonSettingsTab = ref<'monitor' | 'toolkit'>('monitor');
+const activeMainTab = ref<'monitor' | 'toolkit' | 'settings' | 'feedback'>('monitor');
+const lastNonSettingsTab = ref<'monitor' | 'toolkit' | 'feedback'>('monitor');
 const showMainTabs = ref(true);
 
 watch(
