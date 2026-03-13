@@ -176,7 +176,7 @@ function clampGlassStrength(value: unknown) {
 <style scoped>
 .overlay-config-theme-panel {
   display: grid;
-  gap: 8px;
+  gap: 4px;
 }
 
 .overlay-config-theme-row {
