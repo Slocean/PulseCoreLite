@@ -10,14 +10,13 @@
       <span class="overlay-config-label">{{ t('overlay.themeSystem') }}</span>
       <div class="overlay-config-theme-controls overlay-config-theme-controls--custom">
         <div class="overlay-theme-list">
-          <button
-            type="button"
-            class="overlay-theme-default-button"
+          <UiButton
+            preset="overlay-chip"
             :class="{ 'overlay-theme-chip--active': isSystemThemeActive(SYSTEM_DEFAULT_THEME_ID) }"
             :aria-label="t('overlay.themeSystemDefault')"
             @click="selectSystemThemeById(SYSTEM_DEFAULT_THEME_ID)">
             {{ t('overlay.themeSystemDefault') }}
-          </button>
+          </UiButton>
           <div
             v-for="theme in systemThemes"
             :key="theme.id"
@@ -25,7 +24,9 @@
             :class="{ 'overlay-theme-chip--active': isSystemThemeActive(theme.id) }"
             :data-name="theme.name"
             @click="selectSystemThemeById(theme.id)">
-            <span class="overlay-theme-thumb" :style="{ backgroundImage: `url(${getThemePreviewUrl(theme)})` }"></span>
+            <span
+              class="overlay-theme-thumb"
+              :style="{ backgroundImage: `url(${getThemePreviewUrl(theme)})` }"></span>
           </div>
         </div>
       </div>
@@ -42,7 +43,9 @@
             :class="{ 'overlay-theme-chip--active': isThemeActive(theme) }"
             :data-name="theme.name"
             @click="selectCustomTheme(theme)">
-            <span class="overlay-theme-thumb" :style="{ backgroundImage: `url(${getThemePreviewUrl(theme)})` }"></span>
+            <span
+              class="overlay-theme-thumb"
+              :style="{ backgroundImage: `url(${getThemePreviewUrl(theme)})` }"></span>
             <CornerAction
               preset="overlay-corner-danger"
               icon="close"
@@ -104,7 +107,9 @@ const selectedSystemThemeId = computed<string | null>(() => {
   if (!props.prefs.backgroundThemeId) {
     return props.prefs.backgroundImage ? null : SYSTEM_DEFAULT_THEME_ID;
   }
-  return props.systemThemes.some(theme => theme.id === props.prefs.backgroundThemeId) ? props.prefs.backgroundThemeId : null;
+  return props.systemThemes.some(theme => theme.id === props.prefs.backgroundThemeId)
+    ? props.prefs.backgroundThemeId
+    : null;
 });
 
 function selectDefaultTheme() {
@@ -217,13 +222,14 @@ function clampTextBrightnessBoost(value: unknown) {
 }
 
 .overlay-theme-default-button {
-  min-height: 31px;
-  padding: 7px 12px;
+  /* min-height: 31px; */
+  /* padding: 7px 12px; */
   border: 1px dashed rgba(255, 255, 255, 0.18);
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.15);
   color: rgba(255, 255, 255, 0.7);
-  font: inherit;
+  /* font: inherit; */
+  font-size: 12px;
   line-height: 1;
   cursor: pointer;
   transition: all var(--motion-duration-fast) var(--motion-ease-standard);
