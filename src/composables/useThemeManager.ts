@@ -343,7 +343,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     const previous = themes.value;
     themes.value = next;
     void persistThemes(next);
-    void cleanupRemovedThemeImages(previous, next, prefs.backgroundImage);
+    void cleanupRemovedThemeImages(previous, next, prefs.backgroundImage, systemThemesRef.value);
   }
 
   function matchesTheme(theme: OverlayTheme) {
@@ -457,8 +457,6 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
       return;
     }
     const wasApplied = isThemeApplied(target);
-    const nextThemes = themes.value.filter(theme => theme.id !== target.id);
-    updateThemes(nextThemes);
     if (wasApplied) {
       prefs.backgroundThemeId = null;
       prefs.backgroundImage = null;
@@ -466,6 +464,8 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
       prefs.backgroundEffect = DEFAULT_BACKGROUND_EFFECT;
       prefs.backgroundGlassStrength = DEFAULT_BACKGROUND_GLASS_STRENGTH;
     }
+    const nextThemes = themes.value.filter(theme => theme.id !== target.id);
+    updateThemes(nextThemes);
     closeDeleteThemeDialog();
   }
 

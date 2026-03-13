@@ -24,9 +24,10 @@ export function collectInUseImageRefs(
 export async function cleanupRemovedThemeImages(
   previous: OverlayTheme[],
   next: OverlayTheme[],
-  backgroundImage: string | null | undefined
+  backgroundImage: string | null | undefined,
+  systemThemes: OverlayTheme[] = []
 ) {
-  const inUse = collectInUseImageRefs(backgroundImage, next);
+  const inUse = collectInUseImageRefs(backgroundImage, [...systemThemes, ...next]);
   for (const theme of previous) {
     if (isImageRef(theme.image) && !inUse.has(theme.image)) {
       await deleteImageRef(theme.image);
