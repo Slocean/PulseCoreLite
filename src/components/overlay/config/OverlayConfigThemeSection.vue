@@ -7,16 +7,17 @@
 
   <div class="overlay-config-item--wide overlay-config-theme-panel">
     <div class="overlay-config-theme-row">
-      <span class="overlay-config-label">{{ t('overlay.backgroundImage') }}</span>
+      <span class="overlay-config-label">{{ t('overlay.themeSystem') }}</span>
       <div class="overlay-config-theme-controls overlay-config-theme-controls--custom">
         <div class="overlay-theme-list">
-          <div
-            class="overlay-theme-chip"
+          <button
+            type="button"
+            class="overlay-theme-default-button"
             :class="{ 'overlay-theme-chip--active': isSystemThemeActive(SYSTEM_DEFAULT_THEME_ID) }"
-            :data-name="t('overlay.themeSystemDefault')"
+            :aria-label="t('overlay.themeSystemDefault')"
             @click="selectSystemThemeById(SYSTEM_DEFAULT_THEME_ID)">
-            <span class="overlay-theme-thumb overlay-theme-thumb--default"></span>
-          </div>
+            {{ t('overlay.themeSystemDefault') }}
+          </button>
           <div
             v-for="theme in systemThemes"
             :key="theme.id"
@@ -193,9 +194,13 @@ function clampTextBrightnessBoost(value: unknown) {
 
 .overlay-config-theme-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.overlay-config-label {
+  align-self: center;
 }
 
 .overlay-config-theme-controls {
@@ -211,9 +216,21 @@ function clampTextBrightnessBoost(value: unknown) {
   flex-wrap: wrap;
 }
 
-.overlay-theme-thumb--default {
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04)),
-    linear-gradient(135deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.04));
+.overlay-theme-default-button {
+  min-height: 31px;
+  padding: 7px 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.15);
+  color: rgba(255, 255, 255, 0.7);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+  transition: all var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.overlay-theme-default-button:hover {
+  border-color: rgba(255, 255, 255, 0.32);
+  color: rgba(255, 255, 255, 0.9);
 }
 </style>
