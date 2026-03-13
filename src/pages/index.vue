@@ -98,10 +98,12 @@
     v-model:themeEditEffect="themeEditEffect"
     v-model:themeEditBlurPx="themeEditBlurPx"
     v-model:themeEditGlassStrength="themeEditGlassStrength"
+    v-model:themeEditTextBrightnessBoost="themeEditTextBrightnessBoost"
     v-model:themeNameInput="themeNameInput"
     v-model:backgroundEffect="backgroundEffect"
     v-model:backgroundBlurPx="backgroundBlurPx"
     v-model:backgroundGlassStrength="backgroundGlassStrength"
+    v-model:backgroundTextBrightnessBoost="backgroundTextBrightnessBoost"
     :t="t"
     :background-image-source="backgroundImageSource"
     :background-file-name="backgroundFileName"
@@ -251,6 +253,7 @@ const {
   backgroundEffect,
   backgroundBlurPx,
   backgroundGlassStrength,
+  backgroundTextBrightnessBoost,
   canApplyBackground,
   canSaveTheme,
   themeNameDialogOpen,
@@ -261,6 +264,7 @@ const {
   themeEditEffect,
   themeEditBlurPx,
   themeEditGlassStrength,
+  themeEditTextBrightnessBoost,
   canConfirmThemeEdit,
   openBackgroundDialog,
   closeBackgroundDialog,

@@ -74,6 +74,12 @@
             v-model.number="backgroundGlassStrength"
             @input="drawCropCanvas" />
         </div>
+        <div v-if="backgroundImageSource" class="overlay-config-row">
+          <span class="overlay-config-label">{{ t('overlay.textBrightnessBoost') }}</span>
+          <UiSwitch
+            v-model="backgroundTextBrightnessBoost"
+            :aria-label="t('overlay.textBrightnessBoost')" />
+        </div>
       </div>
     </template>
     <template #actions>
@@ -146,6 +152,7 @@
     v-model:effect="themeEditEffect"
     v-model:blurPx="themeEditBlurPx"
     v-model:glassStrength="themeEditGlassStrength"
+    v-model:text-brightness-boost="themeEditTextBrightnessBoost"
     :can-confirm-theme-edit="canConfirmThemeEdit"
     @confirm="confirmEditTheme"
     @cancel="closeEditThemeDialog" />
@@ -156,6 +163,7 @@ import type { VNodeRef } from 'vue';
 
 import UiButton from '@/components/ui/Button';
 import UiDialog from '@/components/ui/Dialog';
+import UiSwitch from '@/components/ui/Switch';
 import OverlayThemeEditDialog from './OverlayThemeEditDialog.vue';
 
 type ThemeEffect = 'gaussian' | 'liquidGlass';
@@ -197,9 +205,11 @@ const themeEditDialogOpen = defineModel<boolean>('themeEditDialogOpen', { requir
 const themeEditEffect = defineModel<ThemeEffect>('themeEditEffect', { required: true });
 const themeEditBlurPx = defineModel<number>('themeEditBlurPx', { required: true });
 const themeEditGlassStrength = defineModel<number>('themeEditGlassStrength', { required: true });
+const themeEditTextBrightnessBoost = defineModel<boolean>('themeEditTextBrightnessBoost', { required: true });
 const themeNameInput = defineModel<string>('themeNameInput', { required: true });
 const backgroundEffect = defineModel<ThemeEffect>('backgroundEffect', { required: true });
 const backgroundBlurPx = defineModel<number>('backgroundBlurPx', { required: true });
 const backgroundGlassStrength = defineModel<number>('backgroundGlassStrength', { required: true });
+const backgroundTextBrightnessBoost = defineModel<boolean>('backgroundTextBrightnessBoost', { required: true });
 
 </script>

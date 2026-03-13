@@ -7,4 +7,5 @@ export type OverlayTheme = {
   blurPx: number;
   effect: OverlayBackgroundEffect;
   glassStrength: number;
+  textBrightnessBoost: boolean;
 };

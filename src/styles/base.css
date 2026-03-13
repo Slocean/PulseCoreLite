@@ -20,6 +20,15 @@ body {
   overflow: hidden;
 }
 
+:root[data-text-brightness-boost='true'] body,
+:root[data-text-brightness-boost='true'] body * {
+  color: color-mix(in srgb, currentColor 72%, white 28%) !important;
+}
+
+:root[data-text-brightness-boost='true'] ::placeholder {
+  color: color-mix(in srgb, currentColor 60%, white 40%) !important;
+}
+
 .material-symbols-outlined {
   font-family: var(--font-family-symbols);
   font-variation-settings:

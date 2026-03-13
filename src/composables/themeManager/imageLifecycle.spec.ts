@@ -23,7 +23,8 @@ describe('cleanupOldBackgroundImage', () => {
           image: 'pcimg:system-theme',
           blurPx: 5,
           effect: 'liquidGlass',
-          glassStrength: 55
+          glassStrength: 55,
+          textBrightnessBoost: false
         }
       ]
     );
@@ -45,7 +46,8 @@ describe('cleanupRemovedThemeImages', () => {
           image: 'pcimg:custom-theme',
           blurPx: 5,
           effect: 'gaussian',
-          glassStrength: 55
+          glassStrength: 55,
+          textBrightnessBoost: false
         }
       ],
       [],
@@ -68,7 +70,8 @@ describe('cleanupRemovedThemeImages', () => {
           image: 'pcimg:shared-theme',
           blurPx: 5,
           effect: 'gaussian',
-          glassStrength: 55
+          glassStrength: 55,
+          textBrightnessBoost: false
         }
       ],
       [],
@@ -80,7 +83,8 @@ describe('cleanupRemovedThemeImages', () => {
           image: 'pcimg:shared-theme',
           blurPx: 5,
           effect: 'gaussian',
-          glassStrength: 55
+          glassStrength: 55,
+          textBrightnessBoost: false
         }
       ]
     );

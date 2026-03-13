@@ -11,6 +11,7 @@ export type OverlayBackgroundEffect = 'gaussian' | 'liquidGlass';
 
 export const DEFAULT_BACKGROUND_EFFECT: OverlayBackgroundEffect = 'gaussian';
 export const DEFAULT_BACKGROUND_GLASS_STRENGTH = 55;
+export const DEFAULT_TEXT_BRIGHTNESS_BOOST = false;
 
 export interface OverlayPrefs {
   showCpu: boolean;
@@ -34,6 +35,7 @@ export interface OverlayPrefs {
   backgroundEffect: OverlayBackgroundEffect;
   // Additional liquid-glass intensity (0-100).
   backgroundGlassStrength: number;
+  textBrightnessBoost: boolean;
 }
 
 const fallbackPrefs: OverlayPrefs = {
@@ -54,7 +56,8 @@ const fallbackPrefs: OverlayPrefs = {
   backgroundImage: null,
   backgroundBlurPx: 0,
   backgroundEffect: DEFAULT_BACKGROUND_EFFECT,
-  backgroundGlassStrength: DEFAULT_BACKGROUND_GLASS_STRENGTH
+  backgroundGlassStrength: DEFAULT_BACKGROUND_GLASS_STRENGTH,
+  textBrightnessBoost: DEFAULT_TEXT_BRIGHTNESS_BOOST
 };
 
 function sanitizeBackgroundEffect(value: unknown): OverlayBackgroundEffect {
@@ -87,7 +90,9 @@ function sanitizePrefs(input: Partial<OverlayPrefs> | null | undefined): Overlay
     backgroundGlassStrength:
       typeof parsed.backgroundGlassStrength === 'number' && Number.isFinite(parsed.backgroundGlassStrength)
         ? Math.max(0, Math.min(100, Math.round(parsed.backgroundGlassStrength)))
-        : fallbackPrefs.backgroundGlassStrength
+        : fallbackPrefs.backgroundGlassStrength,
+    textBrightnessBoost:
+      typeof parsed.textBrightnessBoost === 'boolean' ? parsed.textBrightnessBoost : fallbackPrefs.textBrightnessBoost
   };
 }
 
@@ -109,6 +114,15 @@ export function useOverlayPrefs() {
     void storageRepository.setJson(storageKeys.overlayPrefs, snapshot);
     void broadcastPrefsSync();
   }, 400);
+
+  watch(
+    () => prefs.textBrightnessBoost,
+    value => {
+      if (typeof document === 'undefined') return;
+      document.documentElement.dataset.textBrightnessBoost = value ? 'true' : 'false';
+    },
+    { immediate: true }
+  );
 
   watch(
     prefs,
@@ -159,6 +173,7 @@ export function useOverlayPrefs() {
             'backgroundBlurPx',
             'backgroundEffect',
             'backgroundGlassStrength',
+            'textBrightnessBoost',
             'showCpu',
             'showGpu',
             'showMemory',

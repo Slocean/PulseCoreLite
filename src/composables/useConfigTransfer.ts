@@ -465,7 +465,8 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
       | 'showPercent'
       | 'showHardwareInfo'
       | 'showWarning'
-      | 'showDragHandle';
+      | 'showDragHandle'
+      | 'textBrightnessBoost';
     const boolKeys: OverlayPrefsBooleanKey[] = [
       'showCpu',
       'showGpu',
@@ -478,7 +479,8 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
       'showPercent',
       'showHardwareInfo',
       'showWarning',
-      'showDragHandle'
+      'showDragHandle',
+      'textBrightnessBoost'
     ];
     for (const key of boolKeys) {
       if (typeof parsed[key] === 'boolean') {
