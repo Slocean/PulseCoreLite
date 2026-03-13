@@ -2,22 +2,22 @@
   <UiCheckbox v-model="autoStartEnabled">{{ t('overlay.autoStart') }}</UiCheckbox>
   <UiCheckbox v-model="overlayAlwaysOnTop">{{ t('overlay.mainWindowAlwaysOnTop') }}</UiCheckbox>
   <UiCheckbox v-model="rememberOverlayPosition">{{ t('overlay.rememberPosition') }}</UiCheckbox>
-  <UiCheckbox v-model="memoryTrimEnabled">{{ t('overlay.memoryTrim') }}</UiCheckbox>
+
+  <div class="overlay-config-row">
+    <UiCheckbox v-model="memoryTrimEnabled">{{ t('overlay.memoryTrim') }}</UiCheckbox>
+    <div class="overlay-config-taskbar overlay-config-taskbar--compact">
+      <span class="overlay-config-label">{{ t('overlay.nativeTaskbarMonitor') }}</span>
+      <UiSwitch
+        v-model="nativeTaskbarMonitorEnabled"
+        :aria-label="t('overlay.nativeTaskbarMonitor')" />
+    </div>
+  </div>
 
   <div class="overlay-config-row">
     <UiCheckbox v-model="closeToTray">{{ t('overlay.closeToTray') }}</UiCheckbox>
     <div class="overlay-config-taskbar overlay-config-taskbar--compact">
       <span class="overlay-config-label">{{ t('overlay.taskbarMonitor') }}</span>
       <UiSwitch v-model="taskbarMonitorEnabled" :aria-label="t('overlay.taskbarMonitor')" />
-    </div>
-  </div>
-
-  <div class="overlay-config-row">
-    <div class="overlay-config-taskbar overlay-config-taskbar--compact">
-      <span class="overlay-config-label">{{ t('overlay.nativeTaskbarMonitor') }}</span>
-      <UiSwitch
-        v-model="nativeTaskbarMonitorEnabled"
-        :aria-label="t('overlay.nativeTaskbarMonitor')" />
     </div>
   </div>
 
