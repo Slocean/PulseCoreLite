@@ -8,15 +8,25 @@
   <div class="overlay-config-item--wide overlay-config-theme-panel">
     <div class="overlay-config-theme-row">
       <span class="overlay-config-label">{{ t('overlay.backgroundImage') }}</span>
-      <div class="overlay-config-theme-controls">
-        <UiSelect
-          class="overlay-config-system-theme-select"
-          :model-value="selectedSystemThemeId"
-          :options="systemThemeOptions"
-          :placeholder="t('overlay.themeDefault')"
-          :aria-label="t('overlay.themeSystem')"
-          width="116px"
-          @update:model-value="selectSystemTheme" />
+      <div class="overlay-config-theme-controls overlay-config-theme-controls--custom">
+        <div class="overlay-theme-list">
+          <div
+            class="overlay-theme-chip"
+            :class="{ 'overlay-theme-chip--active': isSystemThemeActive(SYSTEM_DEFAULT_THEME_ID) }"
+            :data-name="t('overlay.themeSystemDefault')"
+            @click="selectSystemThemeById(SYSTEM_DEFAULT_THEME_ID)">
+            <span class="overlay-theme-thumb overlay-theme-thumb--default"></span>
+          </div>
+          <div
+            v-for="theme in systemThemes"
+            :key="theme.id"
+            class="overlay-theme-chip"
+            :class="{ 'overlay-theme-chip--active': isSystemThemeActive(theme.id) }"
+            :data-name="theme.name"
+            @click="selectSystemThemeById(theme.id)">
+            <span class="overlay-theme-thumb" :style="{ backgroundImage: `url(${getThemePreviewUrl(theme)})` }"></span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -62,7 +72,6 @@ import { useI18n } from 'vue-i18n';
 
 import CornerAction from '@/components/overlay/CornerAction.vue';
 import UiButton from '@/components/ui/Button';
-import UiSelect from '@/components/ui/Select';
 import {
   DEFAULT_BACKGROUND_EFFECT,
   DEFAULT_BACKGROUND_GLASS_STRENGTH,
@@ -90,13 +99,6 @@ const { t } = useI18n();
 
 const themes = computed(() => props.themes);
 const canAddTheme = computed(() => props.themes.length < 3);
-const systemThemeOptions = computed(() => [
-  { label: t('overlay.themeSystemDefault'), value: SYSTEM_DEFAULT_THEME_ID },
-  ...props.systemThemes.map(theme => ({
-    label: theme.name,
-    value: theme.id
-  }))
-]);
 const selectedSystemThemeId = computed<string | null>(() => {
   if (!props.prefs.backgroundThemeId) {
     return props.prefs.backgroundImage ? null : SYSTEM_DEFAULT_THEME_ID;
@@ -116,15 +118,12 @@ function selectDefaultTheme() {
   props.prefs.backgroundGlassStrength = DEFAULT_BACKGROUND_GLASS_STRENGTH;
 }
 
-function selectSystemTheme(value: string | number | Array<string | number> | null) {
-  if (value == null || Array.isArray(value)) {
-    return;
-  }
-  if (value === SYSTEM_DEFAULT_THEME_ID) {
+function selectSystemThemeById(themeId: string) {
+  if (themeId === SYSTEM_DEFAULT_THEME_ID) {
     selectDefaultTheme();
     return;
   }
-  const theme = props.systemThemes.find(item => item.id === value);
+  const theme = props.systemThemes.find(item => item.id === themeId);
   if (!theme) {
     return;
   }
@@ -162,6 +161,10 @@ function isThemeActive(theme: OverlayTheme) {
   return props.prefs.backgroundThemeId === theme.id;
 }
 
+function isSystemThemeActive(themeId: string) {
+  return selectedSystemThemeId.value === themeId;
+}
+
 function normalizeBackgroundEffect(value: unknown) {
   return value === 'liquidGlass' ? 'liquidGlass' : DEFAULT_BACKGROUND_EFFECT;
 }
@@ -190,7 +193,7 @@ function clampTextBrightnessBoost(value: unknown) {
 
 .overlay-config-theme-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
@@ -206,5 +209,11 @@ function clampTextBrightnessBoost(value: unknown) {
 
 .overlay-config-theme-controls--custom {
   flex-wrap: wrap;
+}
+
+.overlay-theme-thumb--default {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04)),
+    linear-gradient(135deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.04));
 }
 </style>

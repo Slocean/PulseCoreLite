@@ -152,13 +152,20 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
       if (previous && previous !== value) {
         await cleanupOldBackgroundImage(previous, value, themes.value, prefs.backgroundImage, systemThemesRef.value);
       }
+      if (token !== backgroundResolveToken) {
+        return;
+      }
       if (!value) {
         backgroundImageUrl.value = null;
         return;
       }
       const normalized = await normalizeImageRef(value);
+      if (token !== backgroundResolveToken) {
+        return;
+      }
       if (normalized && normalized !== value) {
         prefs.backgroundImage = normalized;
+        return;
       }
       const { url, ref } = await acquireImageUrl(normalized ?? value);
       if (token !== backgroundResolveToken) {
@@ -173,10 +180,13 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
 
   let themePreviewToken = 0;
   watch(
-    () => themes.value.map(theme => `${theme.id}:${theme.image}`).join('|'),
+    () =>
+      [...systemThemesRef.value, ...themes.value]
+        .map(theme => `${theme.id}:${theme.image}`)
+        .join('|'),
     async () => {
       const token = ++themePreviewToken;
-      const currentThemes = themes.value.slice();
+      const currentThemes = [...systemThemesRef.value, ...themes.value];
       const currentIds = new Set(currentThemes.map(theme => theme.id));
       for (const existingId of Object.keys(themePreviewUrls)) {
         if (!currentIds.has(existingId)) {
