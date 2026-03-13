@@ -45,6 +45,28 @@ export interface OverlayPrefs {
   textBrightnessBoost: number;
 }
 
+const overlayPrefKeys: (keyof OverlayPrefs)[] = [
+  'backgroundOpacity',
+  'backgroundThemeId',
+  'backgroundImage',
+  'backgroundBlurPx',
+  'backgroundEffect',
+  'backgroundGlassStrength',
+  'textBrightnessBoost',
+  'showCpu',
+  'showGpu',
+  'showMemory',
+  'showDisk',
+  'showDown',
+  'showUp',
+  'showLatency',
+  'showValues',
+  'showPercent',
+  'showHardwareInfo',
+  'showWarning',
+  'showDragHandle'
+];
+
 const fallbackPrefs: OverlayPrefs = {
   showCpu: true,
   showGpu: true,
@@ -111,8 +133,23 @@ function loadPrefsFromLocalStorage(): OverlayPrefs {
   return sanitizePrefs(parsed);
 }
 
+function snapshotPrefs(prefs: OverlayPrefs): OverlayPrefs {
+  return JSON.parse(JSON.stringify(prefs)) as OverlayPrefs;
+}
+
+function mergeHydratedPrefs(current: OverlayPrefs, hydrated: OverlayPrefs, baseline: OverlayPrefs): OverlayPrefs {
+  const merged: OverlayPrefs = { ...hydrated };
+  for (const key of overlayPrefKeys) {
+    if (current[key] !== baseline[key]) {
+      (merged as any)[key] = current[key];
+    }
+  }
+  return merged;
+}
+
 export function useOverlayPrefs() {
   const prefs = reactive<OverlayPrefs>(loadPrefsFromLocalStorage());
+  const initialSnapshot = snapshotPrefs(prefs);
   let readyToPersist = false;
   let isSyncing = false; // Prevent sync event loops
   let unlistenSync: (() => void) | null = null;
@@ -139,33 +176,31 @@ export function useOverlayPrefs() {
       if (!readyToPersist || isSyncing) return;
 
       // Avoid IndexedDB structured-clone issues with Vue proxies by persisting a JSON snapshot.
-      const snapshot = JSON.parse(JSON.stringify(next)) as OverlayPrefs;
+      const snapshot = snapshotPrefs(next);
       persistPrefs(snapshot);
     },
     { deep: true }
   );
 
   onMounted(async () => {
+    let hydrated = snapshotPrefs(prefs);
     const fromKv = await storageRepository.getJson<Partial<OverlayPrefs>>(storageKeys.overlayPrefs, {
       migrateFromLocal: true
     });
     if (fromKv && typeof fromKv === 'object') {
-      const sanitized = sanitizePrefs(fromKv);
-      const normalizedImage = await normalizeImageRef(sanitized.backgroundImage);
-      if (normalizedImage !== sanitized.backgroundImage) {
-        sanitized.backgroundImage = normalizedImage;
-        await storageRepository.setJson(storageKeys.overlayPrefs, sanitized);
-      }
-      Object.assign(prefs, sanitized);
+      hydrated = sanitizePrefs(fromKv);
     } else {
-      const snapshot = JSON.parse(JSON.stringify(prefs)) as OverlayPrefs;
-      const normalizedImage = await normalizeImageRef(snapshot.backgroundImage);
-      if (normalizedImage !== snapshot.backgroundImage) {
-        snapshot.backgroundImage = normalizedImage;
-        Object.assign(prefs, snapshot);
-      }
-      await storageRepository.setJson(storageKeys.overlayPrefs, snapshot);
+      hydrated = snapshotPrefs(prefs);
     }
+
+    const normalizedImage = await normalizeImageRef(hydrated.backgroundImage);
+    if (normalizedImage !== hydrated.backgroundImage) {
+      hydrated.backgroundImage = normalizedImage;
+    }
+
+    const merged = mergeHydratedPrefs(snapshotPrefs(prefs), hydrated, initialSnapshot);
+    Object.assign(prefs, merged);
+    await storageRepository.setJson(storageKeys.overlayPrefs, merged);
 
     unlistenSync = await listenSyncEvent<null>(PREFS_SYNC_EVENT, async () => {
       if (isSyncing) return;
@@ -175,28 +210,7 @@ export function useOverlayPrefs() {
         if (synced && typeof synced === 'object') {
           const sanitized = sanitizePrefs(synced);
           // Only update values that are different to avoid unnecessary reactivity triggers
-          const keys: (keyof OverlayPrefs)[] = [
-            'backgroundOpacity',
-            'backgroundThemeId',
-            'backgroundImage',
-            'backgroundBlurPx',
-            'backgroundEffect',
-            'backgroundGlassStrength',
-            'textBrightnessBoost',
-            'showCpu',
-            'showGpu',
-            'showMemory',
-            'showDisk',
-            'showDown',
-            'showUp',
-            'showLatency',
-            'showValues',
-            'showPercent',
-            'showHardwareInfo',
-            'showWarning',
-            'showDragHandle'
-          ];
-          for (const key of keys) {
+          for (const key of overlayPrefKeys) {
             if (prefs[key] !== sanitized[key]) {
               (prefs as any)[key] = sanitized[key];
             }

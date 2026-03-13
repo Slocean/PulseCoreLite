@@ -90,6 +90,47 @@ describe('useOverlayPrefs', () => {
     );
   });
 
+  it('keeps user theme changes made before async hydration finishes', async () => {
+    getJsonSyncMock.mockReturnValue({
+      backgroundThemeId: 'system-yinmu',
+      backgroundImage: 'old-image',
+      backgroundBlurPx: 5
+    });
+
+    let resolveStoredPrefs: (value: unknown) => void = () => undefined;
+    getJsonMock.mockReturnValue(
+      new Promise(resolve => {
+        resolveStoredPrefs = resolve;
+      })
+    );
+
+    const { useOverlayPrefs } = await import('./useOverlayPrefs');
+    const { prefs } = useOverlayPrefs();
+
+    prefs.backgroundThemeId = 'system-ziyun';
+    prefs.backgroundImage = 'new-image';
+    prefs.backgroundBlurPx = 9;
+
+    resolveStoredPrefs({
+      backgroundThemeId: 'system-yinmu',
+      backgroundImage: 'old-image',
+      backgroundBlurPx: 5
+    });
+    await flushPromises();
+
+    expect(prefs.backgroundThemeId).toBe('system-ziyun');
+    expect(prefs.backgroundImage).toBe('new-image');
+    expect(prefs.backgroundBlurPx).toBe(9);
+    expect(setJsonMock).toHaveBeenCalledWith(
+      'pulsecorelite.overlay_prefs',
+      expect.objectContaining({
+        backgroundThemeId: 'system-ziyun',
+        backgroundImage: 'new-image',
+        backgroundBlurPx: 9
+      })
+    );
+  });
+
   afterEach(() => {
     vi.useRealTimers();
   });
