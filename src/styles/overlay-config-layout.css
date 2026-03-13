@@ -1,5 +1,14 @@
-﻿.overlay-config {
+.overlay-config-wrap {
+  display: grid;
+  gap: 8px;
+}
+
+.overlay-config {
   margin-bottom: 10px;
+}
+
+.overlay-config-section {
+  margin-bottom: 0;
 }
 
 .overlay-config-content {
@@ -11,6 +20,14 @@
 
 .overlay-config--single-column {
   grid-template-columns: minmax(0, 1fr);
+}
+
+.overlay-config-section :deep(.ui-collapsible-panel--framed) {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.18)),
+    rgba(0, 0, 0, 0.24);
 }
 
 .overlay-config-panel-title-hidden {

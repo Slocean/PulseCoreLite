@@ -45,6 +45,7 @@
         v-model:factoryResetHotkey="factoryResetHotkey"
         v-model:refreshRate="refreshRate"
         v-model:backgroundOpacity="prefs.backgroundOpacity"
+        :app-version="appVersion"
         :can-uninstall="store.installationMode === 'installed'"
         :language="store.settings.language"
         :themes="themes"
