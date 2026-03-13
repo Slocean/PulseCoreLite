@@ -20,13 +20,19 @@ body {
   overflow: hidden;
 }
 
-:root[data-text-brightness-boost='true'] body,
-:root[data-text-brightness-boost='true'] body * {
-  color: color-mix(in srgb, currentColor 72%, white 28%) !important;
+:root {
+  --text-brightness-boost: 0;
+  --text-brightness-boost-mix: 0%;
+  --text-brightness-placeholder-mix: 0%;
 }
 
-:root[data-text-brightness-boost='true'] ::placeholder {
-  color: color-mix(in srgb, currentColor 60%, white 40%) !important;
+body,
+body * {
+  color: color-mix(in srgb, currentColor, white var(--text-brightness-boost-mix));
+}
+
+::placeholder {
+  color: color-mix(in srgb, currentColor, white var(--text-brightness-placeholder-mix));
 }
 
 .material-symbols-outlined {

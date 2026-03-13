@@ -8,7 +8,7 @@ export type OverlayTheme = {
   blurPx: number;
   effect: OverlayBackgroundEffect;
   glassStrength: number;
-  textBrightnessBoost: boolean;
+  textBrightnessBoost: number;
 };
 
 export const THEME_STORAGE_KEY = storageKeys.overlayThemes;

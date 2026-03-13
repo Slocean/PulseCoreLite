@@ -8,6 +8,7 @@ import { normalizeReminder, normalizeSmtpConfig } from './taskReminders/schedule
 import type { OverlayPrefs } from './useOverlayPrefs';
 import type { OverlayTheme } from './useThemeManager';
 import { clampBlurPx, clampGlassStrength, normalizeBackgroundEffect, sanitizeThemes } from './useThemeManager';
+import { clampTextBrightnessBoost } from './useOverlayPrefs';
 import { normalizeImageRef, resolveImageRefToDataUrl } from '../utils/imageStore';
 
 interface AppStoreLike {
@@ -465,8 +466,7 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
       | 'showPercent'
       | 'showHardwareInfo'
       | 'showWarning'
-      | 'showDragHandle'
-      | 'textBrightnessBoost';
+      | 'showDragHandle';
     const boolKeys: OverlayPrefsBooleanKey[] = [
       'showCpu',
       'showGpu',
@@ -479,8 +479,7 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
       'showPercent',
       'showHardwareInfo',
       'showWarning',
-      'showDragHandle',
-      'textBrightnessBoost'
+      'showDragHandle'
     ];
     for (const key of boolKeys) {
       if (typeof parsed[key] === 'boolean') {
@@ -506,6 +505,7 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
     if (typeof parsed.backgroundGlassStrength === 'number' && Number.isFinite(parsed.backgroundGlassStrength)) {
       next.backgroundGlassStrength = clampGlassStrength(parsed.backgroundGlassStrength);
     }
+    next.textBrightnessBoost = clampTextBrightnessBoost(parsed.textBrightnessBoost);
     return next;
   }
 

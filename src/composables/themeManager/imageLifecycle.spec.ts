@@ -24,7 +24,7 @@ describe('cleanupOldBackgroundImage', () => {
           blurPx: 5,
           effect: 'liquidGlass',
           glassStrength: 55,
-          textBrightnessBoost: false
+          textBrightnessBoost: 0
         }
       ]
     );
@@ -47,7 +47,7 @@ describe('cleanupRemovedThemeImages', () => {
           blurPx: 5,
           effect: 'gaussian',
           glassStrength: 55,
-          textBrightnessBoost: false
+          textBrightnessBoost: 0
         }
       ],
       [],
@@ -71,7 +71,7 @@ describe('cleanupRemovedThemeImages', () => {
           blurPx: 5,
           effect: 'gaussian',
           glassStrength: 55,
-          textBrightnessBoost: false
+          textBrightnessBoost: 0
         }
       ],
       [],
@@ -84,7 +84,7 @@ describe('cleanupRemovedThemeImages', () => {
           blurPx: 5,
           effect: 'gaussian',
           glassStrength: 55,
-          textBrightnessBoost: false
+          textBrightnessBoost: 0
         }
       ]
     );

@@ -8,5 +8,5 @@ export const systemTheme = {
   blurPx: 6,
   effect: 'gaussian',
   glassStrength: 55,
-  textBrightnessBoost: false
+  textBrightnessBoost: 0
 } as const satisfies OverlayTheme;

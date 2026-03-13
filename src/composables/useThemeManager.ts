@@ -2,6 +2,7 @@ import { computed, nextTick, onUnmounted, reactive, ref, watch, type Ref } from 
 
 import { acquireImageUrl, isImageRef, normalizeImageRef, releaseImageRef } from '../utils/imageStore';
 import {
+  clampTextBrightnessBoost,
   DEFAULT_TEXT_BRIGHTNESS_BOOST,
   DEFAULT_BACKGROUND_EFFECT,
   DEFAULT_BACKGROUND_GLASS_STRENGTH,
@@ -46,10 +47,7 @@ export function sanitizeThemes(input: unknown): OverlayTheme[] {
       blurPx: clampBlurPx((item as any).blurPx),
       effect: normalizeBackgroundEffect((item as any).effect),
       glassStrength: clampGlassStrength((item as any).glassStrength),
-      textBrightnessBoost:
-        typeof (item as any).textBrightnessBoost === 'boolean'
-          ? (item as any).textBrightnessBoost
-          : DEFAULT_TEXT_BRIGHTNESS_BOOST
+      textBrightnessBoost: clampTextBrightnessBoost((item as any).textBrightnessBoost)
     }))
     .filter(item => item.id && item.name && item.image);
 }
@@ -99,13 +97,13 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
   const pendingThemeBlurPx = ref(0);
   const pendingThemeEffect = ref<OverlayBackgroundEffect>(DEFAULT_BACKGROUND_EFFECT);
   const pendingThemeGlassStrength = ref(DEFAULT_BACKGROUND_GLASS_STRENGTH);
-  const pendingThemeTextBrightnessBoost = ref(DEFAULT_TEXT_BRIGHTNESS_BOOST);
+  const pendingThemeTextBrightnessBoost = ref<number>(DEFAULT_TEXT_BRIGHTNESS_BOOST);
   const themeDeleteDialogOpen = ref(false);
   const themeToDelete = ref<OverlayTheme | null>(null);
   const backgroundBlurPx = ref(0);
   const backgroundEffect = ref<OverlayBackgroundEffect>(DEFAULT_BACKGROUND_EFFECT);
   const backgroundGlassStrength = ref(DEFAULT_BACKGROUND_GLASS_STRENGTH);
-  const backgroundTextBrightnessBoost = ref(DEFAULT_TEXT_BRIGHTNESS_BOOST);
+  const backgroundTextBrightnessBoost = ref<number>(DEFAULT_TEXT_BRIGHTNESS_BOOST);
   const backgroundImageUrl = ref<string | null>(null);
 
   const themeEditDialogOpen = ref(false);
@@ -114,7 +112,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
   const themeEditBlurPx = ref(0);
   const themeEditEffect = ref<OverlayBackgroundEffect>(DEFAULT_BACKGROUND_EFFECT);
   const themeEditGlassStrength = ref(DEFAULT_BACKGROUND_GLASS_STRENGTH);
-  const themeEditTextBrightnessBoost = ref(DEFAULT_TEXT_BRIGHTNESS_BOOST);
+  const themeEditTextBrightnessBoost = ref<number>(DEFAULT_TEXT_BRIGHTNESS_BOOST);
 
   const themePreviewUrls = reactive<Record<string, string>>({});
   const themePreviewRefs = new Map<string, string | null>();
@@ -362,7 +360,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
       clampBlurPx(prefs.backgroundBlurPx) === clampBlurPx(theme.blurPx) &&
       normalizeBackgroundEffect(prefs.backgroundEffect) === normalizeBackgroundEffect(theme.effect) &&
       clampGlassStrength(prefs.backgroundGlassStrength) === clampGlassStrength(theme.glassStrength) &&
-      prefs.textBrightnessBoost === Boolean(theme.textBrightnessBoost)
+      clampTextBrightnessBoost(prefs.textBrightnessBoost) === clampTextBrightnessBoost(theme.textBrightnessBoost)
     );
   }
 
@@ -504,7 +502,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     themeEditBlurPx.value = Math.max(0, Math.min(24, Math.round(target.blurPx ?? 0)));
     themeEditEffect.value = normalizeBackgroundEffect(target.effect);
     themeEditGlassStrength.value = clampGlassStrength(target.glassStrength);
-    themeEditTextBrightnessBoost.value = Boolean(target.textBrightnessBoost);
+    themeEditTextBrightnessBoost.value = clampTextBrightnessBoost(target.textBrightnessBoost);
     themeEditDialogOpen.value = true;
   }
 
@@ -529,7 +527,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     const nextBlur = Math.max(0, Math.min(24, Math.round(themeEditBlurPx.value)));
     const nextEffect = normalizeBackgroundEffect(themeEditEffect.value);
     const nextGlassStrength = clampGlassStrength(themeEditGlassStrength.value);
-    const nextTextBrightnessBoost = themeEditTextBrightnessBoost.value;
+    const nextTextBrightnessBoost = clampTextBrightnessBoost(themeEditTextBrightnessBoost.value);
     const nextThemes = themes.value.map(theme =>
       theme.id === target.id
         ? {
@@ -864,7 +862,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
     blurPx: number,
     effect: OverlayBackgroundEffect,
     glassStrength: number,
-    textBrightnessBoost: boolean
+    textBrightnessBoost: number
   ) {
     if (!canSaveTheme.value) {
       return;
@@ -880,7 +878,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
       blurPx: clampBlurPx(blurPx),
       effect: normalizeBackgroundEffect(effect),
       glassStrength: clampGlassStrength(glassStrength),
-      textBrightnessBoost
+      textBrightnessBoost: clampTextBrightnessBoost(textBrightnessBoost)
     };
     updateThemes([...themes.value, theme].slice(0, 3));
   }

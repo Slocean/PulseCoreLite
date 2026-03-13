@@ -43,9 +43,10 @@
           <span class="overlay-config-value">{{ glassStrength }}%</span>
           <input type="range" min="0" max="100" step="5" v-model.number="glassStrength" />
         </div>
-        <div class="overlay-config-row">
+        <div class="overlay-config-range">
           <span class="overlay-config-label">{{ t('overlay.textBrightnessBoost') }}</span>
-          <UiSwitch v-model="textBrightnessBoost" :aria-label="t('overlay.textBrightnessBoost')" />
+          <span class="overlay-config-value">{{ textBrightnessBoost }}%</span>
+          <input type="range" min="0" max="100" step="5" v-model.number="textBrightnessBoost" />
         </div>
       </div>
     </template>
@@ -65,7 +66,6 @@ import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
 import UiDialog from '@/components/ui/Dialog';
-import UiSwitch from '@/components/ui/Switch';
 import type { OverlayBackgroundEffect } from '../../composables/useOverlayPrefs';
 
 defineProps<{
@@ -76,7 +76,7 @@ const open = defineModel<boolean>('open', { required: true });
 const effect = defineModel<OverlayBackgroundEffect>('effect', { required: true });
 const blurPx = defineModel<number>('blurPx', { required: true });
 const glassStrength = defineModel<number>('glassStrength', { required: true });
-const textBrightnessBoost = defineModel<boolean>('textBrightnessBoost', { required: true });
+const textBrightnessBoost = defineModel<number>('textBrightnessBoost', { required: true });
 
 const emit = defineEmits<{
   (e: 'confirm'): void;

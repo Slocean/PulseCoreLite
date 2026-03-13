@@ -106,7 +106,7 @@ const selectedSystemThemeId = computed<string | null>(() => {
 
 function selectDefaultTheme() {
   props.prefs.backgroundThemeId = null;
-  props.prefs.textBrightnessBoost = false;
+  props.prefs.textBrightnessBoost = 0;
   if (!props.prefs.backgroundImage) {
     return;
   }
@@ -139,7 +139,7 @@ function applyTheme(theme: OverlayTheme) {
   const nextBlur = clampBlurPx(theme.blurPx);
   const nextEffect = normalizeBackgroundEffect(theme.effect);
   const nextGlass = clampGlassStrength(theme.glassStrength);
-  const nextTextBrightnessBoost = Boolean(theme.textBrightnessBoost);
+  const nextTextBrightnessBoost = clampTextBrightnessBoost(theme.textBrightnessBoost);
   if (
     props.prefs.backgroundThemeId === theme.id &&
     props.prefs.backgroundImage === theme.image &&
@@ -173,6 +173,11 @@ function clampBlurPx(value: unknown) {
 
 function clampGlassStrength(value: unknown) {
   const parsed = typeof value === 'number' && Number.isFinite(value) ? value : DEFAULT_BACKGROUND_GLASS_STRENGTH;
+  return Math.max(0, Math.min(100, Math.round(parsed)));
+}
+
+function clampTextBrightnessBoost(value: unknown) {
+  const parsed = typeof value === 'number' && Number.isFinite(value) ? value : 0;
   return Math.max(0, Math.min(100, Math.round(parsed)));
 }
 </script>

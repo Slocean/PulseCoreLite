@@ -74,11 +74,10 @@
             v-model.number="backgroundGlassStrength"
             @input="drawCropCanvas" />
         </div>
-        <div v-if="backgroundImageSource" class="overlay-config-row">
+        <div v-if="backgroundImageSource" class="overlay-config-range">
           <span class="overlay-config-label">{{ t('overlay.textBrightnessBoost') }}</span>
-          <UiSwitch
-            v-model="backgroundTextBrightnessBoost"
-            :aria-label="t('overlay.textBrightnessBoost')" />
+          <span class="overlay-config-value">{{ backgroundTextBrightnessBoost }}%</span>
+          <input type="range" min="0" max="100" step="5" v-model.number="backgroundTextBrightnessBoost" />
         </div>
       </div>
     </template>
@@ -205,11 +204,11 @@ const themeEditDialogOpen = defineModel<boolean>('themeEditDialogOpen', { requir
 const themeEditEffect = defineModel<ThemeEffect>('themeEditEffect', { required: true });
 const themeEditBlurPx = defineModel<number>('themeEditBlurPx', { required: true });
 const themeEditGlassStrength = defineModel<number>('themeEditGlassStrength', { required: true });
-const themeEditTextBrightnessBoost = defineModel<boolean>('themeEditTextBrightnessBoost', { required: true });
+const themeEditTextBrightnessBoost = defineModel<number>('themeEditTextBrightnessBoost', { required: true });
 const themeNameInput = defineModel<string>('themeNameInput', { required: true });
 const backgroundEffect = defineModel<ThemeEffect>('backgroundEffect', { required: true });
 const backgroundBlurPx = defineModel<number>('backgroundBlurPx', { required: true });
 const backgroundGlassStrength = defineModel<number>('backgroundGlassStrength', { required: true });
-const backgroundTextBrightnessBoost = defineModel<boolean>('backgroundTextBrightnessBoost', { required: true });
+const backgroundTextBrightnessBoost = defineModel<number>('backgroundTextBrightnessBoost', { required: true });
 
 </script>

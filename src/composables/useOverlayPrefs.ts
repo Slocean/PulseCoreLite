@@ -11,7 +11,14 @@ export type OverlayBackgroundEffect = 'gaussian' | 'liquidGlass';
 
 export const DEFAULT_BACKGROUND_EFFECT: OverlayBackgroundEffect = 'gaussian';
 export const DEFAULT_BACKGROUND_GLASS_STRENGTH = 55;
-export const DEFAULT_TEXT_BRIGHTNESS_BOOST = false;
+export const DEFAULT_TEXT_BRIGHTNESS_BOOST = 0;
+
+export function clampTextBrightnessBoost(value: unknown) {
+  if (typeof value === 'boolean') {
+    return value ? 100 : 0;
+  }
+  return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.min(100, Math.round(value))) : 0;
+}
 
 export interface OverlayPrefs {
   showCpu: boolean;
@@ -35,7 +42,7 @@ export interface OverlayPrefs {
   backgroundEffect: OverlayBackgroundEffect;
   // Additional liquid-glass intensity (0-100).
   backgroundGlassStrength: number;
-  textBrightnessBoost: boolean;
+  textBrightnessBoost: number;
 }
 
 const fallbackPrefs: OverlayPrefs = {
@@ -91,8 +98,7 @@ function sanitizePrefs(input: Partial<OverlayPrefs> | null | undefined): Overlay
       typeof parsed.backgroundGlassStrength === 'number' && Number.isFinite(parsed.backgroundGlassStrength)
         ? Math.max(0, Math.min(100, Math.round(parsed.backgroundGlassStrength)))
         : fallbackPrefs.backgroundGlassStrength,
-    textBrightnessBoost:
-      typeof parsed.textBrightnessBoost === 'boolean' ? parsed.textBrightnessBoost : fallbackPrefs.textBrightnessBoost
+    textBrightnessBoost: clampTextBrightnessBoost(parsed.textBrightnessBoost)
   };
 }
 
@@ -119,7 +125,10 @@ export function useOverlayPrefs() {
     () => prefs.textBrightnessBoost,
     value => {
       if (typeof document === 'undefined') return;
-      document.documentElement.dataset.textBrightnessBoost = value ? 'true' : 'false';
+      const ratio = clampTextBrightnessBoost(value) / 100;
+      document.documentElement.style.setProperty('--text-brightness-boost', String(ratio));
+      document.documentElement.style.setProperty('--text-brightness-boost-mix', `${Math.round(ratio * 28)}%`);
+      document.documentElement.style.setProperty('--text-brightness-placeholder-mix', `${Math.round(ratio * 40)}%`);
     },
     { immediate: true }
   );
