@@ -1,3 +1,21 @@
+## v1.8.11
+
+- 新增悬浮窗内置主题与背景主题支持，主题管理能力更完整。
+- 新增多套内置主题，并支持文字亮度增强，提升不同背景下的可读性。
+- 优化主题选择交互，加入防抖处理与异步恢复后的主题保持，切换更顺滑、状态更稳定。
+- 将内置主题入口改为更友好的可访问性按钮，并同步优化中英文文案与选择样式。
+- 重构悬浮窗配置面板，支持分区折叠，并将反馈入口整合进设置面板，配置体验更清晰。
+- 增强配置迁移能力，支持同步提醒数据与定时关机计划，减少升级或迁移后的重复配置。
+- 修复开机自启时控制台窗口弹出的问题，改为直接启动图形界面应用。
+
+- Added built-in overlay themes and background theme support for a more complete theme management experience.
+- Introduced multiple built-in themes and a text brightness boost option to improve readability on different backgrounds.
+- Improved theme switching with debounced selection and stable user-theme restoration after async hydration.
+- Reworked the built-in theme entry into a more accessible button, with updated bilingual labels and refined selection styling.
+- Refined the overlay settings panel with collapsible sections and integrated the feedback entry directly into the config panel.
+- Enhanced config transfer to include reminder data and scheduled shutdown plans, reducing repeated setup after upgrades or migration.
+- Fixed autostart behavior so the GUI app launches directly without showing an extra console window.
+
 ## v1.8.10
 
 - 新增 Windows 原生任务栏监测窗口（实验）：基于 Win32 创建透明置顶窗口，支持 CPU/GPU/内存/网速/延迟等 12 项指标实时展示，并可切换单双行布局
