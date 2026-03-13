@@ -71,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import CornerAction from '@/components/overlay/CornerAction.vue';
@@ -82,7 +82,17 @@ import {
   type OverlayPrefs
 } from '@/composables/useOverlayPrefs';
 import { SYSTEM_DEFAULT_THEME_ID } from '@/composables/themeManager/systemThemes';
+import { debounce as createDebounce } from '@/utils/debounce';
 import type { OverlayTheme } from './types';
+
+const THEME_SWITCH_DEBOUNCE_MS = 120;
+
+type ThemeSelection =
+  | { kind: 'default' }
+  | {
+      kind: 'theme';
+      theme: OverlayTheme;
+    };
 
 const props = defineProps<{
   prefs: OverlayPrefs;
@@ -112,6 +122,18 @@ const selectedSystemThemeId = computed<string | null>(() => {
     : null;
 });
 
+const scheduleThemeSelection = createDebounce((selection: ThemeSelection) => {
+  if (selection.kind === 'default') {
+    selectDefaultTheme();
+    return;
+  }
+  applyTheme(selection.theme);
+}, THEME_SWITCH_DEBOUNCE_MS);
+
+onUnmounted(() => {
+  scheduleThemeSelection.cancel();
+});
+
 function selectDefaultTheme() {
   props.prefs.backgroundThemeId = null;
   props.prefs.textBrightnessBoost = 0;
@@ -126,18 +148,18 @@ function selectDefaultTheme() {
 
 function selectSystemThemeById(themeId: string) {
   if (themeId === SYSTEM_DEFAULT_THEME_ID) {
-    selectDefaultTheme();
+    scheduleThemeSelection({ kind: 'default' });
     return;
   }
   const theme = props.systemThemes.find(item => item.id === themeId);
   if (!theme) {
     return;
   }
-  applyTheme(theme);
+  scheduleThemeSelection({ kind: 'theme', theme });
 }
 
 function selectCustomTheme(theme: OverlayTheme) {
-  applyTheme(theme);
+  scheduleThemeSelection({ kind: 'theme', theme });
 }
 
 function applyTheme(theme: OverlayTheme) {
