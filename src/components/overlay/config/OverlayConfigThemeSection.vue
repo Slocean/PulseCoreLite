@@ -5,10 +5,10 @@
     <input type="range" min="0" max="100" step="5" v-model.number="backgroundOpacity" />
   </div>
 
-  <div class="overlay-config-item--wide overlay-config-action">
-    <div class="overlay-config-theme">
+  <div class="overlay-config-item--wide overlay-config-theme-panel">
+    <div class="overlay-config-theme-row">
       <span class="overlay-config-label">{{ t('overlay.backgroundImage') }}</span>
-      <div class="overlay-lang-buttons overlay-config-theme-tabs">
+      <div class="overlay-config-theme-controls">
         <UiSelect
           class="overlay-config-system-theme-select"
           :model-value="selectedSystemThemeId"
@@ -17,6 +17,12 @@
           :aria-label="t('overlay.themeSystem')"
           width="116px"
           @update:model-value="selectSystemTheme" />
+      </div>
+    </div>
+
+    <div class="overlay-config-theme-row">
+      <span class="overlay-config-label">{{ t('overlay.customThemes') }}</span>
+      <div class="overlay-config-theme-controls overlay-config-theme-controls--custom">
         <div class="overlay-theme-list">
           <div
             v-for="theme in themes"
@@ -38,15 +44,15 @@
               @click.stop="emit('editTheme', theme.id)" />
           </div>
         </div>
+        <UiButton
+          native-type="button"
+          preset="overlay-chip-action"
+          :disabled="!canAddTheme"
+          @click="emit('openBackgroundDialog')">
+          {{ t('overlay.backgroundImageButton') }}
+        </UiButton>
       </div>
     </div>
-    <UiButton
-      native-type="button"
-      preset="overlay-chip-action"
-      :disabled="!canAddTheme"
-      @click="emit('openBackgroundDialog')">
-      {{ t('overlay.backgroundImageButton') }}
-    </UiButton>
   </div>
 </template>
 
@@ -166,3 +172,30 @@ function clampGlassStrength(value: unknown) {
   return Math.max(0, Math.min(100, Math.round(parsed)));
 }
 </script>
+
+<style scoped>
+.overlay-config-theme-panel {
+  display: grid;
+  gap: 8px;
+}
+
+.overlay-config-theme-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.overlay-config-theme-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.overlay-config-theme-controls--custom {
+  flex-wrap: wrap;
+}
+</style>
