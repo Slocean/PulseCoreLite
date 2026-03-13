@@ -50,6 +50,7 @@
       @mousedown.stop>
       <OverlayConfigThemeSection
         :prefs="prefs"
+        :system-themes="props.systemThemes"
         :themes="props.themes"
         :get-theme-preview-url="getThemePreviewUrl"
         v-model:background-opacity="backgroundOpacity"
@@ -116,6 +117,7 @@ const props = defineProps<{
   appVersion: string;
   language: 'zh-CN' | 'en-US';
   canUninstall: boolean;
+  systemThemes: OverlayTheme[];
   themes: OverlayTheme[];
   getThemePreviewUrl: (theme: OverlayTheme) => string;
   toolkitState: 'closed' | 'open' | 'hidden';

@@ -16,6 +16,7 @@ import {
   removeLegacyThemesFromLocalStorage,
   type OverlayTheme
 } from './themeManager/themeStore';
+import { systemThemes } from './themeManager/systemThemes';
 
 export type { OverlayTheme } from './themeManager/themeStore';
 
@@ -816,6 +817,7 @@ export function useThemeManager(options: { prefs: OverlayPrefs; overlayRef: Ref<
   });
 
   return {
+    systemThemes,
     themes,
     updateThemes,
     getThemePreviewUrl,

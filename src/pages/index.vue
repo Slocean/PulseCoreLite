@@ -48,6 +48,7 @@
         :app-version="appVersion"
         :can-uninstall="store.installationMode === 'installed'"
         :language="store.settings.language"
+        :system-themes="systemThemes"
         :themes="themes"
         :get-theme-preview-url="getThemePreviewUrl"
         :toolkit-state="toolkitState"
@@ -223,6 +224,7 @@ const { overlayRef, startDragging, handleOverlayMouseDown } = useOverlayWindow({
 });
 
 const {
+  systemThemes,
   themes,
   updateThemes,
   getThemePreviewUrl,

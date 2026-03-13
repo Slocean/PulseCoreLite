@@ -9,9 +9,14 @@
     <div class="overlay-config-theme">
       <span class="overlay-config-label">{{ t('overlay.backgroundImage') }}</span>
       <div class="overlay-lang-buttons overlay-config-theme-tabs">
-        <UiButton native-type="button" preset="overlay-chip-tab" :active="isDefaultTheme" @click="selectDefaultTheme">
-          {{ t('overlay.themeDefault') }}
-        </UiButton>
+        <UiSelect
+          class="overlay-config-system-theme-select"
+          :model-value="selectedSystemThemeId"
+          :options="systemThemeOptions"
+          :placeholder="t('overlay.themeSystem')"
+          :aria-label="t('overlay.themeSystem')"
+          width="116px"
+          @update:model-value="selectSystemTheme" />
         <div class="overlay-theme-list">
           <div
             v-for="theme in themes"
@@ -51,6 +56,7 @@ import { useI18n } from 'vue-i18n';
 
 import CornerAction from '@/components/overlay/CornerAction.vue';
 import UiButton from '@/components/ui/Button';
+import UiSelect from '@/components/ui/Select';
 import {
   DEFAULT_BACKGROUND_EFFECT,
   DEFAULT_BACKGROUND_GLASS_STRENGTH,
@@ -60,6 +66,7 @@ import type { OverlayTheme } from './types';
 
 const props = defineProps<{
   prefs: OverlayPrefs;
+  systemThemes: OverlayTheme[];
   themes: OverlayTheme[];
   getThemePreviewUrl: (theme: OverlayTheme) => string;
 }>();
@@ -75,8 +82,25 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 const themes = computed(() => props.themes);
-const isDefaultTheme = computed(() => !props.prefs.backgroundImage);
 const canAddTheme = computed(() => props.themes.length < 3);
+const systemThemeOptions = computed(() => [
+  { label: t('overlay.themeSystemDefault'), value: 'system-default' },
+  ...props.systemThemes.map(theme => ({
+    label: theme.name,
+    value: theme.id
+  }))
+]);
+const selectedSystemThemeId = computed(() => {
+  if (
+    !props.prefs.backgroundImage &&
+    props.prefs.backgroundBlurPx === 0 &&
+    props.prefs.backgroundEffect === DEFAULT_BACKGROUND_EFFECT &&
+    props.prefs.backgroundGlassStrength === DEFAULT_BACKGROUND_GLASS_STRENGTH
+  ) {
+    return 'system-default';
+  }
+  return props.systemThemes.find(theme => isThemeActive(theme))?.id ?? null;
+});
 
 function selectDefaultTheme() {
   if (
@@ -91,6 +115,21 @@ function selectDefaultTheme() {
   props.prefs.backgroundBlurPx = 0;
   props.prefs.backgroundEffect = DEFAULT_BACKGROUND_EFFECT;
   props.prefs.backgroundGlassStrength = DEFAULT_BACKGROUND_GLASS_STRENGTH;
+}
+
+function selectSystemTheme(value: string | number | Array<string | number> | null) {
+  if (value == null || Array.isArray(value)) {
+    return;
+  }
+  if (value === 'system-default') {
+    selectDefaultTheme();
+    return;
+  }
+  const theme = props.systemThemes.find(item => item.id === value);
+  if (!theme) {
+    return;
+  }
+  selectTheme(theme);
 }
 
 function selectTheme(theme: OverlayTheme) {

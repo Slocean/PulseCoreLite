@@ -24,6 +24,11 @@
   flex-wrap: nowrap;
 }
 
+.overlay-config-system-theme-select {
+  flex: 0 0 116px;
+  width: 116px;
+}
+
 .overlay-theme-chip {
   position: relative;
   display: inline-flex;

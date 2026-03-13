@@ -41,6 +41,8 @@
     "backgroundOpacity": "背景透明度",
     "backgroundImage": "主题",
     "themeDefault": "默认",
+    "themeSystem": "系统",
+    "themeSystemDefault": "默认",
     "backgroundImageButton": "自定义",
     "backgroundImageTitle": "主题",
     "backgroundUpload": "点击或拖动上传图片",
