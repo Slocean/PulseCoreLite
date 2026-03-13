@@ -2,6 +2,9 @@ import { ref, type Ref } from 'vue';
 
 import { api, inTauri } from '../services/tauri';
 import { storageKeys, storageRepository } from '../services/storageRepository';
+import type { HardwareInfo, ShutdownPlan, TaskReminderStore } from '../types';
+import { loadReminderStore, saveReminderStore } from './taskReminders/repository';
+import { normalizeReminder, normalizeSmtpConfig } from './taskReminders/scheduler';
 import type { OverlayPrefs } from './useOverlayPrefs';
 import type { OverlayTheme } from './useThemeManager';
 import { clampBlurPx, clampGlassStrength, normalizeBackgroundEffect, sanitizeThemes } from './useThemeManager';
@@ -64,6 +67,7 @@ interface ImportedTaskbarPrefs {
   showUp: boolean;
   showLatency: boolean;
   twoLineMode: boolean;
+  backgroundMode: 'transparent' | 'dark' | 'light';
 }
 
 interface ImportCommitPlan {
@@ -74,6 +78,11 @@ interface ImportCommitPlan {
   nextTaskbarPrefs: ImportedTaskbarPrefs | null;
   nextOverlayPosition: { x: number; y: number } | null;
   nextTaskbarPosition: { x: number; y: number } | null;
+  nextHardwareInfo: HardwareInfo | null;
+  nextReminderStore: TaskReminderStore | null;
+  nextReminderAllowCloseWarningDismissed: boolean | null;
+  nextShutdownPlan: ShutdownPlan | null;
+  shutdownPlanIncluded: boolean;
   restartTaskbarMonitor: boolean;
 }
 
@@ -85,6 +94,54 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
   const pendingImportConfig = ref<unknown | null>(null);
   const importErrorDialogOpen = ref(false);
   const importErrorMessage = ref('');
+
+  async function exportReminderStoreWithAssets(): Promise<TaskReminderStore> {
+    const store = await loadReminderStore();
+    const reminders = await Promise.all(
+      store.reminders.map(async reminder => {
+        let content = reminder.content;
+        if (reminder.contentType === 'image' && content) {
+          const resolved = await resolveImageRefToDataUrl(content);
+          if (resolved) {
+            content = resolved;
+          }
+        }
+
+        let advancedSettings = reminder.advancedSettings;
+        if (advancedSettings?.backgroundImage) {
+          const resolved = await resolveImageRefToDataUrl(advancedSettings.backgroundImage);
+          if (resolved) {
+            advancedSettings = {
+              ...advancedSettings,
+              backgroundImage: resolved
+            };
+          }
+        }
+
+        return {
+          ...reminder,
+          content,
+          advancedSettings
+        };
+      })
+    );
+
+    return {
+      reminders,
+      smtpConfig: store.smtpConfig
+    };
+  }
+
+  async function getExportShutdownPlan(): Promise<ShutdownPlan | null> {
+    if (!inTauri()) {
+      return null;
+    }
+    try {
+      return await api.getShutdownPlan();
+    } catch {
+      return null;
+    }
+  }
 
   async function exportConfig() {
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
@@ -105,6 +162,7 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
         };
       })
     );
+    const [reminderStore, shutdownPlan] = await Promise.all([exportReminderStoreWithAssets(), getExportShutdownPlan()]);
 
     const payload = {
       schema: 'pulsecorelite.config',
@@ -116,7 +174,12 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
       overlayThemes,
       taskbarPrefs: storageRepository.getJsonSync<unknown>(storageKeys.taskbarPrefs) ?? null,
       overlayPosition: storageRepository.getJsonSync<unknown>(storageKeys.overlayPosition) ?? null,
-      taskbarPosition: storageRepository.getJsonSync<unknown>(storageKeys.taskbarPosition) ?? null
+      taskbarPosition: storageRepository.getJsonSync<unknown>(storageKeys.taskbarPosition) ?? null,
+      hardwareInfo: storageRepository.getJsonSync<unknown>(storageKeys.hardwareInfo) ?? null,
+      reminderStore,
+      reminderAllowCloseWarningDismissed:
+        storageRepository.getStringSync(storageKeys.reminderAllowCloseWarningDismissed) === '1',
+      shutdownPlan
     };
 
     const json = JSON.stringify(payload, null, 2);
@@ -194,7 +257,11 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
       showDown: bool('showDown') ? parsed.showDown : true,
       showUp: bool('showUp') ? parsed.showUp : true,
       showLatency: bool('showLatency') ? parsed.showLatency : false,
-      twoLineMode: bool('twoLineMode') ? parsed.twoLineMode : false
+      twoLineMode: bool('twoLineMode') ? parsed.twoLineMode : false,
+      backgroundMode:
+        parsed.backgroundMode === 'dark' || parsed.backgroundMode === 'light' || parsed.backgroundMode === 'transparent'
+          ? parsed.backgroundMode
+          : 'transparent'
     };
   }
 
@@ -206,11 +273,181 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
     return Boolean(input) && typeof input === 'object';
   }
 
+  function hasOwn(input: Record<string, unknown>, key: string) {
+    return Object.prototype.hasOwnProperty.call(input, key);
+  }
+
   function sanitizeMemoryTrimTargets(input: unknown): Array<'app' | 'system'> | null {
     if (!Array.isArray(input)) {
       return null;
     }
     return input.filter((target): target is 'app' | 'system' => target === 'app' || target === 'system');
+  }
+
+  function sanitizeImportedHardwareInfo(input: unknown): HardwareInfo | null {
+    if (!isRecord(input)) {
+      return null;
+    }
+    return {
+      cpu_model: typeof input.cpu_model === 'string' ? input.cpu_model : '',
+      cpu_max_freq_mhz:
+        typeof input.cpu_max_freq_mhz === 'number' && Number.isFinite(input.cpu_max_freq_mhz)
+          ? input.cpu_max_freq_mhz
+          : null,
+      gpu_model: typeof input.gpu_model === 'string' ? input.gpu_model : '',
+      ram_spec: typeof input.ram_spec === 'string' ? input.ram_spec : '',
+      disk_models: Array.isArray(input.disk_models)
+        ? input.disk_models.filter((item): item is string => typeof item === 'string')
+        : [],
+      motherboard: typeof input.motherboard === 'string' ? input.motherboard : '',
+      device_brand: typeof input.device_brand === 'string' ? input.device_brand : ''
+    };
+  }
+
+  async function sanitizeImportedReminderStore(input: unknown): Promise<TaskReminderStore | null> {
+    if (!isRecord(input)) {
+      return null;
+    }
+
+    const reminders = Array.isArray(input.reminders)
+      ? await Promise.all(
+          input.reminders
+            .filter((item): item is Record<string, unknown> => isRecord(item))
+            .map(async reminder => {
+              let content = typeof reminder.content === 'string' ? reminder.content : '';
+              if (reminder.contentType === 'image' && content) {
+                content = (await normalizeImageRef(content)) ?? content;
+              }
+
+              const advancedSettingsInput = isRecord(reminder.advancedSettings) ? reminder.advancedSettings : undefined;
+              const backgroundImage = advancedSettingsInput?.backgroundImage;
+              const normalizedBackgroundImage =
+                typeof backgroundImage === 'string' ? await normalizeImageRef(backgroundImage) : backgroundImage;
+
+              return normalizeReminder({
+                id: typeof reminder.id === 'string' ? reminder.id : '',
+                enabled: Boolean(reminder.enabled),
+                title: typeof reminder.title === 'string' ? reminder.title : '',
+                channel: reminder.channel === 'fullscreen' ? 'fullscreen' : 'email',
+                email: typeof reminder.email === 'string' ? reminder.email : '',
+                dailyTimes: Array.isArray(reminder.dailyTimes)
+                  ? reminder.dailyTimes.filter((item): item is string => typeof item === 'string')
+                  : [],
+                weeklySlots: Array.isArray(reminder.weeklySlots)
+                  ? reminder.weeklySlots
+                      .filter((item): item is Record<string, unknown> => isRecord(item))
+                      .map(item => ({
+                        weekday: typeof item.weekday === 'number' ? item.weekday : 1,
+                        time: typeof item.time === 'string' ? item.time : ''
+                      }))
+                  : [],
+                monthlySlots: Array.isArray(reminder.monthlySlots)
+                  ? reminder.monthlySlots
+                      .filter((item): item is Record<string, unknown> => isRecord(item))
+                      .map(item => ({
+                        day: typeof item.day === 'number' ? item.day : 1,
+                        time: typeof item.time === 'string' ? item.time : ''
+                      }))
+                  : [],
+                contentType:
+                  reminder.contentType === 'markdown' ||
+                  reminder.contentType === 'web' ||
+                  reminder.contentType === 'image'
+                    ? reminder.contentType
+                    : 'text',
+                content,
+                advancedSettings: advancedSettingsInput
+                  ? {
+                      backgroundType:
+                        advancedSettingsInput.backgroundType === 'color' ? 'color' : 'image',
+                      backgroundImage:
+                        typeof normalizedBackgroundImage === 'string' ? normalizedBackgroundImage : '',
+                      backgroundColor:
+                        typeof advancedSettingsInput.backgroundColor === 'string'
+                          ? advancedSettingsInput.backgroundColor
+                          : '',
+                      allowClose: advancedSettingsInput.allowClose !== false,
+                      blockAllKeys: Boolean(advancedSettingsInput.blockAllKeys),
+                      requireClosePassword: Boolean(advancedSettingsInput.requireClosePassword),
+                      closePassword:
+                        typeof advancedSettingsInput.closePassword === 'string'
+                          ? advancedSettingsInput.closePassword
+                          : ''
+                    }
+                  : undefined,
+                createdAt: typeof reminder.createdAt === 'string' ? reminder.createdAt : '',
+                updatedAt: typeof reminder.updatedAt === 'string' ? reminder.updatedAt : ''
+              });
+            })
+        )
+      : [];
+
+    return {
+      reminders,
+      smtpConfig: normalizeSmtpConfig(input.smtpConfig as any)
+    };
+  }
+
+  function isShutdownPlanLike(input: unknown): input is ShutdownPlan {
+    return (
+      isRecord(input) &&
+      (input.mode === 'countdown' ||
+        input.mode === 'once' ||
+        input.mode === 'daily' ||
+        input.mode === 'weekly' ||
+        input.mode === 'monthly')
+    );
+  }
+
+  async function applyShutdownPlan(plan: ShutdownPlan | null) {
+    if (!inTauri()) {
+      return;
+    }
+    if (!plan) {
+      await api.cancelShutdownSchedule();
+      return;
+    }
+
+    if (plan.mode === 'countdown') {
+      const seconds =
+        typeof plan.countdownSeconds === 'number' && Number.isFinite(plan.countdownSeconds)
+          ? Math.max(1, Math.round(plan.countdownSeconds))
+          : null;
+      if (!seconds) {
+        throw new Error('invalid-shutdown-plan');
+      }
+      await api.scheduleShutdown({ mode: 'countdown', delaySeconds: seconds });
+      return;
+    }
+
+    if (plan.mode === 'once') {
+      if (!plan.executeAt) {
+        throw new Error('invalid-shutdown-plan');
+      }
+      await api.scheduleShutdown({ mode: 'once', executeAt: plan.executeAt });
+      return;
+    }
+
+    if (plan.mode === 'daily') {
+      if (!plan.time) {
+        throw new Error('invalid-shutdown-plan');
+      }
+      await api.scheduleShutdown({ mode: 'daily', time: plan.time });
+      return;
+    }
+
+    if (plan.mode === 'weekly') {
+      if (!plan.time || typeof plan.weekday !== 'number') {
+        throw new Error('invalid-shutdown-plan');
+      }
+      await api.scheduleShutdown({ mode: 'weekly', time: plan.time, weekday: plan.weekday });
+      return;
+    }
+
+    if (!plan.time || typeof plan.dayOfMonth !== 'number') {
+      throw new Error('invalid-shutdown-plan');
+    }
+    await api.scheduleShutdown({ mode: 'monthly', time: plan.time, dayOfMonth: plan.dayOfMonth });
   }
 
   async function buildImportedOverlayPrefs(input: unknown): Promise<OverlayPrefs> {
@@ -371,6 +608,25 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
     const nextTaskbarPrefs = candidate.taskbarPrefs ? sanitizeImportedTaskbarPrefs(candidate.taskbarPrefs) : null;
     const nextOverlayPosition = isPositionLike(candidate.overlayPosition) ? candidate.overlayPosition : null;
     const nextTaskbarPosition = isPositionLike(candidate.taskbarPosition) ? candidate.taskbarPosition : null;
+    const nextHardwareInfo = hasOwn(candidate, 'hardwareInfo')
+      ? sanitizeImportedHardwareInfo(candidate.hardwareInfo)
+      : null;
+    const nextReminderStore = hasOwn(candidate, 'reminderStore')
+      ? await sanitizeImportedReminderStore(candidate.reminderStore)
+      : null;
+    const nextReminderAllowCloseWarningDismissed = hasOwn(candidate, 'reminderAllowCloseWarningDismissed')
+      ? candidate.reminderAllowCloseWarningDismissed === true
+      : null;
+    const shutdownPlanIncluded = hasOwn(candidate, 'shutdownPlan');
+    const nextShutdownPlan = shutdownPlanIncluded
+      ? candidate.shutdownPlan == null
+        ? null
+        : isShutdownPlanLike(candidate.shutdownPlan)
+          ? candidate.shutdownPlan
+          : (() => {
+              throw new Error('invalid-shutdown-plan');
+            })()
+      : null;
     const restartTaskbarMonitor =
       typeof settings?.taskbarMonitorEnabled === 'boolean'
         ? (settings.taskbarMonitorEnabled as boolean)
@@ -384,6 +640,11 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
       nextTaskbarPrefs,
       nextOverlayPosition,
       nextTaskbarPosition,
+      nextHardwareInfo,
+      nextReminderStore,
+      nextReminderAllowCloseWarningDismissed,
+      nextShutdownPlan,
+      shutdownPlanIncluded,
       restartTaskbarMonitor
     };
   }
@@ -406,15 +667,37 @@ export function useConfigTransfer(options: UseConfigTransferOptions) {
 
     if (plan.nextTaskbarPrefs) {
       storageRepository.setJsonSync(storageKeys.taskbarPrefs, plan.nextTaskbarPrefs);
+      await storageRepository.setJson(storageKeys.taskbarPrefs, plan.nextTaskbarPrefs);
     }
     if (plan.nextOverlayPosition) {
       storageRepository.setJsonSync(storageKeys.overlayPosition, plan.nextOverlayPosition);
+      await storageRepository.setJson(storageKeys.overlayPosition, plan.nextOverlayPosition);
     }
     if (plan.nextTaskbarPosition) {
       storageRepository.setJsonSync(storageKeys.taskbarPosition, plan.nextTaskbarPosition);
+      await storageRepository.setJson(storageKeys.taskbarPosition, plan.nextTaskbarPosition);
+    }
+    if (plan.nextHardwareInfo) {
+      storageRepository.setJsonSync(storageKeys.hardwareInfo, plan.nextHardwareInfo);
+      await storageRepository.setJson(storageKeys.hardwareInfo, plan.nextHardwareInfo);
+    }
+    if (plan.nextReminderStore) {
+      await saveReminderStore(plan.nextReminderStore);
+    }
+    if (plan.nextReminderAllowCloseWarningDismissed != null) {
+      if (plan.nextReminderAllowCloseWarningDismissed) {
+        storageRepository.setStringSync(storageKeys.reminderAllowCloseWarningDismissed, '1');
+        await storageRepository.setString(storageKeys.reminderAllowCloseWarningDismissed, '1');
+      } else {
+        storageRepository.removeSync(storageKeys.reminderAllowCloseWarningDismissed);
+        await storageRepository.remove(storageKeys.reminderAllowCloseWarningDismissed);
+      }
     }
     if (plan.nextRefreshRate != null) {
       await storageRepository.setString(storageKeys.refreshRate, String(plan.nextRefreshRate));
+    }
+    if (plan.shutdownPlanIncluded) {
+      await applyShutdownPlan(plan.nextShutdownPlan);
     }
 
     if (plan.restartTaskbarMonitor) {
