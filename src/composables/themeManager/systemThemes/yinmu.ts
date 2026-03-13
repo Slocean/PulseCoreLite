@@ -8,5 +8,5 @@ export const systemTheme = {
   blurPx: 5,
   effect: 'liquidGlass',
   glassStrength: 55,
-  textBrightnessBoost: 0
+  textBrightnessBoost: 20
 } as const satisfies OverlayTheme;
