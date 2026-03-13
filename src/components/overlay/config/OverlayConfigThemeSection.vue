@@ -220,23 +220,4 @@ function clampTextBrightnessBoost(value: unknown) {
 .overlay-config-theme-controls--custom {
   flex-wrap: wrap;
 }
-
-.overlay-theme-default-button {
-  /* min-height: 31px; */
-  /* padding: 7px 12px; */
-  border: 1px dashed rgba(255, 255, 255, 0.18);
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.15);
-  color: rgba(255, 255, 255, 0.7);
-  /* font: inherit; */
-  font-size: 12px;
-  line-height: 1;
-  cursor: pointer;
-  transition: all var(--motion-duration-fast) var(--motion-ease-standard);
-}
-
-.overlay-theme-default-button:hover {
-  border-color: rgba(255, 255, 255, 0.32);
-  color: rgba(255, 255, 255, 0.9);
-}
 </style>
