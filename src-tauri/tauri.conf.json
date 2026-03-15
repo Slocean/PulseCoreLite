@@ -38,6 +38,10 @@
       "msi"
     ],
     "createUpdaterArtifacts": true,
+    "resources": [
+      "../build-assets/llama_CPU_X64",
+      "../build-assets/llm"
+    ],
     "icon": [
       "icons/icon.ico",
       "icons/icon.icns",

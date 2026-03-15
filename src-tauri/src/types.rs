@@ -312,3 +312,60 @@ pub struct ReminderScreenEventPayload {
     #[serde(default)]
     pub advanced_settings: Option<ReminderAdvancedSettings>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalAiStatus {
+    pub ready: bool,
+    pub running: bool,
+    pub model_name: String,
+    pub model_path: Option<String>,
+    pub server_path: Option<String>,
+    pub server_url: String,
+    pub vision_enabled: bool,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalAiAttachment {
+    pub name: String,
+    pub media_type: String,
+    pub size: u64,
+    pub text_content: Option<String>,
+    pub data_url: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalAiChatMessage {
+    pub role: String,
+    pub content: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalAiChatRequest {
+    pub prompt: String,
+    #[serde(default)]
+    pub history: Vec<LocalAiChatMessage>,
+    #[serde(default)]
+    pub attachments: Vec<LocalAiAttachment>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalAiTokenUsage {
+    pub prompt_tokens: Option<u64>,
+    pub completion_tokens: Option<u64>,
+    pub total_tokens: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalAiChatResponse {
+    pub reply: String,
+    pub model: String,
+    pub status: LocalAiStatus,
+    pub usage: Option<LocalAiTokenUsage>,
+}

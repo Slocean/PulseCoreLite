@@ -5,6 +5,7 @@ export * from './settings';
 export * from './telemetry';
 export * from './system';
 export * from './reminder';
+export * from './ai';
 
 export interface AppBootstrap {
   settings: AppSettings;

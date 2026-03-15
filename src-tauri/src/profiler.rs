@@ -11,13 +11,13 @@ use std::{
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use sysinfo::{Pid, ProcessesToUpdate, System};
+use tauri::async_runtime::JoinHandle;
 use tauri::{AppHandle, Manager};
 use tokio::{
     fs::OpenOptions,
     io::{AsyncWriteExt, BufWriter},
     sync::watch,
 };
-use tauri::async_runtime::JoinHandle;
 
 use crate::state::SharedState;
 
@@ -254,7 +254,11 @@ fn collect_process_samples(system: &System, root_pid: Pid) -> Vec<ProcessSample>
             });
         }
     }
-    samples.sort_by(|a, b| b.memory_mb.partial_cmp(&a.memory_mb).unwrap_or(std::cmp::Ordering::Equal));
+    samples.sort_by(|a, b| {
+        b.memory_mb
+            .partial_cmp(&a.memory_mb)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     samples
 }
 

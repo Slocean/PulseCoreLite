@@ -8,6 +8,7 @@ use tokio::sync::{Mutex, RwLock};
 
 use crate::{
     core::collectors::system_collector::SystemCollector,
+    local_ai::LocalAiRuntime,
     profiler::ProfilerHandle,
     types::{AppSettings, HardwareInfo, SmtpEmailConfig, TaskReminder, TelemetrySnapshot},
 };
@@ -25,6 +26,7 @@ pub struct AppState {
     pub task_reminders: RwLock<Vec<TaskReminder>>,
     pub reminder_smtp_config: RwLock<Option<SmtpEmailConfig>>,
     pub reminder_last_fired: Mutex<HashMap<String, String>>,
+    pub local_ai_runtime: Mutex<LocalAiRuntime>,
 }
 
 pub type SharedState = Arc<AppState>;
@@ -52,6 +54,7 @@ impl AppState {
             task_reminders: RwLock::new(Vec::new()),
             reminder_smtp_config: RwLock::new(None),
             reminder_last_fired: Mutex::new(HashMap::new()),
+            local_ai_runtime: Mutex::new(LocalAiRuntime::default()),
         }))
     }
 

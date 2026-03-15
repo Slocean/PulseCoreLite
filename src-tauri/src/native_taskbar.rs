@@ -24,23 +24,22 @@ mod imp {
     use windows_sys::Win32::{
         Foundation::{COLORREF, HINSTANCE, HWND, LPARAM, LRESULT, RECT, SIZE, WPARAM},
         Graphics::Gdi::{
-            BeginPaint, CreateSolidBrush, DEFAULT_GUI_FONT, DeleteObject, EndPaint, FillRect,
-            GetStockObject, GetTextExtentPoint32W, PAINTSTRUCT, SelectObject, SetBkMode,
-            SetTextColor, TextOutW, ANSI_FIXED_FONT, TRANSPARENT,
+            BeginPaint, CreateSolidBrush, DeleteObject, EndPaint, FillRect, GetStockObject,
+            GetTextExtentPoint32W, SelectObject, SetBkMode, SetTextColor, TextOutW,
+            ANSI_FIXED_FONT, DEFAULT_GUI_FONT, PAINTSTRUCT, TRANSPARENT,
         },
         UI::{
-            Shell::{ABM_GETTASKBARPOS, APPBARDATA, SHAppBarMessage},
+            Shell::{SHAppBarMessage, ABM_GETTASKBARPOS, APPBARDATA},
             WindowsAndMessaging::{
                 AppendMenuW, CreatePopupMenu, CreateWindowExW, DefWindowProcW, DestroyMenu,
                 DestroyWindow, DispatchMessageW, GetCursorPos, GetMessageW, LoadCursorW,
                 PostMessageW, PostQuitMessage, RegisterClassW, SetLayeredWindowAttributes,
                 SetWindowPos, ShowWindow, TrackPopupMenu, TranslateMessage, CS_DBLCLKS,
                 CW_USEDEFAULT, HMENU, HTCAPTION, HWND_NOTOPMOST, HWND_TOPMOST, IDC_ARROW,
-                LWA_ALPHA, MF_CHECKED, MF_SEPARATOR, MF_STRING, MF_UNCHECKED, MSG, SW_HIDE,
-                SW_SHOWNOACTIVATE, SWP_NOACTIVATE, TPM_LEFTALIGN, TPM_RETURNCMD,
-                TPM_RIGHTBUTTON, WM_APP, WM_DESTROY, WM_EXITSIZEMOVE, WM_LBUTTONDBLCLK,
-                WM_MOVE, WM_NCHITTEST, WM_PAINT, WM_RBUTTONUP, WNDCLASSW, WS_EX_LAYERED,
-                WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
+                LWA_ALPHA, MF_CHECKED, MF_SEPARATOR, MF_STRING, MF_UNCHECKED, MSG, SWP_NOACTIVATE,
+                SW_HIDE, SW_SHOWNOACTIVATE, TPM_LEFTALIGN, TPM_RETURNCMD, TPM_RIGHTBUTTON, WM_APP,
+                WM_DESTROY, WM_EXITSIZEMOVE, WM_LBUTTONDBLCLK, WM_MOVE, WM_NCHITTEST, WM_PAINT,
+                WM_RBUTTONUP, WNDCLASSW, WS_EX_LAYERED, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
             },
         },
     };
@@ -423,7 +422,9 @@ mod imp {
 
     fn get_window_rect(hwnd: HWND) -> Option<RECT> {
         let mut rect: RECT = unsafe { std::mem::zeroed() };
-        if unsafe { windows_sys::Win32::UI::WindowsAndMessaging::GetWindowRect(hwnd, &mut rect) } == 0 {
+        if unsafe { windows_sys::Win32::UI::WindowsAndMessaging::GetWindowRect(hwnd, &mut rect) }
+            == 0
+        {
             return None;
         }
         Some(rect)
@@ -437,7 +438,8 @@ mod imp {
         if let Ok(mut slot) = shared.manual_position.lock() {
             *slot = Some(next);
         }
-        let locked = with_state_settings(shared, |settings| settings.taskbar_position_locked).unwrap_or(false);
+        let locked = with_state_settings(shared, |settings| settings.taskbar_position_locked)
+            .unwrap_or(false);
         if locked {
             if let Ok(mut slot) = shared.locked_position.lock() {
                 *slot = Some(next);
@@ -445,7 +447,11 @@ mod imp {
         }
     }
 
-    fn sync_payload(shared: &NativeTaskbarShared, config: &NativeTaskbarConfig, enabled: bool) -> NativeTaskbarSyncPayload {
+    fn sync_payload(
+        shared: &NativeTaskbarShared,
+        config: &NativeTaskbarConfig,
+        enabled: bool,
+    ) -> NativeTaskbarSyncPayload {
         let settings = with_state_settings(shared, |settings| NativeTaskbarSyncSettings {
             taskbar_always_on_top: settings.taskbar_always_on_top,
             taskbar_auto_hide_on_fullscreen: settings.taskbar_auto_hide_on_fullscreen,
@@ -479,17 +485,28 @@ mod imp {
         }
     }
 
-    fn emit_native_taskbar_sync(shared: &NativeTaskbarShared, config: &NativeTaskbarConfig, enabled: bool) {
+    fn emit_native_taskbar_sync(
+        shared: &NativeTaskbarShared,
+        config: &NativeTaskbarConfig,
+        enabled: bool,
+    ) {
         let Some(app) = shared.app.lock().ok().and_then(|guard| guard.clone()) else {
             return;
         };
         let payload = sync_payload(shared, config, enabled);
         for label in ["main", "taskbar", "toolkit"] {
-            let _ = app.emit_to(label, "pulsecorelite://native-taskbar-sync", payload.clone());
+            let _ = app.emit_to(
+                label,
+                "pulsecorelite://native-taskbar-sync",
+                payload.clone(),
+            );
         }
     }
 
-    fn with_config_mut<T>(shared: &NativeTaskbarShared, map: impl FnOnce(&mut NativeTaskbarConfig) -> T) -> Option<T> {
+    fn with_config_mut<T>(
+        shared: &NativeTaskbarShared,
+        map: impl FnOnce(&mut NativeTaskbarConfig) -> T,
+    ) -> Option<T> {
         let mut guard = shared.config.lock().ok()?;
         let config = guard.as_mut()?;
         Some(map(config))
@@ -499,11 +516,15 @@ mod imp {
         let Some(state) = shared.state.lock().ok().and_then(|guard| guard.clone()) else {
             return;
         };
-        let snapshot = tauri::async_runtime::block_on(async { state.latest_snapshot.read().await.clone() });
+        let snapshot =
+            tauri::async_runtime::block_on(async { state.latest_snapshot.read().await.clone() });
         push_command(NativeTaskbarCommand::UpdateSnapshot(snapshot));
     }
 
-    fn apply_runtime_config_change(shared: &NativeTaskbarShared, updater: impl FnOnce(&mut NativeTaskbarConfig)) {
+    fn apply_runtime_config_change(
+        shared: &NativeTaskbarShared,
+        updater: impl FnOnce(&mut NativeTaskbarConfig),
+    ) {
         let next_config = with_config_mut(shared, |config| {
             updater(config);
             config.clone()
@@ -526,7 +547,10 @@ mod imp {
         });
     }
 
-    fn build_segments(snapshot: &TelemetrySnapshot, config: &NativeTaskbarConfig) -> Vec<NativeTaskbarSegment> {
+    fn build_segments(
+        snapshot: &TelemetrySnapshot,
+        config: &NativeTaskbarConfig,
+    ) -> Vec<NativeTaskbarSegment> {
         let mut parts = Vec::new();
         if config.show_cpu {
             let mut extras = Vec::new();
@@ -596,7 +620,12 @@ mod imp {
         }
         if config.show_latency {
             parts.push(NativeTaskbarSegment {
-                label: if config.language == "zh-CN" { "延迟" } else { "LAT" }.to_string(),
+                label: if config.language == "zh-CN" {
+                    "延迟"
+                } else {
+                    "LAT"
+                }
+                .to_string(),
                 value: format_latency(snapshot.network.latency_ms, &config.language),
                 extra: None,
                 value_tone: SegmentTone::Normal,
@@ -613,7 +642,10 @@ mod imp {
         parts
     }
 
-    fn build_model(snapshot: &TelemetrySnapshot, config: &NativeTaskbarConfig) -> NativeTaskbarModel {
+    fn build_model(
+        snapshot: &TelemetrySnapshot,
+        config: &NativeTaskbarConfig,
+    ) -> NativeTaskbarModel {
         let parts = build_segments(snapshot, config);
         if config.two_line_mode {
             let split = ((parts.len() as f64) / 2.0).ceil() as usize;
@@ -622,9 +654,7 @@ mod imp {
                 rows: vec![top.to_vec(), bottom.to_vec()],
             }
         } else {
-            NativeTaskbarModel {
-                rows: vec![parts],
-            }
+            NativeTaskbarModel { rows: vec![parts] }
         }
     }
 
@@ -638,7 +668,11 @@ mod imp {
                         segment.label.len()
                             + 1
                             + segment.value.len()
-                            + segment.extra.as_ref().map(|extra| 1 + extra.len()).unwrap_or(0)
+                            + segment
+                                .extra
+                                .as_ref()
+                                .map(|extra| 1 + extra.len())
+                                .unwrap_or(0)
                     })
                     .sum::<usize>()
                     + row.len().saturating_sub(1) * 3
@@ -673,7 +707,12 @@ mod imp {
         let wide = to_wide(text);
         let mut size = SIZE { cx: 0, cy: 0 };
         unsafe {
-            GetTextExtentPoint32W(hdc, wide.as_ptr(), (wide.len() - 1) as i32, &mut size as *mut SIZE);
+            GetTextExtentPoint32W(
+                hdc,
+                wide.as_ptr(),
+                (wide.len() - 1) as i32,
+                &mut size as *mut SIZE,
+            );
         }
         size.cx
     }
@@ -721,7 +760,14 @@ mod imp {
             draw_text_piece(hdc, &mut x, top, &segment.label, label_color, label_font);
             if !segment.value.is_empty() {
                 draw_text_piece(hdc, &mut x, top, " ", label_color, label_font);
-                draw_text_piece(hdc, &mut x, top, &segment.value, tone_color(config, segment.value_tone), value_font);
+                draw_text_piece(
+                    hdc,
+                    &mut x,
+                    top,
+                    &segment.value,
+                    tone_color(config, segment.value_tone),
+                    value_font,
+                );
             }
             if let Some(extra) = &segment.extra {
                 draw_text_piece(hdc, &mut x, top, " ", extra_color, label_font);
@@ -730,9 +776,13 @@ mod imp {
         }
     }
 
-    fn with_state_settings<T>(shared: &NativeTaskbarShared, map: impl FnOnce(&AppSettings) -> T) -> Option<T> {
+    fn with_state_settings<T>(
+        shared: &NativeTaskbarShared,
+        map: impl FnOnce(&AppSettings) -> T,
+    ) -> Option<T> {
         let state = shared.state.lock().ok()?.clone()?;
-        let settings = tauri::async_runtime::block_on(async { state.settings.read().await.clone() });
+        let settings =
+            tauri::async_runtime::block_on(async { state.settings.read().await.clone() });
         Some(map(&settings))
     }
 
@@ -742,7 +792,8 @@ mod imp {
             let _ = win.set_focus();
             return;
         }
-        let always_on_top = with_state_settings(shared, |settings| settings.overlay_always_on_top).unwrap_or(true);
+        let always_on_top =
+            with_state_settings(shared, |settings| settings.overlay_always_on_top).unwrap_or(true);
         let builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
             .title("PulseCoreLite Overlay")
             .inner_size(340.0, 260.0)
@@ -794,12 +845,18 @@ mod imp {
         }
         let taskbar_info = get_taskbar_info_inner();
         let width = estimate_model_width(model, config);
-        let height = if config.two_line_mode || model.rows.len() > 1 { 48 } else { 28 };
+        let height = if config.two_line_mode || model.rows.len() > 1 {
+            48
+        } else {
+            28
+        };
         let shared = shared();
         let locked_position = shared.locked_position.lock().ok().and_then(|guard| *guard);
         let manual_position = shared.manual_position.lock().ok().and_then(|guard| *guard);
         let (mut x, mut y) = if config.position_locked {
-            locked_position.or(manual_position).unwrap_or((CW_USEDEFAULT, CW_USEDEFAULT))
+            locked_position
+                .or(manual_position)
+                .unwrap_or((CW_USEDEFAULT, CW_USEDEFAULT))
         } else if config.remember_position {
             manual_position.unwrap_or((CW_USEDEFAULT, CW_USEDEFAULT))
         } else {
@@ -832,7 +889,11 @@ mod imp {
             }
         }
 
-        let insert_after = if config.always_on_top { HWND_TOPMOST } else { HWND_NOTOPMOST };
+        let insert_after = if config.always_on_top {
+            HWND_TOPMOST
+        } else {
+            HWND_NOTOPMOST
+        };
         shared.programmatic_move.store(true, Ordering::Relaxed);
         unsafe {
             SetWindowPos(hwnd, insert_after, x, y, width, height, SWP_NOACTIVATE);
@@ -870,7 +931,12 @@ mod imp {
                     if let Ok(mut slot) = shared.config.lock() {
                         *slot = Some(config.clone());
                     }
-                    let model = shared.model.lock().ok().map(|guard| guard.clone()).unwrap_or_default();
+                    let model = shared
+                        .model
+                        .lock()
+                        .ok()
+                        .map(|guard| guard.clone())
+                        .unwrap_or_default();
                     apply_window_frame(hwnd, &config, &model);
                     unsafe {
                         InvalidateRect(hwnd, ptr::null(), 1);
@@ -921,7 +987,11 @@ mod imp {
             return;
         }
 
-        let toggle_text = if main_visible { text.hide_main_window } else { text.show_main_window };
+        let toggle_text = if main_visible {
+            text.hide_main_window
+        } else {
+            text.show_main_window
+        };
         let toggle_text_w = to_wide(toggle_text);
         let always_on_top_text = to_wide(text.always_on_top);
         let auto_hide_text = to_wide(text.auto_hide_on_fullscreen);
@@ -948,117 +1018,217 @@ mod imp {
         let close_taskbar_text = to_wide(text.close_taskbar);
         let exit_text_w = to_wide(text.exit_app);
         unsafe {
-            AppendMenuW(menu, MF_STRING, MENU_SHOW_OR_HIDE_MAIN, toggle_text_w.as_ptr());
+            AppendMenuW(
+                menu,
+                MF_STRING,
+                MENU_SHOW_OR_HIDE_MAIN,
+                toggle_text_w.as_ptr(),
+            );
             AppendMenuW(menu, MF_SEPARATOR, 0, ptr::null());
             AppendMenuW(
                 menu,
-                MF_STRING | if config.always_on_top { MF_CHECKED } else { MF_UNCHECKED },
+                MF_STRING
+                    | if config.always_on_top {
+                        MF_CHECKED
+                    } else {
+                        MF_UNCHECKED
+                    },
                 MENU_ALWAYS_ON_TOP,
                 always_on_top_text.as_ptr(),
             );
             AppendMenuW(
                 menu,
-                MF_STRING | if config.auto_hide_on_fullscreen { MF_CHECKED } else { MF_UNCHECKED },
+                MF_STRING
+                    | if config.auto_hide_on_fullscreen {
+                        MF_CHECKED
+                    } else {
+                        MF_UNCHECKED
+                    },
                 MENU_AUTO_HIDE_FULLSCREEN,
                 auto_hide_text.as_ptr(),
             );
             AppendMenuW(
                 menu,
-                MF_STRING | if config.remember_position { MF_CHECKED } else { MF_UNCHECKED },
+                MF_STRING
+                    | if config.remember_position {
+                        MF_CHECKED
+                    } else {
+                        MF_UNCHECKED
+                    },
                 MENU_REMEMBER_POSITION,
                 remember_position_text.as_ptr(),
             );
-            AppendMenuW(menu, MF_STRING, MENU_POSITION_LOCK, position_lock_text.as_ptr());
+            AppendMenuW(
+                menu,
+                MF_STRING,
+                MENU_POSITION_LOCK,
+                position_lock_text.as_ptr(),
+            );
             AppendMenuW(menu, MF_SEPARATOR, 0, ptr::null());
             AppendMenuW(
                 menu,
-                MF_STRING | if config.two_line_mode { MF_CHECKED } else { MF_UNCHECKED },
+                MF_STRING
+                    | if config.two_line_mode {
+                        MF_CHECKED
+                    } else {
+                        MF_UNCHECKED
+                    },
                 MENU_TWO_LINE,
                 two_line_text.as_ptr(),
             );
             AppendMenuW(menu, MF_SEPARATOR, 0, ptr::null());
             AppendMenuW(
                 menu,
-                MF_STRING | if config.background_mode == "transparent" { MF_CHECKED } else { MF_UNCHECKED },
+                MF_STRING
+                    | if config.background_mode == "transparent" {
+                        MF_CHECKED
+                    } else {
+                        MF_UNCHECKED
+                    },
                 MENU_THEME_TRANSPARENT,
                 theme_transparent_text.as_ptr(),
             );
             AppendMenuW(
                 menu,
-                MF_STRING | if config.background_mode == "dark" { MF_CHECKED } else { MF_UNCHECKED },
+                MF_STRING
+                    | if config.background_mode == "dark" {
+                        MF_CHECKED
+                    } else {
+                        MF_UNCHECKED
+                    },
                 MENU_THEME_DARK,
                 theme_dark_text.as_ptr(),
             );
             AppendMenuW(
                 menu,
-                MF_STRING | if config.background_mode == "light" { MF_CHECKED } else { MF_UNCHECKED },
+                MF_STRING
+                    | if config.background_mode == "light" {
+                        MF_CHECKED
+                    } else {
+                        MF_UNCHECKED
+                    },
                 MENU_THEME_LIGHT,
                 theme_light_text.as_ptr(),
             );
             AppendMenuW(menu, MF_SEPARATOR, 0, ptr::null());
             AppendMenuW(
                 menu,
-                MF_STRING | if config.show_cpu { MF_CHECKED } else { MF_UNCHECKED },
+                MF_STRING
+                    | if config.show_cpu {
+                        MF_CHECKED
+                    } else {
+                        MF_UNCHECKED
+                    },
                 MENU_SHOW_CPU,
                 cpu_text.as_ptr(),
             );
             AppendMenuW(
                 menu,
-                MF_STRING | if config.show_cpu_freq { MF_CHECKED } else { MF_UNCHECKED },
+                MF_STRING
+                    | if config.show_cpu_freq {
+                        MF_CHECKED
+                    } else {
+                        MF_UNCHECKED
+                    },
                 MENU_SHOW_CPU_FREQ,
                 cpu_freq_text.as_ptr(),
             );
             AppendMenuW(
                 menu,
-                MF_STRING | if config.show_cpu_temp { MF_CHECKED } else { MF_UNCHECKED },
+                MF_STRING
+                    | if config.show_cpu_temp {
+                        MF_CHECKED
+                    } else {
+                        MF_UNCHECKED
+                    },
                 MENU_SHOW_CPU_TEMP,
                 cpu_temp_text.as_ptr(),
             );
             AppendMenuW(
                 menu,
-                MF_STRING | if config.show_gpu { MF_CHECKED } else { MF_UNCHECKED },
+                MF_STRING
+                    | if config.show_gpu {
+                        MF_CHECKED
+                    } else {
+                        MF_UNCHECKED
+                    },
                 MENU_SHOW_GPU,
                 gpu_text.as_ptr(),
             );
             AppendMenuW(
                 menu,
-                MF_STRING | if config.show_gpu_temp { MF_CHECKED } else { MF_UNCHECKED },
+                MF_STRING
+                    | if config.show_gpu_temp {
+                        MF_CHECKED
+                    } else {
+                        MF_UNCHECKED
+                    },
                 MENU_SHOW_GPU_TEMP,
                 gpu_temp_text.as_ptr(),
             );
             AppendMenuW(
                 menu,
-                MF_STRING | if config.show_memory { MF_CHECKED } else { MF_UNCHECKED },
+                MF_STRING
+                    | if config.show_memory {
+                        MF_CHECKED
+                    } else {
+                        MF_UNCHECKED
+                    },
                 MENU_SHOW_MEMORY,
                 memory_text.as_ptr(),
             );
             AppendMenuW(
                 menu,
-                MF_STRING | if config.show_app { MF_CHECKED } else { MF_UNCHECKED },
+                MF_STRING
+                    | if config.show_app {
+                        MF_CHECKED
+                    } else {
+                        MF_UNCHECKED
+                    },
                 MENU_SHOW_APP,
                 app_text.as_ptr(),
             );
             AppendMenuW(menu, MF_SEPARATOR, 0, ptr::null());
             AppendMenuW(
                 menu,
-                MF_STRING | if config.show_down { MF_CHECKED } else { MF_UNCHECKED },
+                MF_STRING
+                    | if config.show_down {
+                        MF_CHECKED
+                    } else {
+                        MF_UNCHECKED
+                    },
                 MENU_SHOW_DOWN,
                 down_text.as_ptr(),
             );
             AppendMenuW(
                 menu,
-                MF_STRING | if config.show_up { MF_CHECKED } else { MF_UNCHECKED },
+                MF_STRING
+                    | if config.show_up {
+                        MF_CHECKED
+                    } else {
+                        MF_UNCHECKED
+                    },
                 MENU_SHOW_UP,
                 up_text.as_ptr(),
             );
             AppendMenuW(
                 menu,
-                MF_STRING | if config.show_latency { MF_CHECKED } else { MF_UNCHECKED },
+                MF_STRING
+                    | if config.show_latency {
+                        MF_CHECKED
+                    } else {
+                        MF_UNCHECKED
+                    },
                 MENU_SHOW_LATENCY,
                 latency_text.as_ptr(),
             );
             AppendMenuW(menu, MF_SEPARATOR, 0, ptr::null());
-            AppendMenuW(menu, MF_STRING, MENU_CLOSE_TASKBAR, close_taskbar_text.as_ptr());
+            AppendMenuW(
+                menu,
+                MF_STRING,
+                MENU_CLOSE_TASKBAR,
+                close_taskbar_text.as_ptr(),
+            );
             AppendMenuW(menu, MF_STRING, MENU_EXIT_APP, exit_text_w.as_ptr());
         }
 
@@ -1090,7 +1260,8 @@ mod imp {
             }
             MENU_AUTO_HIDE_FULLSCREEN => {
                 update_settings(&shared, |settings| {
-                    settings.taskbar_auto_hide_on_fullscreen = !settings.taskbar_auto_hide_on_fullscreen;
+                    settings.taskbar_auto_hide_on_fullscreen =
+                        !settings.taskbar_auto_hide_on_fullscreen;
                 });
                 apply_runtime_config_change(&shared, |config| {
                     config.auto_hide_on_fullscreen = !config.auto_hide_on_fullscreen;
@@ -1230,7 +1401,12 @@ mod imp {
             WM_PAINT => {
                 let shared = shared();
                 let config = shared.config.lock().ok().and_then(|guard| guard.clone());
-                let model = shared.model.lock().ok().map(|guard| guard.clone()).unwrap_or_default();
+                let model = shared
+                    .model
+                    .lock()
+                    .ok()
+                    .map(|guard| guard.clone())
+                    .unwrap_or_default();
                 let mut ps: PAINTSTRUCT = std::mem::zeroed();
                 let hdc = BeginPaint(hwnd, &mut ps as *mut PAINTSTRUCT);
                 if !hdc.is_null() {
@@ -1292,8 +1468,9 @@ mod imp {
         thread::spawn(move || {
             let class_name = to_wide(CLASS_NAME);
             let title = to_wide(WINDOW_TITLE);
-            let hinstance = unsafe { windows_sys::Win32::System::LibraryLoader::GetModuleHandleW(ptr::null()) }
-                as HINSTANCE;
+            let hinstance =
+                unsafe { windows_sys::Win32::System::LibraryLoader::GetModuleHandleW(ptr::null()) }
+                    as HINSTANCE;
             let wnd_class = WNDCLASSW {
                 style: CS_DBLCLKS,
                 lpfnWndProc: Some(window_proc),

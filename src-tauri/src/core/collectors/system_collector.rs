@@ -589,25 +589,25 @@ impl SystemCollector {
 
         #[cfg(not(target_os = "windows"))]
         {
-        self.app_usage_system
-            .refresh_processes(ProcessesToUpdate::Some(&process_tree), true);
+            self.app_usage_system
+                .refresh_processes(ProcessesToUpdate::Some(&process_tree), true);
 
-        let logical_cpu_count = self.system.cpus().len().max(1) as f64;
-        let mut cpu_usage_sum = 0.0_f64;
-        let mut memory_bytes_sum = 0_u64;
+            let logical_cpu_count = self.system.cpus().len().max(1) as f64;
+            let mut cpu_usage_sum = 0.0_f64;
+            let mut memory_bytes_sum = 0_u64;
 
-        for pid in process_tree {
-            if let Some(process) = self.app_usage_system.process(pid) {
-                cpu_usage_sum += process.cpu_usage() as f64;
-                memory_bytes_sum = memory_bytes_sum.saturating_add(process.memory());
+            for pid in process_tree {
+                if let Some(process) = self.app_usage_system.process(pid) {
+                    cpu_usage_sum += process.cpu_usage() as f64;
+                    memory_bytes_sum = memory_bytes_sum.saturating_add(process.memory());
+                }
             }
-        }
 
-        // sysinfo process CPU can reach core_count * 100; normalize to Task Manager's 0..100%.
-        let cpu_usage_pct = (cpu_usage_sum / logical_cpu_count).clamp(0.0, 100.0);
-        let memory_mb = memory_bytes_sum as f64 / (1024.0 * 1024.0);
+            // sysinfo process CPU can reach core_count * 100; normalize to Task Manager's 0..100%.
+            let cpu_usage_pct = (cpu_usage_sum / logical_cpu_count).clamp(0.0, 100.0);
+            let memory_mb = memory_bytes_sum as f64 / (1024.0 * 1024.0);
 
-        (Some(cpu_usage_pct), Some(memory_mb))
+            (Some(cpu_usage_pct), Some(memory_mb))
         }
     }
 
@@ -622,7 +622,10 @@ impl SystemCollector {
     }
 
     #[cfg(target_os = "windows")]
-    fn collect_app_usage_metrics_windows(&mut self, process_tree: &[Pid]) -> (Option<f64>, Option<f64>) {
+    fn collect_app_usage_metrics_windows(
+        &mut self,
+        process_tree: &[Pid],
+    ) -> (Option<f64>, Option<f64>) {
         const STARTUP_GRACE_SECONDS: f64 = 2.0;
         const MIN_CPU_WINDOW_SECONDS: f64 = 0.8;
         const CPU_EMA_ALPHA: f64 = 0.25;
@@ -648,14 +651,14 @@ impl SystemCollector {
                 let mut delta_cpu_100ns_sum = 0_u64;
                 for (pid, cpu_time_now) in &current_cpu_times {
                     if let Some(cpu_time_prev) = self.app_process_cpu_prev_by_pid.get(pid) {
-                        delta_cpu_100ns_sum =
-                            delta_cpu_100ns_sum.saturating_add(cpu_time_now.saturating_sub(*cpu_time_prev));
+                        delta_cpu_100ns_sum = delta_cpu_100ns_sum
+                            .saturating_add(cpu_time_now.saturating_sub(*cpu_time_prev));
                     }
                 }
 
                 let cpu_seconds = delta_cpu_100ns_sum as f64 / 10_000_000.0;
-                let usage_raw = (cpu_seconds / (elapsed_seconds * logical_cpu_count) * 100.0)
-                    .clamp(0.0, 100.0);
+                let usage_raw =
+                    (cpu_seconds / (elapsed_seconds * logical_cpu_count) * 100.0).clamp(0.0, 100.0);
 
                 let usage_smoothed = if let Some(prev) = self.app_process_cpu_ema {
                     prev * (1.0 - CPU_EMA_ALPHA) + usage_raw * CPU_EMA_ALPHA
@@ -771,7 +774,9 @@ fn collect_process_tree_pids_windows(root_pid: u32) -> Vec<Pid> {
 #[cfg(target_os = "windows")]
 fn query_process_cpu_and_memory_windows(pid: u32) -> Option<(u64, u64)> {
     use windows_sys::Win32::Foundation::{CloseHandle, FILETIME};
-    use windows_sys::Win32::System::ProcessStatus::{K32GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS_EX};
+    use windows_sys::Win32::System::ProcessStatus::{
+        K32GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS_EX,
+    };
     use windows_sys::Win32::System::Threading::{
         GetProcessTimes, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_VM_READ,
     };
@@ -781,11 +786,7 @@ fn query_process_cpu_and_memory_windows(pid: u32) -> Option<(u64, u64)> {
     }
 
     unsafe {
-        let handle = OpenProcess(
-            PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ,
-            0,
-            pid,
-        );
+        let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ, 0, pid);
         if handle.is_null() {
             return None;
         }
@@ -821,7 +822,8 @@ fn query_process_cpu_and_memory_windows(pid: u32) -> Option<(u64, u64)> {
             PrivateUsage: 0,
         };
 
-        let got_times = GetProcessTimes(handle, &mut creation, &mut exit, &mut kernel, &mut user) != 0;
+        let got_times =
+            GetProcessTimes(handle, &mut creation, &mut exit, &mut kernel, &mut user) != 0;
         let got_memory = K32GetProcessMemoryInfo(
             handle,
             &mut pmc as *mut PROCESS_MEMORY_COUNTERS_EX as *mut _,

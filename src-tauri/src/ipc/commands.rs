@@ -1,8 +1,7 @@
 use chrono::Utc;
 use lettre::{
-    message::Mailbox,
-    transport::smtp::authentication::Credentials,
-    AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
+    message::Mailbox, transport::smtp::authentication::Credentials, AsyncSmtpTransport,
+    AsyncTransport, Message, Tokio1Executor,
 };
 #[cfg(windows)]
 use std::process::Command;
@@ -15,9 +14,8 @@ use crate::{
     state::SharedState,
     types::{
         AppBootstrap, MonthlyReminderSlot, NativeTaskbarConfig, ReminderAdvancedSettings,
-        ReminderScreenEventPayload,
-        ScheduleShutdownRequest, SendReminderEmailRequest, ShutdownPlan, SmtpEmailConfig,
-        TaskReminder, TaskReminderStore, WeeklyReminderSlot,
+        ReminderScreenEventPayload, ScheduleShutdownRequest, SendReminderEmailRequest,
+        ShutdownPlan, SmtpEmailConfig, TaskReminder, TaskReminderStore, WeeklyReminderSlot,
     },
 };
 
@@ -1388,11 +1386,12 @@ pub async fn set_refresh_rate(state: State<'_, SharedState>, rate_ms: u64) -> Cm
 }
 
 #[tauri::command]
-pub async fn set_memory_trim_enabled(state: State<'_, SharedState>, enabled: bool) -> CmdResult<()> {
+pub async fn set_memory_trim_enabled(
+    state: State<'_, SharedState>,
+    enabled: bool,
+) -> CmdResult<()> {
     use std::sync::atomic::Ordering;
-    state
-        .memory_trim_enabled
-        .store(enabled, Ordering::Relaxed);
+    state.memory_trim_enabled.store(enabled, Ordering::Relaxed);
     let mut settings = state.settings.write().await;
     settings.memory_trim_enabled = enabled;
     Ok(())
@@ -1404,7 +1403,9 @@ pub async fn set_memory_trim_system_enabled(
     enabled: bool,
 ) -> CmdResult<()> {
     use std::sync::atomic::Ordering;
-    state.memory_trim_system_enabled.store(enabled, Ordering::Relaxed);
+    state
+        .memory_trim_system_enabled
+        .store(enabled, Ordering::Relaxed);
     state.settings.write().await.memory_trim_system_enabled = enabled;
     Ok(())
 }

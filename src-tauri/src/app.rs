@@ -52,7 +52,6 @@ pub fn start_telemetry_loop(app: AppHandle, state: SharedState) {
                     let _ = win.set_title(&title);
                 }
             }
-
         }
     });
 }
@@ -161,7 +160,9 @@ async fn tick_task_reminders(app: &AppHandle, state: &SharedState) -> Result<(),
                 continue;
             }
 
-            if let Err(err) = commands::trigger_task_reminder_backend(app, smtp.clone(), &reminder).await {
+            if let Err(err) =
+                commands::trigger_task_reminder_backend(app, smtp.clone(), &reminder).await
+            {
                 tracing::warn!("trigger reminder failed ({}): {err}", reminder.id);
                 state.reminder_last_fired.lock().await.remove(&fire_key);
             }
@@ -265,7 +266,9 @@ fn trim_working_set() -> anyhow::Result<()> {
         }
 
         if !trimmed_any {
-            return Err(anyhow::anyhow!("EmptyWorkingSet failed for app process tree"));
+            return Err(anyhow::anyhow!(
+                "EmptyWorkingSet failed for app process tree"
+            ));
         }
     }
 
@@ -274,6 +277,7 @@ fn trim_working_set() -> anyhow::Result<()> {
 
 #[cfg(windows)]
 fn trim_all_processes_working_set() -> anyhow::Result<()> {
+    use windows_sys::Win32::Foundation::{CloseHandle, ERROR_NO_MORE_FILES};
     use windows_sys::Win32::System::Diagnostics::ToolHelp::{
         CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W,
         TH32CS_SNAPPROCESS,
@@ -282,7 +286,6 @@ fn trim_all_processes_working_set() -> anyhow::Result<()> {
     use windows_sys::Win32::System::Threading::{
         OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_SET_QUOTA,
     };
-    use windows_sys::Win32::Foundation::{CloseHandle, ERROR_NO_MORE_FILES};
 
     unsafe {
         let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -343,6 +346,8 @@ fn visible_consumer_labels(app: &AppHandle) -> Vec<&'static str> {
 pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
     builder.invoke_handler(tauri::generate_handler![
         commands::get_initial_state,
+        crate::local_ai::ensure_local_ai_ready,
+        crate::local_ai::send_local_ai_message,
         commands::configure_native_taskbar_monitor,
         commands::get_hardware_info,
         commands::get_taskbar_info,

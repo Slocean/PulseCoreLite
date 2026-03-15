@@ -3,13 +3,14 @@
 mod app;
 mod core;
 mod ipc;
+mod local_ai;
 mod native_taskbar;
 mod profiler;
 mod state;
 mod types;
 
 use crate::state::AppState;
-use tauri::Manager;
+use tauri::{Manager, RunEvent};
 
 fn main() {
     tracing_subscriber::fmt()
@@ -33,7 +34,10 @@ fn main() {
 
             #[cfg(desktop)]
             {
-                if let Err(err) = app.handle().plugin(tauri_plugin_updater::Builder::new().build()) {
+                if let Err(err) = app
+                    .handle()
+                    .plugin(tauri_plugin_updater::Builder::new().build())
+                {
                     tracing::warn!("Failed to initialize updater plugin: {err}");
                 }
             }
@@ -41,7 +45,17 @@ fn main() {
             Ok(())
         });
 
-    crate::app::register_invoke_handler(builder)
-        .run(tauri::generate_context!())
-        .expect("error while running PulseCoreLite");
+    let app = crate::app::register_invoke_handler(builder)
+        .build(tauri::generate_context!())
+        .expect("error while building PulseCoreLite");
+
+    app.run(|app_handle, event| {
+        if matches!(event, RunEvent::Exit | RunEvent::ExitRequested { .. }) {
+            if let Some(state) = app_handle.try_state::<crate::state::SharedState>() {
+                tauri::async_runtime::block_on(crate::local_ai::shutdown_local_ai_runtime(
+                    state.inner().clone(),
+                ));
+            }
+        }
+    });
 }
