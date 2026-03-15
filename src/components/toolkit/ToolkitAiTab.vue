@@ -1,5 +1,5 @@
 <template>
-  <UiToast channel="toolkit-ai" />
+  <UiToast :channel="toastChannel" />
 
   <UiCollapsiblePanel class="toolkit-card" :title="t('toolkit.aiStatusTitle')" :collapsible="false" title-class="toolkit-section-title">
     <div class="toolkit-ai-status-grid">
@@ -127,6 +127,15 @@ import { useToastService } from '@/composables/useToastService';
 import { api, inTauri } from '@/services/tauri';
 import type { LocalAiAttachment, LocalAiChatMessage, LocalAiStatus, LocalAiTokenUsage } from '@/types';
 
+const props = withDefaults(
+  defineProps<{
+    toastChannel?: string;
+  }>(),
+  {
+    toastChannel: 'toolkit-ai'
+  }
+);
+
 const emit = defineEmits<{
   (event: 'contentChange'): void;
 }>();
@@ -161,7 +170,7 @@ const TEXT_FILE_EXTENSIONS = new Set([
 ]);
 
 const { t } = useI18n();
-const { showToast } = useToastService('toolkit-ai');
+const { showToast } = useToastService(props.toastChannel);
 const isTauriRuntime = inTauri();
 const statusBusy = ref(false);
 const sending = ref(false);
