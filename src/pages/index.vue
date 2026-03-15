@@ -64,6 +64,7 @@
         @importConfig="handleImportConfig"
         @openToolkit="toggleToolkitWindow"
         @checkUpdate="handleCheckUpdate" />
+      <ToolkitAiTab v-else-if="activeMainTab === 'ai'" toast-channel="overlay-ai" />
       <OverlayConfigFeedbackSection
         v-else-if="activeMainTab === 'feedback'"
         :app-version="appVersion"
@@ -168,6 +169,7 @@ import OverlayStatusBar from '../components/OverlayStatusBar.vue';
 import OverlayConfigFeedbackSection from '../components/overlay/config/OverlayConfigFeedbackSection.vue';
 import OverlayThemeDialogs from '../components/overlay/OverlayThemeDialogs.vue';
 import OverlaySystemDialogs from '../components/overlay/OverlaySystemDialogs.vue';
+import ToolkitAiTab from '../components/toolkit/ToolkitAiTab.vue';
 import { useConfigTransfer } from '../composables/useConfigTransfer';
 import { useFactoryReset } from '../composables/useFactoryReset';
 import { useOverlayMetrics } from '../composables/useOverlayMetrics';
@@ -198,6 +200,11 @@ const mainNavItems = computed(() => [
     id: 'toolkit',
     label: t('overlay.mainNavToolkit'),
     icon: 'construction'
+  },
+  {
+    id: 'ai',
+    label: t('overlay.mainNavAi'),
+    icon: 'smart_toy'
   },
   {
     id: 'settings',
@@ -367,8 +374,8 @@ const {
   }
 });
 
-const activeMainTab = ref<'monitor' | 'toolkit' | 'settings' | 'feedback'>('monitor');
-const lastNonSettingsTab = ref<'monitor' | 'toolkit' | 'feedback'>('monitor');
+const activeMainTab = ref<'monitor' | 'toolkit' | 'ai' | 'settings' | 'feedback'>('monitor');
+const lastNonSettingsTab = ref<'monitor' | 'toolkit' | 'ai' | 'feedback'>('monitor');
 const showMainTabs = ref(true);
 
 watch(
