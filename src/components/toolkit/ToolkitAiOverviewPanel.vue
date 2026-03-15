@@ -43,9 +43,6 @@
         <UiButton native-type="button" preset="overlay-primary" :disabled="statusBusy || !isTauriRuntime" @click="emit('refresh-status')">
           {{ statusBusy ? t('toolkit.aiEnsurePending') : t('toolkit.aiEnsure') }}
         </UiButton>
-        <UiButton native-type="button" preset="overlay-chip-soft" :disabled="clearDisabled" @click="emit('clear-conversation')">
-          {{ t('toolkit.aiClear') }}
-        </UiButton>
       </div>
     </div>
   </UiCollapsiblePanel>
@@ -69,13 +66,11 @@ const props = defineProps<{
   capabilityLabel: string;
   statusBusy: boolean;
   isTauriRuntime: boolean;
-  clearDisabled: boolean;
 }>();
 
 const emit = defineEmits<{
   (event: 'update:modelValue', value: boolean): void;
   (event: 'refresh-status'): void;
-  (event: 'clear-conversation'): void;
   (event: 'contentChange'): void;
 }>();
 

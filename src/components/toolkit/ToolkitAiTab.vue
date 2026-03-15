@@ -11,9 +11,7 @@
     :capability-label="capabilityLabel"
     :status-busy="statusBusy"
     :is-tauri-runtime="isTauriRuntime"
-    :clear-disabled="clearDisabled"
     @refresh-status="refreshStatus"
-    @clear-conversation="clearConversation"
     @content-change="emit('contentChange')" />
 
   <UiCollapsiblePanel class="toolkit-card" :title="t('toolkit.aiChatTitle')" :collapsible="false" title-class="toolkit-section-title">
@@ -197,7 +195,6 @@ const conversationTurns = computed(() => messages.value.filter(message => messag
 const contextWindowSize = computed(() => messages.value.filter(message => (message.role === 'user' || message.role === 'assistant') && !message.pending).slice(-10).length);
 const hasConversation = computed(() => conversationTurns.value > 0);
 const showStarterPanel = computed(() => !hasConversation.value && attachments.value.length === 0);
-const clearDisabled = computed(() => sending.value || (!hasConversation.value && attachments.value.length === 0 && !draft.value.trim()));
 const sendDisabled = computed(() => sending.value || !isTauriRuntime || (!draft.value.trim() && attachments.value.length === 0));
 
 onMounted(() => {
