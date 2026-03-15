@@ -128,7 +128,6 @@
 .toolkit-card .ui-button--preset-overlay-primary,
 .toolkit-card .ui-button--preset-overlay-danger {
   line-height: 1;
-  min-height: 32px;
   padding: 6px 10px;
   font-size: 12px;
   -webkit-app-region: no-drag;

@@ -14,9 +14,34 @@
     @refresh-status="refreshStatus"
     @content-change="emit('contentChange')" />
 
-  <UiCollapsiblePanel class="toolkit-card" :title="t('toolkit.aiChatTitle')" :collapsible="false" title-class="toolkit-section-title">
+  <UiCollapsiblePanel
+    v-model="chatOpen"
+    class="toolkit-card"
+    :title="t('toolkit.aiChatTitle')"
+    header-mode="split"
+    header-class="toolkit-section-header"
+    split-title-preset="toolkit-collapse-title"
+    split-toggle-preset="toolkit-collapse-icon"
+    title-class="toolkit-section-title"
+    indicator-class="toolkit-collapse-indicator"
+    @toggle="emit('contentChange')">
+    <template #header-actions>
+      <div class="toolkit-ai-header-stats" @click="toggleChatOpen">
+        <span class="toolkit-ai-header-stat">{{ t('toolkit.aiDraftCount', { count: draft.length }) }}</span>
+        <span class="toolkit-ai-header-stat">
+          {{ t('toolkit.aiContextWindow', { count: contextWindowSize }) }}
+        </span>
+      </div>
+    </template>
     <div ref="chatFeedRef" class="toolkit-ai-chat-feed">
-      <article v-for="message in messages" :key="message.id" class="toolkit-ai-message" :class="[`toolkit-ai-message--${message.role}`, { 'is-pending': message.pending, 'is-error': message.error }]">
+      <article
+        v-for="message in messages"
+        :key="message.id"
+        class="toolkit-ai-message"
+        :class="[
+          `toolkit-ai-message--${message.role}`,
+          { 'is-pending': message.pending, 'is-error': message.error }
+        ]">
         <div class="toolkit-ai-bubble">
           <header class="toolkit-ai-bubble-head">
             <div class="toolkit-ai-bubble-head-main">
@@ -26,10 +51,16 @@
               <div class="toolkit-ai-bubble-meta">
                 <span>{{ roleLabel(message.role) }}</span>
                 <time>{{ formatTimestamp(message.createdAt) }}</time>
-                <span v-if="message.usageTokens" class="toolkit-ai-token-meta">{{ t('toolkit.aiTokens', { count: message.usageTokens }) }}</span>
+                <span v-if="message.usageTokens" class="toolkit-ai-token-meta">
+                  {{ t('toolkit.aiTokens', { count: message.usageTokens }) }}
+                </span>
               </div>
             </div>
-            <UiButton v-if="message.role === 'assistant' && !message.pending && message.text" native-type="button" preset="overlay-chip-soft" @click="copyMessage(message.text)">
+            <UiButton
+              v-if="message.role === 'assistant' && !message.pending && message.text"
+              native-type="button"
+              preset="overlay-chip-soft"
+              @click="copyMessage(message.text)">
               <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
               <span>{{ t('toolkit.aiCopyMessage') }}</span>
             </UiButton>
@@ -44,7 +75,13 @@
       </article>
     </div>
 
-    <section class="toolkit-ai-composer-card" :class="{ 'is-drop-active': isDropActive }" @dragenter.prevent="handleDragEnter" @dragover.prevent="handleDragOver" @dragleave.prevent="handleDragLeave" @drop.prevent="handleDrop">
+    <section
+      class="toolkit-ai-composer-card"
+      :class="{ 'is-drop-active': isDropActive }"
+      @dragenter.prevent="handleDragEnter"
+      @dragover.prevent="handleDragOver"
+      @dragleave.prevent="handleDragLeave"
+      @drop.prevent="handleDrop">
       <div v-if="attachments.length" class="toolkit-ai-attachment-stage">
         <header class="toolkit-ai-attachment-head">
           <div>
@@ -58,7 +95,11 @@
 
         <div class="toolkit-ai-attachment-grid">
           <article v-for="attachment in attachments" :key="attachment.id" class="toolkit-ai-attachment-card">
-            <img v-if="isImageAttachment(attachment) && attachment.dataUrl" class="toolkit-ai-attachment-preview" :src="attachment.dataUrl" :alt="t('toolkit.aiAttachmentPreviewAlt')" />
+            <img
+              v-if="isImageAttachment(attachment) && attachment.dataUrl"
+              class="toolkit-ai-attachment-preview"
+              :src="attachment.dataUrl"
+              :alt="t('toolkit.aiAttachmentPreviewAlt')" />
             <div v-else class="toolkit-ai-attachment-icon">
               <span class="material-symbols-outlined" aria-hidden="true">{{ attachmentIcon(attachment) }}</span>
             </div>
@@ -66,35 +107,56 @@
               <strong>{{ attachment.name }}</strong>
               <span>{{ attachmentKindLabel(attachment) }} · {{ formatFileSize(attachment.size) }}</span>
             </div>
-            <button type="button" class="toolkit-ai-attachment-remove" :aria-label="t('toolkit.aiAttachmentRemove')" @click="removeAttachment(attachment.id)">
+            <button
+              type="button"
+              class="toolkit-ai-attachment-remove"
+              :aria-label="t('toolkit.aiAttachmentRemove')"
+              @click="removeAttachment(attachment.id)">
               <span class="material-symbols-outlined" aria-hidden="true">close</span>
             </button>
           </article>
         </div>
       </div>
 
-      <div class="toolkit-ai-upload-row">
-        <label class="toolkit-ai-upload-button" :class="{ 'is-disabled': !isTauriRuntime }">
-          <input class="toolkit-ai-upload-input" type="file" multiple :disabled="!isTauriRuntime" accept="image/*,.txt,.md,.markdown,.json,.csv,.log,.yaml,.yml,.toml,.ini,.xml" @change="handleFileChange" />
-          <span class="material-symbols-outlined" aria-hidden="true">attach_file</span>
-          <span>{{ t('toolkit.aiUpload') }}</span>
-        </label>
-        <div class="toolkit-ai-meta-pills">
-          <span class="toolkit-ai-meta-pill">{{ t('toolkit.aiDraftCount', { count: draft.length }) }}</span>
-          <span class="toolkit-ai-meta-pill">{{ t('toolkit.aiContextWindow', { count: contextWindowSize }) }}</span>
-        </div>
-      </div>
-
       <p class="toolkit-ai-hint">{{ isDropActive ? t('toolkit.aiDropHint') : t('toolkit.aiShortcutHint') }}</p>
 
-      <textarea ref="composerRef" v-model="draft" class="toolkit-ai-composer" :placeholder="t('toolkit.aiInputPlaceholder')" :disabled="sending || !isTauriRuntime" @keydown="handleComposerKeydown"></textarea>
+      <textarea
+        ref="composerRef"
+        v-model="draft"
+        class="toolkit-ai-composer"
+        :placeholder="t('toolkit.aiInputPlaceholder')"
+        :disabled="sending || !isTauriRuntime"
+        @keydown="handleComposerKeydown"></textarea>
 
       <div class="toolkit-ai-toolbar">
         <div class="toolkit-ai-toolbar-actions">
-          <UiButton native-type="button" preset="overlay-chip-soft" size="sm" :disabled="sending" @click="clearConversation">
+          <UiButton
+            native-type="button"
+            preset="overlay-chip-soft"
+            size="sm"
+            :disabled="sending"
+            @click="clearConversation">
             {{ t('toolkit.aiClear') }}
           </UiButton>
-          <UiButton native-type="button" preset="overlay-primary" size="sm" :disabled="sendDisabled" @click="sendMessage">
+          <label class="toolkit-ai-upload-button" :class="{ 'is-disabled': !isTauriRuntime }">
+            <input
+              class="toolkit-ai-upload-input"
+              type="file"
+              multiple
+              :disabled="!isTauriRuntime"
+              accept="image/*,.txt,.md,.markdown,.json,.csv,.log,.yaml,.yml,.toml,.ini,.xml"
+              @change="handleFileChange" />
+            <span class="material-symbols-outlined" aria-hidden="true">attach_file</span>
+            <span>{{ t('toolkit.aiUpload') }}</span>
+          </label>
+          <UiButton
+            class="toolkit-ai-send-button"
+            native-type="button"
+            preset="overlay-primary"
+            size="sm"
+            :width="60"
+            :disabled="sendDisabled"
+            @click="sendMessage">
             {{ sending ? t('toolkit.aiSending') : t('toolkit.aiSend') }}
           </UiButton>
         </div>
@@ -135,7 +197,19 @@ type UiMessage = {
 
 const MAX_IMAGE_FILE_SIZE = 8 * 1024 * 1024;
 const MAX_COMPOSER_HEIGHT = 260;
-const TEXT_FILE_EXTENSIONS = new Set(['txt', 'md', 'markdown', 'json', 'csv', 'log', 'yaml', 'yml', 'toml', 'ini', 'xml']);
+const TEXT_FILE_EXTENSIONS = new Set([
+  'txt',
+  'md',
+  'markdown',
+  'json',
+  'csv',
+  'log',
+  'yaml',
+  'yml',
+  'toml',
+  'ini',
+  'xml'
+]);
 
 const { t, locale } = useI18n();
 const { showToast } = useToastService(props.toastChannel);
@@ -148,6 +222,7 @@ const draft = ref('');
 const attachments = ref<UiAttachment[]>([]);
 const messages = ref<UiMessage[]>([createWelcomeMessage()]);
 const overviewOpen = ref(true);
+const chatOpen = ref(true);
 const chatFeedRef = ref<HTMLElement | null>(null);
 const composerRef = ref<HTMLTextAreaElement | null>(null);
 
@@ -165,11 +240,20 @@ const workspaceStateTone = computed(() => {
   return 'offline';
 });
 
-const capabilityLabel = computed(() => (localStatus.value?.visionEnabled ? t('toolkit.aiModeVision') : t('toolkit.aiModeText')));
+const capabilityLabel = computed(() =>
+  localStatus.value?.visionEnabled ? t('toolkit.aiModeVision') : t('toolkit.aiModeText')
+);
 const conversationTurns = computed(() => messages.value.filter(message => message.role === 'user').length);
-const contextWindowSize = computed(() => messages.value.filter(message => (message.role === 'user' || message.role === 'assistant') && !message.pending).slice(-10).length);
+const contextWindowSize = computed(
+  () =>
+    messages.value
+      .filter(message => (message.role === 'user' || message.role === 'assistant') && !message.pending)
+      .slice(-10).length
+);
 const hasConversation = computed(() => conversationTurns.value > 0);
-const sendDisabled = computed(() => sending.value || !isTauriRuntime || (!draft.value.trim() && attachments.value.length === 0));
+const sendDisabled = computed(
+  () => sending.value || !isTauriRuntime || (!draft.value.trim() && attachments.value.length === 0)
+);
 
 onMounted(() => {
   autoResizeComposer();
@@ -326,7 +410,11 @@ async function sendMessage() {
   sending.value = true;
 
   try {
-    const response = await api.sendLocalAiMessage({ prompt: effectivePrompt, history: requestHistory, attachments: requestAttachments });
+    const response = await api.sendLocalAiMessage({
+      prompt: effectivePrompt,
+      history: requestHistory,
+      attachments: requestAttachments
+    });
     localStatus.value = response.status;
     replacePendingMessage(pendingMessage.id, {
       id: pendingMessage.id,
@@ -391,6 +479,10 @@ function handleComposerKeydown(event: KeyboardEvent) {
   }
 }
 
+function toggleChatOpen() {
+  chatOpen.value = !chatOpen.value;
+}
+
 function handleDragEnter() {
   if (isTauriRuntime) isDropActive.value = true;
 }
@@ -423,18 +515,24 @@ async function appendAttachments(files: File[]) {
 }
 
 function mergeUniqueAttachments(existing: UiAttachment[], incoming: UiAttachment[]) {
-  const seen = new Set(existing.map(attachment => `${attachment.name}:${attachment.size}:${attachment.mediaType}`));
-  return [...existing, ...incoming.filter(attachment => {
-    const key = `${attachment.name}:${attachment.size}:${attachment.mediaType}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  })];
+  const seen = new Set(
+    existing.map(attachment => `${attachment.name}:${attachment.size}:${attachment.mediaType}`)
+  );
+  return [
+    ...existing,
+    ...incoming.filter(attachment => {
+      const key = `${attachment.name}:${attachment.size}:${attachment.mediaType}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+  ];
 }
 
 async function copyMessage(text: string) {
   try {
-    if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+    if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText)
+      throw new Error('clipboard unavailable');
     await navigator.clipboard.writeText(text);
     showToast(t('toolkit.aiCopySuccess'), { variant: 'success' });
   } catch {
@@ -445,14 +543,35 @@ async function copyMessage(text: string) {
 async function buildAttachment(file: File): Promise<UiAttachment> {
   if (file.type.startsWith('image/')) {
     if (file.size > MAX_IMAGE_FILE_SIZE) throw new Error(t('toolkit.aiFileTooLarge'));
-    return { id: makeId(), name: file.name, mediaType: file.type || 'image/*', size: file.size, textContent: null, dataUrl: await readFileAsDataUrl(file) };
+    return {
+      id: makeId(),
+      name: file.name,
+      mediaType: file.type || 'image/*',
+      size: file.size,
+      textContent: null,
+      dataUrl: await readFileAsDataUrl(file)
+    };
   }
 
   if (isTextLikeFile(file)) {
-    return { id: makeId(), name: file.name, mediaType: file.type || 'text/plain', size: file.size, textContent: await readFileAsText(file), dataUrl: null };
+    return {
+      id: makeId(),
+      name: file.name,
+      mediaType: file.type || 'text/plain',
+      size: file.size,
+      textContent: await readFileAsText(file),
+      dataUrl: null
+    };
   }
 
-  return { id: makeId(), name: file.name, mediaType: file.type || 'application/octet-stream', size: file.size, textContent: null, dataUrl: null };
+  return {
+    id: makeId(),
+    name: file.name,
+    mediaType: file.type || 'application/octet-stream',
+    size: file.size,
+    textContent: null,
+    dataUrl: null
+  };
 }
 
 function isTextLikeFile(file: File) {
@@ -461,11 +580,24 @@ function isTextLikeFile(file: File) {
 }
 
 function toRequestAttachment(attachment: UiAttachment): LocalAiAttachment {
-  return { name: attachment.name, mediaType: attachment.mediaType, size: attachment.size, textContent: attachment.textContent, dataUrl: attachment.dataUrl };
+  return {
+    name: attachment.name,
+    mediaType: attachment.mediaType,
+    size: attachment.size,
+    textContent: attachment.textContent,
+    dataUrl: attachment.dataUrl
+  };
 }
 
 function copyAttachment(attachment: UiAttachment): UiAttachment {
-  return { id: attachment.id, name: attachment.name, mediaType: attachment.mediaType, size: attachment.size, textContent: attachment.textContent, dataUrl: attachment.dataUrl };
+  return {
+    id: attachment.id,
+    name: attachment.name,
+    mediaType: attachment.mediaType,
+    size: attachment.size,
+    textContent: attachment.textContent,
+    dataUrl: attachment.dataUrl
+  };
 }
 
 function resolveUsageTokens(usage: LocalAiTokenUsage | null | undefined) {
@@ -479,7 +611,16 @@ function normalizeErrorMessage(error: unknown) {
 }
 
 function createWelcomeMessage(): UiMessage {
-  return { id: makeId(), role: 'assistant', text: t('toolkit.aiWelcome'), attachments: [], pending: false, error: false, usageTokens: null, createdAt: Date.now() };
+  return {
+    id: makeId(),
+    role: 'assistant',
+    text: t('toolkit.aiWelcome'),
+    attachments: [],
+    pending: false,
+    error: false,
+    usageTokens: null,
+    createdAt: Date.now()
+  };
 }
 
 function makeId() {
@@ -513,7 +654,6 @@ function readFileAsDataUrl(file: File) {
   gap: 8px;
 }
 
-.toolkit-ai-upload-row,
 .toolkit-ai-toolbar,
 .toolkit-ai-attachment-head {
   display: flex;
@@ -548,7 +688,7 @@ function readFileAsDataUrl(file: File) {
   font-size: 11px;
 }
 
-.toolkit-ai-meta-pill,
+.toolkit-ai-header-stat,
 .toolkit-ai-file-chip {
   display: inline-flex;
   align-items: center;
@@ -559,6 +699,15 @@ function readFileAsDataUrl(file: File) {
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.04);
   font-size: 11px;
+}
+
+.toolkit-ai-header-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  cursor: default;
+  user-select: none;
 }
 
 .toolkit-ai-attachment-grid {
@@ -575,13 +724,15 @@ function readFileAsDataUrl(file: File) {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.toolkit-ai-meta-pills,
 .toolkit-ai-bubble-files,
 .toolkit-ai-toolbar-actions,
 .toolkit-ai-toolbar {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
+}
+
+.toolkit-ai-bubble-files {
+  flex-wrap: wrap;
 }
 
 .toolkit-ai-chat-feed {
@@ -594,12 +745,18 @@ function readFileAsDataUrl(file: File) {
 }
 
 .toolkit-ai-toolbar {
+  align-items: center;
   justify-content: flex-end;
+  flex-wrap: nowrap;
 }
 
 .toolkit-ai-toolbar-actions {
-  margin-left: auto;
-  justify-content: flex-end;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: nowrap;
+  width: auto;
 }
 
 .toolkit-ai-toolbar-actions :deep(.ui-button) {
@@ -693,7 +850,9 @@ function readFileAsDataUrl(file: File) {
 
 .toolkit-ai-composer-card {
   padding: 12px;
-  transition: border-color var(--motion-duration-fast) var(--motion-ease-standard), background var(--motion-duration-fast) var(--motion-ease-standard);
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    background var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .toolkit-ai-composer-card.is-drop-active {
@@ -748,19 +907,21 @@ function readFileAsDataUrl(file: File) {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 30px;
-  padding: 0 10px;
-  border-radius: 10px;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 8px;
   border: 1px dashed rgba(255, 255, 255, 0.24);
   background: rgba(255, 255, 255, 0.03);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1;
   white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .toolkit-ai-upload-button .material-symbols-outlined {
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .toolkit-ai-upload-button.is-disabled {
@@ -808,12 +969,13 @@ function readFileAsDataUrl(file: File) {
     padding: 10px;
   }
 
-  .toolkit-ai-upload-row {
-    align-items: flex-start;
+  .toolkit-ai-header-stats {
+    justify-content: flex-end;
   }
 
   .toolkit-ai-toolbar-actions {
-    width: 100%;
+    width: auto;
+    justify-content: flex-start;
   }
 
   .toolkit-ai-attachment-grid {

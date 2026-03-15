@@ -11,6 +11,7 @@ export interface ButtonProps {
   size?: ButtonSize;
   variant?: ButtonVariant;
   preset?: ButtonPreset;
+  width?: number | string;
   nativeType?: 'button' | 'submit' | 'reset';
   disabled?: boolean;
   loading?: boolean;

@@ -11,6 +11,7 @@
         'ui-button--active': props.active
       }
     ]"
+    :style="buttonStyle"
     :type="props.nativeType"
     :disabled="isDisabled">
     <span v-if="props.loading" class="ui-button__spinner" aria-hidden="true"></span>
@@ -22,6 +23,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import type { CSSProperties } from 'vue';
 import type { ButtonProps } from './types';
 import { resolveButtonPresetClass } from './presets';
 
@@ -38,8 +40,13 @@ const props = withDefaults(defineProps<ButtonProps>(), {
 
 const isDisabled = computed(() => props.disabled || props.loading);
 const presetClass = computed(() => resolveButtonPresetClass(props.preset));
+const buttonStyle = computed<CSSProperties | undefined>(() => {
+  if (props.width === undefined || props.width === null || props.width === '') return undefined;
+  return {
+    width: typeof props.width === 'number' ? `${props.width}px` : props.width
+  } as CSSProperties;
+});
 </script>
 
 <style scoped src="./button.tokens.css"></style>
 <style scoped src="./button.presets.css"></style>
-
