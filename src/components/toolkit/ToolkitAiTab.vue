@@ -15,25 +15,7 @@
     @content-change="emit('contentChange')" />
 
   <UiCollapsiblePanel class="toolkit-card" :title="t('toolkit.aiChatTitle')" :collapsible="false" title-class="toolkit-section-title">
-    <div class="toolkit-ai-quick-row">
-      <span class="toolkit-ai-quick-label">{{ t('toolkit.aiQuickPrompts') }}</span>
-      <div class="toolkit-ai-quick-actions">
-        <UiButton v-for="action in quickPrompts" :key="action.id" native-type="button" preset="overlay-chip-soft" @click="applyQuickPrompt(action.prompt)">
-          <span class="material-symbols-outlined" aria-hidden="true">{{ action.icon }}</span>
-          <span>{{ action.label }}</span>
-        </UiButton>
-      </div>
-    </div>
-
     <div ref="chatFeedRef" class="toolkit-ai-chat-feed">
-      <section v-if="showStarterPanel" class="toolkit-ai-starter">
-        <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
-        <div>
-          <strong>{{ t('toolkit.aiStarterTitle') }}</strong>
-          <p>{{ t('toolkit.aiStarterHint') }}</p>
-        </div>
-      </section>
-
       <article v-for="message in messages" :key="message.id" class="toolkit-ai-message" :class="[`toolkit-ai-message--${message.role}`, { 'is-pending': message.pending, 'is-error': message.error }]">
         <div class="toolkit-ai-marker" aria-hidden="true">
           <span class="material-symbols-outlined">{{ roleIcon(message.role) }}</span>
@@ -98,7 +80,6 @@
         <div class="toolkit-ai-meta-pills">
           <span class="toolkit-ai-meta-pill">{{ t('toolkit.aiDraftCount', { count: draft.length }) }}</span>
           <span class="toolkit-ai-meta-pill">{{ t('toolkit.aiContextWindow', { count: contextWindowSize }) }}</span>
-          <span class="toolkit-ai-meta-pill">{{ workspaceStateLabel }}</span>
         </div>
       </div>
 
@@ -107,7 +88,6 @@
       <textarea ref="composerRef" v-model="draft" class="toolkit-ai-composer" :placeholder="t('toolkit.aiInputPlaceholder')" :disabled="sending || !isTauriRuntime" @keydown="handleComposerKeydown"></textarea>
 
       <div class="toolkit-ai-toolbar">
-        <span class="toolkit-ai-hint">{{ workspaceStateLabel }}</span>
         <div class="toolkit-ai-toolbar-actions">
           <UiButton native-type="button" preset="overlay-action-primary" :disabled="sending" @click="clearConversation">
             {{ t('toolkit.aiClear') }}
@@ -169,13 +149,6 @@ const overviewOpen = ref(true);
 const chatFeedRef = ref<HTMLElement | null>(null);
 const composerRef = ref<HTMLTextAreaElement | null>(null);
 
-const quickPrompts = computed(() => [
-  { id: 'summarize', icon: 'summarize', label: t('toolkit.aiPromptSummarize'), prompt: t('toolkit.aiPromptSummarize') },
-  { id: 'explain', icon: 'school', label: t('toolkit.aiPromptExplain'), prompt: t('toolkit.aiPromptExplain') },
-  { id: 'rewrite', icon: 'stylus_note', label: t('toolkit.aiPromptRewrite'), prompt: t('toolkit.aiPromptRewrite') },
-  { id: 'inspect', icon: 'imagesearch_roller', label: t('toolkit.aiPromptInspectImage'), prompt: t('toolkit.aiPromptInspectImage') }
-]);
-
 const workspaceStateLabel = computed(() => {
   if (!isTauriRuntime) return t('toolkit.aiStatusUnavailable');
   if (statusBusy.value || localStatus.value?.running) return t('toolkit.aiStatusStarting');
@@ -194,7 +167,6 @@ const capabilityLabel = computed(() => (localStatus.value?.visionEnabled ? t('to
 const conversationTurns = computed(() => messages.value.filter(message => message.role === 'user').length);
 const contextWindowSize = computed(() => messages.value.filter(message => (message.role === 'user' || message.role === 'assistant') && !message.pending).slice(-10).length);
 const hasConversation = computed(() => conversationTurns.value > 0);
-const showStarterPanel = computed(() => !hasConversation.value && attachments.value.length === 0);
 const sendDisabled = computed(() => sending.value || !isTauriRuntime || (!draft.value.trim() && attachments.value.length === 0));
 
 onMounted(() => {
@@ -271,11 +243,6 @@ function autoResizeComposer() {
 
 function focusComposer() {
   composerRef.value?.focus();
-}
-
-function applyQuickPrompt(prompt: string) {
-  draft.value = draft.value.trim() ? `${draft.value.trim()}\n${prompt}` : prompt;
-  focusComposer();
 }
 
 async function refreshStatus() {
@@ -560,7 +527,6 @@ function readFileAsDataUrl(file: File) {
   min-width: 0;
 }
 
-.toolkit-ai-quick-label,
 .toolkit-ai-bubble-meta {
   font-size: 11px;
   letter-spacing: 0.08em;
@@ -568,7 +534,6 @@ function readFileAsDataUrl(file: File) {
 }
 
 .toolkit-ai-hint,
-.toolkit-ai-starter p,
 .toolkit-ai-bubble-text,
 .toolkit-ai-attachment-copy span {
   margin: 0;
@@ -576,7 +541,6 @@ function readFileAsDataUrl(file: File) {
 }
 
 .toolkit-ai-hint,
-.toolkit-ai-starter p,
 .toolkit-ai-attachment-copy span {
   color: rgba(255, 255, 255, 0.62);
   font-size: 12px;
@@ -602,25 +566,19 @@ function readFileAsDataUrl(file: File) {
 
 .toolkit-ai-bubble,
 .toolkit-ai-composer-card,
-.toolkit-ai-starter,
 .toolkit-ai-attachment-card {
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.04);
 }
 
-.toolkit-ai-quick-row,
 .toolkit-ai-meta-pills,
 .toolkit-ai-bubble-files,
 .toolkit-ai-toolbar-actions,
-.toolkit-ai-quick-actions {
+.toolkit-ai-toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-.toolkit-ai-quick-actions :deep(.ui-button__content) {
-  gap: 6px;
 }
 
 .toolkit-ai-chat-feed {
@@ -632,16 +590,10 @@ function readFileAsDataUrl(file: File) {
   padding-right: 2px;
 }
 
-.toolkit-ai-starter {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 12px;
-  padding: 14px;
-  background: rgba(3, 19, 28, 0.4);
-  border-style: dashed;
+.toolkit-ai-toolbar {
+  justify-content: flex-end;
 }
 
-.toolkit-ai-starter .material-symbols-outlined,
 .toolkit-ai-marker .material-symbols-outlined {
   display: block;
 }
