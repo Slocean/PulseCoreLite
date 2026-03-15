@@ -1,52 +1,20 @@
 <template>
   <UiToast :channel="toastChannel" />
 
-  <section class="toolkit-card toolkit-ai-overview-card">
-    <div class="toolkit-ai-overview">
-      <div class="toolkit-ai-overview-head">
-        <div class="toolkit-ai-state-pill" :class="`is-${workspaceStateTone}`">
-          <span class="toolkit-ai-state-dot" aria-hidden="true"></span>
-          <span>{{ workspaceStateLabel }}</span>
-        </div>
-      </div>
-
-      <div class="toolkit-ai-status-grid">
-        <div class="toolkit-ai-status-item">
-          <span class="toolkit-ai-status-label">{{ t('toolkit.aiStatusModel') }}</span>
-          <strong class="toolkit-ai-status-value">{{ localStatus?.modelName || '0.8B' }}</strong>
-        </div>
-        <div class="toolkit-ai-status-item">
-          <span class="toolkit-ai-status-label">{{ t('toolkit.aiStatusEndpoint') }}</span>
-          <strong class="toolkit-ai-status-value">{{ localStatus?.serverUrl || '-' }}</strong>
-        </div>
-        <div class="toolkit-ai-status-item">
-          <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricMode') }}</span>
-          <strong class="toolkit-ai-status-value">{{ capabilityLabel }}</strong>
-        </div>
-        <div class="toolkit-ai-status-item">
-          <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricConversation') }}</span>
-          <strong class="toolkit-ai-status-value">{{ conversationTurns }}</strong>
-        </div>
-        <div class="toolkit-ai-status-item">
-          <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricContext') }}</span>
-          <strong class="toolkit-ai-status-value">{{ contextWindowSize }}</strong>
-        </div>
-        <div class="toolkit-ai-status-item">
-          <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricPendingFiles') }}</span>
-          <strong class="toolkit-ai-status-value">{{ attachments.length }}</strong>
-        </div>
-      </div>
-
-      <div class="toolkit-ai-actions">
-        <UiButton native-type="button" preset="overlay-primary" :disabled="statusBusy || !isTauriRuntime" @click="refreshStatus">
-          {{ statusBusy ? t('toolkit.aiEnsurePending') : t('toolkit.aiEnsure') }}
-        </UiButton>
-        <UiButton native-type="button" preset="overlay-chip-soft" :disabled="sending || (!hasConversation && attachments.length === 0 && !draft.trim())" @click="clearConversation">
-          {{ t('toolkit.aiClear') }}
-        </UiButton>
-      </div>
-    </div>
-  </section>
+  <ToolkitAiOverviewPanel
+    v-model="overviewOpen"
+    :local-status="localStatus"
+    :workspace-state-tone="workspaceStateTone"
+    :workspace-state-label="workspaceStateLabel"
+    :context-window-size="contextWindowSize"
+    :conversation-turns="conversationTurns"
+    :capability-label="capabilityLabel"
+    :status-busy="statusBusy"
+    :is-tauri-runtime="isTauriRuntime"
+    :clear-disabled="clearDisabled"
+    @refresh-status="refreshStatus"
+    @clear-conversation="clearConversation"
+    @content-change="emit('contentChange')" />
 
   <UiCollapsiblePanel class="toolkit-card" :title="t('toolkit.aiChatTitle')" :collapsible="false" title-class="toolkit-section-title">
     <div class="toolkit-ai-quick-row">
@@ -165,6 +133,7 @@ import UiToast from '@/components/ui/Toast';
 import { useToastService } from '@/composables/useToastService';
 import { api, inTauri } from '@/services/tauri';
 import type { LocalAiAttachment, LocalAiChatMessage, LocalAiStatus, LocalAiTokenUsage } from '@/types';
+import ToolkitAiOverviewPanel from './ToolkitAiOverviewPanel.vue';
 
 const props = withDefaults(defineProps<{ toastChannel?: string }>(), {
   toastChannel: 'toolkit-ai'
@@ -198,6 +167,7 @@ const localStatus = ref<LocalAiStatus | null>(null);
 const draft = ref('');
 const attachments = ref<UiAttachment[]>([]);
 const messages = ref<UiMessage[]>([createWelcomeMessage()]);
+const overviewOpen = ref(true);
 const chatFeedRef = ref<HTMLElement | null>(null);
 const composerRef = ref<HTMLTextAreaElement | null>(null);
 
@@ -227,6 +197,7 @@ const conversationTurns = computed(() => messages.value.filter(message => messag
 const contextWindowSize = computed(() => messages.value.filter(message => (message.role === 'user' || message.role === 'assistant') && !message.pending).slice(-10).length);
 const hasConversation = computed(() => conversationTurns.value > 0);
 const showStarterPanel = computed(() => !hasConversation.value && attachments.value.length === 0);
+const clearDisabled = computed(() => sending.value || (!hasConversation.value && attachments.value.length === 0 && !draft.value.trim()));
 const sendDisabled = computed(() => sending.value || !isTauriRuntime || (!draft.value.trim() && attachments.value.length === 0));
 
 onMounted(() => {
@@ -570,15 +541,12 @@ function readFileAsDataUrl(file: File) {
 </script>
 
 <style scoped>
-.toolkit-ai-overview,
 .toolkit-ai-composer-card,
 .toolkit-ai-attachment-stage {
   display: grid;
   gap: 8px;
 }
 
-.toolkit-ai-overview-head,
-.toolkit-ai-actions,
 .toolkit-ai-upload-row,
 .toolkit-ai-toolbar,
 .toolkit-ai-attachment-head {
@@ -596,7 +564,6 @@ function readFileAsDataUrl(file: File) {
 }
 
 .toolkit-ai-quick-label,
-.toolkit-ai-status-label,
 .toolkit-ai-bubble-meta {
   font-size: 11px;
   letter-spacing: 0.08em;
@@ -618,7 +585,6 @@ function readFileAsDataUrl(file: File) {
   font-size: 12px;
 }
 
-.toolkit-ai-state-pill,
 .toolkit-ai-meta-pill,
 .toolkit-ai-file-chip {
   display: inline-flex;
@@ -631,43 +597,12 @@ function readFileAsDataUrl(file: File) {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.toolkit-ai-state-pill.is-ready {
-  border-color: rgba(52, 211, 153, 0.3);
-  color: rgba(195, 255, 219, 0.96);
-  background: rgba(6, 95, 70, 0.24);
-}
-
-.toolkit-ai-state-pill.is-busy {
-  border-color: rgba(96, 165, 250, 0.3);
-  color: rgba(191, 219, 254, 0.96);
-  background: rgba(30, 64, 175, 0.22);
-}
-
-.toolkit-ai-state-pill.is-offline {
-  border-color: rgba(251, 191, 36, 0.28);
-  color: rgba(254, 240, 138, 0.92);
-  background: rgba(120, 53, 15, 0.2);
-}
-
-.toolkit-ai-state-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: currentColor;
-}
-
-.toolkit-ai-overview-card {
-  padding-block: 10px;
-}
-
-.toolkit-ai-status-grid,
 .toolkit-ai-attachment-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  grid-template-columns: minmax(120px, 0.9fr) minmax(160px, 1.25fr) minmax(140px, 1fr);
   gap: 8px;
 }
 
-.toolkit-ai-status-item,
 .toolkit-ai-bubble,
 .toolkit-ai-composer-card,
 .toolkit-ai-starter,
@@ -675,28 +610,6 @@ function readFileAsDataUrl(file: File) {
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.04);
-}
-
-.toolkit-ai-status-item {
-  display: grid;
-  gap: 2px;
-  padding: 8px 10px;
-  min-width: 0;
-}
-
-.toolkit-ai-status-value {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.95);
-  word-break: break-word;
-  line-height: 1.35;
-}
-
-.toolkit-ai-status-label {
-  color: rgba(255, 255, 255, 0.54);
-}
-
-.toolkit-ai-overview-head {
-  justify-content: flex-end;
 }
 
 .toolkit-ai-quick-row,
@@ -899,10 +812,6 @@ function readFileAsDataUrl(file: File) {
 }
 
 @media (max-width: 760px) {
-  .toolkit-ai-status-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .toolkit-ai-message {
     grid-template-columns: 1fr;
   }

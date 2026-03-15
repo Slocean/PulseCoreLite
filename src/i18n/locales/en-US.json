@@ -201,6 +201,7 @@
     "aiMetricMode": "Mode",
     "aiModeVision": "Vision + Text",
     "aiModeText": "Text Only",
+    "aiModelParametersTitle": "Model Parameters",
     "aiChatTitle": "Local Chat",
     "aiQuickPrompts": "Quick Prompts",
     "aiPromptSummarize": "Summarize this content and extract the key points.",

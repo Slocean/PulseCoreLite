@@ -199,6 +199,7 @@
     "aiMetricMode": "模式",
     "aiModeVision": "图文理解",
     "aiModeText": "纯文本",
+    "aiModelParametersTitle": "模型参数",
     "aiChatTitle": "本地对话",
     "aiQuickPrompts": "快捷提问",
     "aiPromptSummarize": "请总结这段内容并提炼重点。",
