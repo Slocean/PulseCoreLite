@@ -91,10 +91,10 @@
 
       <div class="toolkit-ai-toolbar">
         <div class="toolkit-ai-toolbar-actions">
-          <UiButton native-type="button" preset="overlay-action-primary" :disabled="sending" @click="clearConversation">
+          <UiButton native-type="button" preset="overlay-chip-soft" size="sm" :disabled="sending" @click="clearConversation">
             {{ t('toolkit.aiClear') }}
           </UiButton>
-          <UiButton native-type="button" preset="overlay-primary" :disabled="sendDisabled" @click="sendMessage">
+          <UiButton native-type="button" preset="overlay-primary" size="sm" :disabled="sendDisabled" @click="sendMessage">
             {{ sending ? t('toolkit.aiSending') : t('toolkit.aiSend') }}
           </UiButton>
         </div>
@@ -545,19 +545,20 @@ function readFileAsDataUrl(file: File) {
 .toolkit-ai-hint,
 .toolkit-ai-attachment-copy span {
   color: rgba(255, 255, 255, 0.62);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .toolkit-ai-meta-pill,
 .toolkit-ai-file-chip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 30px;
-  padding: 0 10px;
+  gap: 6px;
+  min-height: 24px;
+  padding: 0 8px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.04);
+  font-size: 11px;
 }
 
 .toolkit-ai-attachment-grid {
@@ -594,6 +595,20 @@ function readFileAsDataUrl(file: File) {
 
 .toolkit-ai-toolbar {
   justify-content: flex-end;
+}
+
+.toolkit-ai-toolbar-actions {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+.toolkit-ai-toolbar-actions :deep(.ui-button) {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.toolkit-ai-toolbar-actions :deep(.ui-button__content) {
+  white-space: nowrap;
 }
 
 .toolkit-ai-marker .material-symbols-outlined {
@@ -677,7 +692,7 @@ function readFileAsDataUrl(file: File) {
 }
 
 .toolkit-ai-composer-card {
-  padding: 14px;
+  padding: 12px;
   transition: border-color var(--motion-duration-fast) var(--motion-ease-standard), background var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
@@ -732,13 +747,20 @@ function readFileAsDataUrl(file: File) {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 0 14px;
-  border-radius: 12px;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 10px;
   border: 1px dashed rgba(255, 255, 255, 0.24);
   background: rgba(255, 255, 255, 0.03);
   cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.toolkit-ai-upload-button .material-symbols-outlined {
+  font-size: 15px;
 }
 
 .toolkit-ai-upload-button.is-disabled {
@@ -754,16 +776,21 @@ function readFileAsDataUrl(file: File) {
 
 .toolkit-ai-composer {
   width: 100%;
-  min-height: 132px;
+  min-height: 104px;
   max-height: 260px;
   resize: none;
-  padding: 14px 16px;
-  border-radius: 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(0, 0, 0, 0.2);
   color: rgba(255, 255, 255, 0.95);
-  font: inherit;
-  line-height: 1.65;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.toolkit-ai-composer::placeholder {
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .toolkit-ai-composer:focus {
@@ -775,6 +802,18 @@ function readFileAsDataUrl(file: File) {
 @media (max-width: 760px) {
   .toolkit-ai-bubble {
     padding: 12px;
+  }
+
+  .toolkit-ai-composer-card {
+    padding: 10px;
+  }
+
+  .toolkit-ai-upload-row {
+    align-items: flex-start;
+  }
+
+  .toolkit-ai-toolbar-actions {
+    width: 100%;
   }
 
   .toolkit-ai-attachment-grid {
