@@ -17,15 +17,17 @@
   <UiCollapsiblePanel class="toolkit-card" :title="t('toolkit.aiChatTitle')" :collapsible="false" title-class="toolkit-section-title">
     <div ref="chatFeedRef" class="toolkit-ai-chat-feed">
       <article v-for="message in messages" :key="message.id" class="toolkit-ai-message" :class="[`toolkit-ai-message--${message.role}`, { 'is-pending': message.pending, 'is-error': message.error }]">
-        <div class="toolkit-ai-marker" aria-hidden="true">
-          <span class="material-symbols-outlined">{{ roleIcon(message.role) }}</span>
-        </div>
         <div class="toolkit-ai-bubble">
           <header class="toolkit-ai-bubble-head">
-            <div class="toolkit-ai-bubble-meta">
-              <span>{{ roleLabel(message.role) }}</span>
-              <time>{{ formatTimestamp(message.createdAt) }}</time>
-              <span v-if="message.usageTokens" class="toolkit-ai-token-meta">{{ t('toolkit.aiTokens', { count: message.usageTokens }) }}</span>
+            <div class="toolkit-ai-bubble-head-main">
+              <div class="toolkit-ai-marker" aria-hidden="true">
+                <span class="material-symbols-outlined">{{ roleIcon(message.role) }}</span>
+              </div>
+              <div class="toolkit-ai-bubble-meta">
+                <span>{{ roleLabel(message.role) }}</span>
+                <time>{{ formatTimestamp(message.createdAt) }}</time>
+                <span v-if="message.usageTokens" class="toolkit-ai-token-meta">{{ t('toolkit.aiTokens', { count: message.usageTokens }) }}</span>
+              </div>
             </div>
             <UiButton v-if="message.role === 'assistant' && !message.pending && message.text" native-type="button" preset="overlay-chip-soft" @click="copyMessage(message.text)">
               <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
@@ -528,7 +530,7 @@ function readFileAsDataUrl(file: File) {
 }
 
 .toolkit-ai-bubble-meta {
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -596,20 +598,20 @@ function readFileAsDataUrl(file: File) {
 
 .toolkit-ai-marker .material-symbols-outlined {
   display: block;
+  font-size: 16px;
 }
 
 .toolkit-ai-message {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 10px;
+  display: block;
 }
 
 .toolkit-ai-marker {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
-  border-radius: 12px;
+  flex: 0 0 auto;
+  border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.04);
 }
@@ -650,6 +652,14 @@ function readFileAsDataUrl(file: File) {
   flex-wrap: wrap;
 }
 
+.toolkit-ai-bubble-head-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
 .toolkit-ai-bubble-head {
   justify-content: space-between;
 }
@@ -660,6 +670,8 @@ function readFileAsDataUrl(file: File) {
 
 .toolkit-ai-bubble-text {
   color: rgba(255, 255, 255, 0.94);
+  font-size: 13px;
+  line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -761,8 +773,8 @@ function readFileAsDataUrl(file: File) {
 }
 
 @media (max-width: 760px) {
-  .toolkit-ai-message {
-    grid-template-columns: 1fr;
+  .toolkit-ai-bubble {
+    padding: 12px;
   }
 
   .toolkit-ai-attachment-grid {
