@@ -9,22 +9,37 @@
     @toggle="emit('contentChange')">
     <div class="toolkit-ai-overview">
       <div class="toolkit-ai-status-grid">
-        <div class="toolkit-ai-status-item">
-          <div class="toolkit-ai-status-head">
+        <div class="toolkit-ai-status-item toolkit-ai-status-item--model">
+          <div class="toolkit-ai-status-head toolkit-ai-status-head--model">
             <span class="toolkit-ai-status-label">{{ t('toolkit.aiStatusModel') }}</span>
-            <div class="toolkit-ai-state-pill toolkit-ai-state-pill--compact" :class="`is-${workspaceStateTone}`">
-              <span class="toolkit-ai-state-dot" aria-hidden="true"></span>
-              <span>{{ workspaceStateLabel }}</span>
+            <div class="toolkit-ai-status-controls">
+              <UiButton native-type="button" preset="overlay-chip-soft" :disabled="statusBusy || !isTauriRuntime || !localStatus?.running" @click="emit('stop-local-ai')">
+                停止
+              </UiButton>
+              <UiButton native-type="button" preset="overlay-chip-soft" :disabled="statusBusy || !isTauriRuntime" @click="emit('refresh-status')">
+                刷新状态
+              </UiButton>
+              <div class="toolkit-ai-state-pill toolkit-ai-state-pill--compact" :class="`is-${workspaceStateTone}`">
+                <span class="toolkit-ai-state-dot" aria-hidden="true"></span>
+                <span>{{ workspaceStateLabel }}</span>
+              </div>
             </div>
           </div>
           <strong class="toolkit-ai-status-value">{{ localStatus?.modelName || '0.8B' }}</strong>
         </div>
         <div class="toolkit-ai-status-item">
-          <span class="toolkit-ai-status-label">{{ t('toolkit.aiStatusEndpoint') }}</span>
+          <div class="toolkit-ai-status-head">
+            <span class="toolkit-ai-status-label">{{ t('toolkit.aiStatusEndpoint') }}</span>
+          </div>
           <strong class="toolkit-ai-status-value">{{ localStatus?.serverUrl || '-' }}</strong>
         </div>
         <div class="toolkit-ai-status-item">
-          <span class="toolkit-ai-status-label">模型目录</span>
+          <div class="toolkit-ai-status-head">
+            <span class="toolkit-ai-status-label">模型目录</span>
+            <UiButton native-type="button" preset="overlay-chip-soft" :disabled="statusBusy || !isTauriRuntime" @click="emit('choose-model-dir')">
+              选择模型目录
+            </UiButton>
+          </div>
           <strong class="toolkit-ai-status-value">{{ selectedModelDir || '未选择' }}</strong>
         </div>
         <div class="toolkit-ai-status-item toolkit-ai-status-item--stacked">
@@ -44,17 +59,8 @@
       </div>
 
       <div class="toolkit-ai-actions">
-        <UiButton native-type="button" preset="overlay-chip-soft" :disabled="statusBusy || !isTauriRuntime" @click="emit('choose-model-dir')">
-          选择模型目录
-        </UiButton>
         <UiButton native-type="button" preset="overlay-primary" :disabled="statusBusy || !isTauriRuntime || !selectedModelDir" @click="emit('start-local-ai')">
           {{ statusBusy ? '正在启动...' : '手动启动' }}
-        </UiButton>
-        <UiButton native-type="button" preset="overlay-chip-soft" :disabled="statusBusy || !isTauriRuntime || !localStatus?.running" @click="emit('stop-local-ai')">
-          停止
-        </UiButton>
-        <UiButton native-type="button" preset="overlay-chip-soft" :disabled="statusBusy || !isTauriRuntime" @click="emit('refresh-status')">
-          刷新状态
         </UiButton>
       </div>
     </div>
@@ -107,7 +113,7 @@ const openModel = computed({
 .toolkit-ai-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
 }
@@ -117,6 +123,7 @@ const openModel = computed({
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.54);
+  white-space: nowrap;
 }
 
 .toolkit-ai-state-pill {
@@ -179,12 +186,51 @@ const openModel = computed({
   min-width: 0;
 }
 
+.toolkit-ai-status-item--model {
+  position: relative;
+  padding-top: 40px;
+}
+
 .toolkit-ai-status-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   min-width: 0;
+  flex-wrap: wrap;
+}
+
+.toolkit-ai-status-head--model {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  right: 10px;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.toolkit-ai-status-controls {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.toolkit-ai-status-head--model .toolkit-ai-status-controls {
+  flex: 1;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.toolkit-ai-status-controls :deep(.ui-button__content) {
+  white-space: nowrap;
+}
+
+.toolkit-ai-state-pill {
+  white-space: nowrap;
 }
 
 .toolkit-ai-status-item--stacked {
@@ -213,6 +259,10 @@ const openModel = computed({
 
   .toolkit-ai-status-item--stacked {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .toolkit-ai-status-controls {
     gap: 6px;
   }
 }
