@@ -17,6 +17,8 @@
     "core:window:allow-minimize",
     "core:window:allow-hide",
     "core:window:allow-show",
+    "dialog:default",
+    "dialog:allow-open",
     "dialog:allow-save",
     "process:default",
     "updater:default"

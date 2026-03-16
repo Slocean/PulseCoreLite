@@ -2,7 +2,10 @@ import type { LocalAiChatRequest, LocalAiChatResponse, LocalAiStatus } from '../
 import { tauriInvoke } from './core';
 
 export const aiApi = {
-  ensureLocalAiReady: () => tauriInvoke<LocalAiStatus>('ensure_local_ai_ready'),
+  getLocalAiStatus: () => tauriInvoke<LocalAiStatus>('get_local_ai_status'),
+  startLocalAiRuntime: (modelDir?: string | null) =>
+    tauriInvoke<LocalAiStatus>('start_local_ai_runtime', { modelDir: modelDir ?? null }),
+  stopLocalAiRuntime: () => tauriInvoke<LocalAiStatus>('stop_local_ai_runtime'),
   sendLocalAiMessage: (request: LocalAiChatRequest) =>
     tauriInvoke<LocalAiChatResponse>('send_local_ai_message', { request })
 };

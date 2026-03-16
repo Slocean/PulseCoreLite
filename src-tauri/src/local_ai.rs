@@ -31,6 +31,7 @@ pub struct LocalAiRuntime {
     child: Option<Child>,
     server_url: String,
     model_name: String,
+    selected_model_dir: Option<PathBuf>,
     model_path: Option<PathBuf>,
     mmproj_path: Option<PathBuf>,
     server_path: Option<PathBuf>,
@@ -43,6 +44,7 @@ impl Default for LocalAiRuntime {
             child: None,
             server_url: local_ai_server_url(),
             model_name: String::new(),
+            selected_model_dir: None,
             model_path: None,
             mmproj_path: None,
             server_path: None,
@@ -54,6 +56,7 @@ impl Default for LocalAiRuntime {
 struct LocalAiAssets {
     server_dir: PathBuf,
     server_exe: PathBuf,
+    model_dir: PathBuf,
     model_path: PathBuf,
     mmproj_path: Option<PathBuf>,
     model_name: String,
@@ -63,11 +66,35 @@ struct LocalAiAssets {
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 #[tauri::command]
-pub async fn ensure_local_ai_ready(
+pub async fn get_local_ai_status(
     app: AppHandle,
     state: State<'_, SharedState>,
 ) -> Result<LocalAiStatus, String> {
-    ensure_local_ai_ready_internal(&app, state.inner()).await
+    get_local_ai_status_internal(&app, state.inner()).await
+}
+
+#[tauri::command]
+pub async fn start_local_ai_runtime(
+    app: AppHandle,
+    state: State<'_, SharedState>,
+    model_dir: Option<String>,
+) -> Result<LocalAiStatus, String> {
+    start_local_ai_runtime_internal(&app, state.inner(), model_dir).await
+}
+
+#[tauri::command]
+pub async fn stop_local_ai_runtime(
+    _app: AppHandle,
+    state: State<'_, SharedState>,
+) -> Result<LocalAiStatus, String> {
+    let mut runtime = state.local_ai_runtime.lock().await;
+    stop_local_ai_process(&mut runtime);
+    runtime.last_error = None;
+    Ok(build_status(
+        &runtime,
+        false,
+        "Local AI server is stopped.".to_string(),
+    ))
 }
 
 #[tauri::command]
@@ -76,7 +103,7 @@ pub async fn send_local_ai_message(
     state: State<'_, SharedState>,
     request: LocalAiChatRequest,
 ) -> Result<LocalAiChatResponse, String> {
-    let status = ensure_local_ai_ready_internal(&app, state.inner()).await?;
+    let status = ensure_local_ai_available_internal(&app, state.inner()).await?;
 
     let has_image_attachment = request
         .attachments
@@ -149,17 +176,27 @@ pub async fn shutdown_local_ai_runtime(state: SharedState) {
     stop_local_ai_process(&mut runtime);
 }
 
-async fn ensure_local_ai_ready_internal(
+async fn get_local_ai_status_internal(
     app: &AppHandle,
     state: &SharedState,
 ) -> Result<LocalAiStatus, String> {
-    let assets = resolve_local_ai_assets(app)?;
+    let configured_dir = {
+        let runtime = state.local_ai_runtime.lock().await;
+        runtime.selected_model_dir.clone()
+    };
+
+    let assets = configured_dir
+        .clone()
+        .and_then(|path| resolve_local_ai_assets(app, Some(path)).ok());
     let mut runtime = state.local_ai_runtime.lock().await;
 
-    runtime.model_name = assets.model_name.clone();
-    runtime.model_path = Some(assets.model_path.clone());
-    runtime.mmproj_path = assets.mmproj_path.clone();
-    runtime.server_path = Some(assets.server_exe.clone());
+    if let Some(assets) = assets {
+        apply_runtime_assets(&mut runtime, &assets);
+    } else if configured_dir.is_some() {
+        runtime.model_name.clear();
+        runtime.model_path = None;
+        runtime.mmproj_path = None;
+    }
     runtime.server_url = local_ai_server_url();
     clear_dead_child(&mut runtime);
 
@@ -172,17 +209,65 @@ async fn ensure_local_ai_ready_internal(
         ));
     }
 
-    if runtime.child.is_none() {
-        runtime.child = Some(spawn_local_ai_process(&assets)?);
-        runtime.last_error = None;
+    let message = runtime
+        .last_error
+        .clone()
+        .unwrap_or_else(|| "Local AI server is not running.".to_string());
+    Ok(build_status(&runtime, false, message))
+}
+
+async fn start_local_ai_runtime_internal(
+    app: &AppHandle,
+    state: &SharedState,
+    model_dir: Option<String>,
+) -> Result<LocalAiStatus, String> {
+    let existing_dir = {
+        let runtime = state.local_ai_runtime.lock().await;
+        runtime.selected_model_dir.clone()
+    };
+    let chosen_dir = model_dir
+        .map(PathBuf::from)
+        .or(existing_dir)
+        .ok_or_else(|| "No model directory is configured. Please choose a folder first.".to_string())?;
+    let assets = resolve_local_ai_assets(app, Some(chosen_dir))?;
+    let mut runtime = state.local_ai_runtime.lock().await;
+
+    if runtime.child.is_some() {
+        stop_local_ai_process(&mut runtime);
     }
 
+    apply_runtime_assets(&mut runtime, &assets);
+    runtime.server_url = local_ai_server_url();
+    runtime.child = Some(spawn_local_ai_process(&assets)?);
+    runtime.last_error = None;
+
+    wait_for_local_ai_ready(&mut runtime).await
+}
+
+async fn ensure_local_ai_available_internal(
+    app: &AppHandle,
+    state: &SharedState,
+) -> Result<LocalAiStatus, String> {
+    let status = get_local_ai_status_internal(app, state).await?;
+    if status.ready {
+        return Ok(status);
+    }
+
+    Err(if status.running {
+        "Local AI server is still starting. Please wait a moment.".to_string()
+    } else {
+        "Local AI server is not running. Select a model folder and start it manually first."
+            .to_string()
+    })
+}
+
+async fn wait_for_local_ai_ready(runtime: &mut LocalAiRuntime) -> Result<LocalAiStatus, String> {
     for _ in 0..LOCAL_AI_STARTUP_RETRIES {
-        clear_dead_child(&mut runtime);
+        clear_dead_child(runtime);
         if probe_local_ai_server(&runtime.server_url).await {
             runtime.last_error = None;
             return Ok(build_status(
-                &runtime,
+                runtime,
                 true,
                 "Local AI server is ready.".to_string(),
             ));
@@ -197,7 +282,7 @@ async fn ensure_local_ai_ready_internal(
         sleep(Duration::from_millis(LOCAL_AI_STARTUP_DELAY_MS)).await;
     }
 
-    let message = "Timed out while starting the bundled local AI server.".to_string();
+    let message = "Timed out while starting the local AI server.".to_string();
     runtime.last_error = Some(message.clone());
     Err(message)
 }
@@ -500,10 +585,12 @@ fn extract_usage(value: &Value) -> Option<LocalAiTokenUsage> {
     })
 }
 
-fn resolve_local_ai_assets(app: &AppHandle) -> Result<LocalAiAssets, String> {
+fn resolve_local_ai_assets(
+    app: &AppHandle,
+    model_dir_override: Option<PathBuf>,
+) -> Result<LocalAiAssets, String> {
     let roots = local_ai_search_roots(app);
     let mut server_dir = None;
-    let mut llm_dir = None;
 
     for root in &roots {
         if server_dir.is_none() {
@@ -517,15 +604,6 @@ fn resolve_local_ai_assets(app: &AppHandle) -> Result<LocalAiAssets, String> {
                 }
             }
         }
-
-        if llm_dir.is_none() {
-            for candidate in [root.join("llm"), root.join("build-assets").join("llm")] {
-                if candidate.is_dir() {
-                    llm_dir = Some(candidate);
-                    break;
-                }
-            }
-        }
     }
 
     let server_dir = server_dir.ok_or_else(|| {
@@ -534,12 +612,8 @@ fn resolve_local_ai_assets(app: &AppHandle) -> Result<LocalAiAssets, String> {
             display_search_roots(&roots)
         )
     })?;
-    let llm_dir = llm_dir.ok_or_else(|| {
-        format!(
-            "Failed to find bundled model directory. Searched in: {}",
-            display_search_roots(&roots)
-        )
-    })?;
+    let llm_dir = model_dir_override
+        .ok_or_else(|| "No model directory is configured. Please choose a folder that contains .gguf files.".to_string())?;
 
     let server_exe = server_dir.join("llama-server.exe");
     if !server_exe.is_file() {
@@ -560,6 +634,7 @@ fn resolve_local_ai_assets(app: &AppHandle) -> Result<LocalAiAssets, String> {
     Ok(LocalAiAssets {
         server_dir,
         server_exe,
+        model_dir: llm_dir,
         model_path,
         mmproj_path,
         model_name,
@@ -742,11 +817,23 @@ fn stop_local_ai_process(runtime: &mut LocalAiRuntime) {
     runtime.child = None;
 }
 
+fn apply_runtime_assets(runtime: &mut LocalAiRuntime, assets: &LocalAiAssets) {
+    runtime.model_name = assets.model_name.clone();
+    runtime.selected_model_dir = Some(assets.model_dir.clone());
+    runtime.model_path = Some(assets.model_path.clone());
+    runtime.mmproj_path = assets.mmproj_path.clone();
+    runtime.server_path = Some(assets.server_exe.clone());
+}
+
 fn build_status(runtime: &LocalAiRuntime, ready: bool, message: String) -> LocalAiStatus {
     LocalAiStatus {
         ready,
         running: ready || runtime.child.is_some(),
         model_name: runtime.model_name.clone(),
+        selected_model_dir: runtime
+            .selected_model_dir
+            .as_ref()
+            .map(|path| path.to_string_lossy().to_string()),
         model_path: runtime
             .model_path
             .as_ref()

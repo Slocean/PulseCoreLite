@@ -346,7 +346,9 @@ fn visible_consumer_labels(app: &AppHandle) -> Vec<&'static str> {
 pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
     builder.invoke_handler(tauri::generate_handler![
         commands::get_initial_state,
-        crate::local_ai::ensure_local_ai_ready,
+        crate::local_ai::get_local_ai_status,
+        crate::local_ai::start_local_ai_runtime,
+        crate::local_ai::stop_local_ai_runtime,
         crate::local_ai::send_local_ai_message,
         commands::configure_native_taskbar_monitor,
         commands::get_hardware_info,

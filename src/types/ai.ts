@@ -2,6 +2,7 @@ export interface LocalAiStatus {
   ready: boolean;
   running: boolean;
   modelName: string;
+  selectedModelDir: string | null;
   modelPath: string | null;
   serverPath: string | null;
   serverUrl: string;

@@ -164,6 +164,7 @@ const props = withDefaults(defineProps<{ toastChannel?: string }>(), {
 
 type ChatPanelState = {
   localStatus: LocalAiStatus | null;
+  selectedModelDir: string | null;
   workspaceStateTone: string;
   workspaceStateLabel: string;
   contextWindowSize: number;
@@ -213,6 +214,7 @@ const statusBusy = ref(false);
 const sending = ref(false);
 const isDropActive = ref(false);
 const localStatus = ref<LocalAiStatus | null>(null);
+const selectedModelDir = ref<string | null>(null);
 const draft = ref('');
 const attachments = ref<UiAttachment[]>([]);
 const messages = ref<UiMessage[]>([createWelcomeMessage()]);
@@ -249,6 +251,7 @@ const sendDisabled = computed(
 );
 const panelState = computed<ChatPanelState>(() => ({
   localStatus: localStatus.value,
+  selectedModelDir: selectedModelDir.value ?? localStatus.value?.selectedModelDir ?? null,
   workspaceStateTone: workspaceStateTone.value,
   workspaceStateLabel: workspaceStateLabel.value,
   contextWindowSize: contextWindowSize.value,
@@ -342,13 +345,15 @@ async function refreshStatus() {
   if (!isTauriRuntime || statusBusy.value) return;
   statusBusy.value = true;
   try {
-    localStatus.value = await api.ensureLocalAiReady();
+    localStatus.value = await api.getLocalAiStatus();
+    selectedModelDir.value = localStatus.value.selectedModelDir ?? selectedModelDir.value;
   } catch (error) {
     const message = normalizeErrorMessage(error);
     localStatus.value = {
       ready: false,
       running: false,
       modelName: '0.8B',
+      selectedModelDir: selectedModelDir.value,
       modelPath: null,
       serverPath: null,
       serverUrl: '-',
@@ -358,6 +363,73 @@ async function refreshStatus() {
     showToast(t('toolkit.aiStartFailed', { message }), { variant: 'error' });
   } finally {
     statusBusy.value = false;
+  }
+}
+
+async function startLocalAi(modelDir?: string | null) {
+  if (!isTauriRuntime || statusBusy.value) return;
+  const nextDir = modelDir ?? selectedModelDir.value;
+  if (!nextDir) {
+    const message = '请先选择模型文件夹。';
+    showToast(message, { variant: 'warning' });
+    localStatus.value = {
+      ready: false,
+      running: false,
+      modelName: localStatus.value?.modelName ?? '0.8B',
+      selectedModelDir: null,
+      modelPath: null,
+      serverPath: localStatus.value?.serverPath ?? null,
+      serverUrl: localStatus.value?.serverUrl ?? '-',
+      visionEnabled: false,
+      message
+    };
+    return;
+  }
+
+  statusBusy.value = true;
+  selectedModelDir.value = nextDir;
+  try {
+    localStatus.value = await api.startLocalAiRuntime(nextDir);
+    selectedModelDir.value = localStatus.value.selectedModelDir ?? nextDir;
+  } catch (error) {
+    const message = normalizeErrorMessage(error);
+    localStatus.value = {
+      ready: false,
+      running: false,
+      modelName: localStatus.value?.modelName ?? '0.8B',
+      selectedModelDir: nextDir,
+      modelPath: null,
+      serverPath: localStatus.value?.serverPath ?? null,
+      serverUrl: localStatus.value?.serverUrl ?? localStatus.value?.serverUrl ?? '-',
+      visionEnabled: false,
+      message
+    };
+    showToast(t('toolkit.aiStartFailed', { message }), { variant: 'error' });
+  } finally {
+    statusBusy.value = false;
+  }
+}
+
+async function stopLocalAi() {
+  if (!isTauriRuntime || statusBusy.value) return;
+  statusBusy.value = true;
+  try {
+    localStatus.value = await api.stopLocalAiRuntime();
+    selectedModelDir.value = localStatus.value.selectedModelDir ?? selectedModelDir.value;
+  } catch (error) {
+    showToast(normalizeErrorMessage(error), { variant: 'error' });
+  } finally {
+    statusBusy.value = false;
+  }
+}
+
+function setSelectedModelDir(value: string | null) {
+  selectedModelDir.value = value;
+  if (localStatus.value) {
+    localStatus.value = {
+      ...localStatus.value,
+      selectedModelDir: value
+    };
   }
 }
 
@@ -660,7 +732,10 @@ function readFileAsDataUrl(file: File) {
 }
 
 defineExpose({
-  refreshStatus
+  refreshStatus,
+  startLocalAi,
+  stopLocalAi,
+  setSelectedModelDir
 });
 </script>
 

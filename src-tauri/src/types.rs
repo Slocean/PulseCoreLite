@@ -319,6 +319,7 @@ pub struct LocalAiStatus {
     pub ready: bool,
     pub running: bool,
     pub model_name: String,
+    pub selected_model_dir: Option<String>,
     pub model_path: Option<String>,
     pub server_path: Option<String>,
     pub server_url: String,

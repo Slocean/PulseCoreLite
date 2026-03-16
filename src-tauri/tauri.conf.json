@@ -39,8 +39,7 @@
     ],
     "createUpdaterArtifacts": true,
     "resources": [
-      "../build-assets/llama_CPU_X64",
-      "../build-assets/llm"
+      "../build-assets/llama_CPU_X64"
     ],
     "icon": [
       "icons/icon.ico",

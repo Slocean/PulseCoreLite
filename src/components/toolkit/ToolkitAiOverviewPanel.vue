@@ -23,6 +23,10 @@
           <span class="toolkit-ai-status-label">{{ t('toolkit.aiStatusEndpoint') }}</span>
           <strong class="toolkit-ai-status-value">{{ localStatus?.serverUrl || '-' }}</strong>
         </div>
+        <div class="toolkit-ai-status-item">
+          <span class="toolkit-ai-status-label">模型目录</span>
+          <strong class="toolkit-ai-status-value">{{ selectedModelDir || '未选择' }}</strong>
+        </div>
         <div class="toolkit-ai-status-item toolkit-ai-status-item--stacked">
           <div class="toolkit-ai-status-pair">
             <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricContext') }}</span>
@@ -40,8 +44,17 @@
       </div>
 
       <div class="toolkit-ai-actions">
-        <UiButton native-type="button" preset="overlay-primary" :disabled="statusBusy || !isTauriRuntime" @click="emit('refresh-status')">
-          {{ statusBusy ? t('toolkit.aiEnsurePending') : t('toolkit.aiEnsure') }}
+        <UiButton native-type="button" preset="overlay-chip-soft" :disabled="statusBusy || !isTauriRuntime" @click="emit('choose-model-dir')">
+          选择模型目录
+        </UiButton>
+        <UiButton native-type="button" preset="overlay-primary" :disabled="statusBusy || !isTauriRuntime || !selectedModelDir" @click="emit('start-local-ai')">
+          {{ statusBusy ? '正在启动...' : '手动启动' }}
+        </UiButton>
+        <UiButton native-type="button" preset="overlay-chip-soft" :disabled="statusBusy || !isTauriRuntime || !localStatus?.running" @click="emit('stop-local-ai')">
+          停止
+        </UiButton>
+        <UiButton native-type="button" preset="overlay-chip-soft" :disabled="statusBusy || !isTauriRuntime" @click="emit('refresh-status')">
+          刷新状态
         </UiButton>
       </div>
     </div>
@@ -59,6 +72,7 @@ import type { LocalAiStatus } from '@/types';
 const props = defineProps<{
   modelValue: boolean;
   localStatus: LocalAiStatus | null;
+  selectedModelDir: string | null;
   workspaceStateTone: string;
   workspaceStateLabel: string;
   contextWindowSize: number;
@@ -70,6 +84,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: 'update:modelValue', value: boolean): void;
+  (event: 'choose-model-dir'): void;
+  (event: 'start-local-ai'): void;
+  (event: 'stop-local-ai'): void;
   (event: 'refresh-status'): void;
   (event: 'contentChange'): void;
 }>();
@@ -148,7 +165,7 @@ const openModel = computed({
 
 .toolkit-ai-status-grid {
   display: grid;
-  grid-template-columns: minmax(120px, 0.9fr) minmax(160px, 1.25fr) minmax(140px, 1fr);
+  grid-template-columns: minmax(120px, 0.8fr) minmax(160px, 1.1fr) minmax(180px, 1.4fr) minmax(140px, 1fr);
   gap: 8px;
 }
 
