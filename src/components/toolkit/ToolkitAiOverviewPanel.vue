@@ -66,7 +66,7 @@
             preset="overlay-primary"
             :disabled="statusBusy || !isTauriRuntime || !selectedModelDir"
             @click="emit('start-local-ai')">
-            {{ statusBusy ? '正在启动...' : '手动启动' }}
+            {{ statusBusy ? t('toolkit.aiStartPending') : t('toolkit.aiStart') }}
           </UiButton>
         </div>
       </section>
