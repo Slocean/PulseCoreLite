@@ -13,13 +13,23 @@
           <div class="toolkit-ai-status-head">
             <div class="toolkit-ai-inline-meta">
               <span class="toolkit-ai-status-label">{{ t('toolkit.aiStatusModel') }}</span>
-              <strong class="toolkit-ai-status-value toolkit-ai-status-value--inline">{{ localStatus?.modelName || '0.8B' }}</strong>
+              <strong class="toolkit-ai-status-value toolkit-ai-status-value--inline">
+                {{ localStatus?.modelName || '0.8B' }}
+              </strong>
             </div>
             <div class="toolkit-ai-status-controls">
-              <UiButton native-type="button" preset="overlay-chip-soft" :disabled="statusBusy || !isTauriRuntime || !localStatus?.running" @click="emit('stop-local-ai')">
+              <UiButton
+                native-type="button"
+                preset="overlay-chip-soft"
+                :disabled="statusBusy || !isTauriRuntime || !localStatus?.running"
+                @click="emit('stop-local-ai')">
                 停止
               </UiButton>
-              <UiButton native-type="button" preset="overlay-chip-soft" :disabled="statusBusy || !isTauriRuntime" @click="emit('refresh-status')">
+              <UiButton
+                native-type="button"
+                preset="overlay-chip-soft"
+                :disabled="statusBusy || !isTauriRuntime"
+                @click="emit('refresh-status')">
                 刷新状态
               </UiButton>
             </div>
@@ -29,7 +39,9 @@
           <div class="toolkit-ai-status-head">
             <div class="toolkit-ai-inline-meta">
               <span class="toolkit-ai-status-label">{{ t('toolkit.aiStatusEndpoint') }}</span>
-              <strong class="toolkit-ai-status-value toolkit-ai-status-value--inline">{{ localStatus?.serverUrl || '-' }}</strong>
+              <strong class="toolkit-ai-status-value toolkit-ai-status-value--inline">
+                {{ localStatus?.serverUrl || '-' }}
+              </strong>
             </div>
             <div class="toolkit-ai-state-pill toolkit-ai-state-pill--compact" :class="`is-${workspaceStateTone}`">
               <span class="toolkit-ai-state-dot" aria-hidden="true"></span>
@@ -40,36 +52,40 @@
         <section class="toolkit-ai-status-section">
           <div class="toolkit-ai-status-head">
             <span class="toolkit-ai-status-label">模型目录</span>
-            <UiButton native-type="button" preset="overlay-chip-soft" :disabled="statusBusy || !isTauriRuntime" @click="emit('choose-model-dir')">
+            <UiButton
+              native-type="button"
+              preset="overlay-chip-soft"
+              :disabled="statusBusy || !isTauriRuntime"
+              @click="emit('choose-model-dir')">
               选择模型目录
             </UiButton>
           </div>
           <strong class="toolkit-ai-status-value">{{ selectedModelDir || '未选择' }}</strong>
         </section>
+        <section class="toolkit-ai-status-section toolkit-ai-status-section--metrics">
+          <div class="toolkit-ai-status-pair">
+            <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricContext') }}</span>
+            <strong class="toolkit-ai-status-value">{{ contextWindowSize }}</strong>
+          </div>
+          <div class="toolkit-ai-status-pair">
+            <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricConversation') }}</span>
+            <strong class="toolkit-ai-status-value">{{ conversationTurns }}</strong>
+          </div>
+          <div class="toolkit-ai-status-pair">
+            <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricMode') }}</span>
+            <strong class="toolkit-ai-status-value">{{ capabilityLabel }}</strong>
+          </div>
+          <div class="toolkit-ai-status-pair toolkit-ai-status-pair--action">
+            <UiButton
+              native-type="button"
+              preset="overlay-primary"
+              :disabled="statusBusy || !isTauriRuntime || !selectedModelDir"
+              @click="emit('start-local-ai')">
+              {{ statusBusy ? t('toolkit.aiStartPending') : t('toolkit.aiStart') }}
+            </UiButton>
+          </div>
+        </section>
       </div>
-      <section class="toolkit-ai-status-section toolkit-ai-status-section--metrics">
-        <div class="toolkit-ai-status-pair">
-          <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricContext') }}</span>
-          <strong class="toolkit-ai-status-value">{{ contextWindowSize }}</strong>
-        </div>
-        <div class="toolkit-ai-status-pair">
-          <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricConversation') }}</span>
-          <strong class="toolkit-ai-status-value">{{ conversationTurns }}</strong>
-        </div>
-        <div class="toolkit-ai-status-pair">
-          <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricMode') }}</span>
-          <strong class="toolkit-ai-status-value">{{ capabilityLabel }}</strong>
-        </div>
-        <div class="toolkit-ai-status-pair toolkit-ai-status-pair--action">
-          <UiButton
-            native-type="button"
-            preset="overlay-primary"
-            :disabled="statusBusy || !isTauriRuntime || !selectedModelDir"
-            @click="emit('start-local-ai')">
-            {{ statusBusy ? t('toolkit.aiStartPending') : t('toolkit.aiStart') }}
-          </UiButton>
-        </div>
-      </section>
     </div>
   </UiCollapsiblePanel>
 </template>
@@ -172,7 +188,6 @@ const openModel = computed({
 .toolkit-ai-status-layout {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 4px;
 }
 
 .toolkit-ai-status-section {
@@ -232,8 +247,6 @@ const openModel = computed({
   flex-wrap: nowrap;
   align-items: stretch;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 8px;
-  gap: 6px;
   align-content: start;
 }
 
