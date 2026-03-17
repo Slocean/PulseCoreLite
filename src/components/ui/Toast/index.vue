@@ -7,28 +7,30 @@
           class="ui-toast"
           :class="[`ui-toast--${effectiveVariant}`, { 'ui-toast--pinned': effectivePinned }]"
           :style="toastStyle">
-          <div class="ui-toast__message">{{ effectiveMessage }}</div>
-          <div class="ui-toast__actions">
-            <button type="button" class="ui-toast__action" :aria-label="copyLabel" @click="handleCopy">
-              <span class="material-symbols-outlined">content_copy</span>
-            </button>
-            <button
-              v-if="effectivePinnable"
-              type="button"
-              class="ui-toast__action"
-              :class="{ 'ui-toast__action--active': effectivePinned }"
-              :aria-label="pinLabel"
-              @click="setPinned(!effectivePinned, props.channel ?? 'global')">
-              <span class="material-symbols-outlined">push_pin</span>
-            </button>
-            <button
-              v-if="effectiveClosable"
-              type="button"
-              class="ui-toast__action"
-              :aria-label="closeLabel"
-              @click="hideToast(props.channel ?? 'global')">
-              <span class="material-symbols-outlined">close</span>
-            </button>
+          <div class="ui-toast__content">
+            <div class="ui-toast__actions">
+              <button type="button" class="ui-toast__action" :aria-label="copyLabel" @click="handleCopy">
+                <span class="material-symbols-outlined">content_copy</span>
+              </button>
+              <button
+                v-if="effectivePinnable"
+                type="button"
+                class="ui-toast__action"
+                :class="{ 'ui-toast__action--active': effectivePinned }"
+                :aria-label="pinLabel"
+                @click="setPinned(!effectivePinned, props.channel ?? 'global')">
+                <span class="material-symbols-outlined">push_pin</span>
+              </button>
+              <button
+                v-if="effectiveClosable"
+                type="button"
+                class="ui-toast__action"
+                :aria-label="closeLabel"
+                @click="hideToast(props.channel ?? 'global')">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div class="ui-toast__message">{{ effectiveMessage }}</div>
           </div>
         </div>
       </div>
@@ -205,9 +207,6 @@ async function handleCopy() {
   pointer-events: auto;
   width: min(720px, 100%);
   max-height: 400px;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -220,8 +219,14 @@ async function handleCopy() {
   overflow: hidden;
 }
 
+.ui-toast__content {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
 .ui-toast__message {
-  flex: 1;
   min-width: 0;
   max-height: calc(400px - 20px);
   white-space: pre-wrap;
@@ -234,6 +239,7 @@ async function handleCopy() {
 .ui-toast__actions {
   display: inline-flex;
   align-items: center;
+  justify-self: end;
   gap: 6px;
   flex: 0 0 auto;
 }
