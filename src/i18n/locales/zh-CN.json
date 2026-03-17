@@ -221,7 +221,7 @@
     "aiUpload": "上传文件",
     "aiUploadHint": "支持图片和常见文本文件；图片会走本地多模态识别。",
     "aiShortcutHint": "快捷键：Ctrl / Cmd + Enter 发送",
-    "aiThinkingToggle": "深思考",
+    "aiThinkingToggle": "思考",
     "aiAttachmentQueueTitle": "待发送附件",
     "aiAttachmentRemove": "移除附件",
     "aiAttachmentRemoveAll": "清空附件",
