@@ -243,6 +243,8 @@
     "aiPendingMessage": "Waiting for the local model to respond...",
     "aiThinkingLabel": "Deep Thinking",
     "aiThinkingPending": "Thinking deeply...",
+    "aiThinkingExpand": "Show Thinking",
+    "aiThinkingCollapse": "Hide Thinking",
     "aiNotReadyYet": "Local AI is still not ready. Start or reconnect it first.",
     "aiStartFailed": "Failed to start local AI: {message}",
     "aiReplyFailed": "Local AI reply failed: {message}",

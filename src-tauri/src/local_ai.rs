@@ -137,7 +137,7 @@ pub async fn send_local_ai_message(
     )
     .await?;
     let final_attempt = if should_retry_without_thinking(enable_thinking, &first_attempt) {
-        send_local_ai_request_stream(
+        let retry_attempt = send_local_ai_request_stream(
             &client,
             &window,
             &endpoint,
@@ -146,7 +146,15 @@ pub async fn send_local_ai_message(
             true,
             LOCAL_AI_MAX_TOKENS_STANDARD,
         )
-        .await?
+        .await?;
+        LocalAiParsedResponse {
+            reply: retry_attempt.reply,
+            reasoning: retry_attempt.reasoning.or(first_attempt.reasoning),
+            finish_reason: retry_attempt.finish_reason,
+            model: retry_attempt.model.or(first_attempt.model),
+            usage: retry_attempt.usage.or(first_attempt.usage),
+            body: retry_attempt.body,
+        }
     } else {
         first_attempt
     };

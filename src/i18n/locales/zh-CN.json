@@ -241,6 +241,8 @@
     "aiPendingMessage": "正在等待本地模型回复...",
     "aiThinkingLabel": "深度思考",
     "aiThinkingPending": "正在深度思考...",
+    "aiThinkingExpand": "展开思考",
+    "aiThinkingCollapse": "收起思考",
     "aiNotReadyYet": "本地 AI 仍未就绪，请先启动或重连。",
     "aiStartFailed": "本地 AI 启动失败：{message}",
     "aiReplyFailed": "本地 AI 回复失败：{message}",

@@ -51,19 +51,35 @@
             </UiButton>
           </header>
           <template v-if="message.role === 'assistant'">
-            <details
-              v-if="message.thinkingEnabled && (getMessageReasoning(message) || message.pending)"
-              class="toolkit-ai-thinking"
-              :open="Boolean(getMessageReasoning(message)) || message.pending">
-              <summary>
-                {{ getMessageReasoning(message) ? t('toolkit.aiThinkingLabel') : t('toolkit.aiThinkingPending') }}
-              </summary>
+            <div
+              v-if="getMessageReasoning(message) || (message.pending && message.thinkingEnabled)"
+              class="toolkit-ai-thinking-shell">
+              <button
+                type="button"
+                class="toolkit-ai-thinking-toggle"
+                :aria-expanded="message.thinkingExpanded"
+                @click="toggleThinkingExpanded(message.id)">
+                <span class="material-symbols-outlined" aria-hidden="true">
+                  {{ message.thinkingExpanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right' }}
+                </span>
+                <span>
+                  {{
+                    message.thinkingExpanded
+                      ? t('toolkit.aiThinkingCollapse')
+                      : getMessageReasoning(message)
+                        ? t('toolkit.aiThinkingExpand')
+                        : t('toolkit.aiThinkingPending')
+                  }}
+                </span>
+              </button>
+              <div v-if="message.thinkingExpanded" class="toolkit-ai-thinking">
               <article
                 v-if="getMessageReasoning(message)"
                 class="toolkit-ai-markdown toolkit-ai-thinking-markdown"
                 v-html="renderMessageMarkdown(getMessageReasoning(message))"></article>
               <p v-else class="toolkit-ai-stream-placeholder">{{ t('toolkit.aiThinkingPending') }}</p>
-            </details>
+              </div>
+            </div>
             <article
               v-if="message.text"
               class="toolkit-ai-markdown toolkit-ai-bubble-markdown"
@@ -224,6 +240,7 @@ type UiMessage = {
   text: string;
   reasoningText: string;
   thinkingEnabled: boolean;
+  thinkingExpanded: boolean;
   attachments: UiAttachment[];
   pending: boolean;
   error: boolean;
@@ -546,6 +563,7 @@ async function sendMessage() {
     text: effectivePrompt,
     reasoningText: '',
     thinkingEnabled: false,
+    thinkingExpanded: false,
     attachments: attachments.value.map(copyAttachment),
     pending: false,
     error: false,
@@ -559,6 +577,7 @@ async function sendMessage() {
     text: '',
     reasoningText: '',
     thinkingEnabled: thinkingEnabled.value,
+    thinkingExpanded: thinkingEnabled.value,
     attachments: [],
     pending: true,
     error: false,
@@ -582,12 +601,18 @@ async function sendMessage() {
     });
     localStatus.value = response.status;
     const finalizedReply = finalizeAssistantReply(pendingMessage.id, response.reply, response.reasoning);
+    const currentPendingMessage = findMessageById(pendingMessage.id);
     replacePendingMessage(pendingMessage.id, {
       id: pendingMessage.id,
       role: 'assistant',
       text: finalizedReply.reply,
-      reasoningText: finalizedReply.reasoning,
-      thinkingEnabled: thinkingEnabled.value,
+      reasoningText: finalizedReply.reasoning || currentPendingMessage?.reasoningText || '',
+      thinkingEnabled:
+        currentPendingMessage?.thinkingEnabled ??
+        Boolean(finalizedReply.reasoning || currentPendingMessage?.reasoningText),
+      thinkingExpanded:
+        currentPendingMessage?.thinkingExpanded ??
+        Boolean(finalizedReply.reasoning || currentPendingMessage?.reasoningText),
       attachments: [],
       pending: false,
       error: false,
@@ -602,6 +627,7 @@ async function sendMessage() {
       text: message,
       reasoningText: findMessageById(pendingMessage.id)?.reasoningText ?? '',
       thinkingEnabled: findMessageById(pendingMessage.id)?.thinkingEnabled ?? thinkingEnabled.value,
+      thinkingExpanded: findMessageById(pendingMessage.id)?.thinkingExpanded ?? thinkingEnabled.value,
       attachments: [],
       pending: false,
       error: true,
@@ -630,6 +656,12 @@ function clearAttachments() {
 
 function replacePendingMessage(id: string, nextMessage: UiMessage) {
   messages.value = messages.value.map(message => (message.id === id ? nextMessage : message));
+}
+
+function toggleThinkingExpanded(id: string) {
+  messages.value = messages.value.map(message =>
+    message.id === id ? { ...message, thinkingExpanded: !message.thinkingExpanded } : message
+  );
 }
 
 function appendPendingMessageStream(id: string, channel: LocalAiStreamEvent['channel'], delta: string) {
@@ -708,9 +740,7 @@ function consumeTaggedAssistantDelta(id: string, delta: string) {
 function finalizeAssistantReply(id: string, reply: string, reasoning: string | null) {
   const streamedMessage = findMessageById(id);
   const parsedReply = splitAssistantTaggedText(reply);
-  const nextReasoning = streamedMessage?.thinkingEnabled
-    ? reasoning ?? parsedReply.reasoning ?? streamedMessage?.reasoningText ?? ''
-    : '';
+  const nextReasoning = reasoning ?? parsedReply.reasoning ?? streamedMessage?.reasoningText ?? '';
   const nextReply = parsedReply.reply || streamedMessage?.text || reply;
   thinkingTagState.delete(id);
 
@@ -942,6 +972,7 @@ function createWelcomeMessage(): UiMessage {
     text: sanitizeAiMessageText(t('toolkit.aiWelcome')),
     reasoningText: '',
     thinkingEnabled: false,
+    thinkingExpanded: false,
     attachments: [],
     pending: false,
     error: false,
@@ -1317,12 +1348,28 @@ defineExpose({
   background: rgba(7, 18, 34, 0.34);
 }
 
-.toolkit-ai-thinking summary {
+.toolkit-ai-thinking-shell {
+  display: grid;
+  gap: 6px;
+}
+
+.toolkit-ai-thinking-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
   cursor: pointer;
   color: rgba(125, 211, 252, 0.94);
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.toolkit-ai-thinking-toggle .material-symbols-outlined {
+  font-size: 14px;
 }
 
 .toolkit-ai-thinking-markdown {
