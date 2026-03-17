@@ -8,14 +8,14 @@ use std::{
 
 use reqwest::Client;
 use serde_json::{json, Value};
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State, WebviewWindow};
 use tokio::time::sleep;
 
 use crate::{
     state::SharedState,
     types::{
         LocalAiAttachment, LocalAiChatRequest, LocalAiChatResponse, LocalAiStatus,
-        LocalAiTokenUsage,
+        LocalAiStreamEvent, LocalAiTokenUsage,
     },
 };
 
@@ -24,8 +24,9 @@ const LOCAL_AI_PORT: u16 = 39391;
 const LOCAL_AI_STARTUP_RETRIES: usize = 80;
 const LOCAL_AI_STARTUP_DELAY_MS: u64 = 500;
 const LOCAL_AI_CHAT_TIMEOUT_SECS: u64 = 180;
-const LOCAL_AI_MAX_TOKENS_DEFAULT: u64 = 1024;
+const LOCAL_AI_MAX_TOKENS_STANDARD: u64 = 1024;
 const LOCAL_AI_MAX_TOKENS_RETRY: u64 = 1536;
+const LOCAL_AI_STREAM_EVENT: &str = "local-ai://stream";
 
 pub struct LocalAiRuntime {
     child: Option<Child>,
@@ -100,6 +101,7 @@ pub async fn stop_local_ai_runtime(
 #[tauri::command]
 pub async fn send_local_ai_message(
     app: AppHandle,
+    window: WebviewWindow,
     state: State<'_, SharedState>,
     request: LocalAiChatRequest,
 ) -> Result<LocalAiChatResponse, String> {
@@ -115,31 +117,25 @@ pub async fn send_local_ai_message(
 
     let client = build_http_client(LOCAL_AI_CHAT_TIMEOUT_SECS)?;
     let endpoint = format!("{}/v1/chat/completions", status.server_url);
-    let first_attempt = send_local_ai_request(
+    let request_id = request
+        .request_id
+        .clone()
+        .unwrap_or_else(|| "local-ai-stream".to_string());
+    let enable_thinking = request.enable_thinking.unwrap_or(false);
+    let final_attempt = send_local_ai_request_stream(
         &client,
+        &window,
         &endpoint,
         &request,
-        true,
-        LOCAL_AI_MAX_TOKENS_DEFAULT,
+        &request_id,
+        !enable_thinking,
+        if enable_thinking {
+            LOCAL_AI_MAX_TOKENS_RETRY
+        } else {
+            LOCAL_AI_MAX_TOKENS_STANDARD
+        },
     )
     .await?;
-
-    let final_attempt = if first_attempt.reply.is_some() {
-        first_attempt
-    } else if first_attempt.reasoning.is_some()
-        || first_attempt.finish_reason.as_deref() == Some("length")
-    {
-        send_local_ai_request(
-            &client,
-            &endpoint,
-            &request,
-            true,
-            LOCAL_AI_MAX_TOKENS_RETRY,
-        )
-        .await?
-    } else {
-        first_attempt
-    };
 
     let reply = final_attempt.reply.ok_or_else(|| {
         let reasoning_hint = if final_attempt.reasoning.is_some() {
@@ -165,6 +161,7 @@ pub async fn send_local_ai_message(
 
     Ok(LocalAiChatResponse {
         reply,
+        reasoning: final_attempt.reasoning,
         model,
         status,
         usage,
@@ -296,16 +293,18 @@ struct LocalAiParsedResponse {
     body: String,
 }
 
-async fn send_local_ai_request(
+async fn send_local_ai_request_stream(
     client: &Client,
+    window: &WebviewWindow,
     endpoint: &str,
     request: &LocalAiChatRequest,
+    request_id: &str,
     disable_thinking: bool,
     max_tokens: u64,
 ) -> Result<LocalAiParsedResponse, String> {
     let payload = build_chat_payload(request, disable_thinking, max_tokens);
 
-    let response = client
+    let mut response = client
         .post(endpoint)
         .json(&payload)
         .send()
@@ -313,12 +312,11 @@ async fn send_local_ai_request(
         .map_err(|err| format!("failed to call local AI server: {err}"))?;
 
     let status_code = response.status();
-    let body = response
-        .text()
-        .await
-        .map_err(|err| format!("failed to read local AI response: {err}"))?;
-
     if !status_code.is_success() {
+        let body = response
+            .text()
+            .await
+            .map_err(|err| format!("failed to read local AI response: {err}"))?;
         return Err(format!(
             "local AI server returned HTTP {}: {}",
             status_code.as_u16(),
@@ -326,25 +324,196 @@ async fn send_local_ai_request(
         ));
     }
 
-    let value: Value = serde_json::from_str(&body)
-        .map_err(|err| format!("failed to parse local AI response JSON: {err}"))?;
+    let mut body = String::new();
+    let mut stream_buffer = Vec::new();
+    let mut reply = String::new();
+    let mut reasoning = String::new();
+    let mut finish_reason = None;
+    let mut model = None;
+    let mut usage = None;
+
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .map_err(|err| format!("failed to read local AI stream: {err}"))?
+    {
+        body.push_str(&String::from_utf8_lossy(&chunk));
+        stream_buffer.extend_from_slice(&chunk);
+
+        while let Some((separator_index, separator_len)) = find_sse_event_separator(&stream_buffer) {
+            let event_bytes = stream_buffer[..separator_index].to_vec();
+            stream_buffer.drain(..separator_index + separator_len);
+            process_stream_event(
+                window,
+                request_id,
+                &event_bytes,
+                &mut reply,
+                &mut reasoning,
+                &mut finish_reason,
+                &mut model,
+                &mut usage,
+            )?;
+        }
+    }
+
+    if !stream_buffer.is_empty() {
+        process_stream_event(
+            window,
+            request_id,
+            &stream_buffer,
+            &mut reply,
+            &mut reasoning,
+            &mut finish_reason,
+            &mut model,
+            &mut usage,
+        )?;
+    }
 
     Ok(LocalAiParsedResponse {
-        reply: extract_reply_text(&value),
-        reasoning: extract_reasoning_text(&value),
-        finish_reason: value
-            .get("choices")
-            .and_then(|choices| choices.get(0))
-            .and_then(|choice| choice.get("finish_reason"))
-            .and_then(Value::as_str)
-            .map(ToOwned::to_owned),
-        model: value
-            .get("model")
-            .and_then(Value::as_str)
-            .map(ToOwned::to_owned),
-        usage: extract_usage(&value),
+        reply: normalize_text(&reply),
+        reasoning: normalize_text(&reasoning),
+        finish_reason,
+        model,
+        usage,
         body,
     })
+}
+
+fn process_stream_event(
+    window: &WebviewWindow,
+    request_id: &str,
+    event_bytes: &[u8],
+    reply: &mut String,
+    reasoning: &mut String,
+    finish_reason: &mut Option<String>,
+    model: &mut Option<String>,
+    usage: &mut Option<LocalAiTokenUsage>,
+) -> Result<(), String> {
+    let Some(payload) = extract_sse_payload(event_bytes) else {
+        return Ok(());
+    };
+    if payload == "[DONE]" {
+        return Ok(());
+    }
+
+    let value: Value = serde_json::from_str(&payload)
+        .map_err(|err| format!("failed to parse local AI stream JSON: {err}"))?;
+
+    if model.is_none() {
+        *model = value
+            .get("model")
+            .and_then(Value::as_str)
+            .map(ToOwned::to_owned);
+    }
+
+    if let Some(next_usage) = extract_usage(&value) {
+        *usage = Some(next_usage);
+    }
+
+    if let Some(next_finish_reason) = value
+        .get("choices")
+        .and_then(|choices| choices.get(0))
+        .and_then(|choice| choice.get("finish_reason"))
+        .and_then(Value::as_str)
+        .map(ToOwned::to_owned)
+    {
+        *finish_reason = Some(next_finish_reason);
+    }
+
+    if let Some(reasoning_delta) = extract_reasoning_delta(&value) {
+        reasoning.push_str(&reasoning_delta);
+        emit_local_ai_stream_event(window, request_id, "reasoning", &reasoning_delta);
+    }
+
+    if let Some(reply_delta) = extract_reply_delta(&value) {
+        reply.push_str(&reply_delta);
+        emit_local_ai_stream_event(window, request_id, "reply", &reply_delta);
+    }
+
+    Ok(())
+}
+
+fn find_sse_event_separator(buffer: &[u8]) -> Option<(usize, usize)> {
+    let lf = buffer.windows(2).position(|window| window == b"\n\n");
+    let crlf = buffer.windows(4).position(|window| window == b"\r\n\r\n");
+    let cr = buffer.windows(2).position(|window| window == b"\r\r");
+
+    [lf.map(|index| (index, 2)), crlf.map(|index| (index, 4)), cr.map(|index| (index, 2))]
+        .into_iter()
+        .flatten()
+        .min_by_key(|(index, _)| *index)
+}
+
+fn extract_sse_payload(event_bytes: &[u8]) -> Option<String> {
+    let text = String::from_utf8_lossy(event_bytes);
+    let payload = text
+        .lines()
+        .filter_map(|line| {
+            let trimmed = line.trim();
+            trimmed
+                .strip_prefix("data:")
+                .map(|value| value.trim_start().to_string())
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    normalize_text(&payload)
+}
+
+fn emit_local_ai_stream_event(
+    window: &WebviewWindow,
+    request_id: &str,
+    channel: &str,
+    delta: &str,
+) {
+    if delta.is_empty() {
+        return;
+    }
+
+    if let Err(error) = window.emit(
+        LOCAL_AI_STREAM_EVENT,
+        LocalAiStreamEvent {
+            request_id: request_id.to_string(),
+            channel: channel.to_string(),
+            delta: delta.to_string(),
+        },
+    ) {
+        tracing::warn!("failed to emit local AI stream event: {error}");
+    }
+}
+
+fn extract_reasoning_delta(value: &Value) -> Option<String> {
+    let choice = value.get("choices")?.get(0)?;
+
+    for scope in [choice.get("delta"), choice.get("message"), Some(choice)] {
+        let Some(scope) = scope else {
+            continue;
+        };
+        for field in ["reasoning_content", "reasoning"] {
+            if let Some(text) = extract_stream_text_field(scope.get(field)) {
+                return Some(text);
+            }
+        }
+    }
+
+    None
+}
+
+fn extract_reply_delta(value: &Value) -> Option<String> {
+    let choice = value.get("choices")?.get(0)?;
+
+    for scope in [choice.get("delta"), choice.get("message"), Some(choice)] {
+        let Some(scope) = scope else {
+            continue;
+        };
+        for field in ["content", "output_text", "text", "refusal"] {
+            if let Some(text) = extract_stream_text_field(scope.get(field)) {
+                return Some(text);
+            }
+        }
+    }
+
+    None
 }
 
 fn build_chat_payload(
@@ -381,11 +550,7 @@ fn build_chat_payload(
         }));
     }
 
-    let user_prompt = build_user_prompt_text(
-        request.prompt.trim(),
-        &request.attachments,
-        disable_thinking,
-    );
+    let user_prompt = build_user_prompt_text(request.prompt.trim(), &request.attachments);
     let image_items = request
         .attachments
         .iter()
@@ -424,20 +589,15 @@ fn build_chat_payload(
         "chat_template_kwargs": {
             "enable_thinking": !disable_thinking
         },
-        "stream": false,
+        "stream": true,
         "temperature": 0.5,
         "top_p": 0.9,
         "max_tokens": max_tokens
     })
 }
 
-fn build_user_prompt_text(
-    prompt: &str,
-    attachments: &[LocalAiAttachment],
-    disable_thinking: bool,
-) -> String {
+fn build_user_prompt_text(prompt: &str, attachments: &[LocalAiAttachment]) -> String {
     let mut sections = Vec::new();
-    let _ = disable_thinking;
     if !prompt.is_empty() {
         sections.push(prompt.to_string());
     }
@@ -487,50 +647,17 @@ fn build_user_prompt_text(
     }
 }
 
-fn extract_reply_text(value: &Value) -> Option<String> {
-    let choice = value.get("choices")?.get(0)?;
-
-    if let Some(message) = choice.get("message") {
-        for field in ["content", "output_text", "text", "refusal"] {
-            if let Some(text) = extract_text_field(message.get(field)) {
-                return Some(text);
-            }
-        }
-    }
-
-    for field in ["text", "output_text", "content"] {
-        if let Some(text) = extract_text_field(choice.get(field)) {
-            return Some(text);
-        }
-    }
-
-    None
-}
-
-fn extract_reasoning_text(value: &Value) -> Option<String> {
-    let choice = value.get("choices")?.get(0)?;
-    let message = choice.get("message")?;
-
-    for field in ["reasoning_content", "reasoning"] {
-        if let Some(text) = extract_text_field(message.get(field)) {
-            return Some(text);
-        }
-    }
-
-    None
-}
-
-fn extract_text_field(value: Option<&Value>) -> Option<String> {
+fn extract_stream_text_field(value: Option<&Value>) -> Option<String> {
     let value = value?;
     match value {
         Value::Null => None,
-        Value::String(text) => normalize_text(text),
-        Value::Number(number) => normalize_text(&number.to_string()),
-        Value::Bool(boolean) => normalize_text(if *boolean { "true" } else { "false" }),
+        Value::String(text) => normalize_stream_text(text),
+        Value::Number(number) => normalize_stream_text(&number.to_string()),
+        Value::Bool(boolean) => normalize_stream_text(if *boolean { "true" } else { "false" }),
         Value::Array(items) => {
             let mut segments = Vec::new();
             for item in items {
-                if let Some(text) = extract_text_field(Some(item)) {
+                if let Some(text) = extract_stream_text_field(Some(item)) {
                     segments.push(text);
                     continue;
                 }
@@ -538,7 +665,7 @@ fn extract_text_field(value: Option<&Value>) -> Option<String> {
                 if let Some(text) = item
                     .get("text")
                     .and_then(Value::as_str)
-                    .and_then(normalize_text)
+                    .and_then(normalize_stream_text)
                 {
                     segments.push(text);
                     continue;
@@ -547,18 +674,21 @@ fn extract_text_field(value: Option<&Value>) -> Option<String> {
                 if let Some(text) = item
                     .get("content")
                     .and_then(Value::as_str)
-                    .and_then(normalize_text)
+                    .and_then(normalize_stream_text)
                 {
                     segments.push(text);
                 }
             }
 
-            let merged = segments.join("\n");
-            normalize_text(&merged)
+            if segments.is_empty() {
+                None
+            } else {
+                Some(segments.join(""))
+            }
         }
         Value::Object(map) => {
             for key in ["text", "content", "output_text"] {
-                if let Some(text) = extract_text_field(map.get(key)) {
+                if let Some(text) = extract_stream_text_field(map.get(key)) {
                     return Some(text);
                 }
             }
@@ -573,6 +703,14 @@ fn normalize_text(text: &str) -> Option<String> {
         None
     } else {
         Some(normalized.to_string())
+    }
+}
+
+fn normalize_stream_text(text: &str) -> Option<String> {
+    if text.is_empty() {
+        None
+    } else {
+        Some(text.to_string())
     }
 }
 
@@ -755,10 +893,6 @@ fn spawn_local_ai_process(assets: &LocalAiAssets) -> Result<Child, String> {
         .arg("--jinja")
         .arg("--reasoning-format")
         .arg("deepseek")
-        .arg("--reasoning")
-        .arg("off")
-        .arg("--reasoning-budget")
-        .arg("0")
         .arg("--threads")
         .arg(recommended_thread_count().to_string())
         .arg("--n-gpu-layers")

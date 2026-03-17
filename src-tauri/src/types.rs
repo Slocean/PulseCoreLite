@@ -349,6 +349,10 @@ pub struct LocalAiChatMessage {
 pub struct LocalAiChatRequest {
     pub prompt: String,
     #[serde(default)]
+    pub request_id: Option<String>,
+    #[serde(default)]
+    pub enable_thinking: Option<bool>,
+    #[serde(default)]
     pub history: Vec<LocalAiChatMessage>,
     #[serde(default)]
     pub attachments: Vec<LocalAiAttachment>,
@@ -366,7 +370,16 @@ pub struct LocalAiTokenUsage {
 #[serde(rename_all = "camelCase")]
 pub struct LocalAiChatResponse {
     pub reply: String,
+    pub reasoning: Option<String>,
     pub model: String,
     pub status: LocalAiStatus,
     pub usage: Option<LocalAiTokenUsage>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalAiStreamEvent {
+    pub request_id: String,
+    pub channel: String,
+    pub delta: String,
 }

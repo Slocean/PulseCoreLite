@@ -23,6 +23,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { ReminderContentType } from '../../types';
+import { renderMarkdown } from '../../utils/markdown';
 
 const WEB_PROTOCOL_WHITELIST = new Set(['https:', 'http:']);
 const IMAGE_PROTOCOL_WHITELIST = new Set(['https:', 'http:', 'data:', 'blob:']);
@@ -97,26 +98,6 @@ function isPrivateNetworkHost(hostname: string): boolean {
   return false;
 }
 
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function renderMarkdown(raw: string) {
-  const escaped = escapeHtml(raw);
-  return escaped
-    .replace(/^###\s+(.+)$/gm, '<h3>$1</h3>')
-    .replace(/^##\s+(.+)$/gm, '<h2>$1</h2>')
-    .replace(/^#\s+(.+)$/gm, '<h1>$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
-    .replace(/\n/g, '<br />');
-}
 </script>
 
 <style scoped>

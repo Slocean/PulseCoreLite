@@ -25,6 +25,8 @@ export interface LocalAiChatMessage {
 
 export interface LocalAiChatRequest {
   prompt: string;
+  requestId?: string | null;
+  enableThinking?: boolean | null;
   history: LocalAiChatMessage[];
   attachments: LocalAiAttachment[];
 }
@@ -37,7 +39,14 @@ export interface LocalAiTokenUsage {
 
 export interface LocalAiChatResponse {
   reply: string;
+  reasoning: string | null;
   model: string;
   status: LocalAiStatus;
   usage: LocalAiTokenUsage | null;
+}
+
+export interface LocalAiStreamEvent {
+  requestId: string;
+  channel: 'reasoning' | 'reply';
+  delta: string;
 }

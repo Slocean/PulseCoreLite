@@ -11,12 +11,12 @@
     indicator-class="toolkit-collapse-indicator"
     @toggle="handleToggle">
     <template #header-actions>
-      <div class="toolkit-ai-header-stats" @click="toggleChatOpen">
+      <!-- <div class="toolkit-ai-header-stats" @click="toggleChatOpen">
         <span class="toolkit-ai-header-stat">{{ t('toolkit.aiDraftCount', { count: draft.length }) }}</span>
         <span class="toolkit-ai-header-stat">
           {{ t('toolkit.aiContextWindow', { count: contextWindowSize }) }}
         </span>
-      </div>
+      </div> -->
     </template>
     <div ref="chatFeedRef" class="toolkit-ai-chat-feed">
       <article
@@ -45,12 +45,32 @@
               v-if="message.role === 'assistant' && !message.pending && message.text"
               native-type="button"
               preset="overlay-chip-soft"
-              @click="copyMessage(sanitizeAiMessageText(message.text))">
+              @click="copyMessage(getMessageText(message))">
               <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
               <span>{{ t('toolkit.aiCopyMessage') }}</span>
             </UiButton>
           </header>
-          <p class="toolkit-ai-bubble-text">{{ getMessageText(message) }}</p>
+          <template v-if="message.role === 'assistant'">
+            <details
+              v-if="message.thinkingEnabled && (getMessageReasoning(message) || message.pending)"
+              class="toolkit-ai-thinking"
+              :open="Boolean(getMessageReasoning(message)) || message.pending">
+              <summary>
+                {{ getMessageReasoning(message) ? t('toolkit.aiThinkingLabel') : t('toolkit.aiThinkingPending') }}
+              </summary>
+              <article
+                v-if="getMessageReasoning(message)"
+                class="toolkit-ai-markdown toolkit-ai-thinking-markdown"
+                v-html="renderMessageMarkdown(getMessageReasoning(message))"></article>
+              <p v-else class="toolkit-ai-stream-placeholder">{{ t('toolkit.aiThinkingPending') }}</p>
+            </details>
+            <article
+              v-if="message.text"
+              class="toolkit-ai-markdown toolkit-ai-bubble-markdown"
+              v-html="renderMessageMarkdown(getMessageText(message))"></article>
+            <p v-else class="toolkit-ai-stream-placeholder">{{ t('toolkit.aiPendingMessage') }}</p>
+          </template>
+          <p v-else class="toolkit-ai-bubble-text">{{ getMessageText(message) }}</p>
           <div v-if="message.attachments.length" class="toolkit-ai-bubble-files">
             <span v-for="attachment in message.attachments" :key="attachment.id" class="toolkit-ai-file-chip">
               {{ attachment.name }} · {{ attachmentKindLabel(attachment) }}
@@ -113,6 +133,14 @@
         :disabled="sending || !isTauriRuntime"
         @keydown="handleComposerKeydown"></textarea>
 
+      <div class="toolkit-ai-mode-row">
+        <div class="toolkit-ai-mode-copy">
+          <span class="toolkit-ai-mode-label">{{ t('toolkit.aiThinkingToggle') }}</span>
+          <p class="toolkit-ai-mode-hint">{{ t('toolkit.aiThinkingToggleHint') }}</p>
+        </div>
+        <UiSwitch v-model="thinkingEnabled" :disabled="sending || !isTauriRuntime" :aria-label="t('toolkit.aiThinkingToggle')" />
+      </div>
+
       <div class="toolkit-ai-toolbar">
         <div class="toolkit-ai-toolbar-actions">
           <UiButton
@@ -151,14 +179,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
 import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
+import UiSwitch from '@/components/ui/Switch';
 import { useToastService } from '@/composables/useToastService';
-import { api, inTauri } from '@/services/tauri';
-import type { LocalAiAttachment, LocalAiChatMessage, LocalAiStatus, LocalAiTokenUsage } from '@/types';
+import { api, inTauri, listenEvent } from '@/services/tauri';
+import type {
+  LocalAiAttachment,
+  LocalAiChatMessage,
+  LocalAiStatus,
+  LocalAiStreamEvent,
+  LocalAiTokenUsage
+} from '@/types';
+import { renderMarkdown } from '@/utils/markdown';
 
 const props = withDefaults(defineProps<{ toastChannel?: string }>(), {
   toastChannel: 'toolkit-ai'
@@ -186,6 +222,8 @@ type UiMessage = {
   id: string;
   role: 'user' | 'assistant' | 'system';
   text: string;
+  reasoningText: string;
+  thinkingEnabled: boolean;
   attachments: UiAttachment[];
   pending: boolean;
   error: boolean;
@@ -218,11 +256,16 @@ const isDropActive = ref(false);
 const localStatus = ref<LocalAiStatus | null>(null);
 const selectedModelDir = ref<string | null>(null);
 const draft = ref('');
+const thinkingEnabled = ref(false);
 const attachments = ref<UiAttachment[]>([]);
 const messages = ref<UiMessage[]>([createWelcomeMessage()]);
 const chatOpen = ref(true);
 const chatFeedRef = ref<HTMLElement | null>(null);
 const composerRef = ref<HTMLTextAreaElement | null>(null);
+const activeStreamRequestId = ref<string | null>(null);
+const thinkingTagState = new Map<string, { insideThink: boolean; pendingTag: string }>();
+
+let unlistenLocalAiStream: (() => void) | null = null;
 
 const workspaceStateLabel = computed(() => {
   if (!isTauriRuntime) return t('toolkit.aiStatusUnavailable');
@@ -251,6 +294,20 @@ const contextWindowSize = computed(
 const sendDisabled = computed(
   () => sending.value || !isTauriRuntime || (!draft.value.trim() && attachments.value.length === 0)
 );
+const messageRenderSignature = computed(() =>
+  messages.value
+    .map(message =>
+      [
+        message.id,
+        message.pending ? '1' : '0',
+        message.error ? '1' : '0',
+        message.text.length,
+        message.reasoningText.length,
+        message.usageTokens ?? ''
+      ].join(':')
+    )
+    .join('|')
+);
 const panelState = computed<ChatPanelState>(() => ({
   localStatus: localStatus.value,
   selectedModelDir: selectedModelDir.value ?? localStatus.value?.selectedModelDir ?? null,
@@ -267,6 +324,14 @@ onMounted(() => {
   autoResizeComposer();
   if (isTauriRuntime) {
     void refreshStatus();
+    void setupLocalAiStreamListener();
+  }
+});
+
+onBeforeUnmount(() => {
+  if (unlistenLocalAiStream) {
+    unlistenLocalAiStream();
+    unlistenLocalAiStream = null;
   }
 });
 
@@ -279,7 +344,7 @@ watch(
 );
 
 watch(
-  () => [messages.value.length, attachments.value.length, statusBusy.value, localStatus.value?.ready],
+  () => [messageRenderSignature.value, attachments.value.length, statusBusy.value, localStatus.value?.ready],
   async () => {
     await nextTick();
     chatFeedRef.value?.scrollTo({ top: chatFeedRef.value.scrollHeight, behavior: 'smooth' });
@@ -345,6 +410,14 @@ function autoResizeComposer() {
 
 function focusComposer() {
   composerRef.value?.focus();
+}
+
+async function setupLocalAiStreamListener() {
+  if (!isTauriRuntime || unlistenLocalAiStream) return;
+  unlistenLocalAiStream = await listenEvent<LocalAiStreamEvent>('local-ai://stream', payload => {
+    if (!activeStreamRequestId.value || payload.requestId !== activeStreamRequestId.value) return;
+    appendPendingMessageStream(payload.requestId, payload.channel, payload.delta);
+  });
 }
 
 async function refreshStatus() {
@@ -471,6 +544,8 @@ async function sendMessage() {
     id: makeId(),
     role: 'user',
     text: effectivePrompt,
+    reasoningText: '',
+    thinkingEnabled: false,
     attachments: attachments.value.map(copyAttachment),
     pending: false,
     error: false,
@@ -481,7 +556,9 @@ async function sendMessage() {
   const pendingMessage: UiMessage = {
     id: makeId(),
     role: 'assistant',
-    text: t('toolkit.aiPendingMessage'),
+    text: '',
+    reasoningText: '',
+    thinkingEnabled: thinkingEnabled.value,
     attachments: [],
     pending: true,
     error: false,
@@ -493,18 +570,24 @@ async function sendMessage() {
   draft.value = '';
   attachments.value = [];
   sending.value = true;
+  activeStreamRequestId.value = pendingMessage.id;
 
   try {
     const response = await api.sendLocalAiMessage({
+      requestId: pendingMessage.id,
+      enableThinking: thinkingEnabled.value,
       prompt: effectivePrompt,
       history: requestHistory,
       attachments: requestAttachments
     });
     localStatus.value = response.status;
+    const finalizedReply = finalizeAssistantReply(pendingMessage.id, response.reply, response.reasoning);
     replacePendingMessage(pendingMessage.id, {
       id: pendingMessage.id,
       role: 'assistant',
-      text: sanitizeAiMessageText(response.reply),
+      text: finalizedReply.reply,
+      reasoningText: finalizedReply.reasoning,
+      thinkingEnabled: thinkingEnabled.value,
       attachments: [],
       pending: false,
       error: false,
@@ -517,6 +600,8 @@ async function sendMessage() {
       id: pendingMessage.id,
       role: 'assistant',
       text: message,
+      reasoningText: findMessageById(pendingMessage.id)?.reasoningText ?? '',
+      thinkingEnabled: findMessageById(pendingMessage.id)?.thinkingEnabled ?? thinkingEnabled.value,
       attachments: [],
       pending: false,
       error: true,
@@ -525,6 +610,8 @@ async function sendMessage() {
     });
     showToast(t('toolkit.aiReplyFailed', { message }), { variant: 'error' });
   } finally {
+    thinkingTagState.delete(pendingMessage.id);
+    activeStreamRequestId.value = null;
     sending.value = false;
     focusComposer();
   }
@@ -543,6 +630,137 @@ function clearAttachments() {
 
 function replacePendingMessage(id: string, nextMessage: UiMessage) {
   messages.value = messages.value.map(message => (message.id === id ? nextMessage : message));
+}
+
+function appendPendingMessageStream(id: string, channel: LocalAiStreamEvent['channel'], delta: string) {
+  if (!delta) return;
+  messages.value = messages.value.map(message => {
+    if (message.id !== id) return message;
+    const parsed =
+      channel === 'reply'
+        ? consumeTaggedAssistantDelta(id, delta)
+        : { reasoning: message.thinkingEnabled ? delta : '', reply: '' };
+    return {
+      ...message,
+      reasoningText: `${message.reasoningText}${parsed.reasoning}`,
+      text: `${message.text}${parsed.reply}`
+    };
+  });
+}
+
+function findMessageById(id: string) {
+  return messages.value.find(message => message.id === id) ?? null;
+}
+
+function consumeTaggedAssistantDelta(id: string, delta: string) {
+  const state = thinkingTagState.get(id) ?? { insideThink: false, pendingTag: '' };
+  const text = `${state.pendingTag}${delta}`;
+  let cursor = 0;
+  let reasoning = '';
+  let reply = '';
+
+  while (cursor < text.length) {
+    if (state.insideThink) {
+      const closeIndex = text.indexOf('</think>', cursor);
+      if (closeIndex === -1) {
+        const trailingTagIndex = findTrailingThinkTagStart(text, cursor);
+        if (trailingTagIndex >= 0) {
+          reasoning += text.slice(cursor, trailingTagIndex);
+          state.pendingTag = text.slice(trailingTagIndex);
+        } else {
+          reasoning += text.slice(cursor);
+          state.pendingTag = '';
+        }
+        thinkingTagState.set(id, state);
+        return { reasoning, reply };
+      }
+
+      reasoning += text.slice(cursor, closeIndex);
+      state.insideThink = false;
+      cursor = closeIndex + '</think>'.length;
+      continue;
+    }
+
+    const openIndex = text.indexOf('<think>', cursor);
+    if (openIndex === -1) {
+      const trailingTagIndex = findTrailingThinkTagStart(text, cursor);
+      if (trailingTagIndex >= 0) {
+        reply += text.slice(cursor, trailingTagIndex);
+        state.pendingTag = text.slice(trailingTagIndex);
+      } else {
+        reply += text.slice(cursor);
+        state.pendingTag = '';
+      }
+      thinkingTagState.set(id, state);
+      return { reasoning, reply };
+    }
+
+    reply += text.slice(cursor, openIndex);
+    state.insideThink = true;
+    cursor = openIndex + '<think>'.length;
+  }
+
+  state.pendingTag = '';
+  thinkingTagState.set(id, state);
+  return { reasoning, reply };
+}
+
+function finalizeAssistantReply(id: string, reply: string, reasoning: string | null) {
+  const streamedMessage = findMessageById(id);
+  const parsedReply = splitAssistantTaggedText(reply);
+  const nextReasoning = streamedMessage?.thinkingEnabled
+    ? reasoning ?? parsedReply.reasoning ?? streamedMessage?.reasoningText ?? ''
+    : '';
+  const nextReply = parsedReply.reply || streamedMessage?.text || reply;
+  thinkingTagState.delete(id);
+
+  return {
+    reasoning: sanitizeAiMessageText(nextReasoning),
+    reply: sanitizeAiMessageText(nextReply)
+  };
+}
+
+function splitAssistantTaggedText(text: string) {
+  if (!text.includes('<think>')) {
+    return { reasoning: '', reply: text };
+  }
+
+  let cursor = 0;
+  let reasoning = '';
+  let reply = '';
+  let insideThink = false;
+
+  while (cursor < text.length) {
+    if (insideThink) {
+      const closeIndex = text.indexOf('</think>', cursor);
+      if (closeIndex === -1) {
+        reasoning += text.slice(cursor);
+        break;
+      }
+      reasoning += text.slice(cursor, closeIndex);
+      insideThink = false;
+      cursor = closeIndex + '</think>'.length;
+      continue;
+    }
+
+    const openIndex = text.indexOf('<think>', cursor);
+    if (openIndex === -1) {
+      reply += text.slice(cursor);
+      break;
+    }
+    reply += text.slice(cursor, openIndex);
+    insideThink = true;
+    cursor = openIndex + '<think>'.length;
+  }
+
+  return { reasoning, reply };
+}
+
+function findTrailingThinkTagStart(text: string, fromIndex: number) {
+  const nextStart = text.lastIndexOf('<', text.length - 1);
+  if (nextStart < fromIndex) return -1;
+  const tail = text.slice(nextStart);
+  return '<think>'.startsWith(tail) || '</think>'.startsWith(tail) ? nextStart : -1;
 }
 
 function removeAttachment(id: string) {
@@ -709,11 +927,21 @@ function getMessageText(message: UiMessage) {
   return message.role === 'assistant' ? sanitizeAiMessageText(message.text) : message.text;
 }
 
+function getMessageReasoning(message: UiMessage) {
+  return message.role === 'assistant' ? sanitizeAiMessageText(message.reasoningText) : '';
+}
+
+function renderMessageMarkdown(text: string) {
+  return renderMarkdown(sanitizeAiMessageText(text));
+}
+
 function createWelcomeMessage(): UiMessage {
   return {
     id: makeId(),
     role: 'assistant',
     text: sanitizeAiMessageText(t('toolkit.aiWelcome')),
+    reasoningText: '',
+    thinkingEnabled: false,
     attachments: [],
     pending: false,
     error: false,
@@ -761,7 +989,8 @@ defineExpose({
 }
 
 .toolkit-ai-toolbar,
-.toolkit-ai-attachment-head {
+.toolkit-ai-attachment-head,
+.toolkit-ai-mode-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -773,6 +1002,25 @@ defineExpose({
   display: grid;
   gap: 4px;
   min-width: 0;
+}
+
+.toolkit-ai-mode-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.toolkit-ai-mode-label {
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.toolkit-ai-mode-hint {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 10px;
+  line-height: 1.4;
 }
 
 .toolkit-ai-bubble-meta {
@@ -962,6 +1210,130 @@ defineExpose({
   line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.toolkit-ai-markdown {
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 12px;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.toolkit-ai-bubble-markdown {
+  min-width: 0;
+}
+
+.toolkit-ai-markdown :deep(p),
+.toolkit-ai-markdown :deep(blockquote),
+.toolkit-ai-markdown :deep(ul),
+.toolkit-ai-markdown :deep(ol),
+.toolkit-ai-markdown :deep(pre),
+.toolkit-ai-markdown :deep(h1),
+.toolkit-ai-markdown :deep(h2),
+.toolkit-ai-markdown :deep(h3),
+.toolkit-ai-markdown :deep(h4),
+.toolkit-ai-markdown :deep(h5),
+.toolkit-ai-markdown :deep(h6) {
+  margin: 0;
+}
+
+.toolkit-ai-markdown :deep(p + p),
+.toolkit-ai-markdown :deep(p + ul),
+.toolkit-ai-markdown :deep(p + ol),
+.toolkit-ai-markdown :deep(p + blockquote),
+.toolkit-ai-markdown :deep(ul + p),
+.toolkit-ai-markdown :deep(ol + p),
+.toolkit-ai-markdown :deep(blockquote + p),
+.toolkit-ai-markdown :deep(pre + p),
+.toolkit-ai-markdown :deep(p + pre) {
+  margin-top: 8px;
+}
+
+.toolkit-ai-markdown :deep(h1),
+.toolkit-ai-markdown :deep(h2),
+.toolkit-ai-markdown :deep(h3) {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.toolkit-ai-markdown :deep(ul),
+.toolkit-ai-markdown :deep(ol) {
+  padding-left: 18px;
+}
+
+.toolkit-ai-markdown :deep(li + li) {
+  margin-top: 4px;
+}
+
+.toolkit-ai-markdown :deep(a) {
+  color: rgba(125, 211, 252, 0.98);
+}
+
+.toolkit-ai-markdown :deep(blockquote) {
+  padding-left: 10px;
+  border-left: 2px solid rgba(125, 211, 252, 0.4);
+  color: rgba(220, 238, 255, 0.84);
+}
+
+.toolkit-ai-markdown :deep(code) {
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+
+.toolkit-ai-markdown :deep(.markdown-code-block) {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  overflow-x: auto;
+  border-radius: 10px;
+  background: rgba(3, 7, 18, 0.56);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.toolkit-ai-markdown :deep(.markdown-code-block code) {
+  padding: 0;
+  background: transparent;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.toolkit-ai-markdown :deep(.markdown-code-block__lang) {
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.toolkit-ai-thinking {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px dashed rgba(125, 211, 252, 0.24);
+  background: rgba(7, 18, 34, 0.34);
+}
+
+.toolkit-ai-thinking summary {
+  cursor: pointer;
+  color: rgba(125, 211, 252, 0.94);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.toolkit-ai-thinking-markdown {
+  color: rgba(212, 235, 255, 0.88);
+}
+
+.toolkit-ai-stream-placeholder {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 11px;
+  line-height: 1.55;
 }
 
 .toolkit-ai-composer-card {
