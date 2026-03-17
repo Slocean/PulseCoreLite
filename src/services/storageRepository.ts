@@ -10,6 +10,7 @@ export const storageKeys = {
   overlayPrefs: `${STORAGE_NAMESPACE}.overlay_prefs`,
   overlayThemes: `${STORAGE_NAMESPACE}.overlay_themes`,
   taskbarPrefs: `${STORAGE_NAMESPACE}.taskbar_prefs`,
+  localAiModelDir: `${STORAGE_NAMESPACE}.local_ai_model_dir`,
   overlayPosition: `${STORAGE_NAMESPACE}.overlay_pos`,
   taskbarPosition: `${STORAGE_NAMESPACE}.taskbar_pos`,
   refreshRate: `${STORAGE_NAMESPACE}.refresh_rate`,

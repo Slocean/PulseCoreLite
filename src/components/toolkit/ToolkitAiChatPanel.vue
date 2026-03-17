@@ -73,11 +73,11 @@
                 </span>
               </button>
               <div v-if="message.thinkingExpanded" class="toolkit-ai-thinking">
-              <article
-                v-if="getMessageReasoning(message)"
-                class="toolkit-ai-markdown toolkit-ai-thinking-markdown"
-                v-html="renderMessageMarkdown(getMessageReasoning(message))"></article>
-              <p v-else class="toolkit-ai-stream-placeholder">{{ t('toolkit.aiThinkingPending') }}</p>
+                <article
+                  v-if="getMessageReasoning(message)"
+                  class="toolkit-ai-markdown toolkit-ai-thinking-markdown"
+                  v-html="renderMessageMarkdown(getMessageReasoning(message))"></article>
+                <p v-else class="toolkit-ai-stream-placeholder">{{ t('toolkit.aiThinkingPending') }}</p>
               </div>
             </div>
             <article
@@ -154,7 +154,10 @@
           <span class="toolkit-ai-mode-label">{{ t('toolkit.aiThinkingToggle') }}</span>
           <p class="toolkit-ai-mode-hint">{{ t('toolkit.aiThinkingToggleHint') }}</p>
         </div>
-        <UiSwitch v-model="thinkingEnabled" :disabled="sending || !isTauriRuntime" :aria-label="t('toolkit.aiThinkingToggle')" />
+        <UiSwitch
+          v-model="thinkingEnabled"
+          :disabled="sending || !isTauriRuntime"
+          :aria-label="t('toolkit.aiThinkingToggle')" />
       </div>
 
       <div class="toolkit-ai-toolbar">
@@ -202,6 +205,7 @@ import UiButton from '@/components/ui/Button';
 import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiSwitch from '@/components/ui/Switch';
 import { useToastService } from '@/composables/useToastService';
+import { storageKeys, storageRepository } from '@/services/storageRepository';
 import { api, inTauri, listenEvent } from '@/services/tauri';
 import type {
   LocalAiAttachment,
@@ -339,6 +343,7 @@ const panelState = computed<ChatPanelState>(() => ({
 
 onMounted(() => {
   autoResizeComposer();
+  restoreSavedModelDir();
   if (isTauriRuntime) {
     void refreshStatus();
     void setupLocalAiStreamListener();
@@ -437,12 +442,26 @@ async function setupLocalAiStreamListener() {
   });
 }
 
+function restoreSavedModelDir() {
+  const savedDir = storageRepository.getStringSync(storageKeys.localAiModelDir) ?? null;
+  if (savedDir && !selectedModelDir.value) {
+    setSelectedModelDir(savedDir);
+  }
+}
+
+function persistSelectedModelDir(value: string | null) {
+  if (!value) return;
+  storageRepository.setStringSync(storageKeys.localAiModelDir, value);
+  void storageRepository.setString(storageKeys.localAiModelDir, value);
+}
+
 async function refreshStatus() {
   if (!isTauriRuntime || statusBusy.value) return;
   statusBusy.value = true;
   try {
     localStatus.value = await api.getLocalAiStatus();
     selectedModelDir.value = localStatus.value.selectedModelDir ?? selectedModelDir.value;
+    persistSelectedModelDir(selectedModelDir.value);
   } catch (error) {
     const message = normalizeErrorMessage(error);
     localStatus.value = {
@@ -487,6 +506,7 @@ async function startLocalAi(modelDir?: string | null) {
   try {
     localStatus.value = await api.startLocalAiRuntime(nextDir);
     selectedModelDir.value = localStatus.value.selectedModelDir ?? nextDir;
+    persistSelectedModelDir(selectedModelDir.value);
   } catch (error) {
     const message = normalizeErrorMessage(error);
     localStatus.value = {
@@ -610,9 +630,7 @@ async function sendMessage() {
       thinkingEnabled:
         currentPendingMessage?.thinkingEnabled ??
         Boolean(finalizedReply.reasoning || currentPendingMessage?.reasoningText),
-      thinkingExpanded:
-        currentPendingMessage?.thinkingExpanded ??
-        Boolean(finalizedReply.reasoning || currentPendingMessage?.reasoningText),
+      thinkingExpanded: false,
       attachments: [],
       pending: false,
       error: false,
