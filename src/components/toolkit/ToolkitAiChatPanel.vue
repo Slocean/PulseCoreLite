@@ -1060,27 +1060,4 @@ defineExpose({
   border-color: rgba(103, 232, 249, 0.42);
   box-shadow: 0 0 0 1px rgba(103, 232, 249, 0.2);
 }
-
-@media (max-width: 760px) {
-  .toolkit-ai-bubble {
-    padding: 12px;
-  }
-
-  .toolkit-ai-composer-card {
-    padding: 10px;
-  }
-
-  .toolkit-ai-header-stats {
-    justify-content: flex-end;
-  }
-
-  .toolkit-ai-toolbar-actions {
-    width: auto;
-    justify-content: flex-start;
-  }
-
-  .toolkit-ai-attachment-grid {
-    grid-template-columns: 1fr;
-  }
-}
 </style>

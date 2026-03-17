@@ -264,27 +264,4 @@ const openModel = computed({
 .toolkit-ai-status-value--inline {
   word-break: break-all;
 }
-
-@media (max-width: 760px) {
-  .toolkit-ai-status-layout {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .toolkit-ai-status-section {
-    padding: 0;
-  }
-
-  .toolkit-ai-status-section + .toolkit-ai-status-section {
-    border-left: 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding-left: 0;
-    padding-top: 8px;
-    margin-left: 0;
-  }
-
-  .toolkit-ai-status-controls {
-    gap: 4px;
-  }
-}
 </style>
