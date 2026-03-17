@@ -224,7 +224,6 @@
     "aiUploadHint": "Supports images and common text files; images go through the bundled local vision flow.",
     "aiShortcutHint": "Shortcut: Ctrl / Cmd + Enter to send",
     "aiThinkingToggle": "Deep Thinking",
-    "aiThinkingToggleHint": "Turn it off for faster direct answers and fewer long reasoning runs.",
     "aiAttachmentQueueTitle": "Queued Attachments",
     "aiAttachmentRemove": "Remove attachment",
     "aiAttachmentRemoveAll": "Clear attachments",

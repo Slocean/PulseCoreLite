@@ -222,7 +222,6 @@
     "aiUploadHint": "支持图片和常见文本文件；图片会走本地多模态识别。",
     "aiShortcutHint": "快捷键：Ctrl / Cmd + Enter 发送",
     "aiThinkingToggle": "深思考",
-    "aiThinkingToggleHint": "关闭后优先直接回答，通常更快，也更不容易长时间卡在思考中。",
     "aiAttachmentQueueTitle": "待发送附件",
     "aiAttachmentRemove": "移除附件",
     "aiAttachmentRemoveAll": "清空附件",

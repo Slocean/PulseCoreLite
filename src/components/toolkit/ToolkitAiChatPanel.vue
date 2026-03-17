@@ -150,14 +150,17 @@
         @keydown="handleComposerKeydown"></textarea>
 
       <div class="toolkit-ai-mode-row">
-        <div class="toolkit-ai-mode-copy">
-          <span class="toolkit-ai-mode-label">{{ t('toolkit.aiThinkingToggle') }}</span>
-          <p class="toolkit-ai-mode-hint">{{ t('toolkit.aiThinkingToggleHint') }}</p>
-        </div>
-        <UiSwitch
-          v-model="thinkingEnabled"
+        <button
+          type="button"
+          class="toolkit-ai-mode-button"
+          :class="{ 'is-active': thinkingEnabled }"
           :disabled="sending || !isTauriRuntime"
-          :aria-label="t('toolkit.aiThinkingToggle')" />
+          :aria-pressed="thinkingEnabled"
+          :aria-label="t('toolkit.aiThinkingToggle')"
+          @click="thinkingEnabled = !thinkingEnabled">
+          <span class="material-symbols-outlined" aria-hidden="true">neurology</span>
+          <span>{{ t('toolkit.aiThinkingToggle') }}</span>
+        </button>
       </div>
 
       <div class="toolkit-ai-toolbar">
@@ -203,7 +206,6 @@ import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
 import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
-import UiSwitch from '@/components/ui/Switch';
 import { useToastService } from '@/composables/useToastService';
 import { storageKeys, storageRepository } from '@/services/storageRepository';
 import { api, inTauri, listenEvent } from '@/services/tauri';
@@ -1053,23 +1055,40 @@ defineExpose({
   min-width: 0;
 }
 
-.toolkit-ai-mode-copy {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.toolkit-ai-mode-label {
-  color: rgba(255, 255, 255, 0.88);
+.toolkit-ai-mode-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.82);
   font-size: 11px;
-  line-height: 1.3;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    background var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
-.toolkit-ai-mode-hint {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.56);
-  font-size: 10px;
-  line-height: 1.4;
+.toolkit-ai-mode-button .material-symbols-outlined {
+  font-size: 14px;
+}
+
+.toolkit-ai-mode-button.is-active {
+  border-color: rgba(96, 165, 250, 0.7);
+  background: rgba(37, 99, 235, 0.24);
+  color: rgba(191, 219, 254, 0.98);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.18);
+}
+
+.toolkit-ai-mode-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .toolkit-ai-bubble-meta {
