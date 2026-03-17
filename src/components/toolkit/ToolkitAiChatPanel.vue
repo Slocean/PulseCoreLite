@@ -149,19 +149,16 @@
         :disabled="sending || !isTauriRuntime"
         @keydown="handleComposerKeydown"></textarea>
 
-      <div class="toolkit-ai-mode-row">
-        <UiSwitch
-          v-model="thinkingEnabled"
-          variant="button"
-          :disabled="sending || !isTauriRuntime"
-          :aria-label="t('toolkit.aiThinkingToggle')">
-          <span class="material-symbols-outlined" aria-hidden="true">neurology</span>
-          <span>{{ t('toolkit.aiThinkingToggle') }}</span>
-        </UiSwitch>
-      </div>
-
       <div class="toolkit-ai-toolbar">
         <div class="toolkit-ai-toolbar-actions">
+          <UiSwitch
+            v-model="thinkingEnabled"
+            variant="button"
+            :disabled="sending || !isTauriRuntime"
+            :aria-label="t('toolkit.aiThinkingToggle')">
+            <span class="material-symbols-outlined" aria-hidden="true">neurology</span>
+            <span>{{ t('toolkit.aiThinkingToggle') }}</span>
+          </UiSwitch>
           <UiButton
             native-type="button"
             preset="overlay-chip-soft"
@@ -253,7 +250,7 @@ type UiMessage = {
 };
 
 const MAX_IMAGE_FILE_SIZE = 8 * 1024 * 1024;
-const MAX_COMPOSER_HEIGHT = 260;
+const MAX_COMPOSER_HEIGHT = 150;
 const TEXT_FILE_EXTENSIONS = new Set([
   'txt',
   'md',
@@ -427,7 +424,7 @@ function autoResizeComposer() {
   const target = composerRef.value;
   if (!target) return;
   target.style.height = 'auto';
-  target.style.height = `${Math.min(target.scrollHeight, MAX_COMPOSER_HEIGHT)}px`;
+  // target.style.height = `${Math.min(target.scrollHeight, MAX_COMPOSER_HEIGHT)}px`;
 }
 
 function focusComposer() {
@@ -1038,8 +1035,7 @@ defineExpose({
 }
 
 .toolkit-ai-toolbar,
-.toolkit-ai-attachment-head,
-.toolkit-ai-mode-row {
+.toolkit-ai-attachment-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1139,7 +1135,7 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 8px;
+  gap: 5px;
   flex-wrap: nowrap;
   width: auto;
 }
@@ -1473,8 +1469,7 @@ defineExpose({
 
 .toolkit-ai-composer {
   width: 100%;
-  min-height: 104px;
-  max-height: 260px;
+  height: 64px;
   resize: none;
   padding: 12px 14px;
   border-radius: 14px;
