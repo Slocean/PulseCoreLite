@@ -1,3 +1,17 @@
+## v1.8.12
+
+- 新增离线 AI 工作台，可在主界面与工具箱中直接访问本地 AI 对话能力。
+- 新增本地模型运行时管理，支持选择模型目录、启动/停止服务、状态刷新与模型目录持久化。
+- 支持上传图片与常见文本文件进行本地分析；在多模态模型可用时，可直接进行图文理解。
+- 优化本地 AI 聊天体验，支持流式回复、深度思考展开、消息复制、Token 显示与 Markdown 渲染。
+- 补充 AI 相关中英文文案，并持续改进 AI 面板布局与交互细节，使用更顺手。
+
+- Added an offline AI workspace that brings local AI chat directly into both the main window and Toolkit.
+- Added local model runtime management with model-folder selection, start/stop controls, status refresh, and persisted model directory settings.
+- Support image uploads and common text-file analysis in the local workflow, with vision understanding available when a multimodal model is present.
+- Improved the local AI chat experience with streaming replies, expandable deep-thinking output, message copy, token display, and Markdown rendering.
+- Added bilingual AI-related copy and refined the AI panel layout and interactions for a smoother workflow.
+
 ## v1.8.11
 
 - 新增悬浮窗内置主题与背景主题支持，主题管理能力更完整。
