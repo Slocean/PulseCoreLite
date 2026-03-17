@@ -114,7 +114,7 @@ const openModel = computed({
 <style scoped>
 .toolkit-ai-overview {
   display: grid;
-  gap: 8px;
+  gap: 4px;
 }
 
 .toolkit-ai-status-label {
@@ -177,9 +177,9 @@ const openModel = computed({
 
 .toolkit-ai-status-section {
   display: grid;
-  gap: 8px;
+  gap: 4px;
   min-width: 0;
-  padding: 8px 0;
+  padding: 6px 0;
 }
 
 .toolkit-ai-status-section + .toolkit-ai-status-section {
@@ -191,7 +191,7 @@ const openModel = computed({
 .toolkit-ai-inline-meta {
   display: inline-flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
   flex-wrap: wrap;
 }
@@ -200,7 +200,7 @@ const openModel = computed({
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
   flex-wrap: wrap;
 }
@@ -209,7 +209,7 @@ const openModel = computed({
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
   flex-wrap: wrap;
 }
@@ -233,8 +233,8 @@ const openModel = computed({
   flex-wrap: nowrap;
   align-items: stretch;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 12px;
-  gap: 8px;
+  padding-top: 8px;
+  gap: 6px;
   align-content: start;
 }
 
@@ -284,7 +284,7 @@ const openModel = computed({
   }
 
   .toolkit-ai-status-controls {
-    gap: 6px;
+    gap: 4px;
   }
 }
 </style>
