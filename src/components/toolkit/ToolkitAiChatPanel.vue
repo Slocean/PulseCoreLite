@@ -45,12 +45,12 @@
               v-if="message.role === 'assistant' && !message.pending && message.text"
               native-type="button"
               preset="overlay-chip-soft"
-              @click="copyMessage(message.text)">
+              @click="copyMessage(sanitizeAiMessageText(message.text))">
               <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
               <span>{{ t('toolkit.aiCopyMessage') }}</span>
             </UiButton>
           </header>
-          <p class="toolkit-ai-bubble-text">{{ message.text }}</p>
+          <p class="toolkit-ai-bubble-text">{{ getMessageText(message) }}</p>
           <div v-if="message.attachments.length" class="toolkit-ai-bubble-files">
             <span v-for="attachment in message.attachments" :key="attachment.id" class="toolkit-ai-file-chip">
               {{ attachment.name }} · {{ attachmentKindLabel(attachment) }}
@@ -465,7 +465,7 @@ async function sendMessage() {
   const requestHistory: LocalAiChatMessage[] = messages.value
     .filter(message => (message.role === 'user' || message.role === 'assistant') && !message.pending)
     .slice(-10)
-    .map(message => ({ role: message.role, content: message.text }));
+    .map(message => ({ role: message.role, content: getMessageText(message) }));
 
   const userMessage: UiMessage = {
     id: makeId(),
@@ -504,7 +504,7 @@ async function sendMessage() {
     replacePendingMessage(pendingMessage.id, {
       id: pendingMessage.id,
       role: 'assistant',
-      text: response.reply,
+      text: sanitizeAiMessageText(response.reply),
       attachments: [],
       pending: false,
       error: false,
@@ -701,11 +701,19 @@ function normalizeErrorMessage(error: unknown) {
   return t('toolkit.aiUnknownError');
 }
 
+function sanitizeAiMessageText(text: string) {
+  return text.replace(/<\/?think>/gi, '').trimStart();
+}
+
+function getMessageText(message: UiMessage) {
+  return message.role === 'assistant' ? sanitizeAiMessageText(message.text) : message.text;
+}
+
 function createWelcomeMessage(): UiMessage {
   return {
     id: makeId(),
     role: 'assistant',
-    text: t('toolkit.aiWelcome'),
+    text: sanitizeAiMessageText(t('toolkit.aiWelcome')),
     attachments: [],
     pending: false,
     error: false,
