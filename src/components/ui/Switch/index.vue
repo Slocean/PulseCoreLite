@@ -1,5 +1,5 @@
 <template>
-  <label class="ui-switch" :aria-label="props.ariaLabel">
+  <label class="ui-switch" :class="`ui-switch--${props.variant}`" :aria-label="props.ariaLabel">
     <input
       type="checkbox"
       role="switch"
@@ -8,7 +8,10 @@
       :aria-labelledby="props.ariaLabelledby"
       :aria-describedby="props.ariaDescribedby"
       @change="handleChange" />
-    <span class="ui-switch-track" aria-hidden="true"></span>
+    <span v-if="props.variant === 'button'" class="ui-switch-button" aria-hidden="true">
+      <slot>{{ props.ariaLabel }}</slot>
+    </span>
+    <span v-else class="ui-switch-track" aria-hidden="true"></span>
   </label>
 </template>
 
@@ -16,6 +19,7 @@
 import type { SwitchProps } from './types'
 
 const props = withDefaults(defineProps<SwitchProps>(), {
+  variant: 'track',
   disabled: false
 })
 
@@ -37,10 +41,13 @@ function handleChange(event: Event) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 22px;
   cursor: pointer;
   user-select: none;
+}
+
+.ui-switch--track {
+  width: 42px;
+  height: 22px;
 }
 
 .ui-switch input {
@@ -56,6 +63,10 @@ function handleChange(event: Event) {
 }
 
 .ui-switch input:disabled + .ui-switch-track {
+  opacity: 0.45;
+}
+
+.ui-switch input:disabled + .ui-switch-button {
   opacity: 0.45;
 }
 
@@ -94,6 +105,47 @@ function handleChange(event: Event) {
 }
 
 .ui-switch input:focus-visible + .ui-switch-track {
+  outline: 2px solid var(--ui-switch-focus-ring-color);
+  outline-offset: var(--ui-switch-focus-ring-offset);
+}
+
+.ui-switch--button {
+  width: auto;
+  height: auto;
+}
+
+.ui-switch-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 11px;
+  line-height: 1;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
+}
+
+.ui-switch-button :deep(.material-symbols-outlined) {
+  font-size: 14px;
+}
+
+.ui-switch input:checked + .ui-switch-button {
+  border-color: rgba(96, 165, 250, 0.7);
+  background: rgba(37, 99, 235, 0.24);
+  color: rgba(191, 219, 254, 0.98);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.18);
+}
+
+.ui-switch input:focus-visible + .ui-switch-button {
   outline: 2px solid var(--ui-switch-focus-ring-color);
   outline-offset: var(--ui-switch-focus-ring-offset);
 }
