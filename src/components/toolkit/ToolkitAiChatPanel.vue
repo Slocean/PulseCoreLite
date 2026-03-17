@@ -13,7 +13,9 @@
     <template #header-actions>
       <div class="toolkit-ai-header-stats" @click="toggleChatOpen">
         <span class="toolkit-ai-header-stat">{{ t('toolkit.aiDraftCount', { count: draft.length }) }}</span>
-        <span class="toolkit-ai-header-stat">{{ t('toolkit.aiContextWindow', { count: contextWindowSize }) }}</span>
+        <span class="toolkit-ai-header-stat">
+          {{ t('toolkit.aiContextWindow', { count: contextWindowSize }) }}
+        </span>
       </div>
     </template>
     <div ref="chatFeedRef" class="toolkit-ai-chat-feed">
@@ -101,7 +103,7 @@
         </div>
       </div>
 
-      <p class="toolkit-ai-hint">{{ isDropActive ? t('toolkit.aiDropHint') : t('toolkit.aiShortcutHint') }}</p>
+      <!-- <p class="toolkit-ai-hint">{{ isDropActive ? t('toolkit.aiDropHint') : t('toolkit.aiShortcutHint') }}</p> -->
 
       <textarea
         ref="composerRef"
@@ -268,9 +270,13 @@ onMounted(() => {
   }
 });
 
-watch(panelState, value => {
-  emit('stateChange', value);
-}, { immediate: true });
+watch(
+  panelState,
+  value => {
+    emit('stateChange', value);
+  },
+  { immediate: true }
+);
 
 watch(
   () => [messages.value.length, attachments.value.length, statusBusy.value, localStatus.value?.ready],
@@ -743,7 +749,7 @@ defineExpose({
 .toolkit-ai-composer-card,
 .toolkit-ai-attachment-stage {
   display: grid;
-  gap: 8px;
+  /* gap: 8px; */
 }
 
 .toolkit-ai-toolbar,
@@ -762,7 +768,7 @@ defineExpose({
 }
 
 .toolkit-ai-bubble-meta {
-  font-size: 10px;
+  font-size: 9px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -900,7 +906,7 @@ defineExpose({
 .toolkit-ai-bubble {
   display: grid;
   gap: 8px;
-  padding: 14px;
+  padding: 5px;
 }
 
 .toolkit-ai-message--user .toolkit-ai-bubble {
@@ -943,14 +949,16 @@ defineExpose({
 
 .toolkit-ai-bubble-text {
   color: rgba(255, 255, 255, 0.94);
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .toolkit-ai-composer-card {
-  padding: 12px;
+  border: 0;
+  background: transparent;
+  /* padding: 12px; */
   transition:
     border-color var(--motion-duration-fast) var(--motion-ease-standard),
     background var(--motion-duration-fast) var(--motion-ease-standard);
