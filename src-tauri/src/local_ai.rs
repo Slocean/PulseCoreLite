@@ -122,7 +122,7 @@ pub async fn send_local_ai_message(
         .clone()
         .unwrap_or_else(|| "local-ai-stream".to_string());
     let enable_thinking = request.enable_thinking.unwrap_or(false);
-    let final_attempt = send_local_ai_request_stream(
+    let first_attempt = send_local_ai_request_stream(
         &client,
         &window,
         &endpoint,
@@ -136,6 +136,20 @@ pub async fn send_local_ai_message(
         },
     )
     .await?;
+    let final_attempt = if should_retry_without_thinking(enable_thinking, &first_attempt) {
+        send_local_ai_request_stream(
+            &client,
+            &window,
+            &endpoint,
+            &request,
+            &request_id,
+            true,
+            LOCAL_AI_MAX_TOKENS_STANDARD,
+        )
+        .await?
+    } else {
+        first_attempt
+    };
 
     let reply = final_attempt.reply.ok_or_else(|| {
         let reasoning_hint = if final_attempt.reasoning.is_some() {
@@ -291,6 +305,16 @@ struct LocalAiParsedResponse {
     model: Option<String>,
     usage: Option<LocalAiTokenUsage>,
     body: String,
+}
+
+fn should_retry_without_thinking(
+    enable_thinking: bool,
+    response: &LocalAiParsedResponse,
+) -> bool {
+    enable_thinking
+        && response.reply.is_none()
+        && response.reasoning.is_some()
+        && matches!(response.finish_reason.as_deref(), Some("length"))
 }
 
 async fn send_local_ai_request_stream(
