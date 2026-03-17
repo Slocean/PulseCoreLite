@@ -21,13 +21,6 @@
               <UiButton
                 native-type="button"
                 preset="overlay-chip-soft"
-                :disabled="statusBusy || !isTauriRuntime || !localStatus?.running"
-                @click="emit('stop-local-ai')">
-                停止
-              </UiButton>
-              <UiButton
-                native-type="button"
-                preset="overlay-chip-soft"
                 :disabled="statusBusy || !isTauriRuntime"
                 @click="emit('refresh-status')">
                 刷新状态
@@ -51,14 +44,25 @@
         </section>
         <section class="toolkit-ai-status-section">
           <div class="toolkit-ai-status-head">
-            <span class="toolkit-ai-status-label">模型目录</span>
-            <UiButton
-              native-type="button"
-              preset="overlay-chip-soft"
-              :disabled="statusBusy || !isTauriRuntime"
-              @click="emit('choose-model-dir')">
-              选择模型目录
-            </UiButton>
+            <div class="toolkit-ai-status-label">模型目录</div>
+            <div class="toolkit-ai-status-controls">
+              <UiButton
+                native-type="button"
+                width="90px"
+                preset="overlay-primary"
+                :disabled="statusBusy || !isTauriRuntime || !selectedModelDir"
+                @click="emit('start-local-ai')">
+                {{ statusBusy ? t('toolkit.aiStartPending') : t('toolkit.aiStart') }}
+              </UiButton>
+              <UiButton
+                native-type="button"
+                width="50px"
+                preset="overlay-primary"
+                :disabled="statusBusy || !isTauriRuntime"
+                @click="emit('choose-model-dir')">
+                选择
+              </UiButton>
+            </div>
           </div>
           <strong class="toolkit-ai-status-value">{{ selectedModelDir || '未选择' }}</strong>
         </section>
@@ -78,10 +82,10 @@
           <div class="toolkit-ai-status-pair toolkit-ai-status-pair--action">
             <UiButton
               native-type="button"
-              preset="overlay-primary"
-              :disabled="statusBusy || !isTauriRuntime || !selectedModelDir"
-              @click="emit('start-local-ai')">
-              {{ statusBusy ? t('toolkit.aiStartPending') : t('toolkit.aiStart') }}
+              preset="overlay-chip-soft"
+              :disabled="statusBusy || !isTauriRuntime || !localStatus?.running"
+              @click="emit('stop-local-ai')">
+              停止
             </UiButton>
           </div>
         </section>
@@ -220,12 +224,10 @@ const openModel = computed({
 }
 
 .toolkit-ai-status-controls {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
-  min-width: 0;
-  flex-wrap: wrap;
 }
 
 .toolkit-ai-status-section--model .toolkit-ai-status-controls {
