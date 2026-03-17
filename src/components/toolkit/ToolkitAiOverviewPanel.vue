@@ -8,9 +8,9 @@
     indicator-class="toolkit-collapse-indicator"
     @toggle="emit('contentChange')">
     <div class="toolkit-ai-overview">
-      <div class="toolkit-ai-status-grid">
-        <div class="toolkit-ai-status-item toolkit-ai-status-item--model">
-          <div class="toolkit-ai-status-head toolkit-ai-status-head--model">
+      <div class="toolkit-ai-status-layout">
+        <section class="toolkit-ai-status-section toolkit-ai-status-section--model">
+          <div class="toolkit-ai-status-head">
             <span class="toolkit-ai-status-label">{{ t('toolkit.aiStatusModel') }}</span>
             <div class="toolkit-ai-status-controls">
               <UiButton native-type="button" preset="overlay-chip-soft" :disabled="statusBusy || !isTauriRuntime || !localStatus?.running" @click="emit('stop-local-ai')">
@@ -26,14 +26,14 @@
             </div>
           </div>
           <strong class="toolkit-ai-status-value">{{ localStatus?.modelName || '0.8B' }}</strong>
-        </div>
-        <div class="toolkit-ai-status-item">
+        </section>
+        <section class="toolkit-ai-status-section">
           <div class="toolkit-ai-status-head">
             <span class="toolkit-ai-status-label">{{ t('toolkit.aiStatusEndpoint') }}</span>
           </div>
           <strong class="toolkit-ai-status-value">{{ localStatus?.serverUrl || '-' }}</strong>
-        </div>
-        <div class="toolkit-ai-status-item">
+        </section>
+        <section class="toolkit-ai-status-section">
           <div class="toolkit-ai-status-head">
             <span class="toolkit-ai-status-label">模型目录</span>
             <UiButton native-type="button" preset="overlay-chip-soft" :disabled="statusBusy || !isTauriRuntime" @click="emit('choose-model-dir')">
@@ -41,8 +41,8 @@
             </UiButton>
           </div>
           <strong class="toolkit-ai-status-value">{{ selectedModelDir || '未选择' }}</strong>
-        </div>
-        <div class="toolkit-ai-status-item toolkit-ai-status-item--stacked">
+        </section>
+        <section class="toolkit-ai-status-section toolkit-ai-status-section--metrics">
           <div class="toolkit-ai-status-pair">
             <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricContext') }}</span>
             <strong class="toolkit-ai-status-value">{{ contextWindowSize }}</strong>
@@ -55,7 +55,7 @@
             <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricMode') }}</span>
             <strong class="toolkit-ai-status-value">{{ capabilityLabel }}</strong>
           </div>
-        </div>
+        </section>
       </div>
 
       <div class="toolkit-ai-actions">
@@ -170,25 +170,23 @@ const openModel = computed({
   background: currentColor;
 }
 
-.toolkit-ai-status-grid {
+.toolkit-ai-status-layout {
   display: grid;
   grid-template-columns: minmax(120px, 0.8fr) minmax(160px, 1.1fr) minmax(180px, 1.4fr) minmax(140px, 1fr);
-  gap: 8px;
+  gap: 0;
 }
 
-.toolkit-ai-status-item {
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+.toolkit-ai-status-section {
   display: grid;
-  gap: 2px;
-  padding: 8px 10px;
+  gap: 8px;
   min-width: 0;
+  padding: 8px 0;
 }
 
-.toolkit-ai-status-item--model {
-  position: relative;
-  padding-top: 40px;
+.toolkit-ai-status-section + .toolkit-ai-status-section {
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  padding-left: 12px;
+  margin-left: 12px;
 }
 
 .toolkit-ai-status-head {
@@ -200,16 +198,6 @@ const openModel = computed({
   flex-wrap: wrap;
 }
 
-.toolkit-ai-status-head--model {
-  position: absolute;
-  top: 8px;
-  left: 10px;
-  right: 10px;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: nowrap;
-}
-
 .toolkit-ai-status-controls {
   display: inline-flex;
   align-items: center;
@@ -219,7 +207,7 @@ const openModel = computed({
   flex-wrap: wrap;
 }
 
-.toolkit-ai-status-head--model .toolkit-ai-status-controls {
+.toolkit-ai-status-section--model .toolkit-ai-status-controls {
   flex: 1;
   flex-wrap: nowrap;
   overflow: hidden;
@@ -233,7 +221,7 @@ const openModel = computed({
   white-space: nowrap;
 }
 
-.toolkit-ai-status-item--stacked {
+.toolkit-ai-status-section--metrics {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   align-content: start;
@@ -253,11 +241,24 @@ const openModel = computed({
 }
 
 @media (max-width: 760px) {
-  .toolkit-ai-status-grid {
+  .toolkit-ai-status-layout {
     grid-template-columns: 1fr;
+    gap: 8px;
   }
 
-  .toolkit-ai-status-item--stacked {
+  .toolkit-ai-status-section {
+    padding: 0;
+  }
+
+  .toolkit-ai-status-section + .toolkit-ai-status-section {
+    border-left: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-left: 0;
+    padding-top: 8px;
+    margin-left: 0;
+  }
+
+  .toolkit-ai-status-section--metrics {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
   }
