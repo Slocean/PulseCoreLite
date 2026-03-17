@@ -171,8 +171,8 @@ const openModel = computed({
 
 .toolkit-ai-status-layout {
   display: grid;
-  grid-template-columns: minmax(120px, 0.8fr) minmax(160px, 1.1fr) minmax(180px, 1.4fr) minmax(140px, 1fr);
-  gap: 0;
+  grid-template-columns: 1fr;
+  gap: 4px;
 }
 
 .toolkit-ai-status-section {
@@ -183,9 +183,8 @@ const openModel = computed({
 }
 
 .toolkit-ai-status-section + .toolkit-ai-status-section {
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
-  padding-left: 12px;
-  margin-left: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 6px;
 }
 
 .toolkit-ai-inline-meta {
