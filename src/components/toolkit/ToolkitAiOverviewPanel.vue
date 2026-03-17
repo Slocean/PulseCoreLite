@@ -22,10 +22,6 @@
               <UiButton native-type="button" preset="overlay-chip-soft" :disabled="statusBusy || !isTauriRuntime" @click="emit('refresh-status')">
                 刷新状态
               </UiButton>
-              <div class="toolkit-ai-state-pill toolkit-ai-state-pill--compact" :class="`is-${workspaceStateTone}`">
-                <span class="toolkit-ai-state-dot" aria-hidden="true"></span>
-                <span>{{ workspaceStateLabel }}</span>
-              </div>
             </div>
           </div>
         </section>
@@ -34,6 +30,10 @@
             <div class="toolkit-ai-inline-meta">
               <span class="toolkit-ai-status-label">{{ t('toolkit.aiStatusEndpoint') }}</span>
               <strong class="toolkit-ai-status-value toolkit-ai-status-value--inline">{{ localStatus?.serverUrl || '-' }}</strong>
+            </div>
+            <div class="toolkit-ai-state-pill toolkit-ai-state-pill--compact" :class="`is-${workspaceStateTone}`">
+              <span class="toolkit-ai-state-dot" aria-hidden="true"></span>
+              <span>{{ workspaceStateLabel }}</span>
             </div>
           </div>
         </section>
