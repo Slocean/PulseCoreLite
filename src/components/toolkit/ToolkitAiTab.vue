@@ -2,6 +2,7 @@
   <UiToast :channel="toastChannel" />
 
   <ToolkitAiOverviewPanel
+    style="margin-bottom: 8px"
     v-model="overviewOpen"
     :local-status="chatState.localStatus"
     :selected-model-dir="chatState.selectedModelDir"

@@ -834,12 +834,13 @@ defineExpose({
 }
 
 .toolkit-ai-chat-feed {
-  min-height: 280px;
-  max-height: 440px;
+  height: 150px;
+  /* max-height: 440px; */
   overflow-y: auto;
   display: grid;
   gap: 12px;
   padding-right: 2px;
+  padding-bottom: 8px;
 }
 
 .toolkit-ai-toolbar {
