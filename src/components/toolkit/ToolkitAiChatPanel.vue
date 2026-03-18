@@ -222,6 +222,7 @@ type ChatPanelState = {
   selectedModelDir: string | null;
   selectedLauncherDir: string | null;
   launcherNeedsSelection: boolean;
+  busyState: 'idle' | 'loading' | 'start' | 'stop';
   workspaceStateTone: string;
   workspaceStateLabel: string;
   contextWindowSize: number;
@@ -271,6 +272,7 @@ const { t, locale } = useI18n();
 const { showToast } = useToastService(props.toastChannel);
 const isTauriRuntime = inTauri();
 const statusBusy = ref(false);
+const busyState = ref<'idle' | 'loading' | 'start' | 'stop'>('idle');
 const sending = ref(false);
 const isDropActive = ref(false);
 const localStatus = ref<LocalAiStatus | null>(null);
@@ -290,6 +292,7 @@ let unlistenLocalAiStream: (() => void) | null = null;
 
 const workspaceStateLabel = computed(() => {
   if (!isTauriRuntime) return t('toolkit.aiStatusUnavailable');
+  if (busyState.value === 'loading') return t('toolkit.aiStatusLoading');
   if (statusBusy.value || localStatus.value?.running) return t('toolkit.aiStatusStarting');
   if (localStatus.value?.ready) return t('toolkit.aiStatusReady');
   return t('toolkit.aiStatusStopped');
@@ -334,6 +337,7 @@ const panelState = computed<ChatPanelState>(() => ({
   selectedModelDir: selectedModelDir.value ?? localStatus.value?.selectedModelDir ?? null,
   selectedLauncherDir: selectedLauncherDir.value ?? localStatus.value?.selectedLauncherDir ?? null,
   launcherNeedsSelection: localStatus.value?.launcherNeedsSelection ?? false,
+  busyState: busyState.value,
   workspaceStateTone: workspaceStateTone.value,
   workspaceStateLabel: workspaceStateLabel.value,
   contextWindowSize: contextWindowSize.value,
@@ -474,6 +478,7 @@ function persistSelectedLauncherDir(value: string | null) {
 async function refreshStatus() {
   if (!isTauriRuntime || statusBusy.value) return;
   statusBusy.value = true;
+  busyState.value = 'loading';
   try {
     localStatus.value = await api.getLocalAiStatus();
     selectedModelDir.value = localStatus.value.selectedModelDir ?? selectedModelDir.value;
@@ -497,6 +502,7 @@ async function refreshStatus() {
     };
     showToast(t('toolkit.aiStartFailed', { message }), { variant: 'error' });
   } finally {
+    busyState.value = 'idle';
     statusBusy.value = false;
   }
 }
@@ -525,6 +531,7 @@ async function startLocalAi(modelDir?: string | null, launcherDir?: string | nul
   }
 
   statusBusy.value = true;
+  busyState.value = 'start';
   selectedModelDir.value = nextDir;
   selectedLauncherDir.value = nextLauncherDir ?? null;
   try {
@@ -552,6 +559,7 @@ async function startLocalAi(modelDir?: string | null, launcherDir?: string | nul
     };
     showToast(t('toolkit.aiStartFailed', { message }), { variant: 'error' });
   } finally {
+    busyState.value = 'idle';
     statusBusy.value = false;
   }
 }
@@ -559,6 +567,7 @@ async function startLocalAi(modelDir?: string | null, launcherDir?: string | nul
 async function stopLocalAi() {
   if (!isTauriRuntime || statusBusy.value) return;
   statusBusy.value = true;
+  busyState.value = 'stop';
   try {
     localStatus.value = await api.stopLocalAiRuntime();
     selectedModelDir.value = localStatus.value.selectedModelDir ?? selectedModelDir.value;
@@ -566,6 +575,7 @@ async function stopLocalAi() {
   } catch (error) {
     showToast(normalizeErrorMessage(error), { variant: 'error' });
   } finally {
+    busyState.value = 'idle';
     statusBusy.value = false;
   }
 }

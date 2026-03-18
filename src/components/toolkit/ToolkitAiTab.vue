@@ -8,6 +8,7 @@
     :selected-model-dir="chatState.selectedModelDir"
     :selected-launcher-dir="chatState.selectedLauncherDir"
     :launcher-needs-selection="chatState.launcherNeedsSelection"
+    :busy-state="chatState.busyState"
     :workspace-state-tone="chatState.workspaceStateTone"
     :workspace-state-label="chatState.workspaceStateLabel"
     :context-window-size="chatState.contextWindowSize"
@@ -50,6 +51,7 @@ type ChatOverviewState = {
   selectedModelDir: string | null;
   selectedLauncherDir: string | null;
   launcherNeedsSelection: boolean;
+  busyState: 'idle' | 'loading' | 'start' | 'stop';
   workspaceStateTone: string;
   workspaceStateLabel: string;
   contextWindowSize: number;
@@ -74,6 +76,7 @@ const chatState = reactive<ChatOverviewState>({
   selectedModelDir: null,
   selectedLauncherDir: null,
   launcherNeedsSelection: false,
+  busyState: 'idle',
   workspaceStateTone: 'muted',
   workspaceStateLabel: '-',
   contextWindowSize: 0,

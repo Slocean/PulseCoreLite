@@ -14,7 +14,7 @@
             <div class="toolkit-ai-inline-meta">
               <span class="toolkit-ai-status-label">{{ t('toolkit.aiStatusModel') }}</span>
               <strong class="toolkit-ai-status-value toolkit-ai-status-value--inline">
-                {{ localStatus?.modelName || '0.8B' }}
+                {{ modelDisplayName }}
               </strong>
             </div>
             <div class="toolkit-ai-status-controls">
@@ -53,11 +53,11 @@
                 :disabled="
                   statusBusy ||
                   !isTauriRuntime ||
-                  !selectedModelDir ||
-                  (launcherNeedsSelection && !selectedLauncherDir)
+                  ((!localStatus?.running && !selectedModelDir) ||
+                    (!localStatus?.running && launcherNeedsSelection && !selectedLauncherDir))
                 "
-                @click="emit('start-local-ai')">
-                {{ statusBusy ? t('toolkit.aiStartPending') : t('toolkit.aiStart') }}
+                @click="localStatus?.running ? emit('stop-local-ai') : emit('start-local-ai')">
+                {{ actionLabel }}
               </UiButton>
               <UiButton
                 native-type="button"
@@ -100,15 +100,6 @@
             <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricMode') }}</span>
             <strong class="toolkit-ai-status-value">{{ capabilityLabel }}</strong>
           </div>
-          <div class="toolkit-ai-status-pair toolkit-ai-status-pair--action">
-            <UiButton
-              native-type="button"
-              preset="overlay-chip-soft"
-              :disabled="statusBusy || !isTauriRuntime || !localStatus?.running"
-              @click="emit('stop-local-ai')">
-              停止
-            </UiButton>
-          </div>
         </section>
       </div>
     </div>
@@ -129,6 +120,7 @@ const props = defineProps<{
   selectedModelDir: string | null;
   selectedLauncherDir: string | null;
   launcherNeedsSelection: boolean;
+  busyState: 'idle' | 'loading' | 'start' | 'stop';
   workspaceStateTone: string;
   workspaceStateLabel: string;
   contextWindowSize: number;
@@ -152,6 +144,19 @@ const { t } = useI18n();
 const openModel = computed({
   get: () => props.modelValue,
   set: value => emit('update:modelValue', value)
+});
+const actionLabel = computed(() => {
+  if (props.busyState === 'loading') return t('toolkit.aiLoading');
+  if (props.busyState === 'start') return t('toolkit.aiStartPending');
+  if (props.busyState === 'stop') return t('toolkit.aiStopPending');
+  return props.localStatus?.running ? t('toolkit.aiStop') : t('toolkit.aiStart');
+});
+const modelDisplayName = computed(() => {
+  const value = props.selectedModelDir?.trim();
+  if (!value) return '-';
+  const normalized = value.replace(/[\\/]+$/, '');
+  const segments = normalized.split(/[\\/]/).filter(Boolean);
+  return segments[segments.length - 1] || '-';
 });
 </script>
 
@@ -280,16 +285,8 @@ const openModel = computed({
   display: grid;
   gap: 1px;
   min-width: 0;
-  flex: 0 0 calc((100% - 24px) / 4);
-  max-width: calc((100% - 24px) / 4);
-}
-
-.toolkit-ai-status-pair--action {
-  align-self: stretch;
-}
-
-.toolkit-ai-status-pair--action :deep(.ui-button) {
-  width: 100%;
+  flex: 0 0 calc((100% - 12px) / 3);
+  max-width: calc((100% - 12px) / 3);
 }
 
 .toolkit-ai-status-value {
