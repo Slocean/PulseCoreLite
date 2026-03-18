@@ -1,3 +1,13 @@
+## v1.9.0
+
+- AI 工具箱新增 Launcher 目录管理，支持选择并持久化启动目录，便于本地 AI 运行时按预期加载相关资源。
+- 优化 AI 工具箱运行状态反馈，启动、停止与加载过程会显示更清晰的忙碌状态和操作文案，交互更直观。
+- 改进发布打包与更新产物管理，区分 Lite 与 AI Runtime 清单，并增强缺失 Launcher 资源时的校验与错误处理，提升更新分发稳定性。
+
+- Added launcher directory management to the AI Toolkit, including selection and persistence of the launcher path for local AI runtime resources.
+- Improved AI Toolkit runtime feedback with clearer busy states and action labels during loading, start, and stop flows.
+- Refined release packaging and updater artifact management by separating Lite and AI Runtime manifests and strengthening validation/error handling for missing launcher assets.
+
 ## v1.8.12
 
 - 新增离线 AI 工作台，可在主界面与工具箱中直接访问本地 AI 对话能力。
