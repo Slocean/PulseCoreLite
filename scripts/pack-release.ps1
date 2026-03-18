@@ -9,70 +9,78 @@ if (-not (Test-Path -LiteralPath $tauriCliPath -PathType Leaf)) {
   throw "Tauri CLI not found at $tauriCliPath. Run package install first (npm install / pnpm install)."
 }
 
-function Resolve-WebViewInstallerPath {
-  if ($env:WEBVIEW2_OFFLINE_INSTALLER) {
-    $envPath = $env:WEBVIEW2_OFFLINE_INSTALLER
-    if (Test-Path -LiteralPath $envPath -PathType Leaf) {
-      return (Resolve-Path -LiteralPath $envPath).Path
-    }
-    throw "WEBVIEW2_OFFLINE_INSTALLER is set but file does not exist: $envPath"
+function Get-ReleaseRepositoryInfo {
+  $owner = if ($env:GITHUB_OWNER) { $env:GITHUB_OWNER } else { "Slocean" }
+  $repo = if ($env:GITHUB_REPO) { $env:GITHUB_REPO } else { "PulseCoreLite" }
+  return @{
+    Owner = $owner
+    Repo = $repo
   }
-
-  $candidates = @(
-    (Join-Path $projectRoot "build-assets\webview2\install_webview2.exe"),
-    (Join-Path $projectRoot "build-assets\webview2\MicrosoftEdgeWebView2RuntimeInstallerX64.exe")
-  )
-
-  foreach ($candidate in $candidates) {
-    if (Test-Path -LiteralPath $candidate -PathType Leaf) {
-      return (Resolve-Path -LiteralPath $candidate).Path
-    }
-  }
-
-  throw @"
-WebView2 offline installer is required for full installers and portable-full output.
-Put it at:
-  build-assets\webview2\install_webview2.exe
-or set:
-  WEBVIEW2_OFFLINE_INSTALLER=<absolute-path-to-offline-installer>
-
-Download from Microsoft (Evergreen Standalone Installer, x64):
-https://developer.microsoft.com/microsoft-edge/webview2/
-"@
 }
 
-function Build-WithWebViewMode {
+function Get-UpdaterEndpointUrl {
   param(
-    [Parameter(Mandatory = $true)][string]$ModeType,
-    [Parameter(Mandatory = $true)][bool]$Silent,
+    [Parameter(Mandatory = $true)][string]$ManifestName
+  )
+
+  $repoInfo = Get-ReleaseRepositoryInfo
+  return "https://github.com/$($repoInfo.Owner)/$($repoInfo.Repo)/releases/latest/download/$ManifestName"
+}
+
+function Invoke-TauriBuild {
+  param(
+    [Parameter(Mandatory = $true)][string]$ManifestName,
+    [Parameter(Mandatory = $true)][bool]$IncludeLauncher,
     [Parameter()][Nullable[bool]]$CreateUpdaterArtifacts
   )
 
   $overridePath = [System.IO.Path]::ChangeExtension([System.IO.Path]::GetTempFileName(), ".json")
+  $endpointUrl = Get-UpdaterEndpointUrl -ManifestName $ManifestName
   $override = @{
     bundle = @{
       createUpdaterArtifacts = $CreateUpdaterArtifacts
       windows = @{
         webviewInstallMode = @{
-          type = $ModeType
-          silent = $Silent
+          type = "downloadBootstrapper"
+          silent = $true
         }
       }
     }
+    plugins = @{
+      updater = @{
+        endpoints = @($endpointUrl)
+      }
+    }
+  }
+
+  if (-not $IncludeLauncher) {
+    $override.bundle.Remove("resources")
+  } else {
+    $override.bundle.resources = @(
+      (Join-Path $projectRoot "build-assets\llama_CPU_X64")
+    )
   }
 
   if ($null -eq $CreateUpdaterArtifacts) {
     $override.bundle.Remove("createUpdaterArtifacts")
   }
 
+  $previousManifestUrl = $env:VITE_UPDATE_MANIFEST_URL
+
   try {
+    $env:VITE_UPDATE_MANIFEST_URL = $endpointUrl
     $override | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $overridePath -Encoding ASCII
     & $tauriCliPath build --config $overridePath
     if ($LASTEXITCODE -ne 0) {
-      throw "tauri build failed for webview mode '$ModeType' with exit code $LASTEXITCODE"
+      throw "tauri build failed for manifest '$ManifestName' with exit code $LASTEXITCODE"
     }
   }
   finally {
+    if ($null -eq $previousManifestUrl) {
+      Remove-Item Env:\VITE_UPDATE_MANIFEST_URL -ErrorAction SilentlyContinue
+    } else {
+      $env:VITE_UPDATE_MANIFEST_URL = $previousManifestUrl
+    }
     if (Test-Path -LiteralPath $overridePath) {
       Remove-Item -LiteralPath $overridePath -Force
     }
@@ -126,7 +134,7 @@ function Get-ReleaseNotes {
 
   $notesText = ($notes -join "`n").Trim()
   $historyUrl = "https://github.com/Slocean/PulseCoreLite/releases"
-  $historyLine = "查看历史版本: $historyUrl"
+  $historyLine = "View release history: $historyUrl"
   if ($notesText -notmatch [regex]::Escape($historyUrl)) {
     if ($notesText) {
       $notesText = "$notesText`n`n$historyLine"
@@ -208,8 +216,13 @@ $exeName = "$($packageJson.name).exe"
 $date = Get-Date -Format "yyyyMMdd"
 $base = "PulseCoreLite_v${version}_${date}"
 $releaseDir = Join-Path $projectRoot "release"
+$launcherSourceDir = Join-Path $projectRoot "build-assets\llama_CPU_X64"
 New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
-$webviewInstaller = Resolve-WebViewInstallerPath
+
+if (-not (Test-Path -LiteralPath $launcherSourceDir -PathType Container)) {
+  throw "Launcher assets not found: $launcherSourceDir"
+}
+
 $hasSigningKey = -not [string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY)
 $createUpdaterArtifacts = $hasSigningKey
 if (-not $hasSigningKey) {
@@ -217,19 +230,18 @@ if (-not $hasSigningKey) {
   Write-Host "[pack-release] Set TAURI_SIGNING_PRIVATE_KEY to re-enable signatures (.sig) and updater manifest output."
 }
 
-# Clean stale outputs for this version/date naming set so release folder stays unambiguous.
 $staleNames = @(
   "${base}_setup-lite.exe",
   "${base}_setup-lite.exe.sig",
   "${base}_setup-lite.msi",
   "${base}_portable-lite.exe",
-  "${base}_setup-full.exe",
-  "${base}_setup-full.msi",
-  "${base}_portable-full.zip",
-  "${base}_setup.exe",
-  "${base}_setup.msi",
-  "${base}_portable.exe",
-  "latest.json"
+  "${base}_setup-ai.exe",
+  "${base}_setup-ai.exe.sig",
+  "${base}_setup-ai.msi",
+  "${base}_portable-ai.zip",
+  "latest.json",
+  "latest-lite.json",
+  "latest-ai.json"
 )
 foreach ($name in $staleNames) {
   $path = Join-Path $releaseDir $name
@@ -238,8 +250,8 @@ foreach ($name in $staleNames) {
   }
 }
 
-Write-Host "[pack-release] Building standard (no bundled WebView2) installers..."
-Build-WithWebViewMode -ModeType "downloadBootstrapper" -Silent $true -CreateUpdaterArtifacts $createUpdaterArtifacts
+Write-Host "[pack-release] Building lite release artifacts..."
+Invoke-TauriBuild -ManifestName "latest-lite.json" -IncludeLauncher $false -CreateUpdaterArtifacts $createUpdaterArtifacts
 $liteOutputs = Collect-BuildOutputs -Version $version -ExeName $exeName
 
 $setupLiteExeOut = Join-Path $releaseDir "${base}_setup-lite.exe"
@@ -254,85 +266,51 @@ if ($liteOutputs.NsisSig) {
   Copy-Item -LiteralPath $liteOutputs.NsisSig -Destination $setupLiteSigOut -Force
 }
 
-Write-Host "[pack-release] Building full (bundled offline WebView2) installers..."
-Build-WithWebViewMode -ModeType "offlineInstaller" -Silent $true -CreateUpdaterArtifacts $createUpdaterArtifacts
-$fullOutputs = Collect-BuildOutputs -Version $version -ExeName $exeName
+Write-Host "[pack-release] Building AI runtime release artifacts..."
+Invoke-TauriBuild -ManifestName "latest-ai.json" -IncludeLauncher $true -CreateUpdaterArtifacts $createUpdaterArtifacts
+$aiOutputs = Collect-BuildOutputs -Version $version -ExeName $exeName
 
-$setupFullExeOut = Join-Path $releaseDir "${base}_setup-full.exe"
-$setupFullMsiOut = Join-Path $releaseDir "${base}_setup-full.msi"
-$portableFullZip = Join-Path $releaseDir "${base}_portable-full.zip"
-$portableFullDir = Join-Path $releaseDir "${base}_portable-full"
+$setupAiExeOut = Join-Path $releaseDir "${base}_setup-ai.exe"
+$setupAiMsiOut = Join-Path $releaseDir "${base}_setup-ai.msi"
+$portableAiZip = Join-Path $releaseDir "${base}_portable-ai.zip"
+$portableAiDir = Join-Path $releaseDir "${base}_portable-ai"
+$setupAiSigOut = "${setupAiExeOut}.sig"
 
-Copy-Item -LiteralPath $fullOutputs.Nsis.FullName -Destination $setupFullExeOut -Force
-Copy-Item -LiteralPath $fullOutputs.Msi.FullName -Destination $setupFullMsiOut -Force
-
-if (Test-Path -LiteralPath $portableFullDir) {
-  Remove-Item -LiteralPath $portableFullDir -Recurse -Force
+Copy-Item -LiteralPath $aiOutputs.Nsis.FullName -Destination $setupAiExeOut -Force
+Copy-Item -LiteralPath $aiOutputs.Msi.FullName -Destination $setupAiMsiOut -Force
+if ($aiOutputs.NsisSig) {
+  Copy-Item -LiteralPath $aiOutputs.NsisSig -Destination $setupAiSigOut -Force
 }
-if (Test-Path -LiteralPath $portableFullZip) {
-  Remove-Item -LiteralPath $portableFullZip -Force
+
+if (Test-Path -LiteralPath $portableAiDir) {
+  Remove-Item -LiteralPath $portableAiDir -Recurse -Force
 }
-New-Item -ItemType Directory -Path $portableFullDir -Force | Out-Null
+if (Test-Path -LiteralPath $portableAiZip) {
+  Remove-Item -LiteralPath $portableAiZip -Force
+}
+New-Item -ItemType Directory -Path $portableAiDir -Force | Out-Null
 
-Copy-Item -LiteralPath $fullOutputs.PortableExe -Destination (Join-Path $portableFullDir $exeName) -Force
-Copy-Item -LiteralPath $webviewInstaller -Destination (Join-Path $portableFullDir "install_webview2.exe") -Force
+Copy-Item -LiteralPath $aiOutputs.PortableExe -Destination (Join-Path $portableAiDir $exeName) -Force
+Copy-Item -LiteralPath $launcherSourceDir -Destination (Join-Path $portableAiDir "llama_CPU_X64") -Recurse -Force
 
-$launcherPath = Join-Path $portableFullDir "Start_PulseCoreLite.bat"
-$launcherContent = @"
-@echo off
-setlocal
-set "APP_EXE=$exeName"
-set "WV2_SETUP=install_webview2.exe"
-
-reg query "HKLM\SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" /v pv >nul 2>&1
-if %errorlevel% neq 0 (
-  reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" /v pv >nul 2>&1
-)
-
-if %errorlevel% neq 0 (
-  echo [PulseCoreLite] WebView2 runtime not detected.
-  echo [PulseCoreLite] Installing WebView2 runtime...
-  if not exist "%WV2_SETUP%" (
-    echo [PulseCoreLite] Missing %WV2_SETUP%.
-    echo [PulseCoreLite] Please install WebView2 manually, then run %APP_EXE%.
-    pause
-    exit /b 1
-  )
-  start /wait "" "%WV2_SETUP%" /silent /install
-  if %errorlevel% neq 0 (
-    echo [PulseCoreLite] WebView2 installation failed. ExitCode=%errorlevel%
-    pause
-    exit /b %errorlevel%
-  )
-)
-
-start "" "%APP_EXE%"
-endlocal
-"@
-Set-Content -LiteralPath $launcherPath -Value $launcherContent -Encoding ASCII
-
-$readmePath = Join-Path $portableFullDir "README.txt"
+$readmePath = Join-Path $portableAiDir "README.txt"
 $readmeContent = @"
-PulseCoreLite Portable Full
-===========================
+PulseCoreLite Portable AI
+=========================
 
 What is included:
 - $exeName (portable app)
-- install_webview2.exe (WebView2 offline installer)
-- Start_PulseCoreLite.bat (recommended launcher)
+- llama_CPU_X64\ (bundled local AI launcher)
 
 How to run:
-1) Double-click Start_PulseCoreLite.bat
-2) If WebView2 is missing, the script installs it silently first.
-3) The app starts automatically.
-
-Manual fallback:
-- Run install_webview2.exe manually, then run $exeName
+1) Launch $exeName
+2) In the AI panel, choose your model folder that contains .gguf files
+3) The bundled launcher will be detected automatically
 "@
 Set-Content -LiteralPath $readmePath -Value $readmeContent -Encoding ASCII
 
-Compress-Archive -Path $portableFullDir -DestinationPath $portableFullZip -Force
-Remove-Item -LiteralPath $portableFullDir -Recurse -Force
+Compress-Archive -Path $portableAiDir -DestinationPath $portableAiZip -Force
+Remove-Item -LiteralPath $portableAiDir -Recurse -Force
 
 $githubOwner = $env:GITHUB_OWNER
 $githubRepo = $env:GITHUB_REPO
@@ -344,13 +322,25 @@ if ($githubOwner -and $githubRepo -and (Test-Path -LiteralPath $setupLiteSigOut 
   } else {
     "https://github.com/$githubOwner/$githubRepo/releases/latest/download"
   }
-  $downloadUrl = "$downloadBase/$([System.IO.Path]::GetFileName($setupLiteExeOut))"
   $notes = Get-ReleaseNotes -Version $version
+
+  $liteDownloadUrl = "$downloadBase/$([System.IO.Path]::GetFileName($setupLiteExeOut))"
   $latestJsonPath = Join-Path $releaseDir "latest.json"
-  New-UpdaterManifest -Version $version -SignaturePath $setupLiteSigOut -DownloadUrl $downloadUrl -OutputPath $latestJsonPath -Notes $notes
-  Write-Host "[pack-release] Updater manifest generated: $latestJsonPath"
+  $latestLiteJsonPath = Join-Path $releaseDir "latest-lite.json"
+  New-UpdaterManifest -Version $version -SignaturePath $setupLiteSigOut -DownloadUrl $liteDownloadUrl -OutputPath $latestJsonPath -Notes $notes
+  Copy-Item -LiteralPath $latestJsonPath -Destination $latestLiteJsonPath -Force
+  Write-Host "[pack-release] Lite updater manifests generated: $latestJsonPath, $latestLiteJsonPath"
+
+  if (Test-Path -LiteralPath $setupAiSigOut -PathType Leaf) {
+    $aiDownloadUrl = "$downloadBase/$([System.IO.Path]::GetFileName($setupAiExeOut))"
+    $latestAiJsonPath = Join-Path $releaseDir "latest-ai.json"
+    New-UpdaterManifest -Version $version -SignaturePath $setupAiSigOut -DownloadUrl $aiDownloadUrl -OutputPath $latestAiJsonPath -Notes $notes
+    Write-Host "[pack-release] AI updater manifest generated: $latestAiJsonPath"
+  } else {
+    Write-Host "[pack-release] Skipping AI updater manifest because AI signature is missing."
+  }
 } else {
-  Write-Host "[pack-release] Skipping updater manifest (set GITHUB_OWNER/GITHUB_REPO and ensure .sig is present)."
+  Write-Host "[pack-release] Skipping updater manifests (set GITHUB_OWNER/GITHUB_REPO and ensure .sig is present)."
 }
 
 Write-Host ""
@@ -358,12 +348,18 @@ Write-Host "[pack-release] Done. Generated release artifacts:"
 Write-Host " - $setupLiteExeOut"
 Write-Host " - $setupLiteMsiOut"
 Write-Host " - $portableLiteOut"
-Write-Host " - $setupFullExeOut"
-Write-Host " - $setupFullMsiOut"
-Write-Host " - $portableFullZip"
+Write-Host " - $setupAiExeOut"
+Write-Host " - $setupAiMsiOut"
+Write-Host " - $portableAiZip"
 if (Test-Path -LiteralPath $setupLiteSigOut -PathType Leaf) {
   Write-Host " - $setupLiteSigOut"
 }
-if (Test-Path -LiteralPath (Join-Path $releaseDir "latest.json") -PathType Leaf) {
-  Write-Host " - $(Join-Path $releaseDir "latest.json")"
+if (Test-Path -LiteralPath $setupAiSigOut -PathType Leaf) {
+  Write-Host " - $setupAiSigOut"
+}
+foreach ($manifestName in @("latest.json", "latest-lite.json", "latest-ai.json")) {
+  $manifestPath = Join-Path $releaseDir $manifestName
+  if (Test-Path -LiteralPath $manifestPath -PathType Leaf) {
+    Write-Host " - $manifestPath"
+  }
 }

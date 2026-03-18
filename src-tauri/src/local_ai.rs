@@ -922,8 +922,13 @@ fn local_ai_search_roots(app: &AppHandle) -> Vec<PathBuf> {
         .parent()
         .map(Path::to_path_buf)
         .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")));
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|path| path.parent().map(Path::to_path_buf));
 
     for candidate in [
+        exe_dir.clone(),
+        exe_dir.map(|path| path.join("build-assets")),
         app.path().resource_dir().ok(),
         app.path()
             .resource_dir()
