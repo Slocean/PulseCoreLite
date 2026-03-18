@@ -220,6 +220,8 @@ const props = withDefaults(defineProps<{ toastChannel?: string }>(), {
 type ChatPanelState = {
   localStatus: LocalAiStatus | null;
   selectedModelDir: string | null;
+  selectedLauncherDir: string | null;
+  launcherNeedsSelection: boolean;
   workspaceStateTone: string;
   workspaceStateLabel: string;
   contextWindowSize: number;
@@ -273,6 +275,7 @@ const sending = ref(false);
 const isDropActive = ref(false);
 const localStatus = ref<LocalAiStatus | null>(null);
 const selectedModelDir = ref<string | null>(null);
+const selectedLauncherDir = ref<string | null>(null);
 const draft = ref('');
 const thinkingEnabled = ref(false);
 const attachments = ref<UiAttachment[]>([]);
@@ -329,6 +332,8 @@ const messageRenderSignature = computed(() =>
 const panelState = computed<ChatPanelState>(() => ({
   localStatus: localStatus.value,
   selectedModelDir: selectedModelDir.value ?? localStatus.value?.selectedModelDir ?? null,
+  selectedLauncherDir: selectedLauncherDir.value ?? localStatus.value?.selectedLauncherDir ?? null,
+  launcherNeedsSelection: localStatus.value?.launcherNeedsSelection ?? false,
   workspaceStateTone: workspaceStateTone.value,
   workspaceStateLabel: workspaceStateLabel.value,
   contextWindowSize: contextWindowSize.value,
@@ -341,6 +346,7 @@ const panelState = computed<ChatPanelState>(() => ({
 onMounted(() => {
   autoResizeComposer();
   restoreSavedModelDir();
+  restoreSavedLauncherDir();
   if (isTauriRuntime) {
     void refreshStatus();
     void setupLocalAiStreamListener();
@@ -446,10 +452,23 @@ function restoreSavedModelDir() {
   }
 }
 
+function restoreSavedLauncherDir() {
+  const savedDir = storageRepository.getStringSync(storageKeys.localAiLauncherDir) ?? null;
+  if (savedDir && !selectedLauncherDir.value) {
+    setSelectedLauncherDir(savedDir);
+  }
+}
+
 function persistSelectedModelDir(value: string | null) {
   if (!value) return;
   storageRepository.setStringSync(storageKeys.localAiModelDir, value);
   void storageRepository.setString(storageKeys.localAiModelDir, value);
+}
+
+function persistSelectedLauncherDir(value: string | null) {
+  if (!value) return;
+  storageRepository.setStringSync(storageKeys.localAiLauncherDir, value);
+  void storageRepository.setString(storageKeys.localAiLauncherDir, value);
 }
 
 async function refreshStatus() {
@@ -458,7 +477,9 @@ async function refreshStatus() {
   try {
     localStatus.value = await api.getLocalAiStatus();
     selectedModelDir.value = localStatus.value.selectedModelDir ?? selectedModelDir.value;
+    selectedLauncherDir.value = localStatus.value.selectedLauncherDir ?? selectedLauncherDir.value;
     persistSelectedModelDir(selectedModelDir.value);
+    persistSelectedLauncherDir(selectedLauncherDir.value);
   } catch (error) {
     const message = normalizeErrorMessage(error);
     localStatus.value = {
@@ -466,10 +487,12 @@ async function refreshStatus() {
       running: false,
       modelName: '0.8B',
       selectedModelDir: selectedModelDir.value,
+      selectedLauncherDir: selectedLauncherDir.value,
       modelPath: null,
       serverPath: null,
       serverUrl: '-',
       visionEnabled: false,
+      launcherNeedsSelection: false,
       message
     };
     showToast(t('toolkit.aiStartFailed', { message }), { variant: 'error' });
@@ -478,9 +501,10 @@ async function refreshStatus() {
   }
 }
 
-async function startLocalAi(modelDir?: string | null) {
+async function startLocalAi(modelDir?: string | null, launcherDir?: string | null) {
   if (!isTauriRuntime || statusBusy.value) return;
   const nextDir = modelDir ?? selectedModelDir.value;
+  const nextLauncherDir = launcherDir ?? selectedLauncherDir.value;
   if (!nextDir) {
     const message = '请先选择模型文件夹。';
     showToast(message, { variant: 'warning' });
@@ -489,10 +513,12 @@ async function startLocalAi(modelDir?: string | null) {
       running: false,
       modelName: localStatus.value?.modelName ?? '0.8B',
       selectedModelDir: null,
+      selectedLauncherDir: nextLauncherDir ?? null,
       modelPath: null,
       serverPath: localStatus.value?.serverPath ?? null,
       serverUrl: localStatus.value?.serverUrl ?? '-',
       visionEnabled: false,
+      launcherNeedsSelection: localStatus.value?.launcherNeedsSelection ?? false,
       message
     };
     return;
@@ -500,10 +526,15 @@ async function startLocalAi(modelDir?: string | null) {
 
   statusBusy.value = true;
   selectedModelDir.value = nextDir;
+  selectedLauncherDir.value = nextLauncherDir ?? null;
   try {
-    localStatus.value = await api.startLocalAiRuntime(nextDir);
+    localStatus.value = await api.startLocalAiRuntime(nextDir, nextLauncherDir);
     selectedModelDir.value = localStatus.value.selectedModelDir ?? nextDir;
+    selectedLauncherDir.value =
+      localStatus.value.selectedLauncherDir ??
+      (localStatus.value.launcherNeedsSelection ? nextLauncherDir ?? null : null);
     persistSelectedModelDir(selectedModelDir.value);
+    persistSelectedLauncherDir(selectedLauncherDir.value);
   } catch (error) {
     const message = normalizeErrorMessage(error);
     localStatus.value = {
@@ -511,10 +542,12 @@ async function startLocalAi(modelDir?: string | null) {
       running: false,
       modelName: localStatus.value?.modelName ?? '0.8B',
       selectedModelDir: nextDir,
+      selectedLauncherDir: nextLauncherDir ?? null,
       modelPath: null,
       serverPath: localStatus.value?.serverPath ?? null,
       serverUrl: localStatus.value?.serverUrl ?? localStatus.value?.serverUrl ?? '-',
       visionEnabled: false,
+      launcherNeedsSelection: localStatus.value?.launcherNeedsSelection ?? false,
       message
     };
     showToast(t('toolkit.aiStartFailed', { message }), { variant: 'error' });
@@ -529,6 +562,7 @@ async function stopLocalAi() {
   try {
     localStatus.value = await api.stopLocalAiRuntime();
     selectedModelDir.value = localStatus.value.selectedModelDir ?? selectedModelDir.value;
+    selectedLauncherDir.value = localStatus.value.selectedLauncherDir ?? selectedLauncherDir.value;
   } catch (error) {
     showToast(normalizeErrorMessage(error), { variant: 'error' });
   } finally {
@@ -542,6 +576,16 @@ function setSelectedModelDir(value: string | null) {
     localStatus.value = {
       ...localStatus.value,
       selectedModelDir: value
+    };
+  }
+}
+
+function setSelectedLauncherDir(value: string | null) {
+  selectedLauncherDir.value = value;
+  if (localStatus.value) {
+    localStatus.value = {
+      ...localStatus.value,
+      selectedLauncherDir: value
     };
   }
 }
@@ -1023,7 +1067,8 @@ defineExpose({
   refreshStatus,
   startLocalAi,
   stopLocalAi,
-  setSelectedModelDir
+  setSelectedModelDir,
+  setSelectedLauncherDir
 });
 </script>
 

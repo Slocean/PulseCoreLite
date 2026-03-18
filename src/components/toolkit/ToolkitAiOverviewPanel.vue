@@ -50,7 +50,12 @@
                 native-type="button"
                 width="90px"
                 preset="overlay-primary"
-                :disabled="statusBusy || !isTauriRuntime || !selectedModelDir"
+                :disabled="
+                  statusBusy ||
+                  !isTauriRuntime ||
+                  !selectedModelDir ||
+                  (launcherNeedsSelection && !selectedLauncherDir)
+                "
                 @click="emit('start-local-ai')">
                 {{ statusBusy ? t('toolkit.aiStartPending') : t('toolkit.aiStart') }}
               </UiButton>
@@ -65,6 +70,22 @@
             </div>
           </div>
           <strong class="toolkit-ai-status-value">{{ selectedModelDir || '未选择' }}</strong>
+        </section>
+        <section v-if="launcherNeedsSelection" class="toolkit-ai-status-section">
+          <div class="toolkit-ai-status-head">
+            <div class="toolkit-ai-status-label">启动器目录</div>
+            <div class="toolkit-ai-status-controls">
+              <UiButton
+                native-type="button"
+                width="50px"
+                preset="overlay-primary"
+                :disabled="statusBusy || !isTauriRuntime"
+                @click="emit('choose-launcher-dir')">
+                选择
+              </UiButton>
+            </div>
+          </div>
+          <strong class="toolkit-ai-status-value">{{ selectedLauncherDir || '未选择' }}</strong>
         </section>
         <section class="toolkit-ai-status-section toolkit-ai-status-section--metrics">
           <div class="toolkit-ai-status-pair">
@@ -106,6 +127,8 @@ const props = defineProps<{
   modelValue: boolean;
   localStatus: LocalAiStatus | null;
   selectedModelDir: string | null;
+  selectedLauncherDir: string | null;
+  launcherNeedsSelection: boolean;
   workspaceStateTone: string;
   workspaceStateLabel: string;
   contextWindowSize: number;
@@ -118,6 +141,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'update:modelValue', value: boolean): void;
   (event: 'choose-model-dir'): void;
+  (event: 'choose-launcher-dir'): void;
   (event: 'start-local-ai'): void;
   (event: 'stop-local-ai'): void;
   (event: 'refresh-status'): void;

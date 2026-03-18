@@ -3,10 +3,12 @@ export interface LocalAiStatus {
   running: boolean;
   modelName: string;
   selectedModelDir: string | null;
+  selectedLauncherDir: string | null;
   modelPath: string | null;
   serverPath: string | null;
   serverUrl: string;
   visionEnabled: boolean;
+  launcherNeedsSelection: boolean;
   message: string;
 }
 

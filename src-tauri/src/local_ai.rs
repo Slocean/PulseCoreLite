@@ -33,9 +33,11 @@ pub struct LocalAiRuntime {
     server_url: String,
     model_name: String,
     selected_model_dir: Option<PathBuf>,
+    selected_launcher_dir: Option<PathBuf>,
     model_path: Option<PathBuf>,
     mmproj_path: Option<PathBuf>,
     server_path: Option<PathBuf>,
+    launcher_needs_selection: bool,
     last_error: Option<String>,
 }
 
@@ -46,17 +48,28 @@ impl Default for LocalAiRuntime {
             server_url: local_ai_server_url(),
             model_name: String::new(),
             selected_model_dir: None,
+            selected_launcher_dir: None,
             model_path: None,
             mmproj_path: None,
             server_path: None,
+            launcher_needs_selection: false,
             last_error: None,
         }
     }
 }
 
+struct LocalAiLauncherAssets {
+    server_dir: PathBuf,
+    server_exe: PathBuf,
+    selected_launcher_dir: Option<PathBuf>,
+    launcher_needs_selection: bool,
+}
+
 struct LocalAiAssets {
     server_dir: PathBuf,
     server_exe: PathBuf,
+    selected_launcher_dir: Option<PathBuf>,
+    launcher_needs_selection: bool,
     model_dir: PathBuf,
     model_path: PathBuf,
     mmproj_path: Option<PathBuf>,
@@ -79,8 +92,9 @@ pub async fn start_local_ai_runtime(
     app: AppHandle,
     state: State<'_, SharedState>,
     model_dir: Option<String>,
+    launcher_dir: Option<String>,
 ) -> Result<LocalAiStatus, String> {
-    start_local_ai_runtime_internal(&app, state.inner(), model_dir).await
+    start_local_ai_runtime_internal(&app, state.inner(), model_dir, launcher_dir).await
 }
 
 #[tauri::command]
@@ -199,23 +213,28 @@ async fn get_local_ai_status_internal(
     app: &AppHandle,
     state: &SharedState,
 ) -> Result<LocalAiStatus, String> {
-    let configured_dir = {
+    let (configured_model_dir, configured_launcher_dir) = {
         let runtime = state.local_ai_runtime.lock().await;
-        runtime.selected_model_dir.clone()
+        (
+            runtime.selected_model_dir.clone(),
+            runtime.selected_launcher_dir.clone(),
+        )
     };
 
-    let assets = configured_dir
+    let launcher_assets = resolve_local_ai_launcher(app, configured_launcher_dir.clone());
+    let assets = configured_model_dir
         .clone()
-        .and_then(|path| resolve_local_ai_assets(app, Some(path)).ok());
+        .and_then(|path| resolve_local_ai_assets(app, Some(path), configured_launcher_dir).ok());
     let mut runtime = state.local_ai_runtime.lock().await;
 
     if let Some(assets) = assets {
         apply_runtime_assets(&mut runtime, &assets);
-    } else if configured_dir.is_some() {
+    } else if configured_model_dir.is_some() {
         runtime.model_name.clear();
         runtime.model_path = None;
         runtime.mmproj_path = None;
     }
+    apply_runtime_launcher_state(&mut runtime, launcher_assets);
     runtime.server_url = local_ai_server_url();
     clear_dead_child(&mut runtime);
 
@@ -239,16 +258,21 @@ async fn start_local_ai_runtime_internal(
     app: &AppHandle,
     state: &SharedState,
     model_dir: Option<String>,
+    launcher_dir: Option<String>,
 ) -> Result<LocalAiStatus, String> {
-    let existing_dir = {
+    let (existing_model_dir, existing_launcher_dir) = {
         let runtime = state.local_ai_runtime.lock().await;
-        runtime.selected_model_dir.clone()
+        (
+            runtime.selected_model_dir.clone(),
+            runtime.selected_launcher_dir.clone(),
+        )
     };
     let chosen_dir = model_dir
         .map(PathBuf::from)
-        .or(existing_dir)
+        .or(existing_model_dir)
         .ok_or_else(|| "No model directory is configured. Please choose a folder first.".to_string())?;
-    let assets = resolve_local_ai_assets(app, Some(chosen_dir))?;
+    let chosen_launcher_dir = launcher_dir.map(PathBuf::from).or(existing_launcher_dir);
+    let assets = resolve_local_ai_assets(app, Some(chosen_dir), chosen_launcher_dir)?;
     let mut runtime = state.local_ai_runtime.lock().await;
 
     if runtime.child.is_some() {
@@ -758,40 +782,11 @@ fn extract_usage(value: &Value) -> Option<LocalAiTokenUsage> {
 fn resolve_local_ai_assets(
     app: &AppHandle,
     model_dir_override: Option<PathBuf>,
+    launcher_dir_override: Option<PathBuf>,
 ) -> Result<LocalAiAssets, String> {
-    let roots = local_ai_search_roots(app);
-    let mut server_dir = None;
-
-    for root in &roots {
-        if server_dir.is_none() {
-            for candidate in [
-                root.join("llama_CPU_X64"),
-                root.join("build-assets").join("llama_CPU_X64"),
-            ] {
-                if candidate.join("llama-server.exe").is_file() {
-                    server_dir = Some(candidate);
-                    break;
-                }
-            }
-        }
-    }
-
-    let server_dir = server_dir.ok_or_else(|| {
-        format!(
-            "Failed to find bundled llama-server.exe. Searched in: {}",
-            display_search_roots(&roots)
-        )
-    })?;
+    let launcher = resolve_local_ai_launcher(app, launcher_dir_override)?;
     let llm_dir = model_dir_override
         .ok_or_else(|| "No model directory is configured. Please choose a folder that contains .gguf files.".to_string())?;
-
-    let server_exe = server_dir.join("llama-server.exe");
-    if !server_exe.is_file() {
-        return Err(format!(
-            "Bundled llama-server.exe is missing: {}",
-            server_exe.display()
-        ));
-    }
 
     let model_path = select_main_model(&llm_dir)?;
     let mmproj_path = select_mmproj_model(&llm_dir);
@@ -802,13 +797,60 @@ fn resolve_local_ai_assets(
         .unwrap_or_else(|| "bundled-local-model".to_string());
 
     Ok(LocalAiAssets {
-        server_dir,
-        server_exe,
+        server_dir: launcher.server_dir,
+        server_exe: launcher.server_exe,
+        selected_launcher_dir: launcher.selected_launcher_dir,
+        launcher_needs_selection: launcher.launcher_needs_selection,
         model_dir: llm_dir,
         model_path,
         mmproj_path,
         model_name,
     })
+}
+
+fn resolve_local_ai_launcher(
+    app: &AppHandle,
+    launcher_dir_override: Option<PathBuf>,
+) -> Result<LocalAiLauncherAssets, String> {
+    let roots = local_ai_search_roots(app);
+
+    for root in &roots {
+        for candidate in [
+            root.join("llama_CPU_X64"),
+            root.join("build-assets").join("llama_CPU_X64"),
+        ] {
+            let server_exe = candidate.join("llama-server.exe");
+            if server_exe.is_file() {
+                return Ok(LocalAiLauncherAssets {
+                    server_dir: candidate,
+                    server_exe,
+                    selected_launcher_dir: None,
+                    launcher_needs_selection: false,
+                });
+            }
+        }
+    }
+
+    if let Some(launcher_dir) = launcher_dir_override {
+        let server_exe = launcher_dir.join("llama-server.exe");
+        if server_exe.is_file() {
+            return Ok(LocalAiLauncherAssets {
+                server_dir: launcher_dir.clone(),
+                server_exe,
+                selected_launcher_dir: Some(launcher_dir),
+                launcher_needs_selection: true,
+            });
+        }
+        return Err(format!(
+            "Failed to find llama-server.exe in the selected launcher directory: {}",
+            launcher_dir.display()
+        ));
+    }
+
+    Err(format!(
+        "Failed to find bundled llama-server.exe. Searched in: {}",
+        display_search_roots(&roots)
+    ))
 }
 
 fn select_main_model(llm_dir: &Path) -> Result<PathBuf, String> {
@@ -986,9 +1028,28 @@ fn stop_local_ai_process(runtime: &mut LocalAiRuntime) {
 fn apply_runtime_assets(runtime: &mut LocalAiRuntime, assets: &LocalAiAssets) {
     runtime.model_name = assets.model_name.clone();
     runtime.selected_model_dir = Some(assets.model_dir.clone());
+    runtime.selected_launcher_dir = assets.selected_launcher_dir.clone();
     runtime.model_path = Some(assets.model_path.clone());
     runtime.mmproj_path = assets.mmproj_path.clone();
     runtime.server_path = Some(assets.server_exe.clone());
+    runtime.launcher_needs_selection = assets.launcher_needs_selection;
+}
+
+fn apply_runtime_launcher_state(
+    runtime: &mut LocalAiRuntime,
+    launcher_assets: Result<LocalAiLauncherAssets, String>,
+) {
+    match launcher_assets {
+        Ok(launcher) => {
+            runtime.selected_launcher_dir = launcher.selected_launcher_dir;
+            runtime.server_path = Some(launcher.server_exe);
+            runtime.launcher_needs_selection = launcher.launcher_needs_selection;
+        }
+        Err(_) => {
+            runtime.server_path = None;
+            runtime.launcher_needs_selection = true;
+        }
+    }
 }
 
 fn build_status(runtime: &LocalAiRuntime, ready: bool, message: String) -> LocalAiStatus {
@@ -998,6 +1059,10 @@ fn build_status(runtime: &LocalAiRuntime, ready: bool, message: String) -> Local
         model_name: runtime.model_name.clone(),
         selected_model_dir: runtime
             .selected_model_dir
+            .as_ref()
+            .map(|path| path.to_string_lossy().to_string()),
+        selected_launcher_dir: runtime
+            .selected_launcher_dir
             .as_ref()
             .map(|path| path.to_string_lossy().to_string()),
         model_path: runtime
@@ -1010,6 +1075,7 @@ fn build_status(runtime: &LocalAiRuntime, ready: bool, message: String) -> Local
             .map(|path| path.to_string_lossy().to_string()),
         server_url: runtime.server_url.clone(),
         vision_enabled: runtime.mmproj_path.is_some(),
+        launcher_needs_selection: runtime.launcher_needs_selection,
         message,
     }
 }

@@ -320,10 +320,12 @@ pub struct LocalAiStatus {
     pub running: bool,
     pub model_name: String,
     pub selected_model_dir: Option<String>,
+    pub selected_launcher_dir: Option<String>,
     pub model_path: Option<String>,
     pub server_path: Option<String>,
     pub server_url: String,
     pub vision_enabled: bool,
+    pub launcher_needs_selection: bool,
     pub message: String,
 }
 
