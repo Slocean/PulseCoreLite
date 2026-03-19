@@ -131,6 +131,15 @@ pub struct AppBootstrap {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppRuntimeInfo {
+    pub version: String,
+    pub installation_mode: String,
+    pub package_flavor: String,
+    pub can_switch_package_flavor: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NativeTaskbarConfig {
     pub language: String,
     #[serde(rename = "alwaysOnTop")]

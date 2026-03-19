@@ -853,6 +853,18 @@ fn resolve_local_ai_launcher(
     ))
 }
 
+pub(crate) fn has_bundled_local_ai_launcher(app: &AppHandle) -> bool {
+    let roots = local_ai_search_roots(app);
+    roots.iter().any(|root| {
+        [
+            root.join("llama_CPU_X64"),
+            root.join("build-assets").join("llama_CPU_X64"),
+        ]
+        .into_iter()
+        .any(|candidate| candidate.join("llama-server.exe").is_file())
+    })
+}
+
 fn select_main_model(llm_dir: &Path) -> Result<PathBuf, String> {
     let mut candidates = fs::read_dir(llm_dir)
         .map_err(|err| {

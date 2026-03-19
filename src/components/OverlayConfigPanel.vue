@@ -74,11 +74,15 @@
         v-model:factory-reset-hotkey="factoryResetHotkey"
         :toolkit-switch-on="toolkitSwitchOn"
         :can-uninstall="canUninstall"
+        :can-switch-package-flavor="canSwitchPackageFlavor"
+        :package-flavor="packageFlavor"
+        :switching-package-flavor="switchingPackageFlavor"
         @check-update="emit('checkUpdate')"
         @export-config="emit('exportConfig')"
         @import-config="emit('importConfig', $event)"
         @factory-reset="confirmFactoryReset"
         @open-toolkit="handleToolkitToggle"
+        @switch-package-flavor="emit('switchPackageFlavor')"
         @uninstall="emit('uninstall')" />
     </UiCollapsiblePanel>
 
@@ -106,6 +110,9 @@ const props = defineProps<{
   getThemePreviewUrl: (theme: OverlayTheme) => string;
   toolkitState: 'closed' | 'open' | 'hidden';
   checkingUpdate: boolean;
+  packageFlavor: 'unknown' | 'lite' | 'ai';
+  canSwitchPackageFlavor: boolean;
+  switchingPackageFlavor: boolean;
 }>();
 
 const prefs = defineModel<OverlayPrefs>('prefs', { required: true });
@@ -132,6 +139,7 @@ const emit = defineEmits<{
   (e: 'importConfig', value: File): void;
   (e: 'openToolkit', value: boolean): void;
   (e: 'checkUpdate'): void;
+  (e: 'switchPackageFlavor'): void;
 }>();
 
 const { t } = useI18n();

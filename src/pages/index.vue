@@ -53,6 +53,9 @@
         :get-theme-preview-url="getThemePreviewUrl"
         :toolkit-state="toolkitState"
         :checking-update="checkingUpdate"
+        :package-flavor="store.packageFlavor"
+        :can-switch-package-flavor="store.canSwitchPackageFlavor"
+        :switching-package-flavor="store.switchingPackageFlavor"
         @setLanguage="setLanguage"
         @refreshRateChange="handleRefreshRateChange"
         @factoryReset="handleFactoryReset"
@@ -63,7 +66,8 @@
         @exportConfig="exportConfig"
         @importConfig="handleImportConfig"
         @openToolkit="toggleToolkitWindow"
-        @checkUpdate="handleCheckUpdate" />
+        @checkUpdate="handleCheckUpdate"
+        @switchPackageFlavor="handleSwitchPackageFlavor" />
       <ToolkitAiTab v-else-if="activeMainTab === 'ai'" toast-channel="overlay-ai" />
       <OverlayConfigFeedbackSection
         v-else-if="activeMainTab === 'feedback'"
@@ -181,12 +185,14 @@ import { useOverlayToolkitWindow } from '../composables/useOverlayToolkitWindow'
 import { useOverlayWindow } from '../composables/useOverlayWindow';
 import { openReminderScreensFromPayload } from '../composables/useTaskReminders';
 import { useThemeManager } from '../composables/useThemeManager';
+import { useToastService } from '../composables/useToastService';
 import { useToolkitLauncher } from '../composables/useToolkitLauncher';
 import { useUpdater } from '../composables/useUpdater';
 import packageJson from '../../package.json';
 import { useAppStore } from '../stores/app';
 const store = useAppStore();
 const { t } = useI18n();
+const { showToast } = useToastService('overlay');
 const appVersion = packageJson.version;
 const OverlayConfigPanel = defineAsyncComponent(() => import('../components/OverlayConfigPanel.vue'));
 const ToolkitEmbedded = defineAsyncComponent(() => import('../components/toolkit/ToolkitEmbedded.vue'));
@@ -391,5 +397,15 @@ watch(
 
 function toggleTabs() {
   showMainTabs.value = !showMainTabs.value;
+}
+
+async function handleSwitchPackageFlavor() {
+  try {
+    await store.switchPackageFlavor();
+    showToast(t('overlay.switchPackageFlavorStarted'), { variant: 'info' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    showToast(t('overlay.switchPackageFlavorFailed', { message }), { variant: 'error' });
+  }
 }
 </script>

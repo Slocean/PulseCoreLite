@@ -10,12 +10,14 @@ use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::{
     core::device_info,
+    local_ai,
     profiler::{ensure_profile_path, profile_output_dir, ProfileStatus},
     state::SharedState,
     types::{
-        AppBootstrap, MonthlyReminderSlot, NativeTaskbarConfig, ReminderAdvancedSettings,
-        ReminderScreenEventPayload, ScheduleShutdownRequest, SendReminderEmailRequest,
-        ShutdownPlan, SmtpEmailConfig, TaskReminder, TaskReminderStore, WeeklyReminderSlot,
+        AppBootstrap, AppRuntimeInfo, MonthlyReminderSlot, NativeTaskbarConfig,
+        ReminderAdvancedSettings, ReminderScreenEventPayload, ScheduleShutdownRequest,
+        SendReminderEmailRequest, ShutdownPlan, SmtpEmailConfig, TaskReminder,
+        TaskReminderStore, WeeklyReminderSlot,
     },
 };
 
@@ -54,6 +56,12 @@ fn read_shutdown_plan(app: &AppHandle) -> Option<ShutdownPlan> {
 
 #[cfg(windows)]
 const UNINSTALL_ROOT_KEY: &str = "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall";
+#[cfg(windows)]
+const DEFAULT_LITE_MANIFEST_URL: &str =
+    "https://github.com/Slocean/PulseCoreLite/releases/latest/download/latest-lite.json";
+#[cfg(windows)]
+const DEFAULT_AI_MANIFEST_URL: &str =
+    "https://github.com/Slocean/PulseCoreLite/releases/latest/download/latest-ai.json";
 
 #[cfg(windows)]
 fn to_wide(value: &str) -> Vec<u16> {
@@ -960,6 +968,125 @@ fn is_installed_build() -> Option<bool> {
 }
 
 #[cfg(windows)]
+fn detect_package_flavor(app: &AppHandle) -> String {
+    if local_ai::has_bundled_local_ai_launcher(app) {
+        "ai".to_string()
+    } else {
+        "lite".to_string()
+    }
+}
+
+#[cfg(windows)]
+fn package_flavor_manifest_url(flavor: &str) -> CmdResult<String> {
+    match flavor {
+        "lite" => Ok(std::env::var("PULSECORE_LITE_MANIFEST_URL")
+            .ok()
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or_else(|| DEFAULT_LITE_MANIFEST_URL.to_string())),
+        "ai" => Ok(std::env::var("PULSECORE_AI_MANIFEST_URL")
+            .ok()
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or_else(|| DEFAULT_AI_MANIFEST_URL.to_string())),
+        _ => Err("unsupported package flavor".to_string()),
+    }
+}
+
+#[cfg(windows)]
+fn extract_windows_download_url(manifest: &serde_json::Value) -> Option<String> {
+    manifest
+        .get("platforms")
+        .and_then(|value| value.as_object())
+        .and_then(|platforms| {
+            platforms.iter().find_map(|(key, value)| {
+                if !key.to_ascii_lowercase().contains("windows") {
+                    return None;
+                }
+                value.get("url").and_then(|url| url.as_str()).map(str::to_string)
+            })
+        })
+}
+
+#[cfg(windows)]
+async fn fetch_switch_manifest(flavor: &str) -> CmdResult<serde_json::Value> {
+    let manifest_url = package_flavor_manifest_url(flavor)?;
+    let response = reqwest::get(&manifest_url)
+        .await
+        .map_err(|err| format!("failed to fetch switch manifest: {err}"))?;
+    if !response.status().is_success() {
+        return Err(format!(
+            "switch manifest request failed: HTTP {}",
+            response.status()
+        ));
+    }
+    response
+        .json::<serde_json::Value>()
+        .await
+        .map_err(|err| format!("failed to parse switch manifest: {err}"))
+}
+
+#[cfg(windows)]
+async fn download_switch_installer(download_url: &str, flavor: &str) -> CmdResult<PathBuf> {
+    let response = reqwest::get(download_url)
+        .await
+        .map_err(|err| format!("failed to download installer: {err}"))?;
+    if !response.status().is_success() {
+        return Err(format!(
+            "installer download failed: HTTP {}",
+            response.status()
+        ));
+    }
+
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|err| format!("failed to read installer bytes: {err}"))?;
+    let extension = download_url
+        .rsplit('.')
+        .next()
+        .map(|value| value.to_ascii_lowercase())
+        .filter(|value| matches!(value.as_str(), "exe" | "msi"))
+        .unwrap_or_else(|| "exe".to_string());
+    let mut installer_path = std::env::temp_dir();
+    installer_path.push(format!(
+        "pulsecore-switch-{flavor}-{}.{}",
+        std::process::id(),
+        extension
+    ));
+    tokio::fs::write(&installer_path, bytes)
+        .await
+        .map_err(|err| format!("failed to save installer: {err}"))?;
+    Ok(installer_path)
+}
+
+#[cfg(windows)]
+fn spawn_switch_installer_cmd(installer_path: &std::path::Path) -> CmdResult<()> {
+    use std::os::windows::process::CommandExt;
+
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+    let installer = installer_path.to_string_lossy().replace('"', "\"\"");
+    let script = if installer_path
+        .extension()
+        .and_then(|value| value.to_str())
+        .map(|value| value.eq_ignore_ascii_case("msi"))
+        .unwrap_or(false)
+    {
+        format!(
+            "ping 127.0.0.1 -n 3 >NUL & msiexec /i \"{installer}\" /passive /norestart"
+        )
+    } else {
+        format!("ping 127.0.0.1 -n 3 >NUL & \"{installer}\" /P")
+    };
+
+    Command::new("cmd.exe")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args(["/C", &script])
+        .spawn()
+        .map_err(|err| format!("failed to start switch installer: {err}"))?;
+    Ok(())
+}
+
+#[cfg(windows)]
 fn confirm_yes_no_system(title: &str, message: &str) -> CmdResult<bool> {
     use windows_sys::Win32::UI::WindowsAndMessaging::{
         MessageBoxW, IDYES, MB_ICONWARNING, MB_SETFOREGROUND, MB_TOPMOST, MB_YESNO,
@@ -1325,6 +1452,69 @@ pub async fn get_installation_mode() -> CmdResult<String> {
     #[cfg(not(windows))]
     {
         Ok("portable".to_string())
+    }
+}
+
+#[tauri::command]
+pub async fn get_app_runtime_info(app: AppHandle) -> CmdResult<AppRuntimeInfo> {
+    #[cfg(windows)]
+    {
+        let installation_mode = if is_installed_build().unwrap_or(false) {
+            "installed".to_string()
+        } else {
+            "portable".to_string()
+        };
+        let package_flavor = detect_package_flavor(&app);
+        return Ok(AppRuntimeInfo {
+            version: app.package_info().version.to_string(),
+            can_switch_package_flavor: installation_mode == "installed",
+            installation_mode,
+            package_flavor,
+        });
+    }
+
+    #[cfg(not(windows))]
+    {
+        Ok(AppRuntimeInfo {
+            version: app.package_info().version.to_string(),
+            installation_mode: "portable".to_string(),
+            package_flavor: "lite".to_string(),
+            can_switch_package_flavor: false,
+        })
+    }
+}
+
+#[tauri::command]
+pub async fn switch_package_flavor(app: AppHandle, target_flavor: String) -> CmdResult<()> {
+    #[cfg(windows)]
+    {
+        if !is_installed_build().unwrap_or(false) {
+            return Err("package switching is only available for installed builds".to_string());
+        }
+
+        let target_flavor = target_flavor.trim().to_ascii_lowercase();
+        if !matches!(target_flavor.as_str(), "lite" | "ai") {
+            return Err("unsupported package flavor".to_string());
+        }
+
+        let current_flavor = detect_package_flavor(&app);
+        if current_flavor == target_flavor {
+            return Ok(());
+        }
+
+        let manifest = fetch_switch_manifest(&target_flavor).await?;
+        let download_url = extract_windows_download_url(&manifest)
+            .ok_or_else(|| "switch manifest is missing a Windows download URL".to_string())?;
+        let installer_path = download_switch_installer(&download_url, &target_flavor).await?;
+        spawn_switch_installer_cmd(&installer_path)?;
+        app.exit(0);
+        return Ok(());
+    }
+
+    #[cfg(not(windows))]
+    {
+        let _ = (app, target_flavor);
+        Err("package switching is not supported on this platform.".to_string())
     }
 }
 

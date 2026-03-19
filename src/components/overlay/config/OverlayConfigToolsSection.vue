@@ -1,11 +1,39 @@
 <template>
-  <div class="overlay-config-duo">
+  <div class="overlay-config-duo overlay-config-duo--tools">
     <div class="overlay-config-language">
       <span class="overlay-config-label">{{ t('overlay.update') }}</span>
       <div class="overlay-lang-buttons">
         <UiButton native-type="button" preset="overlay-chip" :disabled="checkingUpdate" @click="emit('checkUpdate')">
           {{ checkingUpdate ? t('overlay.updateChecking') : t('overlay.checkUpdate') }}
         </UiButton>
+      </div>
+    </div>
+    <div v-if="canSwitchPackageFlavor" class="overlay-config-package">
+      <div class="overlay-config-package-header">
+        <span class="overlay-config-label">{{ t('overlay.packageFlavor') }}</span>
+        <div class="overlay-config-package-actions">
+          <div class="overlay-config-package-badge">
+            {{ packageFlavorLabel }}
+          </div>
+          <div class="overlay-lang-buttons">
+            <UiButton
+              native-type="button"
+              preset="overlay-chip"
+              :disabled="switchingPackageFlavor"
+              @click="emit('switchPackageFlavor')">
+              {{
+                switchingPackageFlavor
+                  ? t('overlay.switchingPackageFlavor')
+                  : packageFlavor === 'ai'
+                    ? t('overlay.switchToLite')
+                    : t('overlay.switchToAi')
+              }}
+            </UiButton>
+          </div>
+        </div>
+      </div>
+      <div class="overlay-config-package-hint">
+        {{ t('overlay.packageFlavorCurrent', { flavor: packageFlavorLabel }) }}
       </div>
     </div>
     <div class="overlay-config-language">
@@ -80,11 +108,14 @@ import UiDialog from '@/components/ui/Dialog';
 import UiSwitch from '@/components/ui/Switch';
 import { hotkeyFromEvent, hotkeyToString } from '../../../utils/hotkey';
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     checkingUpdate: boolean;
     toolkitSwitchOn: boolean;
     canUninstall: boolean;
+    canSwitchPackageFlavor: boolean;
+    packageFlavor: 'unknown' | 'lite' | 'ai';
+    switchingPackageFlavor: boolean;
     showUninstall?: boolean;
   }>(),
   {
@@ -98,6 +129,7 @@ const emit = defineEmits<{
   (e: 'importConfig', value: File): void;
   (e: 'factoryReset'): void;
   (e: 'openToolkit', value: boolean): void;
+  (e: 'switchPackageFlavor'): void;
   (e: 'uninstall'): void;
 }>();
 
@@ -110,6 +142,15 @@ let hotkeyUnlisten: (() => void) | null = null;
 const hotkeyClearDialogOpen = ref(false);
 
 const hotkeyLabel = computed(() => factoryResetHotkey.value ?? t('overlay.hotkeyNotSet'));
+const packageFlavorLabel = computed(() => {
+  if (props.packageFlavor === 'ai') {
+    return t('overlay.packageFlavorAi');
+  }
+  if (props.packageFlavor === 'lite') {
+    return t('overlay.packageFlavorLite');
+  }
+  return t('common.na');
+});
 
 function triggerImport() {
   importFileInput.value?.click();
@@ -184,3 +225,71 @@ onUnmounted(() => {
   stopHotkeyCapture();
 });
 </script>
+
+<style scoped>
+.overlay-config-duo--tools {
+  align-items: start;
+}
+
+.overlay-config-package {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.18));
+}
+
+.overlay-config-package-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.overlay-config-package-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.overlay-config-package-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 11px;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.overlay-config-package-hint {
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+@media (max-width: 560px) {
+  .overlay-config-package-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .overlay-config-package-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .overlay-config-package-badge {
+    white-space: normal;
+  }
+}
+</style>
