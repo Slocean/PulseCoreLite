@@ -33,6 +33,7 @@ pub struct LocalAiRuntime {
     server_url: String,
     model_name: String,
     launch_mode: String,
+    launch_backend: String,
     selected_model_dir: Option<PathBuf>,
     selected_launcher_dir: Option<PathBuf>,
     model_path: Option<PathBuf>,
@@ -49,6 +50,7 @@ impl Default for LocalAiRuntime {
             server_url: local_ai_server_url(),
             model_name: String::new(),
             launch_mode: "unknown".to_string(),
+            launch_backend: "unknown".to_string(),
             selected_model_dir: None,
             selected_launcher_dir: None,
             model_path: None,
@@ -64,6 +66,7 @@ struct LocalAiLauncherAssets {
     server_dir: PathBuf,
     server_exe: PathBuf,
     launch_mode: String,
+    launch_backend: String,
     selected_launcher_dir: Option<PathBuf>,
     launcher_needs_selection: bool,
 }
@@ -72,6 +75,7 @@ struct LocalAiAssets {
     server_dir: PathBuf,
     server_exe: PathBuf,
     launch_mode: String,
+    launch_backend: String,
     selected_launcher_dir: Option<PathBuf>,
     launcher_needs_selection: bool,
     model_dir: PathBuf,
@@ -828,6 +832,7 @@ fn resolve_local_ai_assets(
         server_dir: launcher.server_dir,
         server_exe: launcher.server_exe,
         launch_mode: launcher.launch_mode,
+        launch_backend: launcher.launch_backend,
         selected_launcher_dir: launcher.selected_launcher_dir,
         launcher_needs_selection: launcher.launcher_needs_selection,
         model_dir: llm_dir,
@@ -844,10 +849,12 @@ fn resolve_local_ai_launcher(
     if let Some(launcher_dir) = launcher_dir_override {
         let server_exe = launcher_dir.join("llama-server.exe");
         if server_exe.is_file() {
+            let launch_backend = detect_launch_backend(&launcher_dir);
             return Ok(LocalAiLauncherAssets {
                 server_dir: launcher_dir.clone(),
                 server_exe,
-                launch_mode: detect_launch_mode(&launcher_dir),
+                launch_mode: launch_mode_from_backend(&launch_backend),
+                launch_backend,
                 selected_launcher_dir: Some(launcher_dir),
                 launcher_needs_selection: true,
             });
@@ -864,8 +871,10 @@ fn resolve_local_ai_launcher(
         for candidate in bundled_launcher_candidates(root) {
             let server_exe = candidate.join("llama-server.exe");
             if server_exe.is_file() {
+                let launch_backend = detect_launch_backend(&candidate);
                 return Ok(LocalAiLauncherAssets {
-                    launch_mode: detect_launch_mode(&candidate),
+                    launch_mode: launch_mode_from_backend(&launch_backend),
+                    launch_backend,
                     server_dir: candidate,
                     server_exe,
                     selected_launcher_dir: None,
@@ -878,11 +887,12 @@ fn resolve_local_ai_launcher(
     for root in &roots {
         if let Some(candidate) = find_nested_launcher_dir(root, 6) {
             let server_exe = candidate.join("llama-server.exe");
-            let launch_mode = detect_launch_mode(&candidate);
+            let launch_backend = detect_launch_backend(&candidate);
             return Ok(LocalAiLauncherAssets {
                 server_dir: candidate,
                 server_exe,
-                launch_mode,
+                launch_mode: launch_mode_from_backend(&launch_backend),
+                launch_backend,
                 selected_launcher_dir: None,
                 launcher_needs_selection: false,
             });
@@ -983,14 +993,34 @@ fn select_mmproj_model(llm_dir: &Path) -> Option<PathBuf> {
         })
 }
 
-fn detect_launch_mode(path: &Path) -> String {
+fn detect_launch_backend(path: &Path) -> String {
     let normalized = path.to_string_lossy().to_ascii_lowercase();
-    if normalized.contains("cuda") || normalized.contains("gpu") {
+    if normalized.contains("cuda-13")
+        || normalized.contains("cuda_13")
+        || normalized.contains("cuda13")
+        || normalized.contains("13.1")
+    {
+        "cuda13".to_string()
+    } else if normalized.contains("cuda-12")
+        || normalized.contains("cuda_12")
+        || normalized.contains("cuda12")
+        || normalized.contains("12.4")
+    {
+        "cuda12".to_string()
+    } else if normalized.contains("cuda") || normalized.contains("gpu") {
         "gpu".to_string()
     } else if normalized.contains("cpu") {
         "cpu".to_string()
     } else {
         "unknown".to_string()
+    }
+}
+
+fn launch_mode_from_backend(backend: &str) -> String {
+    match backend {
+        "cpu" => "cpu".to_string(),
+        "cuda12" | "cuda13" | "gpu" => "gpu".to_string(),
+        _ => "unknown".to_string(),
     }
 }
 
@@ -1153,6 +1183,7 @@ fn stop_local_ai_process(runtime: &mut LocalAiRuntime) {
 fn apply_runtime_assets(runtime: &mut LocalAiRuntime, assets: &LocalAiAssets) {
     runtime.model_name = assets.model_name.clone();
     runtime.launch_mode = assets.launch_mode.clone();
+    runtime.launch_backend = assets.launch_backend.clone();
     runtime.selected_model_dir = Some(assets.model_dir.clone());
     runtime.selected_launcher_dir = assets.selected_launcher_dir.clone();
     runtime.model_path = Some(assets.model_path.clone());
@@ -1168,12 +1199,14 @@ fn apply_runtime_launcher_state(
     match launcher_assets {
         Ok(launcher) => {
             runtime.launch_mode = launcher.launch_mode;
+            runtime.launch_backend = launcher.launch_backend;
             runtime.selected_launcher_dir = launcher.selected_launcher_dir;
             runtime.server_path = Some(launcher.server_exe);
             runtime.launcher_needs_selection = launcher.launcher_needs_selection;
         }
         Err(_) => {
             runtime.launch_mode = "unknown".to_string();
+            runtime.launch_backend = "unknown".to_string();
             runtime.server_path = None;
             runtime.launcher_needs_selection = true;
         }
@@ -1186,6 +1219,7 @@ fn build_status(runtime: &LocalAiRuntime, ready: bool, message: String) -> Local
         running: ready || runtime.child.is_some(),
         model_name: runtime.model_name.clone(),
         launch_mode: runtime.launch_mode.clone(),
+        launch_backend: runtime.launch_backend.clone(),
         selected_model_dir: runtime
             .selected_model_dir
             .as_ref()

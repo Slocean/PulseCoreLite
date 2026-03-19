@@ -224,6 +224,8 @@
     "aiModeVision": "图文理解",
     "aiModeText": "纯文本",
     "aiLaunchModeCpu": "CPU",
+    "aiLaunchModeCuda12": "CUDA 12",
+    "aiLaunchModeCuda13": "CUDA 13",
     "aiLaunchModeGpu": "GPU",
     "aiLaunchModeUnknown": "未知",
     "aiLauncherBundled": "自带启动器",

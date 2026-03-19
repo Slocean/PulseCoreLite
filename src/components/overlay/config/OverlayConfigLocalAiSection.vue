@@ -41,13 +41,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { open } from '@tauri-apps/plugin-dialog';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
 import { storageKeys, storageRepository } from '@/services/storageRepository';
-import { inTauri } from '@/services/tauri';
+import { api, inTauri } from '@/services/tauri';
+import type { LocalAiStatus } from '@/types';
 
 const props = defineProps<{
   packageFlavor: 'unknown' | 'lite' | 'ai';
@@ -57,14 +58,36 @@ const { t } = useI18n();
 const isTauriRuntime = inTauri();
 const selectedModelDir = ref(storageRepository.getStringSync(storageKeys.localAiModelDir) ?? null);
 const selectedLauncherDir = ref(storageRepository.getStringSync(storageKeys.localAiLauncherDir) ?? null);
+const localAiStatus = ref<LocalAiStatus | null>(null);
 
-const hasBundledLauncher = computed(() => props.packageFlavor === 'ai');
+const hasBundledLauncher = computed(() => {
+  if (localAiStatus.value) {
+    return !localAiStatus.value.launcherNeedsSelection;
+  }
+  return props.packageFlavor === 'ai';
+});
 const launcherDisplayValue = computed(() => {
   if (selectedLauncherDir.value?.trim()) {
     return selectedLauncherDir.value;
   }
   return hasBundledLauncher.value ? t('overlay.localAiLauncherBundled') : t('overlay.localAiNotSelected');
 });
+
+onMounted(() => {
+  void refreshLocalAiStatus();
+});
+
+async function refreshLocalAiStatus() {
+  if (!isTauriRuntime) return;
+  try {
+    localAiStatus.value = await api.getLocalAiStatus();
+    if (!selectedLauncherDir.value && localAiStatus.value.selectedLauncherDir) {
+      selectedLauncherDir.value = localAiStatus.value.selectedLauncherDir;
+    }
+  } catch {
+    localAiStatus.value = null;
+  }
+}
 
 function notifyLocalAiSettingsChanged() {
   if (typeof window === 'undefined') return;
@@ -89,6 +112,7 @@ async function chooseModelDir() {
   storageRepository.setStringSync(storageKeys.localAiModelDir, selected);
   void storageRepository.setString(storageKeys.localAiModelDir, selected);
   notifyLocalAiSettingsChanged();
+  void refreshLocalAiStatus();
 }
 
 async function chooseLauncherDir() {
@@ -102,6 +126,7 @@ async function chooseLauncherDir() {
   storageRepository.setStringSync(storageKeys.localAiLauncherDir, selected);
   void storageRepository.setString(storageKeys.localAiLauncherDir, selected);
   notifyLocalAiSettingsChanged();
+  void refreshLocalAiStatus();
 }
 
 function resetLauncherDir() {
@@ -109,6 +134,7 @@ function resetLauncherDir() {
   storageRepository.removeSync(storageKeys.localAiLauncherDir);
   void storageRepository.remove(storageKeys.localAiLauncherDir);
   notifyLocalAiSettingsChanged();
+  void refreshLocalAiStatus();
 }
 </script>
 

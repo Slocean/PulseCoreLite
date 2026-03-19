@@ -311,6 +311,10 @@ const capabilityLabel = computed(() =>
   localStatus.value?.visionEnabled ? t('toolkit.aiModeVision') : t('toolkit.aiModeText')
 );
 const launchModeLabel = computed(() => {
+  if (localStatus.value?.launchBackend === 'cuda13') return t('toolkit.aiLaunchModeCuda13');
+  if (localStatus.value?.launchBackend === 'cuda12') return t('toolkit.aiLaunchModeCuda12');
+  if (localStatus.value?.launchBackend === 'gpu') return t('toolkit.aiLaunchModeGpu');
+  if (localStatus.value?.launchBackend === 'cpu') return t('toolkit.aiLaunchModeCpu');
   if (localStatus.value?.launchMode === 'gpu') return t('toolkit.aiLaunchModeGpu');
   if (localStatus.value?.launchMode === 'cpu') return t('toolkit.aiLaunchModeCpu');
   return t('toolkit.aiLaunchModeUnknown');
@@ -527,6 +531,7 @@ async function refreshStatus() {
       running: false,
       modelName: '0.8B',
       launchMode: localStatus.value?.launchMode ?? 'unknown',
+      launchBackend: localStatus.value?.launchBackend ?? 'unknown',
       selectedModelDir: selectedModelDir.value,
       selectedLauncherDir: selectedLauncherDir.value,
       modelPath: null,
@@ -555,6 +560,7 @@ async function startLocalAi(modelDir?: string | null, launcherDir?: string | nul
       running: false,
       modelName: localStatus.value?.modelName ?? '0.8B',
       launchMode: localStatus.value?.launchMode ?? 'unknown',
+      launchBackend: localStatus.value?.launchBackend ?? 'unknown',
       selectedModelDir: null,
       selectedLauncherDir: nextLauncherDir ?? null,
       modelPath: null,
@@ -586,6 +592,7 @@ async function startLocalAi(modelDir?: string | null, launcherDir?: string | nul
       running: false,
       modelName: localStatus.value?.modelName ?? '0.8B',
       launchMode: localStatus.value?.launchMode ?? 'unknown',
+      launchBackend: localStatus.value?.launchBackend ?? 'unknown',
       selectedModelDir: nextDir,
       selectedLauncherDir: nextLauncherDir ?? null,
       modelPath: null,

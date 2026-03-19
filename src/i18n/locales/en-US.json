@@ -226,6 +226,8 @@
     "aiModeVision": "Vision + Text",
     "aiModeText": "Text Only",
     "aiLaunchModeCpu": "CPU",
+    "aiLaunchModeCuda12": "CUDA 12",
+    "aiLaunchModeCuda13": "CUDA 13",
     "aiLaunchModeGpu": "GPU",
     "aiLaunchModeUnknown": "Unknown",
     "aiLauncherBundled": "Bundled Launcher",
