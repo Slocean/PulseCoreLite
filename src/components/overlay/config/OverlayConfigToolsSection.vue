@@ -1,17 +1,9 @@
 <template>
   <div class="overlay-config-duo overlay-config-duo--tools">
-    <div class="overlay-config-language">
-      <span class="overlay-config-label">{{ t('overlay.update') }}</span>
-      <div class="overlay-lang-buttons">
-        <UiButton native-type="button" preset="overlay-chip" :disabled="checkingUpdate" @click="emit('checkUpdate')">
-          {{ checkingUpdate ? t('overlay.updateChecking') : t('overlay.checkUpdate') }}
-        </UiButton>
-      </div>
-    </div>
     <div v-if="canSwitchPackageFlavor" class="overlay-config-package">
       <div class="overlay-config-package-header">
-        <span class="overlay-config-label">{{ t('overlay.packageFlavor') }}</span>
         <div class="overlay-config-package-actions">
+          <div class="overlay-config-label">{{ t('overlay.packageFlavor') }}</div>
           <div class="overlay-config-package-badge">
             {{ packageFlavorLabel }}
           </div>
@@ -32,10 +24,24 @@
           </div>
         </div>
       </div>
-      <div class="overlay-config-package-hint">
+      <!-- <div class="overlay-config-package-hint">
         {{ t('overlay.packageFlavorCurrent', { flavor: packageFlavorLabel }) }}
+      </div> -->
+    </div>
+
+    <div class="overlay-config-language">
+      <span class="overlay-config-label">{{ t('overlay.update') }}</span>
+      <div class="overlay-lang-buttons">
+        <UiButton
+          native-type="button"
+          preset="overlay-chip"
+          :disabled="checkingUpdate"
+          @click="emit('checkUpdate')">
+          {{ checkingUpdate ? t('overlay.updateChecking') : t('overlay.checkUpdate') }}
+        </UiButton>
       </div>
     </div>
+
     <div class="overlay-config-language">
       <span class="overlay-config-label">{{ t('overlay.configTransfer') }}</span>
       <div class="overlay-lang-buttons">
@@ -77,7 +83,10 @@
     </div>
     <div class="overlay-config-language">
       <span class="overlay-config-label">{{ t('overlay.toolkit') }}</span>
-      <UiSwitch :model-value="toolkitSwitchOn" :aria-label="t('overlay.toolkit')" @update:model-value="handleToolkitToggle" />
+      <UiSwitch
+        :model-value="toolkitSwitchOn"
+        :aria-label="t('overlay.toolkit')"
+        @update:model-value="handleToolkitToggle" />
     </div>
   </div>
 
@@ -142,6 +151,8 @@ let hotkeyUnlisten: (() => void) | null = null;
 const hotkeyClearDialogOpen = ref(false);
 
 const hotkeyLabel = computed(() => factoryResetHotkey.value ?? t('overlay.hotkeyNotSet'));
+const FORCE_SHOW_PACKAGE_FLAVOR_PANEL = true;
+const showPackageFlavorPanel = FORCE_SHOW_PACKAGE_FLAVOR_PANEL || props.canSwitchPackageFlavor;
 const packageFlavorLabel = computed(() => {
   if (props.packageFlavor === 'ai') {
     return t('overlay.packageFlavorAi');
@@ -233,19 +244,19 @@ onUnmounted(() => {
 
 .overlay-config-package {
   grid-column: 1 / -1;
-  display: grid;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.18));
+  display: flex;
+  /* gap: 8px; */
+  /* padding: 10px 12px; */
+  /* border-radius: 10px; */
+  /* border: 1px solid rgba(255, 255, 255, 0.12); */
+  /* background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.18)); */
 }
 
 .overlay-config-package-header {
-  display: flex;
+  /* display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 12px; */
 }
 
 .overlay-config-package-actions {
