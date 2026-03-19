@@ -2,6 +2,7 @@ export interface LocalAiStatus {
   ready: boolean;
   running: boolean;
   modelName: string;
+  launchMode: 'cpu' | 'gpu' | 'unknown';
   selectedModelDir: string | null;
   selectedLauncherDir: string | null;
   modelPath: string | null;

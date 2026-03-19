@@ -20,13 +20,22 @@
             <div class="toolkit-ai-status-controls">
               <UiButton
                 native-type="button"
-                preset="overlay-chip-soft"
-                :disabled="statusBusy || !isTauriRuntime"
-                @click="emit('refresh-status')">
-                刷新状态
+                width="90px"
+                preset="overlay-primary"
+                :disabled="
+                  statusBusy ||
+                  !isTauriRuntime ||
+                  ((!localStatus?.running && !selectedModelDir) ||
+                    (!localStatus?.running && launcherNeedsSelection && !selectedLauncherDir))
+                "
+                @click="localStatus?.running ? emit('stop-local-ai') : emit('start-local-ai')">
+                {{ actionLabel }}
               </UiButton>
             </div>
           </div>
+          <p v-if="showDirectoryHint" class="toolkit-ai-status-hint">
+            {{ t('toolkit.aiDirectorySettingsHint') }}
+          </p>
         </section>
         <section class="toolkit-ai-status-section">
           <div class="toolkit-ai-status-head">
@@ -42,36 +51,6 @@
             </div>
           </div>
         </section>
-        <section class="toolkit-ai-status-section">
-          <div class="toolkit-ai-status-head">
-            <div class="toolkit-ai-status-label">模型目录</div>
-            <div class="toolkit-ai-status-controls">
-              <UiButton
-                native-type="button"
-                width="90px"
-                preset="overlay-primary"
-                :disabled="
-                  statusBusy ||
-                  !isTauriRuntime ||
-                  ((!localStatus?.running && !selectedModelDir) ||
-                    (!localStatus?.running && launcherNeedsSelection && !selectedLauncherDir))
-                "
-                @click="localStatus?.running ? emit('stop-local-ai') : emit('start-local-ai')">
-                {{ actionLabel }}
-              </UiButton>
-            </div>
-          </div>
-          <strong class="toolkit-ai-status-value">{{ selectedModelDir || '未选择' }}</strong>
-        </section>
-        <section class="toolkit-ai-status-section">
-          <div class="toolkit-ai-status-head">
-            <div class="toolkit-ai-status-label">启动器目录</div>
-          </div>
-          <strong class="toolkit-ai-status-value">{{ launcherDisplayValue }}</strong>
-          <p v-if="showDirectoryHint" class="toolkit-ai-status-hint">
-            {{ t('toolkit.aiDirectorySettingsHint') }}
-          </p>
-        </section>
         <section class="toolkit-ai-status-section toolkit-ai-status-section--metrics">
           <div class="toolkit-ai-status-pair">
             <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricContext') }}</span>
@@ -84,6 +63,10 @@
           <div class="toolkit-ai-status-pair">
             <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricMode') }}</span>
             <strong class="toolkit-ai-status-value">{{ capabilityLabel }}</strong>
+          </div>
+          <div class="toolkit-ai-status-pair">
+            <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricLaunchMode') }}</span>
+            <strong class="toolkit-ai-status-value">{{ launchModeLabel }}</strong>
           </div>
         </section>
       </div>
@@ -111,6 +94,7 @@ const props = defineProps<{
   contextWindowSize: number;
   conversationTurns: number;
   capabilityLabel: string;
+  launchModeLabel: string;
   statusBusy: boolean;
   isTauriRuntime: boolean;
 }>();
@@ -119,7 +103,6 @@ const emit = defineEmits<{
   (event: 'update:modelValue', value: boolean): void;
   (event: 'start-local-ai'): void;
   (event: 'stop-local-ai'): void;
-  (event: 'refresh-status'): void;
   (event: 'contentChange'): void;
 }>();
 
@@ -140,12 +123,6 @@ const modelDisplayName = computed(() => {
   const normalized = value.replace(/[\\/]+$/, '');
   const segments = normalized.split(/[\\/]/).filter(Boolean);
   return segments[segments.length - 1] || '-';
-});
-const launcherDisplayValue = computed(() => {
-  if (props.selectedLauncherDir?.trim()) {
-    return props.selectedLauncherDir;
-  }
-  return props.launcherNeedsSelection ? '未选择' : t('toolkit.aiLauncherBundled');
 });
 const showDirectoryHint = computed(
   () => !props.selectedModelDir || (props.launcherNeedsSelection && !props.selectedLauncherDir)
@@ -277,8 +254,8 @@ const showDirectoryHint = computed(
   display: grid;
   gap: 1px;
   min-width: 0;
-  flex: 0 0 calc((100% - 12px) / 3);
-  max-width: calc((100% - 12px) / 3);
+  flex: 1 1 25%;
+  max-width: 25%;
 }
 
 .toolkit-ai-status-value {

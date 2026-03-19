@@ -27,10 +27,51 @@ function Get-UpdaterEndpointUrl {
   return "https://github.com/$($repoInfo.Owner)/$($repoInfo.Repo)/releases/latest/download/$ManifestName"
 }
 
+function Ensure-LauncherAssets {
+  param(
+    [Parameter(Mandatory = $true)][string[]]$RequiredDirs
+  )
+
+  $missing = @(
+    $RequiredDirs |
+      Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+      Where-Object {
+        -not (Test-Path -LiteralPath (Join-Path $projectRoot ("build-assets\" + $_)) -PathType Container)
+      }
+  )
+
+  if ($missing.Count -eq 0) {
+    return
+  }
+
+  $fetchScriptPath = Join-Path $projectRoot "scripts\fetch-launchers.ps1"
+  if (-not (Test-Path -LiteralPath $fetchScriptPath -PathType Leaf)) {
+    throw "Launcher fetch script not found: $fetchScriptPath"
+  }
+
+  Write-Host "[pack-release] Missing launcher assets: $($missing -join ', ')"
+  Write-Host "[pack-release] Fetching launcher assets..."
+  & $fetchScriptPath
+  if ($LASTEXITCODE -ne 0) {
+    throw "Launcher asset fetch failed with exit code $LASTEXITCODE"
+  }
+
+  $stillMissing = @(
+    $RequiredDirs |
+      Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+      Where-Object {
+        -not (Test-Path -LiteralPath (Join-Path $projectRoot ("build-assets\" + $_)) -PathType Container)
+      }
+  )
+  if ($stillMissing.Count -gt 0) {
+    throw "Launcher assets are still missing after fetch: $($stillMissing -join ', ')"
+  }
+}
+
 function Invoke-TauriBuild {
   param(
     [Parameter(Mandatory = $true)][string]$ManifestName,
-    [Parameter(Mandatory = $true)][bool]$IncludeLauncher,
+    [string]$LauncherResourceDir,
     [Parameter()][Nullable[bool]]$CreateUpdaterArtifacts
   )
 
@@ -53,11 +94,11 @@ function Invoke-TauriBuild {
     }
   }
 
-  if (-not $IncludeLauncher) {
+  if ([string]::IsNullOrWhiteSpace($LauncherResourceDir)) {
     $override.bundle.Remove("resources")
   } else {
     $override.bundle.resources = @{
-      "../build-assets/llama_CPU_X64" = "llama_CPU_X64"
+      ("../build-assets/" + $LauncherResourceDir) = $LauncherResourceDir
     }
   }
 
@@ -208,6 +249,48 @@ function Collect-BuildOutputs {
   }
 }
 
+function New-PortableAiArchive {
+  param(
+    [Parameter(Mandatory = $true)][string]$PortableRootDir,
+    [Parameter(Mandatory = $true)][string]$ArchivePath,
+    [Parameter(Mandatory = $true)][string]$ExecutablePath,
+    [Parameter(Mandatory = $true)][string]$ExeName,
+    [Parameter(Mandatory = $true)][string]$LauncherSourceDir,
+    [Parameter(Mandatory = $true)][string]$LauncherDirName,
+    [Parameter(Mandatory = $true)][string]$LauncherLabel
+  )
+
+  if (Test-Path -LiteralPath $PortableRootDir) {
+    Remove-Item -LiteralPath $PortableRootDir -Recurse -Force
+  }
+  if (Test-Path -LiteralPath $ArchivePath) {
+    Remove-Item -LiteralPath $ArchivePath -Force
+  }
+
+  New-Item -ItemType Directory -Path $PortableRootDir -Force | Out-Null
+  Copy-Item -LiteralPath $ExecutablePath -Destination (Join-Path $PortableRootDir $ExeName) -Force
+  Copy-Item -LiteralPath $LauncherSourceDir -Destination (Join-Path $PortableRootDir $LauncherDirName) -Recurse -Force
+
+  $readmePath = Join-Path $PortableRootDir "README.txt"
+  $readmeContent = @"
+PulseCoreLite Portable AI
+=========================
+
+What is included:
+- $ExeName (portable app)
+- $LauncherDirName\ (bundled local AI launcher: $LauncherLabel)
+
+How to run:
+1) Launch $ExeName
+2) In Settings > Local AI, choose your model folder that contains .gguf files
+3) Open the AI page and start the local runtime
+"@
+  Set-Content -LiteralPath $readmePath -Value $readmeContent -Encoding ASCII
+
+  Compress-Archive -Path $PortableRootDir -DestinationPath $ArchivePath -Force
+  Remove-Item -LiteralPath $PortableRootDir -Recurse -Force
+}
+
 Write-Host "[pack-release] Reading project metadata..."
 $packageJsonPath = Join-Path $projectRoot "package.json"
 $packageJson = Get-Content -LiteralPath $packageJsonPath -Raw | ConvertFrom-Json
@@ -216,12 +299,13 @@ $exeName = "$($packageJson.name).exe"
 $date = Get-Date -Format "yyyyMMdd"
 $base = "PulseCoreLite_v${version}_${date}"
 $releaseDir = Join-Path $projectRoot "release"
-$launcherSourceDir = Join-Path $projectRoot "build-assets\llama_CPU_X64"
+$cpuLauncherDirName = "llama_CPU_X64"
+$gpuLauncherDirName = "llama_GPU_CUDA12"
+$cpuLauncherSourceDir = Join-Path $projectRoot ("build-assets\" + $cpuLauncherDirName)
+$gpuLauncherSourceDir = Join-Path $projectRoot ("build-assets\" + $gpuLauncherDirName)
 New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
 
-if (-not (Test-Path -LiteralPath $launcherSourceDir -PathType Container)) {
-  throw "Launcher assets not found: $launcherSourceDir"
-}
+Ensure-LauncherAssets -RequiredDirs @($cpuLauncherDirName, $gpuLauncherDirName)
 
 $hasSigningKey = -not [string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY)
 $createUpdaterArtifacts = $hasSigningKey
@@ -235,13 +319,19 @@ $staleNames = @(
   "${base}_setup-lite.exe.sig",
   "${base}_setup-lite.msi",
   "${base}_portable-lite.exe",
-  "${base}_setup-ai.exe",
-  "${base}_setup-ai.exe.sig",
-  "${base}_setup-ai.msi",
-  "${base}_portable-ai.zip",
+  "${base}_setup-ai-cpu.exe",
+  "${base}_setup-ai-cpu.exe.sig",
+  "${base}_setup-ai-cpu.msi",
+  "${base}_portable-ai-cpu.zip",
+  "${base}_setup-ai-gpu.exe",
+  "${base}_setup-ai-gpu.exe.sig",
+  "${base}_setup-ai-gpu.msi",
+  "${base}_portable-ai-gpu.zip",
   "latest.json",
   "latest-lite.json",
-  "latest-ai.json"
+  "latest-ai.json",
+  "latest-ai-cpu.json",
+  "latest-ai-gpu.json"
 )
 foreach ($name in $staleNames) {
   $path = Join-Path $releaseDir $name
@@ -251,7 +341,7 @@ foreach ($name in $staleNames) {
 }
 
 Write-Host "[pack-release] Building lite release artifacts..."
-Invoke-TauriBuild -ManifestName "latest-lite.json" -IncludeLauncher $false -CreateUpdaterArtifacts $createUpdaterArtifacts
+Invoke-TauriBuild -ManifestName "latest-lite.json" -LauncherResourceDir "" -CreateUpdaterArtifacts $createUpdaterArtifacts
 $liteOutputs = Collect-BuildOutputs -Version $version -ExeName $exeName
 
 $setupLiteExeOut = Join-Path $releaseDir "${base}_setup-lite.exe"
@@ -266,51 +356,55 @@ if ($liteOutputs.NsisSig) {
   Copy-Item -LiteralPath $liteOutputs.NsisSig -Destination $setupLiteSigOut -Force
 }
 
-Write-Host "[pack-release] Building AI runtime release artifacts..."
-Invoke-TauriBuild -ManifestName "latest-ai.json" -IncludeLauncher $true -CreateUpdaterArtifacts $createUpdaterArtifacts
-$aiOutputs = Collect-BuildOutputs -Version $version -ExeName $exeName
+Write-Host "[pack-release] Building AI CPU release artifacts..."
+Invoke-TauriBuild -ManifestName "latest-ai-cpu.json" -LauncherResourceDir $cpuLauncherDirName -CreateUpdaterArtifacts $createUpdaterArtifacts
+$aiCpuOutputs = Collect-BuildOutputs -Version $version -ExeName $exeName
 
-$setupAiExeOut = Join-Path $releaseDir "${base}_setup-ai.exe"
-$setupAiMsiOut = Join-Path $releaseDir "${base}_setup-ai.msi"
-$portableAiZip = Join-Path $releaseDir "${base}_portable-ai.zip"
-$portableAiDir = Join-Path $releaseDir "${base}_portable-ai"
-$setupAiSigOut = "${setupAiExeOut}.sig"
+$setupAiCpuExeOut = Join-Path $releaseDir "${base}_setup-ai-cpu.exe"
+$setupAiCpuMsiOut = Join-Path $releaseDir "${base}_setup-ai-cpu.msi"
+$portableAiCpuZip = Join-Path $releaseDir "${base}_portable-ai-cpu.zip"
+$portableAiCpuDir = Join-Path $releaseDir "${base}_portable-ai-cpu"
+$setupAiCpuSigOut = "${setupAiCpuExeOut}.sig"
 
-Copy-Item -LiteralPath $aiOutputs.Nsis.FullName -Destination $setupAiExeOut -Force
-Copy-Item -LiteralPath $aiOutputs.Msi.FullName -Destination $setupAiMsiOut -Force
-if ($aiOutputs.NsisSig) {
-  Copy-Item -LiteralPath $aiOutputs.NsisSig -Destination $setupAiSigOut -Force
+Copy-Item -LiteralPath $aiCpuOutputs.Nsis.FullName -Destination $setupAiCpuExeOut -Force
+Copy-Item -LiteralPath $aiCpuOutputs.Msi.FullName -Destination $setupAiCpuMsiOut -Force
+if ($aiCpuOutputs.NsisSig) {
+  Copy-Item -LiteralPath $aiCpuOutputs.NsisSig -Destination $setupAiCpuSigOut -Force
 }
 
-if (Test-Path -LiteralPath $portableAiDir) {
-  Remove-Item -LiteralPath $portableAiDir -Recurse -Force
+New-PortableAiArchive `
+  -PortableRootDir $portableAiCpuDir `
+  -ArchivePath $portableAiCpuZip `
+  -ExecutablePath $aiCpuOutputs.PortableExe `
+  -ExeName $exeName `
+  -LauncherSourceDir $cpuLauncherSourceDir `
+  -LauncherDirName $cpuLauncherDirName `
+  -LauncherLabel "CPU"
+
+Write-Host "[pack-release] Building AI GPU release artifacts..."
+Invoke-TauriBuild -ManifestName "latest-ai-gpu.json" -LauncherResourceDir $gpuLauncherDirName -CreateUpdaterArtifacts $createUpdaterArtifacts
+$aiGpuOutputs = Collect-BuildOutputs -Version $version -ExeName $exeName
+
+$setupAiGpuExeOut = Join-Path $releaseDir "${base}_setup-ai-gpu.exe"
+$setupAiGpuMsiOut = Join-Path $releaseDir "${base}_setup-ai-gpu.msi"
+$portableAiGpuZip = Join-Path $releaseDir "${base}_portable-ai-gpu.zip"
+$portableAiGpuDir = Join-Path $releaseDir "${base}_portable-ai-gpu"
+$setupAiGpuSigOut = "${setupAiGpuExeOut}.sig"
+
+Copy-Item -LiteralPath $aiGpuOutputs.Nsis.FullName -Destination $setupAiGpuExeOut -Force
+Copy-Item -LiteralPath $aiGpuOutputs.Msi.FullName -Destination $setupAiGpuMsiOut -Force
+if ($aiGpuOutputs.NsisSig) {
+  Copy-Item -LiteralPath $aiGpuOutputs.NsisSig -Destination $setupAiGpuSigOut -Force
 }
-if (Test-Path -LiteralPath $portableAiZip) {
-  Remove-Item -LiteralPath $portableAiZip -Force
-}
-New-Item -ItemType Directory -Path $portableAiDir -Force | Out-Null
 
-Copy-Item -LiteralPath $aiOutputs.PortableExe -Destination (Join-Path $portableAiDir $exeName) -Force
-Copy-Item -LiteralPath $launcherSourceDir -Destination (Join-Path $portableAiDir "llama_CPU_X64") -Recurse -Force
-
-$readmePath = Join-Path $portableAiDir "README.txt"
-$readmeContent = @"
-PulseCoreLite Portable AI
-=========================
-
-What is included:
-- $exeName (portable app)
-- llama_CPU_X64\ (bundled local AI launcher)
-
-How to run:
-1) Launch $exeName
-2) In the AI panel, choose your model folder that contains .gguf files
-3) The bundled launcher will be detected automatically
-"@
-Set-Content -LiteralPath $readmePath -Value $readmeContent -Encoding ASCII
-
-Compress-Archive -Path $portableAiDir -DestinationPath $portableAiZip -Force
-Remove-Item -LiteralPath $portableAiDir -Recurse -Force
+New-PortableAiArchive `
+  -PortableRootDir $portableAiGpuDir `
+  -ArchivePath $portableAiGpuZip `
+  -ExecutablePath $aiGpuOutputs.PortableExe `
+  -ExeName $exeName `
+  -LauncherSourceDir $gpuLauncherSourceDir `
+  -LauncherDirName $gpuLauncherDirName `
+  -LauncherLabel "GPU CUDA 12.4"
 
 $githubOwner = $env:GITHUB_OWNER
 $githubRepo = $env:GITHUB_REPO
@@ -331,13 +425,28 @@ if ($githubOwner -and $githubRepo -and (Test-Path -LiteralPath $setupLiteSigOut 
   Copy-Item -LiteralPath $latestJsonPath -Destination $latestLiteJsonPath -Force
   Write-Host "[pack-release] Lite updater manifests generated: $latestJsonPath, $latestLiteJsonPath"
 
-  if (Test-Path -LiteralPath $setupAiSigOut -PathType Leaf) {
-    $aiDownloadUrl = "$downloadBase/$([System.IO.Path]::GetFileName($setupAiExeOut))"
-    $latestAiJsonPath = Join-Path $releaseDir "latest-ai.json"
-    New-UpdaterManifest -Version $version -SignaturePath $setupAiSigOut -DownloadUrl $aiDownloadUrl -OutputPath $latestAiJsonPath -Notes $notes
-    Write-Host "[pack-release] AI updater manifest generated: $latestAiJsonPath"
+  $latestAiJsonPath = Join-Path $releaseDir "latest-ai.json"
+  $latestAiCpuJsonPath = Join-Path $releaseDir "latest-ai-cpu.json"
+  $latestAiGpuJsonPath = Join-Path $releaseDir "latest-ai-gpu.json"
+
+  if (Test-Path -LiteralPath $setupAiCpuSigOut -PathType Leaf) {
+    $aiCpuDownloadUrl = "$downloadBase/$([System.IO.Path]::GetFileName($setupAiCpuExeOut))"
+    New-UpdaterManifest -Version $version -SignaturePath $setupAiCpuSigOut -DownloadUrl $aiCpuDownloadUrl -OutputPath $latestAiCpuJsonPath -Notes $notes
+    Write-Host "[pack-release] AI CPU updater manifest generated: $latestAiCpuJsonPath"
   } else {
-    Write-Host "[pack-release] Skipping AI updater manifest because AI signature is missing."
+    Write-Host "[pack-release] Skipping AI CPU updater manifest because AI CPU signature is missing."
+  }
+
+  if (Test-Path -LiteralPath $setupAiGpuSigOut -PathType Leaf) {
+    $aiGpuDownloadUrl = "$downloadBase/$([System.IO.Path]::GetFileName($setupAiGpuExeOut))"
+    New-UpdaterManifest -Version $version -SignaturePath $setupAiGpuSigOut -DownloadUrl $aiGpuDownloadUrl -OutputPath $latestAiGpuJsonPath -Notes $notes
+    Copy-Item -LiteralPath $latestAiGpuJsonPath -Destination $latestAiJsonPath -Force
+    Write-Host "[pack-release] AI GPU updater manifests generated: $latestAiGpuJsonPath, $latestAiJsonPath"
+  } elseif (Test-Path -LiteralPath $latestAiCpuJsonPath -PathType Leaf) {
+    Copy-Item -LiteralPath $latestAiCpuJsonPath -Destination $latestAiJsonPath -Force
+    Write-Host "[pack-release] AI GPU signature is missing; latest-ai.json falls back to AI CPU."
+  } else {
+    Write-Host "[pack-release] Skipping AI updater manifests because AI signatures are missing."
   }
 } else {
   Write-Host "[pack-release] Skipping updater manifests (set GITHUB_OWNER/GITHUB_REPO and ensure .sig is present)."
@@ -348,16 +457,22 @@ Write-Host "[pack-release] Done. Generated release artifacts:"
 Write-Host " - $setupLiteExeOut"
 Write-Host " - $setupLiteMsiOut"
 Write-Host " - $portableLiteOut"
-Write-Host " - $setupAiExeOut"
-Write-Host " - $setupAiMsiOut"
-Write-Host " - $portableAiZip"
+Write-Host " - $setupAiCpuExeOut"
+Write-Host " - $setupAiCpuMsiOut"
+Write-Host " - $portableAiCpuZip"
+Write-Host " - $setupAiGpuExeOut"
+Write-Host " - $setupAiGpuMsiOut"
+Write-Host " - $portableAiGpuZip"
 if (Test-Path -LiteralPath $setupLiteSigOut -PathType Leaf) {
   Write-Host " - $setupLiteSigOut"
 }
-if (Test-Path -LiteralPath $setupAiSigOut -PathType Leaf) {
-  Write-Host " - $setupAiSigOut"
+if (Test-Path -LiteralPath $setupAiCpuSigOut -PathType Leaf) {
+  Write-Host " - $setupAiCpuSigOut"
 }
-foreach ($manifestName in @("latest.json", "latest-lite.json", "latest-ai.json")) {
+if (Test-Path -LiteralPath $setupAiGpuSigOut -PathType Leaf) {
+  Write-Host " - $setupAiGpuSigOut"
+}
+foreach ($manifestName in @("latest.json", "latest-lite.json", "latest-ai.json", "latest-ai-cpu.json", "latest-ai-gpu.json")) {
   $manifestPath = Join-Path $releaseDir $manifestName
   if (Test-Path -LiteralPath $manifestPath -PathType Leaf) {
     Write-Host " - $manifestPath"

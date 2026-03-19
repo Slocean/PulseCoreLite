@@ -64,6 +64,18 @@ jobs:
           }
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
+      - name: Fetch launcher assets
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LAUNCHER_ASSET_OWNER: ${{ github.repository_owner }}
+          LAUNCHER_ASSET_REPO: ${{ github.event.repository.name }}
+          LAUNCHER_ASSET_TAG: llm-assets-v1
+          LAUNCHER_CPU_ASSET: llama-b8405-bin-win-cpu-x64.zip
+          LAUNCHER_GPU_DEFAULT_ASSET: llama-b8405-bin-win-cuda-12.4-x64.zip
+          LAUNCHER_GPU_ALT_ASSET: llama-b8405-bin-win-cuda-13.1-x64.zip
+        run: ./scripts/fetch-launchers.ps1
+
       - name: Extract release notes
         id: notes
         shell: pwsh

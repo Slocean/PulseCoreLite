@@ -32,6 +32,7 @@ pub struct LocalAiRuntime {
     child: Option<Child>,
     server_url: String,
     model_name: String,
+    launch_mode: String,
     selected_model_dir: Option<PathBuf>,
     selected_launcher_dir: Option<PathBuf>,
     model_path: Option<PathBuf>,
@@ -47,6 +48,7 @@ impl Default for LocalAiRuntime {
             child: None,
             server_url: local_ai_server_url(),
             model_name: String::new(),
+            launch_mode: "unknown".to_string(),
             selected_model_dir: None,
             selected_launcher_dir: None,
             model_path: None,
@@ -61,6 +63,7 @@ impl Default for LocalAiRuntime {
 struct LocalAiLauncherAssets {
     server_dir: PathBuf,
     server_exe: PathBuf,
+    launch_mode: String,
     selected_launcher_dir: Option<PathBuf>,
     launcher_needs_selection: bool,
 }
@@ -68,6 +71,7 @@ struct LocalAiLauncherAssets {
 struct LocalAiAssets {
     server_dir: PathBuf,
     server_exe: PathBuf,
+    launch_mode: String,
     selected_launcher_dir: Option<PathBuf>,
     launcher_needs_selection: bool,
     model_dir: PathBuf,
@@ -823,6 +827,7 @@ fn resolve_local_ai_assets(
     Ok(LocalAiAssets {
         server_dir: launcher.server_dir,
         server_exe: launcher.server_exe,
+        launch_mode: launcher.launch_mode,
         selected_launcher_dir: launcher.selected_launcher_dir,
         launcher_needs_selection: launcher.launcher_needs_selection,
         model_dir: llm_dir,
@@ -842,6 +847,7 @@ fn resolve_local_ai_launcher(
             return Ok(LocalAiLauncherAssets {
                 server_dir: launcher_dir.clone(),
                 server_exe,
+                launch_mode: detect_launch_mode(&launcher_dir),
                 selected_launcher_dir: Some(launcher_dir),
                 launcher_needs_selection: true,
             });
@@ -855,13 +861,11 @@ fn resolve_local_ai_launcher(
     let roots = local_ai_search_roots(app);
 
     for root in &roots {
-        for candidate in [
-            root.join("llama_CPU_X64"),
-            root.join("build-assets").join("llama_CPU_X64"),
-        ] {
+        for candidate in bundled_launcher_candidates(root) {
             let server_exe = candidate.join("llama-server.exe");
             if server_exe.is_file() {
                 return Ok(LocalAiLauncherAssets {
+                    launch_mode: detect_launch_mode(&candidate),
                     server_dir: candidate,
                     server_exe,
                     selected_launcher_dir: None,
@@ -874,9 +878,11 @@ fn resolve_local_ai_launcher(
     for root in &roots {
         if let Some(candidate) = find_nested_launcher_dir(root, 6) {
             let server_exe = candidate.join("llama-server.exe");
+            let launch_mode = detect_launch_mode(&candidate);
             return Ok(LocalAiLauncherAssets {
                 server_dir: candidate,
                 server_exe,
+                launch_mode,
                 selected_launcher_dir: None,
                 launcher_needs_selection: false,
             });
@@ -892,13 +898,27 @@ fn resolve_local_ai_launcher(
 pub(crate) fn has_bundled_local_ai_launcher(app: &AppHandle) -> bool {
     let roots = local_ai_search_roots(app);
     roots.iter().any(|root| {
-        [
-            root.join("llama_CPU_X64"),
-            root.join("build-assets").join("llama_CPU_X64"),
-        ]
-        .into_iter()
-        .any(|candidate| candidate.join("llama-server.exe").is_file())
+        bundled_launcher_candidates(root)
+            .into_iter()
+            .any(|candidate| candidate.join("llama-server.exe").is_file())
     })
+}
+
+fn bundled_launcher_candidates(root: &Path) -> Vec<PathBuf> {
+    [
+        "llama_CPU_X64",
+        "llama_GPU_CUDA12",
+        "llama_GPU_CUDA13",
+        "llama_GPU_CUDA13_1",
+    ]
+    .into_iter()
+    .flat_map(|dir_name| {
+        [
+            root.join(dir_name),
+            root.join("build-assets").join(dir_name),
+        ]
+    })
+    .collect()
 }
 
 fn select_main_model(llm_dir: &Path) -> Result<PathBuf, String> {
@@ -963,6 +983,17 @@ fn select_mmproj_model(llm_dir: &Path) -> Option<PathBuf> {
         })
 }
 
+fn detect_launch_mode(path: &Path) -> String {
+    let normalized = path.to_string_lossy().to_ascii_lowercase();
+    if normalized.contains("cuda") || normalized.contains("gpu") {
+        "gpu".to_string()
+    } else if normalized.contains("cpu") {
+        "cpu".to_string()
+    } else {
+        "unknown".to_string()
+    }
+}
+
 fn find_nested_launcher_dir(root: &Path, max_depth: usize) -> Option<PathBuf> {
     if !root.is_dir() {
         return None;
@@ -970,9 +1001,14 @@ fn find_nested_launcher_dir(root: &Path, max_depth: usize) -> Option<PathBuf> {
 
     let mut stack = vec![(root.to_path_buf(), 0usize)];
     while let Some((dir, depth)) = stack.pop() {
-        let candidate = dir.join("llama_CPU_X64");
-        if candidate.join("llama-server.exe").is_file() {
-            return Some(candidate);
+        if dir.join("llama-server.exe").is_file()
+            && dir
+                .file_name()
+                .and_then(|value| value.to_str())
+                .map(|name| name.to_ascii_lowercase().contains("llama"))
+                .unwrap_or(false)
+        {
+            return Some(dir);
         }
 
         if depth >= max_depth {
@@ -1037,6 +1073,11 @@ fn display_search_roots(roots: &[PathBuf]) -> String {
 }
 
 fn spawn_local_ai_process(assets: &LocalAiAssets) -> Result<Child, String> {
+    let gpu_layers = if assets.launch_mode == "gpu" {
+        "999"
+    } else {
+        "0"
+    };
     let mut command = Command::new(&assets.server_exe);
     command
         .current_dir(&assets.server_dir)
@@ -1054,7 +1095,7 @@ fn spawn_local_ai_process(assets: &LocalAiAssets) -> Result<Child, String> {
         .arg("--threads")
         .arg(recommended_thread_count().to_string())
         .arg("--n-gpu-layers")
-        .arg("0")
+        .arg(gpu_layers)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
@@ -1111,6 +1152,7 @@ fn stop_local_ai_process(runtime: &mut LocalAiRuntime) {
 
 fn apply_runtime_assets(runtime: &mut LocalAiRuntime, assets: &LocalAiAssets) {
     runtime.model_name = assets.model_name.clone();
+    runtime.launch_mode = assets.launch_mode.clone();
     runtime.selected_model_dir = Some(assets.model_dir.clone());
     runtime.selected_launcher_dir = assets.selected_launcher_dir.clone();
     runtime.model_path = Some(assets.model_path.clone());
@@ -1125,11 +1167,13 @@ fn apply_runtime_launcher_state(
 ) {
     match launcher_assets {
         Ok(launcher) => {
+            runtime.launch_mode = launcher.launch_mode;
             runtime.selected_launcher_dir = launcher.selected_launcher_dir;
             runtime.server_path = Some(launcher.server_exe);
             runtime.launcher_needs_selection = launcher.launcher_needs_selection;
         }
         Err(_) => {
+            runtime.launch_mode = "unknown".to_string();
             runtime.server_path = None;
             runtime.launcher_needs_selection = true;
         }
@@ -1141,6 +1185,7 @@ fn build_status(runtime: &LocalAiRuntime, ready: bool, message: String) -> Local
         ready,
         running: ready || runtime.child.is_some(),
         model_name: runtime.model_name.clone(),
+        launch_mode: runtime.launch_mode.clone(),
         selected_model_dir: runtime
             .selected_model_dir
             .as_ref()

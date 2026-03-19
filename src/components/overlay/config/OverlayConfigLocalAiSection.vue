@@ -66,6 +66,18 @@ const launcherDisplayValue = computed(() => {
   return hasBundledLauncher.value ? t('overlay.localAiLauncherBundled') : t('overlay.localAiNotSelected');
 });
 
+function notifyLocalAiSettingsChanged() {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent('pulsecorelite:local-ai-settings-changed', {
+      detail: {
+        selectedModelDir: selectedModelDir.value,
+        selectedLauncherDir: selectedLauncherDir.value
+      }
+    })
+  );
+}
+
 async function chooseModelDir() {
   if (!isTauriRuntime) return;
   const selected = await open({
@@ -76,6 +88,7 @@ async function chooseModelDir() {
   selectedModelDir.value = selected;
   storageRepository.setStringSync(storageKeys.localAiModelDir, selected);
   void storageRepository.setString(storageKeys.localAiModelDir, selected);
+  notifyLocalAiSettingsChanged();
 }
 
 async function chooseLauncherDir() {
@@ -88,12 +101,14 @@ async function chooseLauncherDir() {
   selectedLauncherDir.value = selected;
   storageRepository.setStringSync(storageKeys.localAiLauncherDir, selected);
   void storageRepository.setString(storageKeys.localAiLauncherDir, selected);
+  notifyLocalAiSettingsChanged();
 }
 
 function resetLauncherDir() {
   selectedLauncherDir.value = null;
   storageRepository.removeSync(storageKeys.localAiLauncherDir);
   void storageRepository.remove(storageKeys.localAiLauncherDir);
+  notifyLocalAiSettingsChanged();
 }
 </script>
 

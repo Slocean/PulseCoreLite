@@ -228,6 +228,7 @@ type ChatPanelState = {
   contextWindowSize: number;
   conversationTurns: number;
   capabilityLabel: string;
+  launchModeLabel: string;
   statusBusy: boolean;
   isTauriRuntime: boolean;
 };
@@ -289,6 +290,7 @@ const activeStreamRequestId = ref<string | null>(null);
 const thinkingTagState = new Map<string, { insideThink: boolean; pendingTag: string }>();
 
 let unlistenLocalAiStream: (() => void) | null = null;
+let unlistenLocalAiSettingsChanged: (() => void) | null = null;
 
 const workspaceStateLabel = computed(() => {
   if (!isTauriRuntime) return t('toolkit.aiStatusUnavailable');
@@ -308,6 +310,11 @@ const workspaceStateTone = computed(() => {
 const capabilityLabel = computed(() =>
   localStatus.value?.visionEnabled ? t('toolkit.aiModeVision') : t('toolkit.aiModeText')
 );
+const launchModeLabel = computed(() => {
+  if (localStatus.value?.launchMode === 'gpu') return t('toolkit.aiLaunchModeGpu');
+  if (localStatus.value?.launchMode === 'cpu') return t('toolkit.aiLaunchModeCpu');
+  return t('toolkit.aiLaunchModeUnknown');
+});
 const conversationTurns = computed(() => messages.value.filter(message => message.role === 'user').length);
 const contextWindowSize = computed(
   () =>
@@ -343,6 +350,7 @@ const panelState = computed<ChatPanelState>(() => ({
   contextWindowSize: contextWindowSize.value,
   conversationTurns: conversationTurns.value,
   capabilityLabel: capabilityLabel.value,
+  launchModeLabel: launchModeLabel.value,
   statusBusy: statusBusy.value,
   isTauriRuntime
 }));
@@ -351,6 +359,7 @@ onMounted(() => {
   autoResizeComposer();
   restoreSavedModelDir();
   restoreSavedLauncherDir();
+  setupLocalAiSettingsChangeListener();
   if (isTauriRuntime) {
     void refreshStatus();
     void setupLocalAiStreamListener();
@@ -361,6 +370,10 @@ onBeforeUnmount(() => {
   if (unlistenLocalAiStream) {
     unlistenLocalAiStream();
     unlistenLocalAiStream = null;
+  }
+  if (unlistenLocalAiSettingsChanged) {
+    unlistenLocalAiSettingsChanged();
+    unlistenLocalAiSettingsChanged = null;
   }
 });
 
@@ -449,6 +462,24 @@ async function setupLocalAiStreamListener() {
   });
 }
 
+function setupLocalAiSettingsChangeListener() {
+  if (typeof window === 'undefined' || unlistenLocalAiSettingsChanged) return;
+  const handler = (event: Event) => {
+    const detail = (event as CustomEvent<{ selectedModelDir?: string | null; selectedLauncherDir?: string | null }>)
+      .detail;
+    if (detail && 'selectedModelDir' in detail) {
+      selectedModelDir.value = detail.selectedModelDir ?? null;
+    }
+    if (detail && 'selectedLauncherDir' in detail) {
+      selectedLauncherDir.value = detail.selectedLauncherDir ?? null;
+    }
+    void refreshStatus();
+  };
+  window.addEventListener('pulsecorelite:local-ai-settings-changed', handler as EventListener);
+  unlistenLocalAiSettingsChanged = () =>
+    window.removeEventListener('pulsecorelite:local-ai-settings-changed', handler as EventListener);
+}
+
 function restoreSavedModelDir() {
   const savedDir = storageRepository.getStringSync(storageKeys.localAiModelDir) ?? null;
   if (savedDir && !selectedModelDir.value) {
@@ -495,6 +526,7 @@ async function refreshStatus() {
       ready: false,
       running: false,
       modelName: '0.8B',
+      launchMode: localStatus.value?.launchMode ?? 'unknown',
       selectedModelDir: selectedModelDir.value,
       selectedLauncherDir: selectedLauncherDir.value,
       modelPath: null,
@@ -522,6 +554,7 @@ async function startLocalAi(modelDir?: string | null, launcherDir?: string | nul
       ready: false,
       running: false,
       modelName: localStatus.value?.modelName ?? '0.8B',
+      launchMode: localStatus.value?.launchMode ?? 'unknown',
       selectedModelDir: null,
       selectedLauncherDir: nextLauncherDir ?? null,
       modelPath: null,
@@ -552,6 +585,7 @@ async function startLocalAi(modelDir?: string | null, launcherDir?: string | nul
       ready: false,
       running: false,
       modelName: localStatus.value?.modelName ?? '0.8B',
+      launchMode: localStatus.value?.launchMode ?? 'unknown',
       selectedModelDir: nextDir,
       selectedLauncherDir: nextLauncherDir ?? null,
       modelPath: null,
