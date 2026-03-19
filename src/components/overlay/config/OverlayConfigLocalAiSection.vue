@@ -8,9 +8,9 @@
       <UiButton
         native-type="button"
         preset="overlay-chip"
-        :disabled="!isTauriRuntime"
+        :disabled="!isTauriRuntime || localAiStatusLoading"
         @click="chooseModelDir">
-        {{ t('overlay.localAiChooseDir') }}
+        {{ chooseButtonLabel }}
       </UiButton>
     </div>
   </div>
@@ -25,16 +25,16 @@
         v-if="selectedLauncherDir"
         native-type="button"
         preset="overlay-chip-soft"
-        :disabled="!isTauriRuntime"
+        :disabled="!isTauriRuntime || localAiStatusLoading"
         @click="resetLauncherDir">
         {{ hasBundledLauncher ? t('overlay.localAiUseBundled') : t('overlay.localAiClearLauncher') }}
       </UiButton>
       <UiButton
         native-type="button"
         preset="overlay-chip"
-        :disabled="!isTauriRuntime"
+        :disabled="!isTauriRuntime || localAiStatusLoading"
         @click="chooseLauncherDir">
-        {{ t('overlay.localAiChooseDir') }}
+        {{ chooseButtonLabel }}
       </UiButton>
     </div>
   </div>
@@ -59,6 +59,7 @@ const isTauriRuntime = inTauri();
 const selectedModelDir = ref(storageRepository.getStringSync(storageKeys.localAiModelDir) ?? null);
 const selectedLauncherDir = ref(storageRepository.getStringSync(storageKeys.localAiLauncherDir) ?? null);
 const localAiStatus = ref<LocalAiStatus | null>(null);
+const localAiStatusLoading = ref(false);
 
 const hasBundledLauncher = computed(() => {
   if (localAiStatus.value) {
@@ -66,9 +67,15 @@ const hasBundledLauncher = computed(() => {
   }
   return props.packageFlavor === 'ai';
 });
+const chooseButtonLabel = computed(() =>
+  localAiStatusLoading.value ? t('overlay.localAiLoading') : t('overlay.localAiChooseDir')
+);
 const launcherDisplayValue = computed(() => {
   if (selectedLauncherDir.value?.trim()) {
     return selectedLauncherDir.value;
+  }
+  if (localAiStatusLoading.value) {
+    return t('overlay.localAiUnknown');
   }
   return hasBundledLauncher.value ? t('overlay.localAiLauncherBundled') : t('overlay.localAiNotSelected');
 });
@@ -79,6 +86,7 @@ onMounted(() => {
 
 async function refreshLocalAiStatus() {
   if (!isTauriRuntime) return;
+  localAiStatusLoading.value = true;
   try {
     localAiStatus.value = await api.getLocalAiStatus();
     if (!selectedLauncherDir.value && localAiStatus.value.selectedLauncherDir) {
@@ -86,6 +94,8 @@ async function refreshLocalAiStatus() {
     }
   } catch {
     localAiStatus.value = null;
+  } finally {
+    localAiStatusLoading.value = false;
   }
 }
 

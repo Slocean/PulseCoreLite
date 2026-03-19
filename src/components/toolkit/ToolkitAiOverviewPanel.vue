@@ -111,12 +111,7 @@ const openModel = computed({
   get: () => props.modelValue,
   set: value => emit('update:modelValue', value)
 });
-const actionLabel = computed(() => {
-  if (props.busyState === 'loading') return t('toolkit.aiLoading');
-  if (props.busyState === 'start') return t('toolkit.aiStartPending');
-  if (props.busyState === 'stop') return t('toolkit.aiStopPending');
-  return props.localStatus?.running ? t('toolkit.aiStop') : t('toolkit.aiStart');
-});
+const actionLabel = computed(() => (props.localStatus?.running ? t('toolkit.aiStop') : t('toolkit.aiStart')));
 const modelDisplayName = computed(() => {
   const value = props.selectedModelDir?.trim();
   if (!value) return '-';
