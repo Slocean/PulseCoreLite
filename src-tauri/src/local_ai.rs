@@ -260,6 +260,18 @@ async fn start_local_ai_runtime_internal(
     model_dir: Option<String>,
     launcher_dir: Option<String>,
 ) -> Result<LocalAiStatus, String> {
+    let use_default_launcher = launcher_dir
+        .as_deref()
+        .map(str::trim)
+        .is_some_and(str::is_empty);
+    let requested_launcher_dir = launcher_dir.and_then(|value| {
+        let trimmed = value.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(PathBuf::from(trimmed))
+        }
+    });
     let (existing_model_dir, existing_launcher_dir) = {
         let runtime = state.local_ai_runtime.lock().await;
         (
@@ -273,7 +285,13 @@ async fn start_local_ai_runtime_internal(
         .ok_or_else(|| {
             "No model directory is configured. Please choose a folder first.".to_string()
         })?;
-    let chosen_launcher_dir = launcher_dir.map(PathBuf::from).or(existing_launcher_dir);
+    let chosen_launcher_dir = if use_default_launcher {
+        None
+    } else if requested_launcher_dir.is_some() {
+        requested_launcher_dir
+    } else {
+        existing_launcher_dir
+    };
     let assets = resolve_local_ai_assets(app, Some(chosen_dir), chosen_launcher_dir)?;
     let mut runtime = state.local_ai_runtime.lock().await;
 
@@ -818,6 +836,22 @@ fn resolve_local_ai_launcher(
     app: &AppHandle,
     launcher_dir_override: Option<PathBuf>,
 ) -> Result<LocalAiLauncherAssets, String> {
+    if let Some(launcher_dir) = launcher_dir_override {
+        let server_exe = launcher_dir.join("llama-server.exe");
+        if server_exe.is_file() {
+            return Ok(LocalAiLauncherAssets {
+                server_dir: launcher_dir.clone(),
+                server_exe,
+                selected_launcher_dir: Some(launcher_dir),
+                launcher_needs_selection: true,
+            });
+        }
+        return Err(format!(
+            "Failed to find llama-server.exe in the selected launcher directory: {}",
+            launcher_dir.display()
+        ));
+    }
+
     let roots = local_ai_search_roots(app);
 
     for root in &roots {
@@ -847,22 +881,6 @@ fn resolve_local_ai_launcher(
                 launcher_needs_selection: false,
             });
         }
-    }
-
-    if let Some(launcher_dir) = launcher_dir_override {
-        let server_exe = launcher_dir.join("llama-server.exe");
-        if server_exe.is_file() {
-            return Ok(LocalAiLauncherAssets {
-                server_dir: launcher_dir.clone(),
-                server_exe,
-                selected_launcher_dir: Some(launcher_dir),
-                launcher_needs_selection: true,
-            });
-        }
-        return Err(format!(
-            "Failed to find llama-server.exe in the selected launcher directory: {}",
-            launcher_dir.display()
-        ));
     }
 
     Err(format!(

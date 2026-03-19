@@ -16,8 +16,8 @@ use crate::{
     types::{
         AppBootstrap, AppRuntimeInfo, MonthlyReminderSlot, NativeTaskbarConfig,
         ReminderAdvancedSettings, ReminderScreenEventPayload, ScheduleShutdownRequest,
-        SendReminderEmailRequest, ShutdownPlan, SmtpEmailConfig, TaskReminder,
-        TaskReminderStore, WeeklyReminderSlot,
+        SendReminderEmailRequest, ShutdownPlan, SmtpEmailConfig, TaskReminder, TaskReminderStore,
+        WeeklyReminderSlot,
     },
 };
 
@@ -1001,7 +1001,10 @@ fn extract_windows_download_url(manifest: &serde_json::Value) -> Option<String> 
                 if !key.to_ascii_lowercase().contains("windows") {
                     return None;
                 }
-                value.get("url").and_then(|url| url.as_str()).map(str::to_string)
+                value
+                    .get("url")
+                    .and_then(|url| url.as_str())
+                    .map(str::to_string)
             })
         })
 }
@@ -1071,9 +1074,7 @@ fn spawn_switch_installer_cmd(installer_path: &std::path::Path) -> CmdResult<()>
         .map(|value| value.eq_ignore_ascii_case("msi"))
         .unwrap_or(false)
     {
-        format!(
-            "ping 127.0.0.1 -n 3 >NUL & msiexec /i \"{installer}\" /passive /norestart"
-        )
+        format!("ping 127.0.0.1 -n 3 >NUL & msiexec /i \"{installer}\" /passive /norestart")
     } else {
         format!("ping 127.0.0.1 -n 3 >NUL & \"{installer}\" /P")
     };

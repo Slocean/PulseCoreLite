@@ -39,6 +39,19 @@
     </UiCollapsiblePanel>
 
     <UiCollapsiblePanel
+      v-model="localAiSectionOpen"
+      class="overlay-config overlay-config-section"
+      :title="t('overlay.settingsSectionLocalAi')"
+      :framed="true"
+      single-header-preset="toolkit-collapse"
+      title-class="toolkit-section-title"
+      indicator-class="toolkit-collapse-indicator"
+      content-class="overlay-config-content overlay-config--single-column"
+      @mousedown.stop>
+      <OverlayConfigLocalAiSection :package-flavor="packageFlavor" />
+    </UiCollapsiblePanel>
+
+    <UiCollapsiblePanel
       v-model="themeSectionOpen"
       class="overlay-config overlay-config-section"
       :title="t('overlay.settingsSectionTheme')"
@@ -94,6 +107,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import OverlayConfigDisplaySection from '@/components/overlay/config/OverlayConfigDisplaySection.vue';
+import OverlayConfigLocalAiSection from '@/components/overlay/config/OverlayConfigLocalAiSection.vue';
 import OverlayConfigSystemSection from '@/components/overlay/config/OverlayConfigSystemSection.vue';
 import OverlayConfigThemeSection from '@/components/overlay/config/OverlayConfigThemeSection.vue';
 import OverlayConfigToolsSection from '@/components/overlay/config/OverlayConfigToolsSection.vue';
@@ -146,6 +160,7 @@ const { t } = useI18n();
 
 const displaySectionOpen = ref(true);
 const systemSectionOpen = ref(true);
+const localAiSectionOpen = ref(true);
 const themeSectionOpen = ref(true);
 const toolsSectionOpen = ref(true);
 

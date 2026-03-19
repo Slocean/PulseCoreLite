@@ -470,7 +470,11 @@ function persistSelectedModelDir(value: string | null) {
 }
 
 function persistSelectedLauncherDir(value: string | null) {
-  if (!value) return;
+  if (!value) {
+    storageRepository.removeSync(storageKeys.localAiLauncherDir);
+    void storageRepository.remove(storageKeys.localAiLauncherDir);
+    return;
+  }
   storageRepository.setStringSync(storageKeys.localAiLauncherDir, value);
   void storageRepository.setString(storageKeys.localAiLauncherDir, value);
 }
@@ -592,6 +596,7 @@ function setSelectedModelDir(value: string | null) {
 
 function setSelectedLauncherDir(value: string | null) {
   selectedLauncherDir.value = value;
+  persistSelectedLauncherDir(value);
   if (localStatus.value) {
     localStatus.value = {
       ...localStatus.value,
