@@ -21,6 +21,7 @@
     "tauri:dev": "node scripts/dev-runner.mjs",
     "tdev": "node scripts/dev-runner.mjs",
     "tbuild": "tauri build",
+    "tbuild:test": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/pack-release.ps1",
     "tauri:build": "tauri build",
     "pack:release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/pack-release.ps1",
     "release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release.ps1",

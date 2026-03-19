@@ -56,9 +56,9 @@ function Invoke-TauriBuild {
   if (-not $IncludeLauncher) {
     $override.bundle.Remove("resources")
   } else {
-    $override.bundle.resources = @(
-      (Join-Path $projectRoot "build-assets\llama_CPU_X64")
-    )
+    $override.bundle.resources = @{
+      "../build-assets/llama_CPU_X64" = "llama_CPU_X64"
+    }
   }
 
   if ($null -eq $CreateUpdaterArtifacts) {

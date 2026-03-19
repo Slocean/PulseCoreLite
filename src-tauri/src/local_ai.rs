@@ -270,7 +270,9 @@ async fn start_local_ai_runtime_internal(
     let chosen_dir = model_dir
         .map(PathBuf::from)
         .or(existing_model_dir)
-        .ok_or_else(|| "No model directory is configured. Please choose a folder first.".to_string())?;
+        .ok_or_else(|| {
+            "No model directory is configured. Please choose a folder first.".to_string()
+        })?;
     let chosen_launcher_dir = launcher_dir.map(PathBuf::from).or(existing_launcher_dir);
     let assets = resolve_local_ai_assets(app, Some(chosen_dir), chosen_launcher_dir)?;
     let mut runtime = state.local_ai_runtime.lock().await;
@@ -339,10 +341,7 @@ struct LocalAiParsedResponse {
     body: String,
 }
 
-fn should_retry_without_thinking(
-    enable_thinking: bool,
-    response: &LocalAiParsedResponse,
-) -> bool {
+fn should_retry_without_thinking(enable_thinking: bool, response: &LocalAiParsedResponse) -> bool {
     enable_thinking
         && response.reply.is_none()
         && response.reasoning.is_some()
@@ -396,7 +395,8 @@ async fn send_local_ai_request_stream(
         body.push_str(&String::from_utf8_lossy(&chunk));
         stream_buffer.extend_from_slice(&chunk);
 
-        while let Some((separator_index, separator_len)) = find_sse_event_separator(&stream_buffer) {
+        while let Some((separator_index, separator_len)) = find_sse_event_separator(&stream_buffer)
+        {
             let event_bytes = stream_buffer[..separator_index].to_vec();
             stream_buffer.drain(..separator_index + separator_len);
             process_stream_event(
@@ -494,10 +494,14 @@ fn find_sse_event_separator(buffer: &[u8]) -> Option<(usize, usize)> {
     let crlf = buffer.windows(4).position(|window| window == b"\r\n\r\n");
     let cr = buffer.windows(2).position(|window| window == b"\r\r");
 
-    [lf.map(|index| (index, 2)), crlf.map(|index| (index, 4)), cr.map(|index| (index, 2))]
-        .into_iter()
-        .flatten()
-        .min_by_key(|(index, _)| *index)
+    [
+        lf.map(|index| (index, 2)),
+        crlf.map(|index| (index, 4)),
+        cr.map(|index| (index, 2)),
+    ]
+    .into_iter()
+    .flatten()
+    .min_by_key(|(index, _)| *index)
 }
 
 fn extract_sse_payload(event_bytes: &[u8]) -> Option<String> {
@@ -785,8 +789,10 @@ fn resolve_local_ai_assets(
     launcher_dir_override: Option<PathBuf>,
 ) -> Result<LocalAiAssets, String> {
     let launcher = resolve_local_ai_launcher(app, launcher_dir_override)?;
-    let llm_dir = model_dir_override
-        .ok_or_else(|| "No model directory is configured. Please choose a folder that contains .gguf files.".to_string())?;
+    let llm_dir = model_dir_override.ok_or_else(|| {
+        "No model directory is configured. Please choose a folder that contains .gguf files."
+            .to_string()
+    })?;
 
     let model_path = select_main_model(&llm_dir)?;
     let mmproj_path = select_mmproj_model(&llm_dir);
@@ -828,6 +834,18 @@ fn resolve_local_ai_launcher(
                     launcher_needs_selection: false,
                 });
             }
+        }
+    }
+
+    for root in &roots {
+        if let Some(candidate) = find_nested_launcher_dir(root, 6) {
+            let server_exe = candidate.join("llama-server.exe");
+            return Ok(LocalAiLauncherAssets {
+                server_dir: candidate,
+                server_exe,
+                selected_launcher_dir: None,
+                launcher_needs_selection: false,
+            });
         }
     }
 
@@ -925,6 +943,37 @@ fn select_mmproj_model(llm_dir: &Path) -> Option<PathBuf> {
                 .unwrap_or_default();
             ext_ok && name.contains("mmproj")
         })
+}
+
+fn find_nested_launcher_dir(root: &Path, max_depth: usize) -> Option<PathBuf> {
+    if !root.is_dir() {
+        return None;
+    }
+
+    let mut stack = vec![(root.to_path_buf(), 0usize)];
+    while let Some((dir, depth)) = stack.pop() {
+        let candidate = dir.join("llama_CPU_X64");
+        if candidate.join("llama-server.exe").is_file() {
+            return Some(candidate);
+        }
+
+        if depth >= max_depth {
+            continue;
+        }
+
+        let Ok(entries) = fs::read_dir(&dir) else {
+            continue;
+        };
+
+        for entry in entries.filter_map(Result::ok) {
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push((path, depth + 1));
+            }
+        }
+    }
+
+    None
 }
 
 fn local_ai_search_roots(app: &AppHandle) -> Vec<PathBuf> {
