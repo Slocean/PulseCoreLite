@@ -1,3 +1,15 @@
+## v1.9.1
+
+- 设置面板新增“本地 AI”配置区，可分别选择模型目录与启动器目录；AI Runtime 包可直接使用内置启动器，Lite 包也支持手动指定启动器路径。
+- 新增 Lite / AI Runtime 安装包切换入口，可在设置中查看当前包类型，并在关闭应用后自动切换到另一套安装包。
+- 优化本地 AI 运行反馈与对话体验，补充启动模式显示（CUDA 12 / CUDA 13 / GPU / CPU）、加载中状态与按钮禁用提示，并支持聊天面板展开收起和状态记忆。
+- 改进 Launcher 资源拉取与发布校验流程，提升 AI Runtime 安装包构建和更新分发的稳定性。
+
+- Added a dedicated Local AI settings section so model and launcher directories can be configured separately; the AI Runtime package can use the bundled launcher, while Lite can point to a custom launcher path.
+- Added a package switch entry for Lite / AI Runtime, showing the current package flavor in Settings and preparing the alternate installer to continue switching after the app closes.
+- Improved Local AI runtime feedback and chat usability with launch mode display (CUDA 12 / CUDA 13 / GPU / CPU), clearer loading/disabled button states, and expandable chat with persisted state.
+- Improved launcher asset fetching and release validation to make AI Runtime packaging and update delivery more reliable.
+
 ## v1.9.0
 
 - AI 工具箱新增 Launcher 目录管理，支持选择并持久化启动目录，便于本地 AI 运行时按预期加载相关资源。
