@@ -232,8 +232,8 @@ export const useAppStore = defineStore('app', () => {
     settingsStore.setRememberOverlayPosition(rememberOverlayPosition);
   }
 
-  function setOverlayAlwaysOnTop(overlayAlwaysOnTop: boolean) {
-    settingsStore.setOverlayAlwaysOnTop(overlayAlwaysOnTop);
+  async function setOverlayAlwaysOnTop(overlayAlwaysOnTop: boolean) {
+    await settingsStore.setOverlayAlwaysOnTop(overlayAlwaysOnTop);
   }
 
   function setTaskbarAlwaysOnTop(taskbarAlwaysOnTop: boolean) {
@@ -274,6 +274,10 @@ export const useAppStore = defineStore('app', () => {
 
   async function syncMemoryTrimInterval() {
     await settingsStore.syncMemoryTrimInterval();
+  }
+
+  async function syncOverlayAlwaysOnTop() {
+    await settingsStore.syncOverlayAlwaysOnTop();
   }
 
   async function factoryReset() {
@@ -385,6 +389,7 @@ export const useAppStore = defineStore('app', () => {
     syncMemoryTrimEnabled,
     syncMemoryTrimSystemEnabled,
     syncMemoryTrimInterval,
+    syncOverlayAlwaysOnTop,
     factoryReset,
     ensureTray,
     handoffTrayToOtherWindow,

@@ -32,7 +32,7 @@ interface AppStoreLike {
   setLanguage: (language: 'zh-CN' | 'en-US') => void;
   setCloseToTray: (value: boolean) => void;
   setRememberOverlayPosition: (value: boolean) => void;
-  setOverlayAlwaysOnTop: (value: boolean) => void;
+  setOverlayAlwaysOnTop: (value: boolean) => Promise<void> | void;
   setTaskbarAlwaysOnTop: (value: boolean) => void;
   setTaskbarAutoHideOnFullscreen: (value: boolean) => void;
   setTaskbarPositionLocked: (value: boolean) => void;

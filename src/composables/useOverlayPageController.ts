@@ -1,6 +1,6 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
 
-import { api, inTauri, listenEvent } from '../services/tauri';
+import { inTauri, listenEvent } from '../services/tauri';
 import { useToastService } from './useToastService';
 import type { ReminderScreenEventPayload } from '../types';
 import type { useAppStore } from '../stores/app';
@@ -41,6 +41,7 @@ export function useOverlayPageController({
   const updateDialogOpen = ref(false);
   const { showToast } = useToastService('overlay');
   const releaseNotesUrl = 'https://github.com/Slocean/PulseCoreLite/releases';
+  const overlayTopmostRepairTimer = ref<number | null>(null);
   let unlistenReminderTrigger: (() => void) | null = null;
 
   const closeToTray = computed({
@@ -61,7 +62,7 @@ export function useOverlayPageController({
   });
   const overlayAlwaysOnTop = computed({
     get: () => store.settings.overlayAlwaysOnTop,
-    set: value => store.setOverlayAlwaysOnTop(value)
+    set: value => void store.setOverlayAlwaysOnTop(value)
   });
   const taskbarMonitorEnabled = computed({
     get: () => store.settings.taskbarMonitorEnabled,
@@ -193,20 +194,23 @@ export function useOverlayPageController({
     store.setLanguage(language);
   }
 
-  async function applyOverlayTopmost(enabled: boolean) {
-    if (!inTauri()) {
+  function clearOverlayTopmostRepairTimer() {
+    if (overlayTopmostRepairTimer.value == null || typeof window === 'undefined') {
       return;
     }
-    try {
-      await api.setWindowSystemTopmost('main', enabled);
-    } catch {
-      try {
-        const { getCurrentWindow } = await import('@tauri-apps/api/window');
-        await getCurrentWindow().setAlwaysOnTop(enabled);
-      } catch {
-        // ignore
-      }
+    window.clearTimeout(overlayTopmostRepairTimer.value);
+    overlayTopmostRepairTimer.value = null;
+  }
+
+  function scheduleOverlayTopmostRepair(delayMs = 160) {
+    if (!inTauri() || typeof window === 'undefined') {
+      return;
     }
+    clearOverlayTopmostRepairTimer();
+    overlayTopmostRepairTimer.value = window.setTimeout(() => {
+      overlayTopmostRepairTimer.value = null;
+      void store.syncOverlayAlwaysOnTop();
+    }, delayMs);
   }
 
   async function setupReminderTriggerListener() {
@@ -221,7 +225,23 @@ export function useOverlayPageController({
     overlayAlwaysOnTop,
     enabled => {
       if (!inTauri()) return;
-      void applyOverlayTopmost(enabled);
+      void store.syncOverlayAlwaysOnTop();
+      if (enabled) {
+        scheduleOverlayTopmostRepair();
+      } else {
+        clearOverlayTopmostRepairTimer();
+      }
+    }
+  );
+
+  watch(
+    () => store.ready,
+    ready => {
+      if (!ready || !inTauri()) return;
+      void store.syncOverlayAlwaysOnTop();
+      if (overlayAlwaysOnTop.value) {
+        scheduleOverlayTopmostRepair(220);
+      }
     },
     { immediate: true }
   );
@@ -246,6 +266,7 @@ export function useOverlayPageController({
       unlistenReminderTrigger();
       unlistenReminderTrigger = null;
     }
+    clearOverlayTopmostRepairTimer();
     disposeToolkitWindow();
   });
 

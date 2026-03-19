@@ -1,7 +1,7 @@
 <template>
   <UiCollapsiblePanel
     v-model="chatOpen"
-    class="toolkit-card"
+    :class="['toolkit-card', { 'is-chat-expanded': chatExpanded }]"
     :title="t('toolkit.aiChatTitle')"
     header-mode="split"
     header-class="toolkit-section-header"
@@ -11,12 +11,12 @@
     indicator-class="toolkit-collapse-indicator"
     @toggle="handleToggle">
     <template #header-actions>
-      <!-- <div class="toolkit-ai-header-stats" @click="toggleChatOpen">
-        <span class="toolkit-ai-header-stat">{{ t('toolkit.aiDraftCount', { count: draft.length }) }}</span>
-        <span class="toolkit-ai-header-stat">
-          {{ t('toolkit.aiContextWindow', { count: contextWindowSize }) }}
+      <UiButton native-type="button" preset="overlay-chip-soft" size="sm" @click="toggleChatExpanded">
+        <span class="material-symbols-outlined" aria-hidden="true">
+          {{ chatExpanded ? 'close_fullscreen' : 'open_in_full' }}
         </span>
-      </div> -->
+        <span>{{ chatExpanded ? t('toolkit.aiChatCollapse') : t('toolkit.aiChatExpand') }}</span>
+      </UiButton>
     </template>
     <div ref="chatFeedRef" class="toolkit-ai-chat-feed">
       <article
@@ -284,6 +284,7 @@ const thinkingEnabled = ref(false);
 const attachments = ref<UiAttachment[]>([]);
 const messages = ref<UiMessage[]>([createWelcomeMessage()]);
 const chatOpen = ref(true);
+const chatExpanded = ref(storageRepository.getStringSync(storageKeys.localAiChatExpanded) === '1');
 const chatFeedRef = ref<HTMLElement | null>(null);
 const composerRef = ref<HTMLTextAreaElement | null>(null);
 const activeStreamRequestId = ref<string | null>(null);
@@ -932,6 +933,22 @@ function toggleChatOpen() {
   emit('contentChange');
 }
 
+function toggleChatExpanded() {
+  chatExpanded.value = !chatExpanded.value;
+  persistChatExpanded(chatExpanded.value);
+  emit('contentChange');
+}
+
+function persistChatExpanded(expanded: boolean) {
+  if (expanded) {
+    storageRepository.setStringSync(storageKeys.localAiChatExpanded, '1');
+    void storageRepository.setString(storageKeys.localAiChatExpanded, '1');
+    return;
+  }
+  storageRepository.removeSync(storageKeys.localAiChatExpanded);
+  void storageRepository.remove(storageKeys.localAiChatExpanded);
+}
+
 function handleToggle() {
   emit('contentChange');
 }
@@ -1224,6 +1241,10 @@ defineExpose({
   gap: 12px;
   padding-right: 2px;
   padding-bottom: 8px;
+}
+
+.is-chat-expanded .toolkit-ai-chat-feed {
+  height: 300px;
 }
 
 .toolkit-ai-toolbar {
