@@ -127,9 +127,7 @@ fn write_autostart_value(enabled: bool) -> CmdResult<bool> {
     if enabled {
         let exe = std::env::current_exe().map_err(|e| e.to_string())?;
         let exe_str = exe.to_string_lossy();
-        // Launch through Explorer so the Run entry consistently starts the GUI app
-        // without flashing a console window during Windows logon.
-        let command = format!("explorer.exe \"{exe_str}\"");
+        let command = format!("\"{exe_str}\"");
         let data = to_wide(&command);
         let data_len = (data.len() * 2) as u32;
         let status = unsafe {
