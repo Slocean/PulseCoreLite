@@ -108,6 +108,8 @@ struct ShortcutIdentity {
     launcher_path: PathBuf,
     exe_value: String,
     shortcut_path: String,
+    start_dir: String,
+    launch_options: String,
     app_id: u32,
     steam_grid_id: String,
 }
@@ -288,7 +290,6 @@ fn sync_epic_games_to_steam_windows(
 
     for game in selected_games {
         let identity = build_shortcut_identity(&managed_paths.launcher_dir, &game)?;
-        write_launcher_script(&identity.launcher_path, &game)?;
         write_artwork_bundle(
             &account_context.grid_dir,
             &identity.steam_grid_id,
@@ -299,15 +300,10 @@ fn sync_epic_games_to_steam_windows(
         let next_shortcut = ShortcutEntry {
             app_name: game.title.clone(),
             exe: identity.exe_value.clone(),
-            start_dir: wrap_path_for_shortcut(
-                identity
-                    .launcher_path
-                    .parent()
-                    .unwrap_or(&managed_paths.launcher_dir),
-            ),
+            start_dir: identity.start_dir.clone(),
             icon: game.icon_path.clone().unwrap_or_default(),
             shortcut_path: identity.shortcut_path.clone(),
-            launch_options: String::new(),
+            launch_options: identity.launch_options.clone(),
             is_hidden: 0,
             allow_desktop_config: 1,
             allow_overlay: 1,
@@ -340,7 +336,7 @@ fn sync_epic_games_to_steam_windows(
         synced_entries.push(ManagedSyncEntry {
             game_id: game.id.clone(),
             title: game.title.clone(),
-            launcher_path: identity.launcher_path.to_string_lossy().to_string(),
+            launcher_path: identity.shortcut_path.clone(),
             app_id: identity.app_id,
             steam_grid_id: identity.steam_grid_id,
             updated_at: Utc::now().to_rfc3339(),
@@ -555,51 +551,62 @@ fn build_shortcut_identity(
     game: &EpicInstalledGame,
 ) -> CmdResult<ShortcutIdentity> {
     let launcher_path = launcher_dir.join(format!("{}.cmd", sanitize_filename(&game.id)));
-    let exe_value = wrap_path_for_shortcut(&launcher_path);
+    let (target_path, start_dir, launch_options) = resolve_shortcut_target(game)?;
+    let exe_value = wrap_path_for_shortcut(&target_path);
     let app_id = compute_shortcut_app_id(&exe_value, &game.title);
     Ok(ShortcutIdentity {
-        launcher_path: launcher_path.clone(),
+        launcher_path,
         exe_value,
-        shortcut_path: launcher_path.to_string_lossy().to_string(),
+        shortcut_path: target_path.to_string_lossy().to_string(),
+        start_dir,
+        launch_options,
         app_id,
         steam_grid_id: compute_shortcut_steam_grid_id(app_id),
     })
 }
 
 #[cfg(windows)]
-fn write_launcher_script(path: &Path, game: &EpicInstalledGame) -> CmdResult<()> {
-    let parent = path
-        .parent()
-        .ok_or_else(|| "launcher path has no parent".to_string())?;
-    fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-
-    let content = if let Some(app_name) = game.epic_app_name.as_deref() {
-        format!(
-            "@echo off\r\nsetlocal\r\nstart \"\" \"com.epicgames.launcher://apps/{}?action=launch&silent=true\"\r\n",
-            app_name
-        )
-    } else if let Some(executable) = game.launch_executable.as_deref() {
-        let work_dir = Path::new(executable)
+fn resolve_shortcut_target(game: &EpicInstalledGame) -> CmdResult<(PathBuf, String, String)> {
+    if let Some(app_name) = game.epic_app_name.as_deref() {
+        let explorer = resolve_windows_explorer_path()?;
+        let start_dir = explorer
             .parent()
-            .map(Path::to_path_buf)
-            .unwrap_or_else(|| PathBuf::from(&game.install_dir));
-        let command = game
+            .map(wrap_path_for_shortcut)
+            .unwrap_or_else(|| wrap_path_for_shortcut(Path::new("C:\\")));
+        let uri = format!("com.epicgames.launcher://apps/{app_name}?action=launch&silent=true");
+        return Ok((explorer, start_dir, format!("\"{uri}\"")));
+    }
+
+    if let Some(executable) = game.launch_executable.as_deref() {
+        let target_path = PathBuf::from(executable);
+        let work_dir = target_path
+            .parent()
+            .map(wrap_path_for_shortcut)
+            .unwrap_or_else(|| wrap_path_for_shortcut(Path::new(&game.install_dir)));
+        let launch_options = game
             .launch_command
             .as_deref()
             .map(str::trim)
             .filter(|value| !value.is_empty())
-            .unwrap_or("");
-        format!(
-            "@echo off\r\nsetlocal\r\ncd /d \"{}\"\r\nstart \"\" \"{}\" {}\r\n",
-            work_dir.to_string_lossy(),
-            executable,
-            command
-        )
-    } else {
-        return Err(format!("游戏 {} 缺少可用的启动信息。", game.title));
-    };
+            .unwrap_or("")
+            .to_string();
+        return Ok((target_path, work_dir, launch_options));
+    }
 
-    fs::write(path, content).map_err(|e| e.to_string())
+    Err(format!("游戏 {} 缺少可用的启动信息。", game.title))
+}
+
+#[cfg(windows)]
+fn resolve_windows_explorer_path() -> CmdResult<PathBuf> {
+    let system_root = std::env::var("WINDIR")
+        .or_else(|_| std::env::var("SystemRoot"))
+        .unwrap_or_else(|_| "C:\\Windows".to_string());
+    let path = PathBuf::from(system_root).join("explorer.exe");
+    if path.exists() {
+        Ok(path)
+    } else {
+        Err("未找到 explorer.exe".to_string())
+    }
 }
 
 #[cfg(windows)]
