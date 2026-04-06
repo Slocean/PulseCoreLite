@@ -37,7 +37,7 @@
     <div class="toolkit-game-sync-actions">
       <UiButton
         native-type="button"
-        preset="overlay-action-primary"
+        preset="overlay-primary"
         :disabled="loading || syncing || !runtimeSupported"
         @click="scan()">
         {{ t('toolkit.gameSyncRescan') }}
@@ -47,21 +47,21 @@
       </UiButton>
       <UiButton
         native-type="button"
-        preset="overlay-action-primary"
+        preset="overlay-primary"
         :disabled="loading || syncing || !syncableGameIds.length"
         @click="selectAllGames">
         {{ t('toolkit.gameSyncSelectAll') }}
       </UiButton>
       <UiButton
         native-type="button"
-        preset="overlay-action-primary"
+        preset="overlay-primary"
         :disabled="loading || syncing || !selectedGameIds.length"
         @click="clearSelection">
         {{ t('toolkit.gameSyncClearSelection') }}
       </UiButton>
       <UiButton
         native-type="button"
-        preset="overlay-action-info"
+        preset="overlay-primary"
         :disabled="!selectedAccount || loading || syncing"
         @click="openSteamFolder">
         {{ t('toolkit.gameSyncOpenSteamFolder') }}
