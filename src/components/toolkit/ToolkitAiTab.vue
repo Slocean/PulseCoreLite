@@ -14,13 +14,11 @@
     :context-window-size="chatState.contextWindowSize"
     :conversation-turns="chatState.conversationTurns"
     :capability-label="chatState.capabilityLabel"
+    :launch-mode-label="chatState.launchModeLabel"
     :status-busy="chatState.statusBusy"
     :is-tauri-runtime="chatState.isTauriRuntime"
-    @choose-model-dir="handleChooseModelDir"
-    @choose-launcher-dir="handleChooseLauncherDir"
     @start-local-ai="handleStartLocalAi"
     @stop-local-ai="handleStopLocalAi"
-    @refresh-status="handleRefreshStatus"
     @content-change="emit('contentChange')" />
 
   <ToolkitAiChatPanel
@@ -32,11 +30,9 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
-import { open } from '@tauri-apps/plugin-dialog';
 
 import UiToast from '@/components/ui/Toast';
 import type { LocalAiStatus } from '@/types';
-import { inTauri } from '@/services/tauri';
 import ToolkitAiChatPanel from './ToolkitAiChatPanel.vue';
 import ToolkitAiOverviewPanel from './ToolkitAiOverviewPanel.vue';
 
@@ -57,6 +53,7 @@ type ChatOverviewState = {
   contextWindowSize: number;
   conversationTurns: number;
   capabilityLabel: string;
+  launchModeLabel: string;
   statusBusy: boolean;
   isTauriRuntime: boolean;
 };
@@ -82,39 +79,13 @@ const chatState = reactive<ChatOverviewState>({
   contextWindowSize: 0,
   conversationTurns: 0,
   capabilityLabel: '-',
+  launchModeLabel: '-',
   statusBusy: false,
   isTauriRuntime: false
 });
 
 function handleChatStateChange(next: ChatOverviewState) {
   Object.assign(chatState, next);
-}
-
-async function handleRefreshStatus() {
-  await chatPanelRef.value?.refreshStatus();
-}
-
-async function handleChooseModelDir() {
-  if (!inTauri()) return;
-  const selected = await open({
-    directory: true,
-    multiple: false
-  });
-  if (typeof selected === 'string') {
-    chatPanelRef.value?.setSelectedModelDir(selected);
-    await chatPanelRef.value?.startLocalAi(selected, chatState.selectedLauncherDir);
-  }
-}
-
-async function handleChooseLauncherDir() {
-  if (!inTauri()) return;
-  const selected = await open({
-    directory: true,
-    multiple: false
-  });
-  if (typeof selected === 'string') {
-    chatPanelRef.value?.setSelectedLauncherDir(selected);
-  }
 }
 
 async function handleStartLocalAi() {

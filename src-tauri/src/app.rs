@@ -358,6 +358,8 @@ pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Bu
         commands::get_auto_start_enabled,
         commands::set_auto_start_enabled,
         commands::get_installation_mode,
+        commands::get_app_runtime_info,
+        commands::switch_package_flavor,
         commands::uninstall_app,
         commands::toggle_overlay,
         commands::set_refresh_rate,

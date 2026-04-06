@@ -6,7 +6,8 @@ export const aiApi = {
   startLocalAiRuntime: (modelDir?: string | null, launcherDir?: string | null) =>
     tauriInvoke<LocalAiStatus>('start_local_ai_runtime', {
       modelDir: modelDir ?? null,
-      launcherDir: launcherDir ?? null
+      // Empty string means "clear custom launcher and use the bundled/default one".
+      launcherDir: launcherDir ?? ''
     }),
   stopLocalAiRuntime: () => tauriInvoke<LocalAiStatus>('stop_local_ai_runtime'),
   sendLocalAiMessage: (request: LocalAiChatRequest) =>

@@ -30,6 +30,37 @@ async function getCurrentWindowLabel(): Promise<string | null> {
   }
 }
 
+async function applyMainWindowTopmost(enabled: boolean) {
+  if (!inTauri()) {
+    return;
+  }
+  try {
+    await api.setWindowSystemTopmost('main', enabled);
+    return;
+  } catch {
+    // fall through
+  }
+  try {
+    const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+    const existing = await WebviewWindow.getByLabel('main');
+    if (existing) {
+      await existing.setAlwaysOnTop(enabled);
+      return;
+    }
+  } catch {
+    // fall through
+  }
+  try {
+    const { getCurrentWindow } = await import('@tauri-apps/api/window');
+    const win = getCurrentWindow();
+    if (win.label === 'main') {
+      await win.setAlwaysOnTop(enabled);
+    }
+  } catch {
+    // ignore
+  }
+}
+
 async function broadcastSettingsSync() {
   if (!inTauri()) {
     return;
@@ -249,7 +280,7 @@ export const useSettingsStore = defineStore('settings', {
       }
       this.persistAndSync();
     },
-    setOverlayAlwaysOnTop(overlayAlwaysOnTop: boolean) {
+    async setOverlayAlwaysOnTop(overlayAlwaysOnTop: boolean) {
       if (this.settings.overlayAlwaysOnTop === overlayAlwaysOnTop) {
         return;
       }
@@ -258,6 +289,7 @@ export const useSettingsStore = defineStore('settings', {
         overlayAlwaysOnTop
       };
       this.persistAndSync();
+      await applyMainWindowTopmost(overlayAlwaysOnTop);
     },
     setTaskbarAlwaysOnTop(taskbarAlwaysOnTop: boolean) {
       if (this.settings.taskbarAlwaysOnTop === taskbarAlwaysOnTop) {
@@ -406,6 +438,9 @@ export const useSettingsStore = defineStore('settings', {
       } catch {
         return;
       }
+    },
+    async syncOverlayAlwaysOnTop() {
+      await applyMainWindowTopmost(this.settings.overlayAlwaysOnTop);
     }
   }
 });

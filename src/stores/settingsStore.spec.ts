@@ -18,6 +18,8 @@ vi.mock('../services/tauri', () => ({
     setMemoryTrimIntervalMinutes: vi.fn(),
     confirmFactoryReset: vi.fn(),
     getInstallationMode: vi.fn(),
+    getAppRuntimeInfo: vi.fn(),
+    switchPackageFlavor: vi.fn(),
     uninstallApp: vi.fn(),
     getTaskbarInfo: vi.fn(),
     isFullscreenWindowActive: vi.fn(),

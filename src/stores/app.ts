@@ -61,6 +61,9 @@ export const useAppStore = defineStore('app', () => {
   const snapshot = computed(() => telemetryStore.snapshot);
   const hardwareInfo = computed(() => telemetryStore.hardwareInfo);
   const installationMode = computed(() => systemStore.installationMode);
+  const packageFlavor = computed(() => systemStore.packageFlavor);
+  const canSwitchPackageFlavor = computed(() => systemStore.canSwitchPackageFlavor);
+  const switchingPackageFlavor = computed(() => systemStore.switchingPackageFlavor);
   const trayReady = computed(() => windowStore.trayReady);
 
   function pushSnapshot(nextSnapshot: TelemetrySnapshot) {
@@ -135,7 +138,7 @@ export const useAppStore = defineStore('app', () => {
         void ensureTaskbarMonitor();
         void syncNativeTaskbarMonitor();
         void syncAutoStartEnabled();
-        void systemStore.detectInstallationMode();
+        void systemStore.detectRuntimeInfo();
         unlisteners.value.push(
           watch(
             () => settingsStore.settings.taskbarMonitorEnabled,
@@ -229,8 +232,8 @@ export const useAppStore = defineStore('app', () => {
     settingsStore.setRememberOverlayPosition(rememberOverlayPosition);
   }
 
-  function setOverlayAlwaysOnTop(overlayAlwaysOnTop: boolean) {
-    settingsStore.setOverlayAlwaysOnTop(overlayAlwaysOnTop);
+  async function setOverlayAlwaysOnTop(overlayAlwaysOnTop: boolean) {
+    await settingsStore.setOverlayAlwaysOnTop(overlayAlwaysOnTop);
   }
 
   function setTaskbarAlwaysOnTop(taskbarAlwaysOnTop: boolean) {
@@ -271,6 +274,10 @@ export const useAppStore = defineStore('app', () => {
 
   async function syncMemoryTrimInterval() {
     await settingsStore.syncMemoryTrimInterval();
+  }
+
+  async function syncOverlayAlwaysOnTop() {
+    await settingsStore.syncOverlayAlwaysOnTop();
   }
 
   async function factoryReset() {
@@ -333,6 +340,10 @@ export const useAppStore = defineStore('app', () => {
     await systemStore.uninstallApp(title, message);
   }
 
+  async function switchPackageFlavor() {
+    await systemStore.switchPackageFlavor();
+  }
+
   function dispose() {
     stopTaskbarFullscreenMonitor();
     unlisteners.value.forEach(fn => fn());
@@ -346,6 +357,9 @@ export const useAppStore = defineStore('app', () => {
     hardwareInfo,
     settings,
     installationMode,
+    packageFlavor,
+    canSwitchPackageFlavor,
+    switchingPackageFlavor,
     trayReady,
     pushSnapshot,
     applyBootstrap,
@@ -375,6 +389,7 @@ export const useAppStore = defineStore('app', () => {
     syncMemoryTrimEnabled,
     syncMemoryTrimSystemEnabled,
     syncMemoryTrimInterval,
+    syncOverlayAlwaysOnTop,
     factoryReset,
     ensureTray,
     handoffTrayToOtherWindow,
@@ -390,6 +405,7 @@ export const useAppStore = defineStore('app', () => {
     closeToolkitWindow,
     exitApp,
     uninstallApp,
+    switchPackageFlavor,
     dispose
   };
 });

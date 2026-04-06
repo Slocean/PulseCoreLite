@@ -20,13 +20,22 @@
             <div class="toolkit-ai-status-controls">
               <UiButton
                 native-type="button"
-                preset="overlay-chip-soft"
-                :disabled="statusBusy || !isTauriRuntime"
-                @click="emit('refresh-status')">
-                刷新状态
+                width="90px"
+                preset="overlay-primary"
+                :disabled="
+                  statusBusy ||
+                  !isTauriRuntime ||
+                  ((!localStatus?.running && !selectedModelDir) ||
+                    (!localStatus?.running && launcherNeedsSelection && !selectedLauncherDir))
+                "
+                @click="localStatus?.running ? emit('stop-local-ai') : emit('start-local-ai')">
+                {{ actionLabel }}
               </UiButton>
             </div>
           </div>
+          <p v-if="showDirectoryHint" class="toolkit-ai-status-hint">
+            {{ t('toolkit.aiDirectorySettingsHint') }}
+          </p>
         </section>
         <section class="toolkit-ai-status-section">
           <div class="toolkit-ai-status-head">
@@ -42,51 +51,6 @@
             </div>
           </div>
         </section>
-        <section class="toolkit-ai-status-section">
-          <div class="toolkit-ai-status-head">
-            <div class="toolkit-ai-status-label">模型目录</div>
-            <div class="toolkit-ai-status-controls">
-              <UiButton
-                native-type="button"
-                width="90px"
-                preset="overlay-primary"
-                :disabled="
-                  statusBusy ||
-                  !isTauriRuntime ||
-                  ((!localStatus?.running && !selectedModelDir) ||
-                    (!localStatus?.running && launcherNeedsSelection && !selectedLauncherDir))
-                "
-                @click="localStatus?.running ? emit('stop-local-ai') : emit('start-local-ai')">
-                {{ actionLabel }}
-              </UiButton>
-              <UiButton
-                native-type="button"
-                width="50px"
-                preset="overlay-primary"
-                :disabled="statusBusy || !isTauriRuntime"
-                @click="emit('choose-model-dir')">
-                选择
-              </UiButton>
-            </div>
-          </div>
-          <strong class="toolkit-ai-status-value">{{ selectedModelDir || '未选择' }}</strong>
-        </section>
-        <section v-if="launcherNeedsSelection" class="toolkit-ai-status-section">
-          <div class="toolkit-ai-status-head">
-            <div class="toolkit-ai-status-label">启动器目录</div>
-            <div class="toolkit-ai-status-controls">
-              <UiButton
-                native-type="button"
-                width="50px"
-                preset="overlay-primary"
-                :disabled="statusBusy || !isTauriRuntime"
-                @click="emit('choose-launcher-dir')">
-                选择
-              </UiButton>
-            </div>
-          </div>
-          <strong class="toolkit-ai-status-value">{{ selectedLauncherDir || '未选择' }}</strong>
-        </section>
         <section class="toolkit-ai-status-section toolkit-ai-status-section--metrics">
           <div class="toolkit-ai-status-pair">
             <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricContext') }}</span>
@@ -99,6 +63,10 @@
           <div class="toolkit-ai-status-pair">
             <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricMode') }}</span>
             <strong class="toolkit-ai-status-value">{{ capabilityLabel }}</strong>
+          </div>
+          <div class="toolkit-ai-status-pair">
+            <span class="toolkit-ai-status-label">{{ t('toolkit.aiMetricLaunchMode') }}</span>
+            <strong class="toolkit-ai-status-value">{{ launchModeLabel }}</strong>
           </div>
         </section>
       </div>
@@ -126,17 +94,15 @@ const props = defineProps<{
   contextWindowSize: number;
   conversationTurns: number;
   capabilityLabel: string;
+  launchModeLabel: string;
   statusBusy: boolean;
   isTauriRuntime: boolean;
 }>();
 
 const emit = defineEmits<{
   (event: 'update:modelValue', value: boolean): void;
-  (event: 'choose-model-dir'): void;
-  (event: 'choose-launcher-dir'): void;
   (event: 'start-local-ai'): void;
   (event: 'stop-local-ai'): void;
-  (event: 'refresh-status'): void;
   (event: 'contentChange'): void;
 }>();
 
@@ -145,12 +111,7 @@ const openModel = computed({
   get: () => props.modelValue,
   set: value => emit('update:modelValue', value)
 });
-const actionLabel = computed(() => {
-  if (props.busyState === 'loading') return t('toolkit.aiLoading');
-  if (props.busyState === 'start') return t('toolkit.aiStartPending');
-  if (props.busyState === 'stop') return t('toolkit.aiStopPending');
-  return props.localStatus?.running ? t('toolkit.aiStop') : t('toolkit.aiStart');
-});
+const actionLabel = computed(() => (props.localStatus?.running ? t('toolkit.aiStop') : t('toolkit.aiStart')));
 const modelDisplayName = computed(() => {
   const value = props.selectedModelDir?.trim();
   if (!value) return '-';
@@ -158,6 +119,9 @@ const modelDisplayName = computed(() => {
   const segments = normalized.split(/[\\/]/).filter(Boolean);
   return segments[segments.length - 1] || '-';
 });
+const showDirectoryHint = computed(
+  () => !props.selectedModelDir || (props.launcherNeedsSelection && !props.selectedLauncherDir)
+);
 </script>
 
 <style scoped>
@@ -285,8 +249,8 @@ const modelDisplayName = computed(() => {
   display: grid;
   gap: 1px;
   min-width: 0;
-  flex: 0 0 calc((100% - 12px) / 3);
-  max-width: calc((100% - 12px) / 3);
+  flex: 1 1 25%;
+  max-width: 25%;
 }
 
 .toolkit-ai-status-value {
@@ -294,6 +258,13 @@ const modelDisplayName = computed(() => {
   color: rgba(255, 255, 255, 0.95);
   word-break: break-word;
   line-height: 1.35;
+}
+
+.toolkit-ai-status-hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.62);
 }
 
 .toolkit-ai-status-value--inline {

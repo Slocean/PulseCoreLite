@@ -32,6 +32,8 @@ pub struct LocalAiRuntime {
     child: Option<Child>,
     server_url: String,
     model_name: String,
+    launch_mode: String,
+    launch_backend: String,
     selected_model_dir: Option<PathBuf>,
     selected_launcher_dir: Option<PathBuf>,
     model_path: Option<PathBuf>,
@@ -47,6 +49,8 @@ impl Default for LocalAiRuntime {
             child: None,
             server_url: local_ai_server_url(),
             model_name: String::new(),
+            launch_mode: "unknown".to_string(),
+            launch_backend: "unknown".to_string(),
             selected_model_dir: None,
             selected_launcher_dir: None,
             model_path: None,
@@ -61,6 +65,8 @@ impl Default for LocalAiRuntime {
 struct LocalAiLauncherAssets {
     server_dir: PathBuf,
     server_exe: PathBuf,
+    launch_mode: String,
+    launch_backend: String,
     selected_launcher_dir: Option<PathBuf>,
     launcher_needs_selection: bool,
 }
@@ -68,6 +74,8 @@ struct LocalAiLauncherAssets {
 struct LocalAiAssets {
     server_dir: PathBuf,
     server_exe: PathBuf,
+    launch_mode: String,
+    launch_backend: String,
     selected_launcher_dir: Option<PathBuf>,
     launcher_needs_selection: bool,
     model_dir: PathBuf,
@@ -260,6 +268,18 @@ async fn start_local_ai_runtime_internal(
     model_dir: Option<String>,
     launcher_dir: Option<String>,
 ) -> Result<LocalAiStatus, String> {
+    let use_default_launcher = launcher_dir
+        .as_deref()
+        .map(str::trim)
+        .is_some_and(str::is_empty);
+    let requested_launcher_dir = launcher_dir.and_then(|value| {
+        let trimmed = value.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(PathBuf::from(trimmed))
+        }
+    });
     let (existing_model_dir, existing_launcher_dir) = {
         let runtime = state.local_ai_runtime.lock().await;
         (
@@ -270,8 +290,16 @@ async fn start_local_ai_runtime_internal(
     let chosen_dir = model_dir
         .map(PathBuf::from)
         .or(existing_model_dir)
-        .ok_or_else(|| "No model directory is configured. Please choose a folder first.".to_string())?;
-    let chosen_launcher_dir = launcher_dir.map(PathBuf::from).or(existing_launcher_dir);
+        .ok_or_else(|| {
+            "No model directory is configured. Please choose a folder first.".to_string()
+        })?;
+    let chosen_launcher_dir = if use_default_launcher {
+        None
+    } else if requested_launcher_dir.is_some() {
+        requested_launcher_dir
+    } else {
+        existing_launcher_dir
+    };
     let assets = resolve_local_ai_assets(app, Some(chosen_dir), chosen_launcher_dir)?;
     let mut runtime = state.local_ai_runtime.lock().await;
 
@@ -339,10 +367,7 @@ struct LocalAiParsedResponse {
     body: String,
 }
 
-fn should_retry_without_thinking(
-    enable_thinking: bool,
-    response: &LocalAiParsedResponse,
-) -> bool {
+fn should_retry_without_thinking(enable_thinking: bool, response: &LocalAiParsedResponse) -> bool {
     enable_thinking
         && response.reply.is_none()
         && response.reasoning.is_some()
@@ -396,7 +421,8 @@ async fn send_local_ai_request_stream(
         body.push_str(&String::from_utf8_lossy(&chunk));
         stream_buffer.extend_from_slice(&chunk);
 
-        while let Some((separator_index, separator_len)) = find_sse_event_separator(&stream_buffer) {
+        while let Some((separator_index, separator_len)) = find_sse_event_separator(&stream_buffer)
+        {
             let event_bytes = stream_buffer[..separator_index].to_vec();
             stream_buffer.drain(..separator_index + separator_len);
             process_stream_event(
@@ -494,10 +520,14 @@ fn find_sse_event_separator(buffer: &[u8]) -> Option<(usize, usize)> {
     let crlf = buffer.windows(4).position(|window| window == b"\r\n\r\n");
     let cr = buffer.windows(2).position(|window| window == b"\r\r");
 
-    [lf.map(|index| (index, 2)), crlf.map(|index| (index, 4)), cr.map(|index| (index, 2))]
-        .into_iter()
-        .flatten()
-        .min_by_key(|(index, _)| *index)
+    [
+        lf.map(|index| (index, 2)),
+        crlf.map(|index| (index, 4)),
+        cr.map(|index| (index, 2)),
+    ]
+    .into_iter()
+    .flatten()
+    .min_by_key(|(index, _)| *index)
 }
 
 fn extract_sse_payload(event_bytes: &[u8]) -> Option<String> {
@@ -785,8 +815,10 @@ fn resolve_local_ai_assets(
     launcher_dir_override: Option<PathBuf>,
 ) -> Result<LocalAiAssets, String> {
     let launcher = resolve_local_ai_launcher(app, launcher_dir_override)?;
-    let llm_dir = model_dir_override
-        .ok_or_else(|| "No model directory is configured. Please choose a folder that contains .gguf files.".to_string())?;
+    let llm_dir = model_dir_override.ok_or_else(|| {
+        "No model directory is configured. Please choose a folder that contains .gguf files."
+            .to_string()
+    })?;
 
     let model_path = select_main_model(&llm_dir)?;
     let mmproj_path = select_mmproj_model(&llm_dir);
@@ -799,6 +831,8 @@ fn resolve_local_ai_assets(
     Ok(LocalAiAssets {
         server_dir: launcher.server_dir,
         server_exe: launcher.server_exe,
+        launch_mode: launcher.launch_mode,
+        launch_backend: launcher.launch_backend,
         selected_launcher_dir: launcher.selected_launcher_dir,
         launcher_needs_selection: launcher.launcher_needs_selection,
         model_dir: llm_dir,
@@ -812,31 +846,15 @@ fn resolve_local_ai_launcher(
     app: &AppHandle,
     launcher_dir_override: Option<PathBuf>,
 ) -> Result<LocalAiLauncherAssets, String> {
-    let roots = local_ai_search_roots(app);
-
-    for root in &roots {
-        for candidate in [
-            root.join("llama_CPU_X64"),
-            root.join("build-assets").join("llama_CPU_X64"),
-        ] {
-            let server_exe = candidate.join("llama-server.exe");
-            if server_exe.is_file() {
-                return Ok(LocalAiLauncherAssets {
-                    server_dir: candidate,
-                    server_exe,
-                    selected_launcher_dir: None,
-                    launcher_needs_selection: false,
-                });
-            }
-        }
-    }
-
     if let Some(launcher_dir) = launcher_dir_override {
         let server_exe = launcher_dir.join("llama-server.exe");
         if server_exe.is_file() {
+            let launch_backend = detect_launch_backend(&launcher_dir);
             return Ok(LocalAiLauncherAssets {
                 server_dir: launcher_dir.clone(),
                 server_exe,
+                launch_mode: launch_mode_from_backend(&launch_backend),
+                launch_backend,
                 selected_launcher_dir: Some(launcher_dir),
                 launcher_needs_selection: true,
             });
@@ -847,10 +865,70 @@ fn resolve_local_ai_launcher(
         ));
     }
 
+    let roots = local_ai_search_roots(app);
+
+    for root in &roots {
+        for candidate in bundled_launcher_candidates(root) {
+            let server_exe = candidate.join("llama-server.exe");
+            if server_exe.is_file() {
+                let launch_backend = detect_launch_backend(&candidate);
+                return Ok(LocalAiLauncherAssets {
+                    launch_mode: launch_mode_from_backend(&launch_backend),
+                    launch_backend,
+                    server_dir: candidate,
+                    server_exe,
+                    selected_launcher_dir: None,
+                    launcher_needs_selection: false,
+                });
+            }
+        }
+    }
+
+    for root in &roots {
+        if let Some(candidate) = find_nested_launcher_dir(root, 6) {
+            let server_exe = candidate.join("llama-server.exe");
+            let launch_backend = detect_launch_backend(&candidate);
+            return Ok(LocalAiLauncherAssets {
+                server_dir: candidate,
+                server_exe,
+                launch_mode: launch_mode_from_backend(&launch_backend),
+                launch_backend,
+                selected_launcher_dir: None,
+                launcher_needs_selection: false,
+            });
+        }
+    }
+
     Err(format!(
         "Failed to find bundled llama-server.exe. Searched in: {}",
         display_search_roots(&roots)
     ))
+}
+
+pub(crate) fn has_bundled_local_ai_launcher(app: &AppHandle) -> bool {
+    let roots = local_ai_search_roots(app);
+    roots.iter().any(|root| {
+        bundled_launcher_candidates(root)
+            .into_iter()
+            .any(|candidate| candidate.join("llama-server.exe").is_file())
+    })
+}
+
+fn bundled_launcher_candidates(root: &Path) -> Vec<PathBuf> {
+    [
+        "llama_CPU_X64",
+        "llama_GPU_CUDA12",
+        "llama_GPU_CUDA13",
+        "llama_GPU_CUDA13_1",
+    ]
+    .into_iter()
+    .flat_map(|dir_name| {
+        [
+            root.join(dir_name),
+            root.join("build-assets").join(dir_name),
+        ]
+    })
+    .collect()
 }
 
 fn select_main_model(llm_dir: &Path) -> Result<PathBuf, String> {
@@ -915,6 +993,73 @@ fn select_mmproj_model(llm_dir: &Path) -> Option<PathBuf> {
         })
 }
 
+fn detect_launch_backend(path: &Path) -> String {
+    let normalized = path.to_string_lossy().to_ascii_lowercase();
+    if normalized.contains("cuda-13")
+        || normalized.contains("cuda_13")
+        || normalized.contains("cuda13")
+        || normalized.contains("13.1")
+    {
+        "cuda13".to_string()
+    } else if normalized.contains("cuda-12")
+        || normalized.contains("cuda_12")
+        || normalized.contains("cuda12")
+        || normalized.contains("12.4")
+    {
+        "cuda12".to_string()
+    } else if normalized.contains("cuda") || normalized.contains("gpu") {
+        "gpu".to_string()
+    } else if normalized.contains("cpu") {
+        "cpu".to_string()
+    } else {
+        "unknown".to_string()
+    }
+}
+
+fn launch_mode_from_backend(backend: &str) -> String {
+    match backend {
+        "cpu" => "cpu".to_string(),
+        "cuda12" | "cuda13" | "gpu" => "gpu".to_string(),
+        _ => "unknown".to_string(),
+    }
+}
+
+fn find_nested_launcher_dir(root: &Path, max_depth: usize) -> Option<PathBuf> {
+    if !root.is_dir() {
+        return None;
+    }
+
+    let mut stack = vec![(root.to_path_buf(), 0usize)];
+    while let Some((dir, depth)) = stack.pop() {
+        if dir.join("llama-server.exe").is_file()
+            && dir
+                .file_name()
+                .and_then(|value| value.to_str())
+                .map(|name| name.to_ascii_lowercase().contains("llama"))
+                .unwrap_or(false)
+        {
+            return Some(dir);
+        }
+
+        if depth >= max_depth {
+            continue;
+        }
+
+        let Ok(entries) = fs::read_dir(&dir) else {
+            continue;
+        };
+
+        for entry in entries.filter_map(Result::ok) {
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push((path, depth + 1));
+            }
+        }
+    }
+
+    None
+}
+
 fn local_ai_search_roots(app: &AppHandle) -> Vec<PathBuf> {
     let mut roots = Vec::new();
     let mut seen = BTreeSet::new();
@@ -922,8 +1067,13 @@ fn local_ai_search_roots(app: &AppHandle) -> Vec<PathBuf> {
         .parent()
         .map(Path::to_path_buf)
         .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")));
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|path| path.parent().map(Path::to_path_buf));
 
     for candidate in [
+        exe_dir.clone(),
+        exe_dir.map(|path| path.join("build-assets")),
         app.path().resource_dir().ok(),
         app.path()
             .resource_dir()
@@ -953,6 +1103,11 @@ fn display_search_roots(roots: &[PathBuf]) -> String {
 }
 
 fn spawn_local_ai_process(assets: &LocalAiAssets) -> Result<Child, String> {
+    let gpu_layers = if assets.launch_mode == "gpu" {
+        "999"
+    } else {
+        "0"
+    };
     let mut command = Command::new(&assets.server_exe);
     command
         .current_dir(&assets.server_dir)
@@ -970,7 +1125,7 @@ fn spawn_local_ai_process(assets: &LocalAiAssets) -> Result<Child, String> {
         .arg("--threads")
         .arg(recommended_thread_count().to_string())
         .arg("--n-gpu-layers")
-        .arg("0")
+        .arg(gpu_layers)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
@@ -1027,6 +1182,8 @@ fn stop_local_ai_process(runtime: &mut LocalAiRuntime) {
 
 fn apply_runtime_assets(runtime: &mut LocalAiRuntime, assets: &LocalAiAssets) {
     runtime.model_name = assets.model_name.clone();
+    runtime.launch_mode = assets.launch_mode.clone();
+    runtime.launch_backend = assets.launch_backend.clone();
     runtime.selected_model_dir = Some(assets.model_dir.clone());
     runtime.selected_launcher_dir = assets.selected_launcher_dir.clone();
     runtime.model_path = Some(assets.model_path.clone());
@@ -1041,11 +1198,15 @@ fn apply_runtime_launcher_state(
 ) {
     match launcher_assets {
         Ok(launcher) => {
+            runtime.launch_mode = launcher.launch_mode;
+            runtime.launch_backend = launcher.launch_backend;
             runtime.selected_launcher_dir = launcher.selected_launcher_dir;
             runtime.server_path = Some(launcher.server_exe);
             runtime.launcher_needs_selection = launcher.launcher_needs_selection;
         }
         Err(_) => {
+            runtime.launch_mode = "unknown".to_string();
+            runtime.launch_backend = "unknown".to_string();
             runtime.server_path = None;
             runtime.launcher_needs_selection = true;
         }
@@ -1057,6 +1218,8 @@ fn build_status(runtime: &LocalAiRuntime, ready: bool, message: String) -> Local
         ready,
         running: ready || runtime.child.is_some(),
         model_name: runtime.model_name.clone(),
+        launch_mode: runtime.launch_mode.clone(),
+        launch_backend: runtime.launch_backend.clone(),
         selected_model_dir: runtime
             .selected_model_dir
             .as_ref()

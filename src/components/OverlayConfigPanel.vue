@@ -39,6 +39,19 @@
     </UiCollapsiblePanel>
 
     <UiCollapsiblePanel
+      v-model="localAiSectionOpen"
+      class="overlay-config overlay-config-section"
+      :title="t('overlay.settingsSectionLocalAi')"
+      :framed="true"
+      single-header-preset="toolkit-collapse"
+      title-class="toolkit-section-title"
+      indicator-class="toolkit-collapse-indicator"
+      content-class="overlay-config-content overlay-config--single-column"
+      @mousedown.stop>
+      <OverlayConfigLocalAiSection :package-flavor="packageFlavor" />
+    </UiCollapsiblePanel>
+
+    <UiCollapsiblePanel
       v-model="themeSectionOpen"
       class="overlay-config overlay-config-section"
       :title="t('overlay.settingsSectionTheme')"
@@ -74,11 +87,15 @@
         v-model:factory-reset-hotkey="factoryResetHotkey"
         :toolkit-switch-on="toolkitSwitchOn"
         :can-uninstall="canUninstall"
+        :can-switch-package-flavor="canSwitchPackageFlavor"
+        :package-flavor="packageFlavor"
+        :switching-package-flavor="switchingPackageFlavor"
         @check-update="emit('checkUpdate')"
         @export-config="emit('exportConfig')"
         @import-config="emit('importConfig', $event)"
         @factory-reset="confirmFactoryReset"
         @open-toolkit="handleToolkitToggle"
+        @switch-package-flavor="emit('switchPackageFlavor')"
         @uninstall="emit('uninstall')" />
     </UiCollapsiblePanel>
 
@@ -90,6 +107,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import OverlayConfigDisplaySection from '@/components/overlay/config/OverlayConfigDisplaySection.vue';
+import OverlayConfigLocalAiSection from '@/components/overlay/config/OverlayConfigLocalAiSection.vue';
 import OverlayConfigSystemSection from '@/components/overlay/config/OverlayConfigSystemSection.vue';
 import OverlayConfigThemeSection from '@/components/overlay/config/OverlayConfigThemeSection.vue';
 import OverlayConfigToolsSection from '@/components/overlay/config/OverlayConfigToolsSection.vue';
@@ -106,6 +124,9 @@ const props = defineProps<{
   getThemePreviewUrl: (theme: OverlayTheme) => string;
   toolkitState: 'closed' | 'open' | 'hidden';
   checkingUpdate: boolean;
+  packageFlavor: 'unknown' | 'lite' | 'ai';
+  canSwitchPackageFlavor: boolean;
+  switchingPackageFlavor: boolean;
 }>();
 
 const prefs = defineModel<OverlayPrefs>('prefs', { required: true });
@@ -132,12 +153,14 @@ const emit = defineEmits<{
   (e: 'importConfig', value: File): void;
   (e: 'openToolkit', value: boolean): void;
   (e: 'checkUpdate'): void;
+  (e: 'switchPackageFlavor'): void;
 }>();
 
 const { t } = useI18n();
 
 const displaySectionOpen = ref(true);
 const systemSectionOpen = ref(true);
+const localAiSectionOpen = ref(true);
 const themeSectionOpen = ref(true);
 const toolsSectionOpen = ref(true);
 

@@ -24,6 +24,7 @@ type UpdateManifest = {
 };
 
 const UPDATE_MANIFEST_URL =
+  import.meta.env.VITE_UPDATE_MANIFEST_URL?.trim() ||
   'https://github.com/Slocean/PulseCoreLite/releases/latest/download/latest.json';
 const RELEASES_URL = 'https://github.com/Slocean/PulseCoreLite/releases';
 
