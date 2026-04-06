@@ -20,6 +20,7 @@
 
     <ToolkitShutdownTab v-if="activeTab === 'shutdown'" @contentChange="handleContentChange" />
     <ToolkitCleanupTab v-else-if="activeTab === 'cleanup'" @contentChange="handleContentChange" />
+    <ToolkitGameSyncTab v-else-if="activeTab === 'game-sync'" @contentChange="handleContentChange" />
     <ToolkitHardwareTab v-else-if="activeTab === 'hardware'" @contentChange="handleContentChange" />
     <ToolkitReminderTab v-else @contentChange="handleContentChange" />
   </div>
@@ -31,12 +32,13 @@ import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
 import ToolkitCleanupTab from './ToolkitCleanupTab.vue';
+import ToolkitGameSyncTab from './ToolkitGameSyncTab.vue';
 import ToolkitHardwareTab from './ToolkitHardwareTab.vue';
 import ToolkitReminderTab from './ToolkitReminderTab.vue';
 import ToolkitShutdownTab from './ToolkitShutdownTab.vue';
 import ToolkitTabs from './ToolkitTabs.vue';
 
-type ToolkitTab = 'shutdown' | 'cleanup' | 'hardware' | 'reminder';
+type ToolkitTab = 'shutdown' | 'cleanup' | 'game-sync' | 'hardware' | 'reminder';
 
 const emit = defineEmits<{
   (event: 'openStandalone'): void;
@@ -48,6 +50,7 @@ const activeTab = ref<ToolkitTab>('shutdown');
 const tabs = computed(() => [
   { id: 'shutdown' as const, label: t('toolkit.tabShutdown') },
   { id: 'cleanup' as const, label: t('toolkit.tabCleanup') },
+  { id: 'game-sync' as const, label: t('toolkit.tabGameSync') },
   { id: 'hardware' as const, label: t('toolkit.tabHardware') },
   { id: 'reminder' as const, label: t('toolkit.tabReminder') }
 ]);

@@ -396,3 +396,70 @@ pub struct LocalAiStreamEvent {
     pub channel: String,
     pub delta: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamShortcutAccount {
+    pub id: String,
+    pub label: String,
+    pub shortcuts_path: String,
+    pub grid_dir: String,
+    pub selected: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EpicSteamGameSyncStatus {
+    pub present_in_steam: bool,
+    pub managed_by_pulse: bool,
+    pub app_id: Option<u32>,
+    /// new | managed | existing
+    pub source: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EpicInstalledGame {
+    pub id: String,
+    pub title: String,
+    pub install_dir: String,
+    pub launch_executable: Option<String>,
+    pub launch_command: Option<String>,
+    pub epic_app_name: Option<String>,
+    pub icon_path: Option<String>,
+    pub sync_status: EpicSteamGameSyncStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EpicSteamScanResult {
+    pub steam_path: Option<String>,
+    pub steam_running: bool,
+    pub selected_steam_user_id: Option<String>,
+    pub accounts: Vec<SteamShortcutAccount>,
+    pub epic_games: Vec<EpicInstalledGame>,
+    pub warnings: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncEpicGamesRequest {
+    pub steam_user_id: String,
+    pub game_ids: Vec<String>,
+    #[serde(default = "default_true")]
+    pub remove_missing_managed: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncEpicGamesResult {
+    pub shortcuts_path: String,
+    pub grid_dir: String,
+    pub launcher_dir: String,
+    pub backup_path: Option<String>,
+    pub created_count: usize,
+    pub updated_count: usize,
+    pub removed_count: usize,
+    pub synced_game_ids: Vec<String>,
+    pub warnings: Vec<String>,
+}

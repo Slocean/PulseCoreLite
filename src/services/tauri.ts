@@ -6,6 +6,7 @@ import { shutdownApi } from './tauri/shutdown';
 import { profileApi } from './tauri/profile';
 import { reminderApi } from './tauri/reminder';
 import { aiApi } from './tauri/ai';
+import { gameSyncApi } from './tauri/gameSync';
 
 export const tauriApi = {
   telemetry: telemetryApi,
@@ -14,7 +15,8 @@ export const tauriApi = {
   shutdown: shutdownApi,
   profile: profileApi,
   reminder: reminderApi,
-  ai: aiApi
+  ai: aiApi,
+  gameSync: gameSyncApi
 };
 
 export const api = {
@@ -24,5 +26,6 @@ export const api = {
   ...shutdownApi,
   ...profileApi,
   ...reminderApi,
-  ...aiApi
+  ...aiApi,
+  ...gameSyncApi
 };

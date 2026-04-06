@@ -1,0 +1,139 @@
+.toolkit-game-sync-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.toolkit-game-sync-stat {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.18));
+}
+
+.toolkit-game-sync-value {
+  font-size: 13px;
+  color: rgba(0, 242, 255, 0.9);
+  font-weight: 600;
+}
+
+.toolkit-game-sync-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.toolkit-game-sync-warning-list {
+  display: grid;
+  gap: 6px;
+}
+
+.toolkit-game-sync-warning {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 170, 120, 0.22);
+  background: rgba(255, 153, 102, 0.1);
+  color: rgba(255, 211, 185, 0.95);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.toolkit-game-sync-empty {
+  padding: 14px 10px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 12px;
+}
+
+.toolkit-game-sync-list {
+  display: grid;
+  gap: 8px;
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.toolkit-game-sync-item {
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.toolkit-game-sync-item:hover {
+  border-color: rgba(0, 242, 255, 0.24);
+  background: rgba(0, 242, 255, 0.05);
+}
+
+.toolkit-game-sync-item:deep(.ui-checkbox-box) {
+  margin-top: 4px;
+}
+
+.toolkit-game-sync-card {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.toolkit-game-sync-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.toolkit-game-sync-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.toolkit-game-sync-badge {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1.5;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.toolkit-game-sync-badge.is-managed {
+  border-color: rgba(0, 242, 255, 0.32);
+  color: rgba(0, 242, 255, 0.92);
+  background: rgba(0, 242, 255, 0.08);
+}
+
+.toolkit-game-sync-badge.is-existing {
+  border-color: rgba(255, 215, 120, 0.3);
+  color: rgba(255, 221, 154, 0.92);
+  background: rgba(255, 196, 94, 0.08);
+}
+
+.toolkit-game-sync-badge.is-new {
+  border-color: rgba(150, 255, 178, 0.24);
+  color: rgba(177, 255, 198, 0.92);
+  background: rgba(90, 204, 128, 0.08);
+}
+
+.toolkit-game-sync-meta,
+.toolkit-game-sync-disabled {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.toolkit-game-sync-disabled {
+  color: rgba(255, 162, 162, 0.92);
+}
+
+.toolkit-game-sync-path {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.52);
+  word-break: break-all;
+  line-height: 1.45;
+}

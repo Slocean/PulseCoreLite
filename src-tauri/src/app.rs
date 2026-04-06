@@ -3,7 +3,11 @@ use std::time::Duration;
 use chrono::{Datelike, Local, Timelike};
 use tauri::{AppHandle, Emitter, Manager};
 
-use crate::{ipc::commands, state::SharedState, types::TaskReminder};
+use crate::{
+    ipc::{commands, game_sync},
+    state::SharedState,
+    types::TaskReminder,
+};
 
 pub fn start_telemetry_loop(app: AppHandle, state: SharedState) {
     tauri::async_runtime::spawn(async move {
@@ -382,6 +386,8 @@ pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Bu
         commands::debug_log,
         commands::get_task_reminder_store,
         commands::save_task_reminder_store,
-        commands::trigger_task_reminder_now
+        commands::trigger_task_reminder_now,
+        game_sync::scan_epic_games_for_sync,
+        game_sync::sync_epic_games_to_steam
     ])
 }

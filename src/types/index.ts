@@ -6,6 +6,7 @@ export * from './telemetry';
 export * from './system';
 export * from './reminder';
 export * from './ai';
+export * from './gameSync';
 
 export interface AppBootstrap {
   settings: AppSettings;
