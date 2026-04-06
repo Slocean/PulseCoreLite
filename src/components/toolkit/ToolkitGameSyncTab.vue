@@ -23,11 +23,11 @@
       </div>
     </div>
 
-    <div class="overlay-config-row">
-      <span class="overlay-config-label">{{ t('toolkit.gameSyncSteamAccount') }}</span>
+    <div class="toolkit-game-sync-account-row">
+      <span class="overlay-config-label toolkit-game-sync-account-label">{{ t('toolkit.gameSyncSteamAccount') }}</span>
       <UiSelect
         v-model="selectedSteamUserId"
-        :width="240"
+        class="toolkit-game-sync-account-select"
         :options="accountOptions"
         :placeholder="t('toolkit.gameSyncNoAccount')"
         :empty-text="t('toolkit.gameSyncNoAccount')"
