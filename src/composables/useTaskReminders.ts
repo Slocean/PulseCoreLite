@@ -134,10 +134,6 @@ export function useTaskReminders() {
 
   async function runReminderNow(reminder: TaskReminder) {
     const normalized = normalizeReminder(reminder);
-    if (inTauri()) {
-      await api.triggerTaskReminderNow(normalized);
-      return;
-    }
     if (normalized.channel === 'fullscreen') {
       await openReminderScreensFromPayload({
         title: normalized.title,
@@ -145,6 +141,10 @@ export function useTaskReminders() {
         contentType: normalized.contentType,
         advancedSettings: normalized.advancedSettings
       });
+      return;
+    }
+    if (inTauri()) {
+      await api.triggerTaskReminderNow(normalized);
     }
   }
 
