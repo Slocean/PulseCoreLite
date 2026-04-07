@@ -93,6 +93,12 @@ struct ManagedSyncEntry {
     game_id: String,
     title: String,
     launcher_path: String,
+    #[serde(default)]
+    exe_path: String,
+    #[serde(default)]
+    shortcut_path: String,
+    #[serde(default)]
+    launch_options: String,
     app_id: u32,
     steam_grid_id: String,
     updated_at: String,
@@ -108,10 +114,20 @@ struct ShortcutIdentity {
     launcher_path: PathBuf,
     exe_value: String,
     shortcut_path: String,
+    match_path: String,
     start_dir: String,
     launch_options: String,
     app_id: u32,
     steam_grid_id: String,
+}
+
+#[cfg(windows)]
+struct ResolvedShortcutTarget {
+    target_path: PathBuf,
+    shortcut_path: String,
+    match_path: String,
+    start_dir: String,
+    launch_options: String,
 }
 
 #[tauri::command]
@@ -246,34 +262,22 @@ fn sync_epic_games_to_steam_windows(
         .cloned()
         .unwrap_or_default();
 
-    let stale_paths: HashSet<String> = if request.remove_missing_managed {
-        existing_user
+    let removed_count = if request.remove_missing_managed {
+        let before = shortcuts.len();
+        let stale_entries: Vec<&ManagedSyncEntry> = existing_user
             .entries
             .iter()
             .filter(|entry| !seen_ids.contains(&entry.game_id))
-            .map(|entry| normalize_path_text(&entry.launcher_path))
-            .collect()
-    } else {
-        HashSet::new()
-    };
-
-    let removed_count = if request.remove_missing_managed {
-        let before = shortcuts.len();
+            .collect();
         shortcuts.retain(|entry| {
-            let shortcut_path = normalize_path_text(&entry.shortcut_path);
-            let exe_path = normalize_path_text(trim_wrapped_quotes(&entry.exe));
-            !stale_paths.contains(&shortcut_path) && !stale_paths.contains(&exe_path)
+            !stale_entries
+                .iter()
+                .any(|managed_entry| shortcut_matches_managed_entry(entry, managed_entry))
         });
         before.saturating_sub(shortcuts.len())
     } else {
         0
     };
-
-    let existing_managed_paths: HashSet<String> = existing_user
-        .entries
-        .iter()
-        .map(|entry| normalize_path_text(&entry.launcher_path))
-        .collect();
 
     let mut created_count = 0usize;
     let mut updated_count = 0usize;
@@ -311,12 +315,9 @@ fn sync_epic_games_to_steam_windows(
             ],
         };
 
-        if let Some(index) = find_existing_shortcut_index(
-            &shortcuts,
-            &identity,
-            &game.title,
-            &existing_managed_paths,
-        ) {
+        if let Some(index) =
+            find_existing_shortcut_index(&shortcuts, &identity, &game.title, &existing_user.entries)
+        {
             shortcuts[index] = next_shortcut;
             updated_count += 1;
         } else {
@@ -327,7 +328,10 @@ fn sync_epic_games_to_steam_windows(
         synced_entries.push(ManagedSyncEntry {
             game_id: game.id.clone(),
             title: game.title.clone(),
-            launcher_path: identity.shortcut_path.clone(),
+            launcher_path: identity.match_path.clone(),
+            exe_path: trim_wrapped_quotes(&identity.exe_value).to_string(),
+            shortcut_path: identity.shortcut_path.clone(),
+            launch_options: identity.launch_options.clone(),
             app_id: identity.app_id,
             steam_grid_id: identity.steam_grid_id,
             updated_at: Utc::now().to_rfc3339(),
@@ -486,18 +490,18 @@ fn find_existing_shortcut_index(
     shortcuts: &[ShortcutEntry],
     identity: &ShortcutIdentity,
     title: &str,
-    managed_paths_set: &HashSet<String>,
+    managed_entries: &[ManagedSyncEntry],
 ) -> Option<usize> {
     let launcher_path = normalize_path_text(&identity.launcher_path.to_string_lossy());
     shortcuts.iter().position(|entry| {
-        let entry_shortcut_path = normalize_path_text(&entry.shortcut_path);
         let entry_exe_path = normalize_path_text(trim_wrapped_quotes(&entry.exe));
         shortcut_matches_identity(entry, identity)
             || entry_exe_path == launcher_path
             || entry.app_id == identity.app_id
             || (entry.app_name.eq_ignore_ascii_case(title)
-                && (managed_paths_set.contains(&entry_shortcut_path)
-                    || managed_paths_set.contains(&entry_exe_path)))
+                && managed_entries
+                    .iter()
+                    .any(|managed_entry| shortcut_matches_managed_entry(entry, managed_entry)))
     })
 }
 
@@ -507,15 +511,16 @@ fn build_shortcut_identity(
     game: &EpicInstalledGame,
 ) -> CmdResult<ShortcutIdentity> {
     let launcher_path = launcher_dir.join(format!("{}.cmd", sanitize_filename(&game.id)));
-    let (target_path, start_dir, launch_options) = resolve_shortcut_target(game)?;
-    let exe_value = wrap_path_for_shortcut(&target_path);
+    let target = resolve_shortcut_target(game)?;
+    let exe_value = wrap_path_for_shortcut(&target.target_path);
     let app_id = compute_shortcut_app_id(&exe_value, &game.title);
     Ok(ShortcutIdentity {
         launcher_path,
         exe_value,
-        shortcut_path: target_path.to_string_lossy().to_string(),
-        start_dir,
-        launch_options,
+        shortcut_path: target.shortcut_path,
+        match_path: target.match_path,
+        start_dir: target.start_dir,
+        launch_options: target.launch_options,
         app_id,
         steam_grid_id: compute_shortcut_steam_grid_id(app_id),
     })
@@ -523,15 +528,16 @@ fn build_shortcut_identity(
 
 #[cfg(windows)]
 fn build_runtime_shortcut_identity(game: &EpicInstalledGame) -> CmdResult<ShortcutIdentity> {
-    let (target_path, start_dir, launch_options) = resolve_shortcut_target(game)?;
-    let exe_value = wrap_path_for_shortcut(&target_path);
+    let target = resolve_shortcut_target(game)?;
+    let exe_value = wrap_path_for_shortcut(&target.target_path);
     let app_id = compute_shortcut_app_id(&exe_value, &game.title);
     Ok(ShortcutIdentity {
         launcher_path: PathBuf::new(),
         exe_value,
-        shortcut_path: target_path.to_string_lossy().to_string(),
-        start_dir,
-        launch_options,
+        shortcut_path: target.shortcut_path,
+        match_path: target.match_path,
+        start_dir: target.start_dir,
+        launch_options: target.launch_options,
         app_id,
         steam_grid_id: compute_shortcut_steam_grid_id(app_id),
     })
@@ -554,27 +560,47 @@ fn shortcut_matches_identity(entry: &ShortcutEntry, identity: &ShortcutIdentity)
         return true;
     }
 
-    entry_shortcut_path == expected_shortcut_path && entry_launch_options == expected_launch_options
+    !expected_shortcut_path.is_empty()
+        && entry_shortcut_path == expected_shortcut_path
+        && entry_launch_options == expected_launch_options
 }
 
 #[cfg(windows)]
-fn resolve_shortcut_target(game: &EpicInstalledGame) -> CmdResult<(PathBuf, String, String)> {
-    if let Some(app_name) = game.epic_app_name.as_deref() {
-        let explorer = resolve_windows_explorer_path()?;
-        let start_dir = explorer
-            .parent()
-            .map(wrap_path_for_shortcut)
-            .unwrap_or_else(|| wrap_path_for_shortcut(Path::new("C:\\")));
-        let uri = format!("com.epicgames.launcher://apps/{app_name}?action=launch&silent=true");
-        return Ok((explorer, start_dir, format!("\"{uri}\"")));
+fn shortcut_matches_managed_entry(entry: &ShortcutEntry, managed_entry: &ManagedSyncEntry) -> bool {
+    let entry_shortcut_path = normalize_path_text(&entry.shortcut_path);
+    let entry_exe = normalize_path_text(trim_wrapped_quotes(&entry.exe));
+    let entry_launch_options = normalize_launch_options(&entry.launch_options);
+    let managed_shortcut_path = normalize_path_text(&managed_entry.shortcut_path);
+    let managed_exe_path = normalize_path_text(&managed_entry.exe_path);
+    let managed_legacy_path = normalize_path_text(&managed_entry.launcher_path);
+    let managed_launch_options = normalize_launch_options(&managed_entry.launch_options);
+
+    if !managed_exe_path.is_empty()
+        && entry_exe == managed_exe_path
+        && entry_launch_options == managed_launch_options
+    {
+        return true;
     }
 
+    if !managed_shortcut_path.is_empty()
+        && entry_shortcut_path == managed_shortcut_path
+        && entry_launch_options == managed_launch_options
+    {
+        return true;
+    }
+
+    !managed_legacy_path.is_empty()
+        && (entry_shortcut_path == managed_legacy_path || entry_exe == managed_legacy_path)
+}
+
+#[cfg(windows)]
+fn resolve_shortcut_target(game: &EpicInstalledGame) -> CmdResult<ResolvedShortcutTarget> {
     if let Some(executable) = game.launch_executable.as_deref() {
         let target_path = PathBuf::from(executable);
         let work_dir = target_path
             .parent()
-            .map(wrap_path_for_shortcut)
-            .unwrap_or_else(|| wrap_path_for_shortcut(Path::new(&game.install_dir)));
+            .map(path_to_start_dir)
+            .unwrap_or_else(|| path_to_start_dir(Path::new(&game.install_dir)));
         let launch_options = game
             .launch_command
             .as_deref()
@@ -582,7 +608,29 @@ fn resolve_shortcut_target(game: &EpicInstalledGame) -> CmdResult<(PathBuf, Stri
             .filter(|value| !value.is_empty())
             .unwrap_or("")
             .to_string();
-        return Ok((target_path, work_dir, launch_options));
+        return Ok(ResolvedShortcutTarget {
+            match_path: target_path.to_string_lossy().to_string(),
+            target_path,
+            shortcut_path: String::new(),
+            start_dir: work_dir,
+            launch_options,
+        });
+    }
+
+    if let Some(app_name) = game.epic_app_name.as_deref() {
+        let explorer = resolve_windows_explorer_path()?;
+        let start_dir = explorer
+            .parent()
+            .map(path_to_start_dir)
+            .unwrap_or_else(|| path_to_start_dir(Path::new("C:\\")));
+        let uri = format!("com.epicgames.launcher://apps/{app_name}?action=launch&silent=true");
+        return Ok(ResolvedShortcutTarget {
+            match_path: uri.clone(),
+            target_path: explorer,
+            shortcut_path: String::new(),
+            start_dir,
+            launch_options: format!("\"{uri}\""),
+        });
     }
 
     Err(format!("游戏 {} 缺少可用的启动信息。", game.title))
@@ -1153,6 +1201,16 @@ fn compute_shortcut_steam_grid_id(app_id: u32) -> String {
 #[cfg(windows)]
 fn wrap_path_for_shortcut(path: &Path) -> String {
     format!("\"{}\"", path.to_string_lossy())
+}
+
+#[cfg(windows)]
+fn path_to_start_dir(path: &Path) -> String {
+    let text = path.to_string_lossy().replace('/', "\\");
+    if text.ends_with('\\') {
+        text
+    } else {
+        format!("{text}\\")
+    }
 }
 
 #[cfg(windows)]
