@@ -150,7 +150,7 @@ pub async fn sync_epic_games_to_steam(
 
 #[cfg(windows)]
 fn scan_epic_games_for_sync_windows(
-    app: &AppHandle,
+    _app: &AppHandle,
     steam_user_id: Option<String>,
 ) -> CmdResult<EpicSteamScanResult> {
     let steam_running = is_process_running("steam.exe");
@@ -173,14 +173,6 @@ fn scan_epic_games_for_sync_windows(
         .as_ref()
         .map(resolve_account_context)
         .transpose()?;
-    let managed_store = read_managed_store(app)?;
-    let managed_user = selected_account
-        .as_ref()
-        .and_then(|account| find_managed_user(&managed_store, &account.id));
-    let managed_paths = selected_account
-        .as_ref()
-        .map(|account| resolve_managed_paths(app, &account.id))
-        .transpose()?;
     let existing_shortcuts = if let Some(context) = selected_context.as_ref() {
         read_shortcuts_file(&context.shortcuts_path)?
     } else {
@@ -192,10 +184,9 @@ fn scan_epic_games_for_sync_windows(
         warnings.push("未检测到 Epic 已安装游戏。".to_string());
     }
 
-    if let (Some(managed_user), Some(managed_paths)) = (managed_user, managed_paths.as_ref()) {
+    if selected_account.is_some() {
         for game in &mut epic_games {
-            game.sync_status =
-                build_sync_status(game, managed_user, managed_paths, &existing_shortcuts)?;
+            game.sync_status = build_sync_status(game, &existing_shortcuts)?;
         }
     }
 
@@ -458,45 +449,22 @@ fn load_epic_games_from_manifests() -> CmdResult<Vec<EpicInstalledGame>> {
 #[cfg(windows)]
 fn build_sync_status(
     game: &EpicInstalledGame,
-    managed_user: &ManagedSyncUser,
-    managed_paths: &ManagedPaths,
     shortcuts: &[ShortcutEntry],
 ) -> CmdResult<EpicSteamGameSyncStatus> {
-    let identity = build_shortcut_identity(&managed_paths.launcher_dir, game)?;
-    let managed_entry = managed_user
-        .entries
+    let identity = build_runtime_shortcut_identity(game)?;
+    let existing = shortcuts
         .iter()
-        .find(|entry| entry.game_id == game.id);
-    let managed_paths_set: HashSet<String> = managed_user
-        .entries
-        .iter()
-        .map(|entry| normalize_path_text(&entry.launcher_path))
-        .collect();
-
-    let existing = shortcuts.iter().find(|entry| {
-        let shortcut_path = normalize_path_text(&entry.shortcut_path);
-        let exe_path = normalize_path_text(trim_wrapped_quotes(&entry.exe));
-        shortcut_path == normalize_path_text(&identity.shortcut_path)
-            || exe_path == normalize_path_text(&identity.launcher_path.to_string_lossy())
-            || entry.app_id == identity.app_id
-            || (entry.app_name.eq_ignore_ascii_case(&game.title)
-                && (managed_paths_set.contains(&shortcut_path)
-                    || managed_paths_set.contains(&exe_path)
-                    || entry.tags.iter().any(|tag| tag == SHORTCUT_TAG_PULSE)))
-    });
+        .find(|entry| shortcut_matches_identity(entry, &identity));
 
     let managed_by_pulse = existing
-        .map(|entry| is_managed_shortcut(entry, managed_paths, &managed_paths_set))
-        .unwrap_or(false)
-        || managed_entry.is_some();
+        .map(|entry| is_managed_shortcut(entry, &identity))
+        .unwrap_or(false);
     let present_in_steam = existing.is_some();
 
     Ok(EpicSteamGameSyncStatus {
         present_in_steam,
         managed_by_pulse,
-        app_id: existing
-            .map(|entry| entry.app_id)
-            .or_else(|| managed_entry.map(|entry| entry.app_id)),
+        app_id: existing.map(|entry| entry.app_id),
         source: if managed_by_pulse {
             "managed".to_string()
         } else if present_in_steam {
@@ -508,19 +476,9 @@ fn build_sync_status(
 }
 
 #[cfg(windows)]
-fn is_managed_shortcut(
-    entry: &ShortcutEntry,
-    managed_paths: &ManagedPaths,
-    managed_paths_set: &HashSet<String>,
-) -> bool {
-    let launcher_dir = normalize_path_text(&managed_paths.launcher_dir.to_string_lossy());
-    let shortcut_path = normalize_path_text(&entry.shortcut_path);
-    let exe_path = normalize_path_text(trim_wrapped_quotes(&entry.exe));
-    entry.tags.iter().any(|tag| tag == SHORTCUT_TAG_PULSE)
-        || managed_paths_set.contains(&shortcut_path)
-        || managed_paths_set.contains(&exe_path)
-        || shortcut_path.starts_with(&launcher_dir)
-        || exe_path.starts_with(&launcher_dir)
+fn is_managed_shortcut(entry: &ShortcutEntry, identity: &ShortcutIdentity) -> bool {
+    shortcut_matches_identity(entry, identity)
+        && entry.tags.iter().any(|tag| tag == SHORTCUT_TAG_PULSE)
 }
 
 #[cfg(windows)]
@@ -530,18 +488,16 @@ fn find_existing_shortcut_index(
     title: &str,
     managed_paths_set: &HashSet<String>,
 ) -> Option<usize> {
-    let shortcut_path = normalize_path_text(&identity.shortcut_path);
     let launcher_path = normalize_path_text(&identity.launcher_path.to_string_lossy());
     shortcuts.iter().position(|entry| {
         let entry_shortcut_path = normalize_path_text(&entry.shortcut_path);
         let entry_exe_path = normalize_path_text(trim_wrapped_quotes(&entry.exe));
-        entry_shortcut_path == shortcut_path
+        shortcut_matches_identity(entry, identity)
             || entry_exe_path == launcher_path
             || entry.app_id == identity.app_id
             || (entry.app_name.eq_ignore_ascii_case(title)
                 && (managed_paths_set.contains(&entry_shortcut_path)
-                    || managed_paths_set.contains(&entry_exe_path)
-                    || entry.tags.iter().any(|tag| tag == SHORTCUT_TAG_PULSE)))
+                    || managed_paths_set.contains(&entry_exe_path)))
     })
 }
 
@@ -563,6 +519,42 @@ fn build_shortcut_identity(
         app_id,
         steam_grid_id: compute_shortcut_steam_grid_id(app_id),
     })
+}
+
+#[cfg(windows)]
+fn build_runtime_shortcut_identity(game: &EpicInstalledGame) -> CmdResult<ShortcutIdentity> {
+    let (target_path, start_dir, launch_options) = resolve_shortcut_target(game)?;
+    let exe_value = wrap_path_for_shortcut(&target_path);
+    let app_id = compute_shortcut_app_id(&exe_value, &game.title);
+    Ok(ShortcutIdentity {
+        launcher_path: PathBuf::new(),
+        exe_value,
+        shortcut_path: target_path.to_string_lossy().to_string(),
+        start_dir,
+        launch_options,
+        app_id,
+        steam_grid_id: compute_shortcut_steam_grid_id(app_id),
+    })
+}
+
+#[cfg(windows)]
+fn shortcut_matches_identity(entry: &ShortcutEntry, identity: &ShortcutIdentity) -> bool {
+    let expected_exe = normalize_path_text(trim_wrapped_quotes(&identity.exe_value));
+    let expected_shortcut_path = normalize_path_text(&identity.shortcut_path);
+    let expected_launch_options = normalize_launch_options(&identity.launch_options);
+    let entry_shortcut_path = normalize_path_text(&entry.shortcut_path);
+    let entry_exe = normalize_path_text(trim_wrapped_quotes(&entry.exe));
+    let entry_launch_options = normalize_launch_options(&entry.launch_options);
+
+    if entry.app_id == identity.app_id {
+        return true;
+    }
+
+    if entry_exe == expected_exe && entry_launch_options == expected_launch_options {
+        return true;
+    }
+
+    entry_shortcut_path == expected_shortcut_path && entry_launch_options == expected_launch_options
 }
 
 #[cfg(windows)]
@@ -1193,6 +1185,11 @@ fn normalize_path_text(value: &str) -> String {
         .trim_matches('"')
         .replace('/', "\\")
         .to_ascii_lowercase()
+}
+
+#[cfg(windows)]
+fn normalize_launch_options(value: &str) -> String {
+    value.trim().to_string()
 }
 
 #[cfg(windows)]

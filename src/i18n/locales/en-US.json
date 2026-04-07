@@ -307,6 +307,7 @@
     "gameSyncSelectedCount": "Selected",
     "gameSyncNoAccount": "No Steam user available",
     "gameSyncNoGames": "No syncable Epic games were found.",
+    "gameSyncRefreshStatus": "Refresh Status",
     "gameSyncRescan": "Rescan",
     "gameSyncSyncSelected": "Sync Selected",
     "gameSyncSyncing": "Syncing...",

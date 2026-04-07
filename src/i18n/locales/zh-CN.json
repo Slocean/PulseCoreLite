@@ -305,6 +305,7 @@
     "gameSyncSelectedCount": "已选游戏",
     "gameSyncNoAccount": "暂无可用 Steam 用户",
     "gameSyncNoGames": "当前没有可同步的 Epic 游戏。",
+    "gameSyncRefreshStatus": "刷新状态",
     "gameSyncRescan": "重新扫描",
     "gameSyncSyncSelected": "同步所选游戏",
     "gameSyncSyncing": "同步中...",

@@ -39,6 +39,13 @@
         native-type="button"
         preset="overlay-primary"
         :disabled="loading || syncing || !runtimeSupported"
+        @click="refreshShortcutStatus">
+        {{ t('toolkit.gameSyncRefreshStatus') }}
+      </UiButton>
+      <UiButton
+        native-type="button"
+        preset="overlay-primary"
+        :disabled="loading || syncing || !runtimeSupported"
         @click="scan()">
         {{ t('toolkit.gameSyncRescan') }}
       </UiButton>
@@ -110,7 +117,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
@@ -134,6 +141,7 @@ const syncing = ref(false);
 const selectedSteamUserId = ref<string | null>(null);
 const selectedGameIds = ref<string[]>([]);
 const suppressAccountWatch = ref(false);
+const lastAutoRefreshAt = ref(0);
 const scanState = ref<EpicSteamScanResult>({
   steamPath: null,
   steamRunning: false,
@@ -177,7 +185,17 @@ onMounted(() => {
   if (!runtimeSupported.value) {
     return;
   }
-  void scan();
+  window.addEventListener('focus', handleWindowFocus);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  void refreshShortcutStatus();
+});
+
+onUnmounted(() => {
+  if (!runtimeSupported.value) {
+    return;
+  }
+  window.removeEventListener('focus', handleWindowFocus);
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
 });
 
 watch(selectedSteamUserId, async (next, previous) => {
@@ -219,6 +237,32 @@ async function scan(targetUserId?: string | null) {
     suppressAccountWatch.value = false;
     loading.value = false;
   }
+}
+
+async function refreshShortcutStatus() {
+  await scan(selectedSteamUserId.value);
+}
+
+function handleWindowFocus() {
+  void scheduleAutoRefresh();
+}
+
+function handleVisibilityChange() {
+  if (document.visibilityState === 'visible') {
+    void scheduleAutoRefresh();
+  }
+}
+
+async function scheduleAutoRefresh() {
+  if (!runtimeSupported.value || loading.value || syncing.value) {
+    return;
+  }
+  const now = Date.now();
+  if (now - lastAutoRefreshAt.value < 1200) {
+    return;
+  }
+  lastAutoRefreshAt.value = now;
+  await refreshShortcutStatus();
 }
 
 function canSyncGame(game: EpicInstalledGame) {
