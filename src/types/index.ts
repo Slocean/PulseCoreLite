@@ -7,6 +7,7 @@ export * from './system';
 export * from './reminder';
 export * from './ai';
 export * from './gameSync';
+export * from './invest';
 
 export interface AppBootstrap {
   settings: AppSettings;

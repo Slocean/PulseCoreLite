@@ -1,3 +1,4 @@
+<!-- @deprecated 此页面是独立弹出的 Toolkit 窗口（toolkit.html），主界面嵌入的工具 Tab 请看 src/components/toolkit/ToolkitEmbedded.vue -->
 <template>
   <section
     ref="pageRef"

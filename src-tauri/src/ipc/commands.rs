@@ -1780,3 +1780,143 @@ pub fn set_window_system_topmost(app: AppHandle, label: String, topmost: bool) -
         Ok(())
     }
 }
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub struct FundNavRecord {
+    pub date: String,
+    pub nav: f64,
+    #[serde(rename = "accNav")]
+    pub acc_nav: f64,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub struct FundSearchResult {
+    pub code: String,
+    pub name: String,
+    #[serde(rename = "type")]
+    pub fund_type: Option<String>,
+}
+
+#[tauri::command]
+pub async fn fetch_fund_history(
+    fund_code: String,
+    start_date: String,
+    end_date: String,
+) -> CmdResult<Vec<FundNavRecord>> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(15))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let mut all_records: Vec<FundNavRecord> = Vec::new();
+    let page_size = 49;
+    let mut page = 1usize;
+
+    loop {
+        let url = format!(
+            "https://api.fund.eastmoney.com/f10/lsjz?fundCode={}&page={}&pageSize={}&startDate={}&endDate={}",
+            fund_code, page, page_size, start_date, end_date
+        );
+
+        let resp = client
+            .get(&url)
+            .header("Referer", "https://fund.eastmoney.com/")
+            .header("User-Agent", "Mozilla/5.0")
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+
+        let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
+
+        let records = body
+            .get("Data")
+            .and_then(|d| d.get("LSJZList"))
+            .and_then(|v| v.as_array())
+            .ok_or_else(|| "invalid fund data format".to_string())?;
+
+        if records.is_empty() {
+            break;
+        }
+
+        for item in records {
+            let date = item
+                .get("FSRQ")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let nav = item
+                .get("DWJZ")
+                .and_then(|v| v.as_str())
+                .and_then(|s| s.parse::<f64>().ok())
+                .unwrap_or(0.0);
+            let acc_nav = item
+                .get("LJJZ")
+                .and_then(|v| v.as_str())
+                .and_then(|s| s.parse::<f64>().ok())
+                .unwrap_or(0.0);
+
+            if !date.is_empty() && nav > 0.0 {
+                all_records.push(FundNavRecord { date, nav, acc_nav });
+            }
+        }
+
+        let total_count = body
+            .get("TotalCount")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(0) as usize;
+
+        if all_records.len() >= total_count || records.len() < page_size {
+            break;
+        }
+        page += 1;
+    }
+
+    all_records.sort_by(|a, b| a.date.cmp(&b.date));
+
+    Ok(all_records)
+}
+
+#[tauri::command]
+pub async fn search_fund(keyword: String) -> CmdResult<Vec<FundSearchResult>> {
+    if keyword.trim().is_empty() {
+        return Ok(vec![]);
+    }
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let url = format!(
+        "https://searchfundapi.eastmoney.com/suggest/suggest?keyword={}&type=1&count=10",
+        keyword
+    );
+
+    let resp = client
+        .get(&url)
+        .header("Referer", "https://fund.eastmoney.com/")
+        .header("User-Agent", "Mozilla/5.0")
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
+
+    let items = body
+        .get("Datas")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+
+    let results = items
+        .iter()
+        .filter_map(|item| {
+            let code = item.get("CODE")?.as_str()?.to_string();
+            let name = item.get("NAME")?.as_str()?.to_string();
+            let fund_type = item.get("FundType").and_then(|v| v.as_str()).map(|s| s.to_string());
+            Some(FundSearchResult { code, name, fund_type })
+        })
+        .collect();
+
+    Ok(results)
+}

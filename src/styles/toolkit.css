@@ -1,6 +1,7 @@
-﻿@import './toolkit-layout.css';
+@import './toolkit-layout.css';
 @import './toolkit-shutdown-tab.css';
 @import './toolkit-cleanup-tab.css';
 @import './toolkit-game-sync-tab.css';
 @import './toolkit-hardware-tab.css';
 @import './toolkit-reminder-tab.css';
+@import './toolkit-invest-tab.css';

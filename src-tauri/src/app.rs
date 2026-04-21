@@ -388,6 +388,8 @@ pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Bu
         commands::save_task_reminder_store,
         commands::trigger_task_reminder_now,
         game_sync::scan_epic_games_for_sync,
-        game_sync::sync_epic_games_to_steam
+        game_sync::sync_epic_games_to_steam,
+        commands::fetch_fund_history,
+        commands::search_fund
     ])
 }
