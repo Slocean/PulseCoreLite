@@ -145,12 +145,7 @@
           </button>
 
           <!-- Condition -->
-          <select v-model="rule.condition" class="invest-rule-select invest-rule-select--condition">
-            <option value="nav_above">{{ t('invest.condNavAbove') }}</option>
-            <option value="nav_below">{{ t('invest.condNavBelow') }}</option>
-            <option value="daily_change_above">{{ t('invest.condDailyChangeAbove') }}</option>
-            <option value="daily_change_below">{{ t('invest.condDailyChangeBelow') }}</option>
-          </select>
+          <UiSelect v-model="rule.condition" :options="conditionOptions" :width="138" />
 
           <!-- Threshold -->
           <div class="invest-rule-input-wrap">
@@ -169,17 +164,14 @@
           <span class="invest-rule-arrow material-symbols-outlined">arrow_forward</span>
 
           <!-- Action -->
-          <select v-model="rule.action" class="invest-rule-select invest-rule-select--action"
-            :class="rule.action === 'buy' ? 'invest-rule-select--buy' : 'invest-rule-select--sell'">
-            <option value="buy">{{ t('invest.actionBuy') }}</option>
-            <option value="sell">{{ t('invest.actionSell') }}</option>
-          </select>
+          <UiSelect
+            v-model="rule.action"
+            :options="actionOptions"
+            :width="76"
+            :class="rule.action === 'buy' ? 'invest-rule-action--buy' : 'invest-rule-action--sell'" />
 
           <!-- Amount type -->
-          <select v-model="rule.amountType" class="invest-rule-select invest-rule-select--amt-type">
-            <option value="absolute">{{ t('invest.amtAbsolute') }}</option>
-            <option value="percent">{{ t('invest.amtPercent') }}</option>
-          </select>
+          <UiSelect v-model="rule.amountType" :options="amountTypeOptions" :width="96" />
 
           <!-- Amount value -->
           <div class="invest-rule-input-wrap">
@@ -278,6 +270,23 @@ const weekdaySelectOptions = computed(() =>
   }))
 );
 
+const conditionOptions = computed(() => [
+  { value: 'nav_above',          label: t('invest.condNavAbove') },
+  { value: 'nav_below',          label: t('invest.condNavBelow') },
+  { value: 'daily_change_above', label: t('invest.condDailyChangeAbove') },
+  { value: 'daily_change_below', label: t('invest.condDailyChangeBelow') }
+]);
+
+const actionOptions = computed(() => [
+  { value: 'buy',  label: t('invest.actionBuy') },
+  { value: 'sell', label: t('invest.actionSell') }
+]);
+
+const amountTypeOptions = computed(() => [
+  { value: 'absolute', label: t('invest.amtAbsolute') },
+  { value: 'percent',  label: t('invest.amtPercent') }
+]);
+
 const monthDaySelectOptions = computed(() =>
   props.monthDayOptions.map(opt => ({
     value: opt.value,
@@ -368,43 +377,13 @@ function addRule() {
   font-size: 22px;
 }
 
-/* ── Selects ──────────────────────────────────────── */
-.invest-rule-select {
-  height: 28px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.88);
-  font-size: 11px;
-  padding: 0 6px;
-  cursor: pointer;
-  -webkit-app-region: no-drag;
-  transition: border-color 140ms ease;
-}
-
-.invest-rule-select:focus {
-  outline: none;
-  border-color: rgba(0, 242, 255, 0.5);
-}
-
-.invest-rule-select--condition {
-  min-width: 118px;
-}
-
-.invest-rule-select--action {
-  min-width: 58px;
-}
-
-.invest-rule-select--buy {
+/* ── Action select buy/sell tint ─────────────────── */
+.invest-rule-action--buy :deep(.ui-select-trigger-text) {
   color: rgba(80, 220, 140, 0.92);
 }
 
-.invest-rule-select--sell {
+.invest-rule-action--sell :deep(.ui-select-trigger-text) {
   color: rgba(255, 100, 100, 0.92);
-}
-
-.invest-rule-select--amt-type {
-  min-width: 82px;
 }
 
 /* ── Number inputs with unit suffix ──────────────── */
