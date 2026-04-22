@@ -9,6 +9,7 @@ import type {
   FundNavRecord,
   FundSearchResult,
   InvestFrequency,
+  InvestRule,
   InvestStrategy,
   InvestStrategyStore
 } from '@/types/invest';
@@ -29,7 +30,8 @@ function newStrategyForm() {
     startDate: '',
     endDate: '',
     weekday: 1,
-    monthDay: 1
+    monthDay: 1,
+    rules: [] as InvestRule[]
   };
 }
 
@@ -94,7 +96,8 @@ export function useInvestTabState(emit: InvestTabEmit) {
       startDate: s.startDate,
       endDate: s.endDate ?? '',
       weekday: s.weekday ?? 1,
-      monthDay: s.monthDay ?? 1
+      monthDay: s.monthDay ?? 1,
+      rules: s.rules ? s.rules.map(r => ({ ...r })) : []
     });
     fundSearchResults.value = [];
     viewMode.value = 'editor';
@@ -138,6 +141,7 @@ export function useInvestTabState(emit: InvestTabEmit) {
           endDate: form.endDate || undefined,
           weekday: form.frequency === 'weekly' ? form.weekday : undefined,
           monthDay: form.frequency === 'monthly' ? form.monthDay : undefined,
+          rules: form.rules.length > 0 ? form.rules.map(r => ({ ...r })) : undefined,
           updatedAt: now
         };
       }
@@ -153,6 +157,7 @@ export function useInvestTabState(emit: InvestTabEmit) {
         endDate: form.endDate || undefined,
         weekday: form.frequency === 'weekly' ? form.weekday : undefined,
         monthDay: form.frequency === 'monthly' ? form.monthDay : undefined,
+        rules: form.rules.length > 0 ? form.rules.map(r => ({ ...r })) : undefined,
         createdAt: now,
         updatedAt: now
       };
