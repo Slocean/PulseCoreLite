@@ -88,27 +88,19 @@
         </div>
 
         <div v-if="form.frequency === 'weekly'" class="invest-form-row">
-          <span class="overlay-config-label">{{ t('invest.labelWeekday') }}</span>
-          <div class="invest-freq-buttons">
-            <UiButton
-              v-for="opt in weekdayOptions"
-              :key="opt.value"
-              native-type="button"
-              preset="overlay-chip"
-              :active="form.weekday === opt.value"
-              @click="form.weekday = opt.value">
-              {{ t(opt.labelKey) }}
-            </UiButton>
-          </div>
+          <label class="overlay-config-label">{{ t('invest.labelWeekday') }}</label>
+          <UiSelect
+            v-model="form.weekday"
+            :options="weekdaySelectOptions"
+            :aria-label="t('invest.labelWeekday')" />
         </div>
 
         <div v-if="form.frequency === 'monthly'" class="invest-form-row">
-          <label class="overlay-config-label" :for="monthDayId">{{ t('invest.labelMonthDay') }}</label>
-          <select :id="monthDayId" v-model.number="form.monthDay" class="invest-select">
-            <option v-for="opt in monthDayOptions" :key="opt.value" :value="opt.value">
-              {{ t('invest.dayOf', { day: opt.label }) }}
-            </option>
-          </select>
+          <label class="overlay-config-label">{{ t('invest.labelMonthDay') }}</label>
+          <UiSelect
+            v-model="form.monthDay"
+            :options="monthDaySelectOptions"
+            :aria-label="t('invest.labelMonthDay')" />
         </div>
 
         <div class="invest-form-row">
@@ -237,12 +229,13 @@
 </template>
 
 <script setup lang="ts">
-import { useId } from 'vue';
+import { computed, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
 import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiDateInput from '@/components/ui/DateInput';
+import UiSelect from '@/components/ui/Select';
 import type { ConditionType, FundSearchResult, InvestFrequency, InvestRule } from '@/types/invest';
 
 const props = defineProps<{
@@ -277,7 +270,20 @@ const { t } = useI18n();
 const nameId = useId();
 const fundCodeId = useId();
 const amountId = useId();
-const monthDayId = useId();
+
+const weekdaySelectOptions = computed(() =>
+  props.weekdayOptions.map(opt => ({
+    value: opt.value,
+    label: t(opt.labelKey)
+  }))
+);
+
+const monthDaySelectOptions = computed(() =>
+  props.monthDayOptions.map(opt => ({
+    value: opt.value,
+    label: t('invest.dayOf', { day: opt.label })
+  }))
+);
 
 function isNavCondition(cond: ConditionType): boolean {
   return cond === 'nav_above' || cond === 'nav_below';
