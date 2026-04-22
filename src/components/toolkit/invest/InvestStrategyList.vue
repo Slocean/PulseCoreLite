@@ -24,33 +24,42 @@
     </div>
 
     <div v-else class="invest-strategy-cards">
-      <div
+      <UiCollapsiblePanel
         v-for="s in strategies"
         :key="s.id"
-        class="invest-strategy-card"
-        :class="{ 'is-selected': selectedForCompare.has(s.id) }">
-        <div class="invest-strategy-card-header">
-          <label class="invest-compare-checkbox">
-            <input
-              type="checkbox"
-              :checked="selectedForCompare.has(s.id)"
-              @change="emit('toggleCompare', s.id)" />
-          </label>
-          <div class="invest-strategy-info">
-            <span class="invest-strategy-name">{{ s.name }}</span>
-            <span class="invest-strategy-meta">
-              {{ s.fundCode }}
-              <template v-if="s.fundName"> · {{ s.fundName }}</template>
-            </span>
-          </div>
-          <div class="invest-strategy-tags">
+        class="toolkit-card invest-strategy-card"
+        :class="{ 'is-selected': selectedForCompare.has(s.id) }"
+        :title="s.name"
+        :model-value="isCardOpen(s.id)"
+        header-mode="split"
+        header-class="toolkit-section-header"
+        split-title-preset="toolkit-collapse-title"
+        split-toggle-preset="toolkit-collapse-icon"
+        title-class="invest-card-title"
+        indicator-class="toolkit-collapse-indicator"
+        @toggle="onCardToggle(s.id, $event)">
+
+        <template #header-actions>
+          <div class="invest-card-header-actions">
+            <label class="invest-compare-checkbox" @click.stop>
+              <input
+                type="checkbox"
+                :checked="selectedForCompare.has(s.id)"
+                @change="emit('toggleCompare', s.id)" />
+            </label>
             <span class="invest-tag">{{ formatFrequency(s.frequency) }}</span>
             <span class="invest-tag invest-tag--amount">¥{{ s.amount.toLocaleString() }}</span>
           </div>
-        </div>
-        <div class="invest-strategy-card-footer">
-          <span class="invest-strategy-date">{{ s.startDate }} → {{ s.endDate || t('invest.today') }}</span>
-          <div class="invest-card-btns">
+        </template>
+
+        <div class="invest-card-body">
+          <div class="invest-card-meta">
+            <span class="invest-strategy-meta">
+              {{ s.fundCode }}<template v-if="s.fundName"> · {{ s.fundName }}</template>
+            </span>
+            <span class="invest-strategy-date">{{ s.startDate }} → {{ s.endDate || t('invest.today') }}</span>
+          </div>
+          <div class="invest-card-actions">
             <UiButton native-type="button" preset="overlay-chip" @click="emit('backtest', s.id)">
               <span class="material-symbols-outlined">analytics</span>
               <span>{{ t('invest.backtestBtn') }}</span>
@@ -63,15 +72,17 @@
             </UiButton>
           </div>
         </div>
-      </div>
+      </UiCollapsiblePanel>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
+import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import type { InvestFrequency, InvestStrategy } from '@/types/invest';
 
 defineProps<{
@@ -89,6 +100,21 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+
+/** Set of card IDs that are collapsed; all others are open by default */
+const collapsedCards = ref(new Set<string>());
+
+function isCardOpen(id: string): boolean {
+  return !collapsedCards.value.has(id);
+}
+
+function onCardToggle(id: string, nowOpen: boolean): void {
+  if (nowOpen) {
+    collapsedCards.value.delete(id);
+  } else {
+    collapsedCards.value.add(id);
+  }
+}
 
 function formatFrequency(freq: InvestFrequency): string {
   const map: Record<InvestFrequency, string> = {

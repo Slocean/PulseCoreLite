@@ -46,14 +46,9 @@
   gap: 6px;
 }
 
+/* ── Strategy card (uses toolkit-card as base) ─────── */
 .invest-strategy-card {
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.2);
-  padding: 8px 10px;
-  display: grid;
-  gap: 6px;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, background 0.15s;
 }
 
 .invest-strategy-card.is-selected {
@@ -61,29 +56,8 @@
   background: rgba(0, 242, 255, 0.04);
 }
 
-.invest-strategy-card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.invest-compare-checkbox input[type='checkbox'] {
-  width: 14px;
-  height: 14px;
-  accent-color: rgba(0, 242, 255, 0.9);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.invest-strategy-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.invest-strategy-name {
+/* Title inside the collapsible panel header */
+.invest-card-title {
   font-size: 13px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.92);
@@ -92,15 +66,18 @@
   text-overflow: ellipsis;
 }
 
-.invest-strategy-meta {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
+/* Header-actions slot: checkbox + tags in a row */
+.invest-card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.invest-strategy-tags {
-  display: flex;
-  gap: 4px;
-  align-items: center;
+.invest-compare-checkbox input[type='checkbox'] {
+  width: 14px;
+  height: 14px;
+  accent-color: rgba(0, 242, 255, 0.9);
+  cursor: pointer;
   flex-shrink: 0;
 }
 
@@ -118,22 +95,39 @@
   color: rgba(0, 242, 255, 0.9);
 }
 
-.invest-strategy-card-footer {
+/* Collapsible body */
+.invest-card-body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 2px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.invest-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.invest-strategy-meta {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .invest-strategy-date {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.38);
 }
 
-.invest-card-btns {
+.invest-card-actions {
   display: flex;
   gap: 4px;
   align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .invest-editor {

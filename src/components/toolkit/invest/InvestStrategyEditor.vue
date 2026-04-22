@@ -13,7 +13,17 @@
       </span>
     </div>
 
-    <UiCollapsiblePanel class="toolkit-card" :title="t('invest.basicInfo')" :collapsible="false" title-class="toolkit-section-title">
+    <UiCollapsiblePanel
+      class="toolkit-card"
+      :title="t('invest.basicInfo')"
+      :model-value="basicInfoOpen"
+      header-mode="split"
+      header-class="toolkit-section-header"
+      split-title-preset="toolkit-collapse-title"
+      split-toggle-preset="toolkit-collapse-icon"
+      title-class="toolkit-section-title"
+      indicator-class="toolkit-collapse-indicator"
+      @toggle="basicInfoOpen = $event">
       <div class="invest-form-grid">
         <div class="invest-form-row">
           <label class="overlay-config-label" :for="nameId">{{ t('invest.labelName') }}</label>
@@ -70,7 +80,17 @@
       </div>
     </UiCollapsiblePanel>
 
-    <UiCollapsiblePanel class="toolkit-card" :title="t('invest.scheduleInfo')" :collapsible="false" title-class="toolkit-section-title">
+    <UiCollapsiblePanel
+      class="toolkit-card"
+      :title="t('invest.scheduleInfo')"
+      :model-value="scheduleOpen"
+      header-mode="split"
+      header-class="toolkit-section-header"
+      split-title-preset="toolkit-collapse-title"
+      split-toggle-preset="toolkit-collapse-icon"
+      title-class="toolkit-section-title"
+      indicator-class="toolkit-collapse-indicator"
+      @toggle="scheduleOpen = $event">
       <div class="invest-form-grid">
         <div class="invest-form-row">
           <span class="overlay-config-label">{{ t('invest.labelFrequency') }}</span>
@@ -119,7 +139,17 @@
     </UiCollapsiblePanel>
 
     <!-- Advanced conditional rules -->
-    <UiCollapsiblePanel class="toolkit-card" :title="t('invest.rulesTitle')" title-class="toolkit-section-title">
+    <UiCollapsiblePanel
+      class="toolkit-card"
+      :title="t('invest.rulesTitle')"
+      :model-value="rulesOpen"
+      header-mode="split"
+      header-class="toolkit-section-header"
+      split-title-preset="toolkit-collapse-title"
+      split-toggle-preset="toolkit-collapse-icon"
+      title-class="toolkit-section-title"
+      indicator-class="toolkit-collapse-indicator"
+      @toggle="rulesOpen = $event">
       <div class="invest-rules-list">
         <div v-if="form.rules.length === 0" class="invest-rules-empty">
           <span class="material-symbols-outlined invest-rules-empty-icon">rule</span>
@@ -221,7 +251,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useId } from 'vue';
+import { computed, ref, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
@@ -258,6 +288,10 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+
+const basicInfoOpen = ref(true);
+const scheduleOpen = ref(true);
+const rulesOpen = ref(true);
 
 const nameId = useId();
 const fundCodeId = useId();
