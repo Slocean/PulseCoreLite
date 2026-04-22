@@ -112,26 +112,16 @@
         </div>
 
         <div class="invest-form-row">
-          <label class="overlay-config-label" :for="startDateId">{{ t('invest.labelStartDate') }}</label>
-          <input
-            :id="startDateId"
-            v-model="form.startDate"
-            type="date"
-            class="invest-input invest-input--date"
-            autocomplete="off" />
+          <label class="overlay-config-label">{{ t('invest.labelStartDate') }}</label>
+          <UiDateInput v-model="form.startDate" :aria-label="t('invest.labelStartDate')" />
         </div>
 
         <div class="invest-form-row">
-          <label class="overlay-config-label" :for="endDateId">
+          <label class="overlay-config-label">
             {{ t('invest.labelEndDate') }}
             <span class="invest-optional">({{ t('invest.optional') }})</span>
           </label>
-          <input
-            :id="endDateId"
-            v-model="form.endDate"
-            type="date"
-            class="invest-input invest-input--date"
-            autocomplete="off" />
+          <UiDateInput v-model="form.endDate" :aria-label="t('invest.labelEndDate')" />
         </div>
       </div>
     </UiCollapsiblePanel>
@@ -153,6 +143,7 @@ import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
 import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
+import UiDateInput from '@/components/ui/DateInput';
 import type { FundSearchResult, InvestFrequency } from '@/types/invest';
 
 defineProps<{
@@ -187,6 +178,4 @@ const nameId = useId();
 const fundCodeId = useId();
 const amountId = useId();
 const monthDayId = useId();
-const startDateId = useId();
-const endDateId = useId();
 </script>
