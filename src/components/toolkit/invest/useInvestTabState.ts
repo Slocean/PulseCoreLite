@@ -114,15 +114,15 @@ export function useInvestTabState(emit: InvestTabEmit) {
 
   async function saveStrategy() {
     if (!form.name.trim()) {
-      showToast({ message: t('invest.errorNameRequired'), type: 'error' });
+      showToast(t('invest.errorNameRequired'), { variant: 'error' });
       return;
     }
     if (!form.fundCode.trim()) {
-      showToast({ message: t('invest.errorFundRequired'), type: 'error' });
+      showToast(t('invest.errorFundRequired'), { variant: 'error' });
       return;
     }
     if (!form.startDate) {
-      showToast({ message: t('invest.errorStartRequired'), type: 'error' });
+      showToast(t('invest.errorStartRequired'), { variant: 'error' });
       return;
     }
 
@@ -165,7 +165,7 @@ export function useInvestTabState(emit: InvestTabEmit) {
     }
 
     await saveStrategies();
-    showToast({ message: t('invest.saveSuccess'), type: 'success' });
+    showToast(t('invest.saveSuccess'), { variant: 'success' });
     viewMode.value = 'list';
     emit('contentChange');
   }
@@ -174,7 +174,7 @@ export function useInvestTabState(emit: InvestTabEmit) {
     strategies.value = strategies.value.filter(s => s.id !== id);
     selectedForCompare.value.delete(id);
     await saveStrategies();
-    showToast({ message: t('invest.deleteSuccess'), type: 'success' });
+    showToast(t('invest.deleteSuccess'), { variant: 'success' });
     emit('contentChange');
   }
 
@@ -219,7 +219,7 @@ export function useInvestTabState(emit: InvestTabEmit) {
 
   async function startCompare() {
     if (selectedForCompare.value.size < 2) {
-      showToast({ message: t('invest.errorCompareMin'), type: 'error' });
+      showToast(t('invest.errorCompareMin'), { variant: 'error' });
       return;
     }
 
@@ -245,7 +245,7 @@ export function useInvestTabState(emit: InvestTabEmit) {
       }
       compareResults.value = results;
     } catch (e) {
-      showToast({ message: String(e), type: 'error' });
+      showToast(String(e), { variant: 'error' });
     } finally {
       compareLoading.value = false;
       emit('contentChange');
