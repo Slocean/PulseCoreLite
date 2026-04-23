@@ -7,6 +7,7 @@
       </UiButton>
       <div class="invest-history-titles">
         <span class="invest-editor-title">{{ t('invest.backtestRecordsTitle') }}</span>
+        -
         <span v-if="strategyName" class="invest-history-sub">{{ strategyName }}</span>
       </div>
     </div>
@@ -33,14 +34,10 @@
           <span class="invest-history-range">{{ e.result.startDate }} → {{ e.result.endDate }}</span>
         </div>
         <div class="invest-history-row-metrics">
-          <span
-            class="invest-history-profit"
-            :class="e.result.profit >= 0 ? 'invest-profit' : 'invest-loss'">
+          <span class="invest-history-profit" :class="e.result.profit >= 0 ? 'invest-profit' : 'invest-loss'">
             {{ e.result.profit >= 0 ? '+' : '' }}¥{{ e.result.profit.toFixed(2) }}
           </span>
-          <span
-            class="invest-history-rate"
-            :class="e.result.returnRate >= 0 ? 'invest-profit' : 'invest-loss'">
+          <span class="invest-history-rate" :class="e.result.returnRate >= 0 ? 'invest-profit' : 'invest-loss'">
             {{ (e.result.returnRate * 100).toFixed(2) }}%
           </span>
           <span class="material-symbols-outlined invest-history-chevron">chevron_right</span>
@@ -85,7 +82,7 @@ function formatRunAt(iso: string): string {
 <style scoped>
 .invest-history-titles {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: flex-start;
   gap: 2px;
   min-width: 0;
@@ -120,7 +117,9 @@ function formatRunAt(iso: string): string {
   background: rgba(255, 255, 255, 0.03);
   color: inherit;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
 }
 .invest-history-row:hover {
   background: rgba(255, 255, 255, 0.06);
