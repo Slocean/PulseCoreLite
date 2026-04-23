@@ -332,18 +332,20 @@
   font-size: 13px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.92);
+  text-align: center;
 }
 
 .invest-summary-fund {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.5);
   margin-top: -4px;
+  text-align: center;
 }
 
 .invest-metrics {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px 10px;
 }
 
 .invest-metric {
@@ -379,8 +381,7 @@
 }
 
 .invest-table-wrap {
-  overflow-x: auto;
-  max-height: 200px;
+  max-height: 280px;
   overflow-y: auto;
 }
 
@@ -388,33 +389,49 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 11px;
+  table-layout: fixed;
 }
+
+/* 420px 窗口内容区约 396px，去掉 card/panel padding 约 372px
+   col: date 90px | tags 85px | nav 68px | amount 90px | expand 20px ≈ 353px */
+.invest-table .col-date   { width: 90px; }
+.invest-table .col-tags   { width: 85px; }
+.invest-table .col-nav    { width: 68px; }
+.invest-table .col-amount { width: 90px; }
+.invest-table .col-expand { width: 20px; }
 
 .invest-table th {
   position: sticky;
   top: 0;
-  background: rgba(18, 22, 30, 0.95);
-  padding: 4px 8px;
+  background: rgba(18, 22, 30, 0.97);
+  padding: 5px 8px;
   text-align: right;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.42);
   font-weight: 500;
   white-space: nowrap;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.invest-table th:first-child,
-.invest-table td:first-child {
+.invest-table th.col-date,
+.invest-table th.col-tags,
+.invest-table td.col-date,
+.invest-table td.col-tags {
   text-align: left;
 }
 
-.invest-table td {
-  padding: 3px 8px;
-  text-align: right;
-  color: rgba(255, 255, 255, 0.8);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  white-space: nowrap;
+.invest-table th.col-expand,
+.invest-table td.col-expand {
+  text-align: center;
+  padding: 0;
 }
 
-.invest-table tr:hover td {
-  background: rgba(255, 255, 255, 0.02);
+.invest-table td {
+  padding: 5px 8px;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.78);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
 }

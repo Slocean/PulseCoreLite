@@ -1,4 +1,4 @@
-﻿.overlay-shell {
+.overlay-shell {
   display: inline-flex;
   align-items: flex-start;
   padding: 0;
@@ -8,7 +8,7 @@
 }
 
 .overlay-widget {
-  width: 310px;
+  width: 420px;
   max-width: none;
   padding: 0;
   position: relative;

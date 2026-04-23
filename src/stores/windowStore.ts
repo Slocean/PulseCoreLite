@@ -135,7 +135,7 @@ export const useWindowStore = defineStore('window', {
         const created = new WebviewWindow('main', {
           url: 'index.html',
           title: 'PulseCoreLite Overlay',
-          width: 340,
+          width: 400,
           height: 260,
           resizable: false,
           maximizable: false,
