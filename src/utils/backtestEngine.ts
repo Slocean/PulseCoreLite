@@ -208,7 +208,7 @@ export function runBacktest(
   const currentValue = totalShares * currentNav;
   const netInvested = totalCashIn - totalCashOut;
   const profit = currentValue - netInvested;
-  const returnRate = netInvested > 0 ? profit / netInvested : 0;
+  const returnRate = totalCashIn > 0 ? profit / totalCashIn : 0;
 
   const firstTrade = tradeRecords[0];
   const lastTrade = tradeRecords[tradeRecords.length - 1];
@@ -221,8 +221,8 @@ export function runBacktest(
   );
 
   const annualizedReturn =
-    netInvested > 0 && currentValue > 0
-      ? Math.pow(currentValue / netInvested, 365 / daysElapsed) - 1
+    totalCashIn > 0 && currentValue + totalCashOut > 0
+      ? Math.pow((currentValue + totalCashOut) / totalCashIn, 365 / daysElapsed) - 1
       : 0;
 
   // Legacy purchaseRecords (scheduled buys only) for backward compat
