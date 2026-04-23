@@ -396,26 +396,19 @@
   flex: 0 0 auto;
   width: 100%;
   box-sizing: border-box;
-  background: rgba(18, 22, 30, 0.97);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   font-size: 11px;
 }
 
 .invest-vtable-header .invest-vth {
   padding: 5px 8px;
-  text-align: right;
+  text-align: center;
   color: rgba(255, 255, 255, 0.42);
   font-weight: 500;
   white-space: nowrap;
 }
 
-.invest-vtable-header .invest-vth.col-date,
-.invest-vtable-header .invest-vth.col-tags {
-  text-align: left;
-}
-
 .invest-vtable-header .invest-vth.col-expand {
-  text-align: center;
   padding: 0;
 }
 
@@ -480,17 +473,14 @@
 .invest-table th {
   position: sticky;
   top: 0;
-  background: rgba(18, 22, 30, 0.97);
   padding: 5px 8px;
-  text-align: right;
+  text-align: center;
   color: rgba(255, 255, 255, 0.42);
   font-weight: 500;
   white-space: nowrap;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.invest-table th.col-date,
-.invest-table th.col-tags,
 .invest-table td.col-date,
 .invest-table td.col-tags {
   text-align: left;
