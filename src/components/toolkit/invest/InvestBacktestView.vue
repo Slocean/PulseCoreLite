@@ -183,6 +183,28 @@
                           <span class="invest-detail-label">{{ t('invest.colCashOut') }}</span>
                           <span class="invest-detail-value invest-profit">¥{{ rec.totalCashOut.toFixed(2) }}</span>
                         </div>
+                        <div class="invest-detail-item">
+                          <span class="invest-detail-label">{{ t('invest.colPriorNetInvested') }}</span>
+                          <span class="invest-detail-value">¥{{ priorNetInvested(rec).toFixed(2) }}</span>
+                        </div>
+                        <div class="invest-detail-item">
+                          <span class="invest-detail-label">{{ t('invest.colPriorValue') }}</span>
+                          <span class="invest-detail-value" :class="priorValue(rec) >= priorNetInvested(rec) ? 'invest-profit' : 'invest-loss'">
+                            ¥{{ priorValue(rec).toFixed(2) }}
+                          </span>
+                        </div>
+                        <div class="invest-detail-item">
+                          <span class="invest-detail-label">{{ t('invest.colHoldingProfit') }}</span>
+                          <span class="invest-detail-value" :class="holdingProfit(rec) >= 0 ? 'invest-profit' : 'invest-loss'">
+                            {{ holdingProfit(rec) >= 0 ? '+' : '' }}¥{{ holdingProfit(rec).toFixed(2) }}
+                          </span>
+                        </div>
+                        <div class="invest-detail-item">
+                          <span class="invest-detail-label">{{ t('invest.colHoldingProfitRate') }}</span>
+                          <span class="invest-detail-value" :class="holdingProfitRate(rec) >= 0 ? 'invest-profit' : 'invest-loss'">
+                            {{ holdingProfitRate(rec) >= 0 ? '+' : '' }}{{ holdingProfitRate(rec).toFixed(2) }}%
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </template>
@@ -281,7 +303,7 @@ const rowVirtualizer = useVirtualizer(
       if (!rec) {
         return 40;
       }
-      return expandedRows.value[rowKey(rec)] ? 96 : 40;
+      return expandedRows.value[rowKey(rec)] ? 160 : 40;
     },
     overscan: 10,
     getItemKey: (index: number) => {
@@ -356,6 +378,31 @@ function ruleTradeCount(r: BacktestResult): number {
     return r.tradeRecords.filter(rec => rec.triggerType === 'rule').length;
   }
   return 0;
+}
+
+/** Net invested before this trade (excludes this trade's amount) */
+function priorNetInvested(rec: TradeRecord): number {
+  const net = rec.totalCashIn - rec.totalCashOut;
+  return rec.action === 'buy' ? net - rec.amount : net + rec.amount;
+}
+
+/** Portfolio market value before this trade, priced at this record's NAV */
+function priorValue(rec: TradeRecord): number {
+  const priorShares = rec.action === 'buy' ? rec.totalShares - rec.shares : rec.totalShares + rec.shares;
+  return priorShares * rec.nav;
+}
+
+/** Holding profit after this trade: market value - net invested */
+function holdingProfit(rec: TradeRecord): number {
+  const net = rec.totalCashIn - rec.totalCashOut;
+  return rec.totalShares * rec.nav - net;
+}
+
+/** Holding profit rate (%) after this trade */
+function holdingProfitRate(rec: TradeRecord): number {
+  const net = rec.totalCashIn - rec.totalCashOut;
+  if (net <= 0) return 0;
+  return (holdingProfit(rec) / net) * 100;
 }
 </script>
 

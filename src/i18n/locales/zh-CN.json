@@ -669,6 +669,10 @@
     "rulePctUnit": "%",
     "metricCashIn": "累计买入",
     "metricCashOut": "累计卖出",
-    "metricRuleTrades": "规则触发"
+    "metricRuleTrades": "规则触发",
+    "colPriorNetInvested": "当前投入（不含本笔）",
+    "colPriorValue": "当前总资金（不含本笔）",
+    "colHoldingProfit": "持有收益",
+    "colHoldingProfitRate": "持有收益率"
   }
 }

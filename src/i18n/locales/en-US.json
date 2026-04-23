@@ -669,6 +669,10 @@
     "rulePctUnit": "%",
     "metricCashIn": "Total Bought",
     "metricCashOut": "Total Sold",
-    "metricRuleTrades": "Rule Trades"
+    "metricRuleTrades": "Rule Trades",
+    "colPriorNetInvested": "Net Invested (excl. this)",
+    "colPriorValue": "Total Assets (excl. this)",
+    "colHoldingProfit": "Holding Profit",
+    "colHoldingProfitRate": "Holding Return"
   }
 }
