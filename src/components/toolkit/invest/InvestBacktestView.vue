@@ -21,16 +21,18 @@
     <template v-else-if="results.length > 0">
       <UiCollapsiblePanel
         class="toolkit-card invest-backtest-section"
-        :title="summaryPanelTitle"
+        :title="summaryHeaderTitle"
         v-model="summaryOpen"
         single-header-preset="toolkit-collapse"
-        title-class="toolkit-section-title"
+        title-class="toolkit-section-title invest-backtest-header-title"
         indicator-class="toolkit-collapse-indicator"
         @toggle="onPanelToggle">
         <div class="invest-summary-grid">
           <div v-for="r in results" :key="r.strategyId" class="invest-summary-block">
-            <div class="invest-summary-name">{{ r.strategyName }}</div>
-            <div class="invest-summary-fund">{{ r.fundCode }}<template v-if="r.fundName"> · {{ r.fundName }}</template></div>
+            <template v-if="results.length > 1">
+              <div class="invest-summary-name">{{ r.strategyName }}</div>
+              <div class="invest-summary-fund">{{ r.fundCode }}<template v-if="r.fundName"> · {{ r.fundName }}</template></div>
+            </template>
 
             <div class="invest-metrics">
               <div class="invest-metric">
@@ -218,9 +220,16 @@ const title = computed(() =>
   props.mode === 'compare' ? t('invest.compareTitle') : t('invest.backtestTitle')
 );
 
-const summaryPanelTitle = computed(() =>
-  props.mode === 'compare' ? t('invest.compareTitle') : t('invest.backtestMetricsPanel')
-);
+/** 单条结果时：与「回测指标 / 策略对比」同一行展示策略名与基金；多条时仅在正文展示 */
+const summaryHeaderTitle = computed(() => {
+  if (props.results.length !== 1) {
+    return props.mode === 'compare' ? t('invest.compareTitle') : t('invest.backtestMetricsPanel');
+  }
+  const r = props.results[0]!;
+  const base = props.mode === 'compare' ? t('invest.compareTitle') : t('invest.backtestMetricsPanel');
+  const fundLine = r.fundName ? `${r.fundCode} · ${r.fundName}` : r.fundCode;
+  return `${base} · ${r.strategyName} · ${fundLine}`;
+});
 
 const summaryOpen = ref(true);
 const purchasesOpen = ref(true);

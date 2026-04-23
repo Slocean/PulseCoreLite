@@ -329,6 +329,25 @@
   min-width: 0;
 }
 
+/* 标题行：回测指标 / 策略对比 与 策略名、基金同一行，过长省略 */
+.invest-backtest-section :where(.ui-button--preset-toolkit-collapse) {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.invest-backtest-header-title {
+  text-transform: none;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .invest-summary-block {
   display: grid;
   gap: 8px;
