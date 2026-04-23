@@ -97,17 +97,22 @@
           class="toolkit-card invest-purchases-panel"
           :title="t('invest.purchaseHistory')"
           v-model="purchasesOpen"
-          single-header-preset="toolkit-collapse"
+          header-mode="split"
+          header-class="toolkit-section-header"
+          split-title-preset="toolkit-collapse-title"
+          split-toggle-preset="toolkit-collapse-icon"
           title-class="toolkit-section-title"
           indicator-class="toolkit-collapse-indicator"
           @toggle="onPanelToggle">
+          <template #header-actions>
+            <span class="invest-purchases-hint">{{ t('invest.purchaseRowExpandHint') }}</span>
+          </template>
           <div class="invest-vtable">
-            <div class="invest-vtable-header invest-vtable-grid">
+            <div class="invest-vtable-header invest-vtable-grid invest-vtable-grid--4">
               <div class="invest-vth col-date">{{ t('invest.colDate') }}</div>
               <div class="invest-vth col-tags">{{ t('invest.colAction') }}</div>
               <div class="invest-vth col-nav">{{ t('invest.colNav') }}</div>
               <div class="invest-vth col-amount">{{ t('invest.colAmount') }}</div>
-              <div class="invest-vth col-expand"></div>
             </div>
             <div ref="purchaseScrollEl" class="invest-table-wrap invest-vtable-body">
               <div
@@ -132,7 +137,7 @@
                   }">
                   <template v-for="rec in tupleRecord(vRow)" :key="rowKey(rec)">
                     <div
-                      class="invest-row invest-row--clickable invest-vtable-grid invest-vtable-cells"
+                      class="invest-row invest-row--clickable invest-vtable-grid invest-vtable-grid--4 invest-vtable-cells"
                       :class="[
                         rec.action === 'sell' ? 'invest-row--sell' : 'invest-row--buy',
                         expandedRows[rowKey(rec)] ? 'invest-row--expanded' : ''
@@ -152,11 +157,6 @@
                       <div class="col-nav">{{ rec.nav.toFixed(4) }}</div>
                       <div class="col-amount" :class="rec.action === 'buy' ? 'invest-loss' : 'invest-profit'">
                         {{ rec.action === 'buy' ? '-' : '+' }}¥{{ rec.amount.toFixed(2) }}
-                      </div>
-                      <div class="col-expand">
-                        <span class="material-symbols-outlined invest-expand-icon">
-                          {{ expandedRows[rowKey(rec)] ? 'expand_less' : 'expand_more' }}
-                        </span>
                       </div>
                     </div>
                     <div v-if="expandedRows[rowKey(rec)]" class="invest-row--detail invest-vtable-detail">
@@ -391,18 +391,6 @@ function ruleTradeCount(r: BacktestResult): number {
   background: rgba(0, 242, 255, 0.08);
   color: rgba(0, 242, 255, 0.7);
   border-color: rgba(0, 242, 255, 0.2);
-}
-
-/* ── 展开图标 ── */
-.invest-expand-icon {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.3);
-  line-height: 1;
-  vertical-align: middle;
-  transition: color 0.12s;
-}
-.invest-row--clickable:hover .invest-expand-icon {
-  color: rgba(255, 255, 255, 0.6);
 }
 
 /* ── 展开详情行 ── */

@@ -629,6 +629,7 @@
     "metricPurchases": "买入次数",
     "metricCurrentNav": "最新净值",
     "purchaseHistory": "买入记录",
+    "purchaseRowExpandHint": "点击行可展开详情",
     "colDate": "日期",
     "colNav": "净值",
     "colAmount": "买入金额",

@@ -417,6 +417,20 @@
   min-width: 0;
 }
 
+/* 标题行：买入记录 | 说明 | 折叠；说明靠右、窄屏可省略 */
+.invest-purchases-hint {
+  display: block;
+  font-size: 10px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.42);
+  text-align: right;
+  min-width: 0;
+  max-width: min(220px, 46vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .invest-table-wrap {
   max-height: 280px;
   overflow-y: auto;
@@ -445,10 +459,6 @@
   white-space: nowrap;
 }
 
-.invest-vtable-header .invest-vth.col-expand {
-  padding: 0;
-}
-
 .invest-vtable-body {
   flex: 1 1 auto;
   min-height: 0;
@@ -459,6 +469,10 @@
   grid-template-columns: 90px 85px 68px 90px 20px;
   width: 100%;
   box-sizing: border-box;
+}
+
+.invest-vtable-grid--4 {
+  grid-template-columns: 90px 85px minmax(0, 1fr) 90px;
 }
 
 .invest-vtable-cells > div {
@@ -476,11 +490,6 @@
 .invest-vtable-cells > .col-date,
 .invest-vtable-cells > .col-tags {
   text-align: left;
-}
-
-.invest-vtable-cells > .col-expand {
-  text-align: center;
-  padding: 0;
 }
 
 .invest-vtable-virtual-row {
@@ -504,7 +513,6 @@
 .invest-table .col-tags   { width: 85px; }
 .invest-table .col-nav    { width: 68px; }
 .invest-table .col-amount { width: 90px; }
-.invest-table .col-expand { width: 20px; }
 
 .invest-table th {
   position: sticky;
@@ -520,12 +528,6 @@
 .invest-table td.col-date,
 .invest-table td.col-tags {
   text-align: left;
-}
-
-.invest-table th.col-expand,
-.invest-table td.col-expand {
-  text-align: center;
-  padding: 0;
 }
 
 .invest-table td {

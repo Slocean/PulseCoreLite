@@ -629,6 +629,7 @@
     "metricPurchases": "Purchases",
     "metricCurrentNav": "Latest NAV",
     "purchaseHistory": "Purchase History",
+    "purchaseRowExpandHint": "Click a row to expand details",
     "colDate": "Date",
     "colNav": "NAV",
     "colAmount": "Amount",
