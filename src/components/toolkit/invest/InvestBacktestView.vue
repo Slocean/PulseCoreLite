@@ -400,8 +400,8 @@ function ruleTradeCount(r: BacktestResult): number {
 .invest-detail-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 16px;
-  padding: 6px 10px 8px;
+  gap: 4px 12px;
+  padding: 6px 8px 8px;
   background: rgba(255, 255, 255, 0.025);
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
