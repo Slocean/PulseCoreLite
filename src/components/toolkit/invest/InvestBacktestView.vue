@@ -19,73 +19,86 @@
     </div>
 
     <template v-else-if="results.length > 0">
-      <div class="invest-summary-grid">
-        <div v-for="r in results" :key="r.strategyId" class="invest-summary-card">
-          <div class="invest-summary-name">{{ r.strategyName }}</div>
-          <div class="invest-summary-fund">{{ r.fundCode }}<template v-if="r.fundName"> · {{ r.fundName }}</template></div>
+      <UiCollapsiblePanel
+        class="toolkit-card invest-backtest-section"
+        :title="summaryPanelTitle"
+        v-model="summaryOpen"
+        single-header-preset="toolkit-collapse"
+        title-class="toolkit-section-title"
+        indicator-class="toolkit-collapse-indicator"
+        @toggle="onPanelToggle">
+        <div class="invest-summary-grid">
+          <div v-for="r in results" :key="r.strategyId" class="invest-summary-block">
+            <div class="invest-summary-name">{{ r.strategyName }}</div>
+            <div class="invest-summary-fund">{{ r.fundCode }}<template v-if="r.fundName"> · {{ r.fundName }}</template></div>
 
-          <div class="invest-metrics">
-            <div class="invest-metric">
-              <span class="invest-metric-label">{{ t('invest.metricInvested') }}</span>
-              <span class="invest-metric-value">¥{{ r.totalInvested.toFixed(2) }}</span>
-            </div>
-            <div class="invest-metric">
-              <span class="invest-metric-label">{{ t('invest.metricCashIn') }}</span>
-              <span class="invest-metric-value">¥{{ totalCashIn(r).toFixed(2) }}</span>
-            </div>
-            <div v-if="totalCashOut(r) > 0" class="invest-metric">
-              <span class="invest-metric-label">{{ t('invest.metricCashOut') }}</span>
-              <span class="invest-metric-value invest-profit">¥{{ totalCashOut(r).toFixed(2) }}</span>
-            </div>
-            <div class="invest-metric">
-              <span class="invest-metric-label">{{ t('invest.metricValue') }}</span>
-              <span class="invest-metric-value" :class="r.profit >= 0 ? 'invest-profit' : 'invest-loss'">
-                ¥{{ r.currentValue.toFixed(2) }}
-              </span>
-            </div>
-            <div class="invest-metric">
-              <span class="invest-metric-label">{{ t('invest.metricProfit') }}</span>
-              <span class="invest-metric-value" :class="r.profit >= 0 ? 'invest-profit' : 'invest-loss'">
-                {{ r.profit >= 0 ? '+' : '' }}¥{{ r.profit.toFixed(2) }}
-              </span>
-            </div>
-            <div class="invest-metric">
-              <span class="invest-metric-label">{{ t('invest.metricReturn') }}</span>
-              <span class="invest-metric-value" :class="r.returnRate >= 0 ? 'invest-profit' : 'invest-loss'">
-                {{ (r.returnRate * 100).toFixed(2) }}%
-              </span>
-            </div>
-            <div class="invest-metric">
-              <span class="invest-metric-label">{{ t('invest.metricAnnualized') }}</span>
-              <span class="invest-metric-value" :class="r.annualizedReturn >= 0 ? 'invest-profit' : 'invest-loss'">
-                {{ (r.annualizedReturn * 100).toFixed(2) }}%
-              </span>
-            </div>
-            <div class="invest-metric">
-              <span class="invest-metric-label">{{ t('invest.metricDays') }}</span>
-              <span class="invest-metric-value">{{ r.daysElapsed }}</span>
-            </div>
-            <div class="invest-metric">
-              <span class="invest-metric-label">{{ t('invest.metricPurchases') }}</span>
-              <span class="invest-metric-value">{{ buyCount(r) }}</span>
-            </div>
-            <div v-if="ruleTradeCount(r) > 0" class="invest-metric">
-              <span class="invest-metric-label">{{ t('invest.metricRuleTrades') }}</span>
-              <span class="invest-metric-value">{{ ruleTradeCount(r) }}</span>
-            </div>
-            <div class="invest-metric">
-              <span class="invest-metric-label">{{ t('invest.metricCurrentNav') }}</span>
-              <span class="invest-metric-value">{{ r.currentNav.toFixed(4) }}</span>
+            <div class="invest-metrics">
+              <div class="invest-metric">
+                <span class="invest-metric-label">{{ t('invest.metricInvested') }}</span>
+                <span class="invest-metric-value">¥{{ r.totalInvested.toFixed(2) }}</span>
+              </div>
+              <div class="invest-metric">
+                <span class="invest-metric-label">{{ t('invest.metricCashIn') }}</span>
+                <span class="invest-metric-value">¥{{ totalCashIn(r).toFixed(2) }}</span>
+              </div>
+              <div v-if="totalCashOut(r) > 0" class="invest-metric">
+                <span class="invest-metric-label">{{ t('invest.metricCashOut') }}</span>
+                <span class="invest-metric-value invest-profit">¥{{ totalCashOut(r).toFixed(2) }}</span>
+              </div>
+              <div class="invest-metric">
+                <span class="invest-metric-label">{{ t('invest.metricValue') }}</span>
+                <span class="invest-metric-value" :class="r.profit >= 0 ? 'invest-profit' : 'invest-loss'">
+                  ¥{{ r.currentValue.toFixed(2) }}
+                </span>
+              </div>
+              <div class="invest-metric">
+                <span class="invest-metric-label">{{ t('invest.metricProfit') }}</span>
+                <span class="invest-metric-value" :class="r.profit >= 0 ? 'invest-profit' : 'invest-loss'">
+                  {{ r.profit >= 0 ? '+' : '' }}¥{{ r.profit.toFixed(2) }}
+                </span>
+              </div>
+              <div class="invest-metric">
+                <span class="invest-metric-label">{{ t('invest.metricReturn') }}</span>
+                <span class="invest-metric-value" :class="r.returnRate >= 0 ? 'invest-profit' : 'invest-loss'">
+                  {{ (r.returnRate * 100).toFixed(2) }}%
+                </span>
+              </div>
+              <div class="invest-metric">
+                <span class="invest-metric-label">{{ t('invest.metricAnnualized') }}</span>
+                <span class="invest-metric-value" :class="r.annualizedReturn >= 0 ? 'invest-profit' : 'invest-loss'">
+                  {{ (r.annualizedReturn * 100).toFixed(2) }}%
+                </span>
+              </div>
+              <div class="invest-metric">
+                <span class="invest-metric-label">{{ t('invest.metricDays') }}</span>
+                <span class="invest-metric-value">{{ r.daysElapsed }}</span>
+              </div>
+              <div class="invest-metric">
+                <span class="invest-metric-label">{{ t('invest.metricPurchases') }}</span>
+                <span class="invest-metric-value">{{ buyCount(r) }}</span>
+              </div>
+              <div v-if="ruleTradeCount(r) > 0" class="invest-metric">
+                <span class="invest-metric-label">{{ t('invest.metricRuleTrades') }}</span>
+                <span class="invest-metric-value">{{ ruleTradeCount(r) }}</span>
+              </div>
+              <div class="invest-metric">
+                <span class="invest-metric-label">{{ t('invest.metricCurrentNav') }}</span>
+                <span class="invest-metric-value">{{ r.currentNav.toFixed(4) }}</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </UiCollapsiblePanel>
 
       <template v-if="isBacktest && results[0]">
         <UiCollapsiblePanel
           class="toolkit-card invest-purchases-panel"
           :title="t('invest.purchaseHistory')"
-          title-class="toolkit-section-title">
+          v-model="purchasesOpen"
+          single-header-preset="toolkit-collapse"
+          title-class="toolkit-section-title"
+          indicator-class="toolkit-collapse-indicator"
+          @toggle="onPanelToggle">
           <div class="invest-vtable">
             <div class="invest-vtable-header invest-vtable-grid">
               <div class="invest-vth col-date">{{ t('invest.colDate') }}</div>
@@ -194,6 +207,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'back'): void;
+  (e: 'contentChange'): void;
 }>();
 
 const { t } = useI18n();
@@ -203,6 +217,17 @@ const isBacktest = computed(() => props.mode === 'backtest');
 const title = computed(() =>
   props.mode === 'compare' ? t('invest.compareTitle') : t('invest.backtestTitle')
 );
+
+const summaryPanelTitle = computed(() =>
+  props.mode === 'compare' ? t('invest.compareTitle') : t('invest.backtestMetricsPanel')
+);
+
+const summaryOpen = ref(true);
+const purchasesOpen = ref(true);
+
+function onPanelToggle() {
+  emit('contentChange');
+}
 
 const expandedRows = ref<Record<string, boolean>>({});
 

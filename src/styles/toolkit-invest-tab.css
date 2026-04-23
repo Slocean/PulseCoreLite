@@ -324,16 +324,24 @@
   min-width: 0;
 }
 
-.invest-summary-card {
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.2);
-  padding: 10px 12px;
+/* 外层与硬件分析一致：由 .toolkit-card 提供圆角与边框，此处仅内层版式 */
+.invest-backtest-section {
+  min-width: 0;
+}
+
+.invest-summary-block {
   display: grid;
   gap: 8px;
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
+  padding: 0 2px 2px;
+}
+
+.invest-summary-block + .invest-summary-block {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .invest-summary-name {

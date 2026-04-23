@@ -617,6 +617,7 @@
     "errorNoNavData": "No historical NAV data found. Please check the fund code.",
     "errorCompareMin": "Please select at least 2 strategies to compare",
     "backtestTitle": "Backtest Result",
+    "backtestMetricsPanel": "Result metrics",
     "compareTitle": "Strategy Comparison",
     "loading": "Fetching data...",
     "metricInvested": "Total Invested",
