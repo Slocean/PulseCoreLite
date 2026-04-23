@@ -1804,87 +1804,107 @@ pub async fn fetch_fund_history(
     end_date: String,
 ) -> CmdResult<Vec<FundNavRecord>> {
     let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(15))
+        .timeout(std::time::Duration::from_secs(20))
         .build()
         .map_err(|e| e.to_string())?;
 
+    // Use DanJuan (蛋卷基金) API — returns pages in descending date order
+    // Paginate until all items are older than start_date
+    let page_size = 50usize;
+    let mut page = 0usize;
     let mut all_records: Vec<FundNavRecord> = Vec::new();
-    let page_size = 49;
-    let mut page = 1usize;
 
     loop {
         let url = format!(
-            "https://api.fund.eastmoney.com/f10/lsjz?fundCode={}&page={}&pageSize={}&startDate={}&endDate={}",
-            fund_code, page, page_size, start_date, end_date
+            "https://danjuanfunds.com/djapi/fund/nav/history/{}?size={}&page={}",
+            fund_code, page_size, page
         );
 
         let resp = client
             .get(&url)
-            .header("Referer", "https://fund.eastmoney.com/")
-            .header("User-Agent", "Mozilla/5.0")
+            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+            .header("Referer", "https://danjuanfunds.com/")
+            .header("Accept", "application/json, text/plain, */*")
             .send()
             .await
             .map_err(|e| e.to_string())?;
 
-        let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
-
-        // If the API signals an error via ErrCode, surface the message
-        let err_code = body.get("ErrCode").and_then(|v| v.as_i64()).unwrap_or(0);
-        if err_code != 0 {
-            let msg = body
-                .get("ErrMsg")
-                .and_then(|v| v.as_str())
-                .unwrap_or("unknown API error");
-            return Err(msg.to_string());
+        if !resp.status().is_success() {
+            break;
         }
 
-        // Data or LSJZList may be absent / null when there is no history
-        let records = match body
-            .get("Data")
-            .and_then(|d| d.get("LSJZList"))
+        let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
+
+        // result_code != 0 means API-level error
+        let result_code = body.get("result_code").and_then(|v| v.as_i64()).unwrap_or(0);
+        if result_code != 0 {
+            break;
+        }
+
+        let items = match body
+            .get("data")
+            .and_then(|d| d.get("items"))
             .and_then(|v| v.as_array())
         {
             Some(arr) => arr,
             None => break,
         };
 
-        if records.is_empty() {
+        if items.is_empty() {
             break;
         }
 
-        for item in records {
+        let total_pages = body
+            .get("data")
+            .and_then(|d| d.get("total_pages"))
+            .and_then(|v| v.as_u64())
+            .unwrap_or(1) as usize;
+
+        let mut reached_start = false;
+
+        for item in items {
             let date = item
-                .get("FSRQ")
+                .get("date")
                 .and_then(|v| v.as_str())
                 .unwrap_or("")
                 .to_string();
+
+            if date.is_empty() {
+                continue;
+            }
+            // Items arrive newest-first; stop collecting once past start_date
+            if date.as_str() < start_date.as_str() {
+                reached_start = true;
+                break;
+            }
+            // Skip items newer than end_date
+            if date.as_str() > end_date.as_str() {
+                continue;
+            }
+
             let nav = item
-                .get("DWJZ")
+                .get("nav")
                 .and_then(|v| v.as_str())
                 .and_then(|s| s.parse::<f64>().ok())
                 .unwrap_or(0.0);
             let acc_nav = item
-                .get("LJJZ")
+                .get("value")
                 .and_then(|v| v.as_str())
                 .and_then(|s| s.parse::<f64>().ok())
-                .unwrap_or(0.0);
+                .unwrap_or(nav);
 
-            if !date.is_empty() && nav > 0.0 {
+            if nav > 0.0 {
                 all_records.push(FundNavRecord { date, nav, acc_nav });
             }
         }
 
-        let total_count = body
-            .get("TotalCount")
-            .and_then(|v| v.as_i64())
-            .unwrap_or(0) as usize;
-
-        if all_records.len() >= total_count || records.len() < page_size {
+        if reached_start || page + 1 >= total_pages {
             break;
         }
         page += 1;
     }
 
+    // Sort ascending by date for the backtest engine
     all_records.sort_by(|a, b| a.date.cmp(&b.date));
 
     Ok(all_records)

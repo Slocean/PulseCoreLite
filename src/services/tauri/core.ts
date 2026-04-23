@@ -40,19 +40,23 @@ function setupTauriCallbackGuard() {
     sessionStorage.removeItem(tauriCallbackStorageKey);
   }
 
-  internals.transformCallback = (callback: (...args: unknown[]) => unknown, once = false) => {
-    const id = transformCallback(callback, once);
-    pendingCallbacks.add(id);
-    const key = `_${id}`;
-    const original = windowRecord[key];
-    if (typeof original === 'function') {
-      windowRecord[key] = (...args: unknown[]) => {
-        pendingCallbacks.delete(id);
-        return (original as (...inner: unknown[]) => unknown)(...args);
-      };
-    }
-    return id;
-  };
+  try {
+    internals.transformCallback = (callback: (...args: unknown[]) => unknown, once = false) => {
+      const id = transformCallback(callback, once);
+      pendingCallbacks.add(id);
+      const key = `_${id}`;
+      const original = windowRecord[key];
+      if (typeof original === 'function') {
+        windowRecord[key] = (...args: unknown[]) => {
+          pendingCallbacks.delete(id);
+          return (original as (...inner: unknown[]) => unknown)(...args);
+        };
+      }
+      return id;
+    };
+  } catch {
+    // __TAURI_INTERNALS__ is frozen in newer Tauri versions; skip the guard
+  }
 
   const storePendingCallbacks = () => {
     if (!pendingCallbacks.size) return;
