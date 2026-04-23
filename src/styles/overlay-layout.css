@@ -8,7 +8,7 @@
 }
 
 .overlay-widget {
-  width: 420px;
+  width: var(--pulse-main-window-width, 420px);
   max-width: none;
   padding: 0;
   position: relative;

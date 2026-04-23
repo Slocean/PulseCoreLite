@@ -4,8 +4,8 @@
   "version": "1.9.1",
   "identifier": "com.pulsecore.app",
   "build": {
-    "beforeDevCommand": "npm run sync:tauri-version && npm run dev",
-    "beforeBuildCommand": "npm run sync:tauri-version && npm run build",
+    "beforeDevCommand": "npm run sync:tauri-version && npm run sync:window-size && npm run dev",
+    "beforeBuildCommand": "npm run sync:tauri-version && npm run sync:window-size && npm run build",
     "devUrl": "http://localhost:9000",
     "frontendDist": "../dist"
   },
@@ -15,7 +15,7 @@
         "label": "main",
         "title": "PulseCoreLite Overlay",
         "url": "index.html",
-        "width": 400,
+        "width": 420,
         "height": 260,
         "resizable": false,
         "maximizable": false,

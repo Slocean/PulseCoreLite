@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 
+import { MAIN_WINDOW_HEIGHT, MAIN_WINDOW_WIDTH } from '../config';
 import { api, inTauri } from '../services/tauri';
 import { storageKeys, storageRepository } from '../services/storageRepository';
 import type { AppSettings } from '../types';
@@ -135,8 +136,8 @@ export const useWindowStore = defineStore('window', {
         const created = new WebviewWindow('main', {
           url: 'index.html',
           title: 'PulseCoreLite Overlay',
-          width: 400,
-          height: 260,
+          width: MAIN_WINDOW_WIDTH,
+          height: MAIN_WINDOW_HEIGHT,
           resizable: false,
           maximizable: false,
           minimizable: true,

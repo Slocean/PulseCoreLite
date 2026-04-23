@@ -462,8 +462,7 @@
   table-layout: fixed;
 }
 
-/* 420px 窗口内容区约 396px，去掉 card/panel padding 约 372px
-   col: date 90px | tags 85px | nav 68px | amount 90px | expand 20px ≈ 353px */
+/* 主窗宽度由 src/config MAIN_WINDOW_WIDTH 与 --pulse-main-window-width 决定；列宽按常见内容区估算 */
 .invest-table .col-date   { width: 90px; }
 .invest-table .col-tags   { width: 85px; }
 .invest-table .col-nav    { width: 68px; }
