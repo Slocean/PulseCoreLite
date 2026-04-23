@@ -31,6 +31,7 @@
     "@fontsource/inter": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@fontsource/material-symbols-outlined": "^5.2.34",
+    "@tanstack/vue-virtual": "^3.13.24",
     "@tauri-apps/api": "2.5.0",
     "@tauri-apps/plugin-dialog": "^2.0.0",
     "@tauri-apps/plugin-process": "^2.0.0",

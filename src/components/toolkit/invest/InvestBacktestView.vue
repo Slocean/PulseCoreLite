@@ -86,49 +86,65 @@
           class="toolkit-card invest-purchases-panel"
           :title="t('invest.purchaseHistory')"
           title-class="toolkit-section-title">
-          <div class="invest-table-wrap">
-            <table class="invest-table">
-              <thead>
-                <tr>
-                  <th class="col-date">{{ t('invest.colDate') }}</th>
-                  <th class="col-tags">{{ t('invest.colAction') }}</th>
-                  <th class="col-nav">{{ t('invest.colNav') }}</th>
-                  <th class="col-amount">{{ t('invest.colAmount') }}</th>
-                  <th class="col-expand"></th>
-                </tr>
-              </thead>
-              <tbody>
-                <template v-for="rec in results[0].tradeRecords" :key="rowKey(rec)">
-                  <!-- 主行：点击展开/收起 -->
-                  <tr
-                    class="invest-row invest-row--clickable"
-                    :class="[
-                      rec.action === 'sell' ? 'invest-row--sell' : 'invest-row--buy',
-                      expandedRows[rowKey(rec)] ? 'invest-row--expanded' : ''
-                    ]"
-                    @click="toggleRow(rowKey(rec))">
-                    <td class="col-date">{{ rec.date }}</td>
-                    <td class="col-tags">
-                      <span :class="rec.action === 'buy' ? 'invest-tag--buy' : 'invest-tag--sell'">
-                        {{ rec.action === 'buy' ? t('invest.actionBuy') : t('invest.actionSell') }}
-                      </span>
-                      <span class="invest-trigger-badge" :class="rec.triggerType === 'rule' ? 'invest-trigger-badge--rule' : ''">
-                        {{ rec.triggerType === 'rule' ? t('invest.triggerRule') : t('invest.triggerScheduled') }}
-                      </span>
-                    </td>
-                    <td class="col-nav">{{ rec.nav.toFixed(4) }}</td>
-                    <td class="col-amount" :class="rec.action === 'buy' ? 'invest-loss' : 'invest-profit'">
-                      {{ rec.action === 'buy' ? '-' : '+' }}¥{{ rec.amount.toFixed(2) }}
-                    </td>
-                    <td class="col-expand">
-                      <span class="material-symbols-outlined invest-expand-icon">
-                        {{ expandedRows[rowKey(rec)] ? 'expand_less' : 'expand_more' }}
-                      </span>
-                    </td>
-                  </tr>
-                  <!-- 展开详情行 -->
-                  <tr v-if="expandedRows[rowKey(rec)]" class="invest-row--detail">
-                    <td colspan="5">
+          <div class="invest-vtable">
+            <div class="invest-vtable-header invest-vtable-grid">
+              <div class="invest-vth col-date">{{ t('invest.colDate') }}</div>
+              <div class="invest-vth col-tags">{{ t('invest.colAction') }}</div>
+              <div class="invest-vth col-nav">{{ t('invest.colNav') }}</div>
+              <div class="invest-vth col-amount">{{ t('invest.colAmount') }}</div>
+              <div class="invest-vth col-expand"></div>
+            </div>
+            <div ref="purchaseScrollEl" class="invest-table-wrap invest-vtable-body">
+              <div
+                class="invest-vtable-phantom"
+                :style="{
+                  height: `${rowVirtualizer.getTotalSize()}px`,
+                  position: 'relative',
+                  width: '100%'
+                }">
+                <div
+                  v-for="vRow in virtualRows"
+                  :key="String(vRow.key)"
+                  :data-index="vRow.index"
+                  :ref="purchaseRowMeasureRef"
+                  class="invest-vtable-virtual-row"
+                  :style="{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${vRow.start}px)`
+                  }">
+                  <template v-for="rec in tupleRecord(vRow)" :key="rowKey(rec)">
+                    <div
+                      class="invest-row invest-row--clickable invest-vtable-grid invest-vtable-cells"
+                      :class="[
+                        rec.action === 'sell' ? 'invest-row--sell' : 'invest-row--buy',
+                        expandedRows[rowKey(rec)] ? 'invest-row--expanded' : ''
+                      ]"
+                      @click="toggleRow(rowKey(rec))">
+                      <div class="col-date">{{ rec.date }}</div>
+                      <div class="col-tags">
+                        <span :class="rec.action === 'buy' ? 'invest-tag--buy' : 'invest-tag--sell'">
+                          {{ rec.action === 'buy' ? t('invest.actionBuy') : t('invest.actionSell') }}
+                        </span>
+                        <span
+                          class="invest-trigger-badge"
+                          :class="rec.triggerType === 'rule' ? 'invest-trigger-badge--rule' : ''">
+                          {{ rec.triggerType === 'rule' ? t('invest.triggerRule') : t('invest.triggerScheduled') }}
+                        </span>
+                      </div>
+                      <div class="col-nav">{{ rec.nav.toFixed(4) }}</div>
+                      <div class="col-amount" :class="rec.action === 'buy' ? 'invest-loss' : 'invest-profit'">
+                        {{ rec.action === 'buy' ? '-' : '+' }}¥{{ rec.amount.toFixed(2) }}
+                      </div>
+                      <div class="col-expand">
+                        <span class="material-symbols-outlined invest-expand-icon">
+                          {{ expandedRows[rowKey(rec)] ? 'expand_less' : 'expand_more' }}
+                        </span>
+                      </div>
+                    </div>
+                    <div v-if="expandedRows[rowKey(rec)]" class="invest-row--detail invest-vtable-detail">
                       <div class="invest-detail-grid">
                         <div class="invest-detail-item">
                           <span class="invest-detail-label">{{ t('invest.colShares') }}</span>
@@ -147,11 +163,11 @@
                           <span class="invest-detail-value invest-profit">¥{{ rec.totalCashOut.toFixed(2) }}</span>
                         </div>
                       </div>
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
           </div>
         </UiCollapsiblePanel>
       </template>
@@ -160,7 +176,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import type { VirtualItem } from '@tanstack/vue-virtual';
+import { useVirtualizer } from '@tanstack/vue-virtual';
+import { computed, nextTick, ref, watch, type ComponentPublicInstance } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
@@ -187,6 +205,60 @@ const title = computed(() =>
 );
 
 const expandedRows = ref<Record<string, boolean>>({});
+
+const purchaseScrollEl = ref<HTMLElement | null>(null);
+
+const backtestTradeRecords = computed<TradeRecord[]>(() => {
+  if (!isBacktest.value || !props.results[0]?.tradeRecords) {
+    return [];
+  }
+  return props.results[0].tradeRecords;
+});
+
+const rowVirtualizer = useVirtualizer(
+  computed(() => ({
+    count: backtestTradeRecords.value.length,
+    getScrollElement: () => purchaseScrollEl.value,
+    estimateSize: (index: number) => {
+      const rec = backtestTradeRecords.value[index];
+      if (!rec) {
+        return 40;
+      }
+      return expandedRows.value[rowKey(rec)] ? 96 : 40;
+    },
+    overscan: 10,
+    getItemKey: (index: number) => {
+      const rec = backtestTradeRecords.value[index];
+      return rec ? rowKey(rec) : index;
+    }
+  }))
+);
+
+const virtualRows = computed(() => rowVirtualizer.value.getVirtualItems());
+
+function purchaseRowMeasureRef(el: Element | ComponentPublicInstance | null) {
+  const node =
+    el && typeof el === 'object' && '$el' in el && (el as ComponentPublicInstance).$el instanceof Element
+      ? ((el as ComponentPublicInstance).$el as Element)
+      : (el as Element | null);
+  rowVirtualizer.value.measureElement(node);
+}
+
+function tupleRecord(vRow: VirtualItem): TradeRecord[] {
+  const r = backtestTradeRecords.value[vRow.index];
+  return r ? [r] : [];
+}
+
+watch(
+  () => props.results[0]?.tradeRecords,
+  () => {
+    expandedRows.value = {};
+    void nextTick(() => {
+      purchaseScrollEl.value?.scrollTo(0, 0);
+      rowVirtualizer.value.measure();
+    });
+  }
+);
 
 function rowKey(rec: TradeRecord): string {
   return `${rec.date}-${rec.action}-${rec.ruleId ?? 'sched'}`;
@@ -232,16 +304,22 @@ function ruleTradeCount(r: BacktestResult): number {
 
 <style scoped>
 /* ── 行颜色 ── */
-.invest-row--buy td { background: transparent; }
-.invest-row--sell td { background: rgba(255, 80, 80, 0.04); }
-.invest-row--expanded td { background: rgba(255, 255, 255, 0.03); }
+.invest-row--buy.invest-vtable-cells > * {
+  background: transparent;
+}
+.invest-row--sell.invest-vtable-cells > * {
+  background: rgba(255, 80, 80, 0.04);
+}
+.invest-row--expanded.invest-vtable-cells > * {
+  background: rgba(255, 255, 255, 0.03);
+}
 
 /* ── 可点击行 ── */
 .invest-row--clickable {
   cursor: pointer;
   transition: background 0.12s;
 }
-.invest-row--clickable:hover td {
+.invest-row--clickable:hover.invest-vtable-cells > * {
   background: rgba(255, 255, 255, 0.04) !important;
 }
 
@@ -294,9 +372,8 @@ function ruleTradeCount(r: BacktestResult): number {
 }
 
 /* ── 展开详情行 ── */
-.invest-row--detail td {
-  padding: 0 !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+.invest-row--detail {
+  padding: 0;
 }
 .invest-detail-grid {
   display: flex;

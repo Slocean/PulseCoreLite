@@ -385,6 +385,83 @@
   overflow-y: auto;
 }
 
+/* 定投回测：虚拟列表表头（与 .invest-table th 视觉对齐） */
+.invest-vtable {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.invest-vtable-header {
+  flex: 0 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(18, 22, 30, 0.97);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+}
+
+.invest-vtable-header .invest-vth {
+  padding: 5px 8px;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.42);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.invest-vtable-header .invest-vth.col-date,
+.invest-vtable-header .invest-vth.col-tags {
+  text-align: left;
+}
+
+.invest-vtable-header .invest-vth.col-expand {
+  text-align: center;
+  padding: 0;
+}
+
+.invest-vtable-body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.invest-vtable-grid {
+  display: grid;
+  grid-template-columns: 90px 85px 68px 90px 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.invest-vtable-cells > div {
+  padding: 5px 8px;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.78);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  font-size: 11px;
+}
+
+.invest-vtable-cells > .col-date,
+.invest-vtable-cells > .col-tags {
+  text-align: left;
+}
+
+.invest-vtable-cells > .col-expand {
+  text-align: center;
+  padding: 0;
+}
+
+.invest-vtable-virtual-row {
+  left: 0;
+  box-sizing: border-box;
+}
+
+.invest-vtable-detail {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
 .invest-table {
   width: 100%;
   border-collapse: collapse;
