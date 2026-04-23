@@ -1828,11 +1828,25 @@ pub async fn fetch_fund_history(
 
         let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
 
-        let records = body
+        // If the API signals an error via ErrCode, surface the message
+        let err_code = body.get("ErrCode").and_then(|v| v.as_i64()).unwrap_or(0);
+        if err_code != 0 {
+            let msg = body
+                .get("ErrMsg")
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown API error");
+            return Err(msg.to_string());
+        }
+
+        // Data or LSJZList may be absent / null when there is no history
+        let records = match body
             .get("Data")
             .and_then(|d| d.get("LSJZList"))
             .and_then(|v| v.as_array())
-            .ok_or_else(|| "invalid fund data format".to_string())?;
+        {
+            Some(arr) => arr,
+            None => break,
+        };
 
         if records.is_empty() {
             break;
