@@ -19,7 +19,8 @@ export const storageKeys = {
   reminderAllowCloseWarningDismissed: `${STORAGE_NAMESPACE}.reminder_allow_close_warning_dismissed`,
   reminderScreenPrefix: `${STORAGE_NAMESPACE}.reminder-screen.`,
   reminderClosePrefix: `${STORAGE_NAMESPACE}.reminder-close.`,
-  investStrategies: `${STORAGE_NAMESPACE}.invest_strategies`
+  investStrategies: `${STORAGE_NAMESPACE}.invest_strategies`,
+  investBacktestHistory: `${STORAGE_NAMESPACE}.invest_backtest_history`
 } as const;
 
 type StorageWriteOptions = {

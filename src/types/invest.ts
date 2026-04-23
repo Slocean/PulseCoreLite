@@ -111,3 +111,16 @@ export interface FundSearchResult {
 export interface InvestStrategyStore {
   strategies: InvestStrategy[];
 }
+
+/** One saved backtest run (IndexedDB); `result.navHistory` omitted on disk to save space */
+export interface InvestBacktestHistoryEntry {
+  id: string;
+  strategyId: string;
+  createdAt: string;
+  result: BacktestResult;
+}
+
+export interface InvestBacktestHistoryStore {
+  version: 1;
+  items: InvestBacktestHistoryEntry[];
+}

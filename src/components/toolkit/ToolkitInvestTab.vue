@@ -9,6 +9,7 @@
     @edit="startEdit"
     @delete="deleteStrategy"
     @backtest="startBacktest"
+    @backtest-records="openBacktestRecords"
     @toggle-compare="toggleCompareSelection"
     @start-compare="startCompare"
     @content-change="emit('contentChange')" />
@@ -27,13 +28,21 @@
     @select-fund="selectFund"
     @content-change="emit('contentChange')" />
 
+  <InvestBacktestHistoryList
+    v-else-if="viewMode === 'backtestHistory'"
+    :strategy-name="historyStrategyName"
+    :entries="backtestHistoryEntries"
+    :loading="backtestHistoryLoading"
+    @back="returnToList"
+    @open="openHistoryEntry" />
+
   <InvestBacktestView
     v-else-if="viewMode === 'backtest'"
     :results="backtestResult ? [backtestResult] : []"
     :loading="backtestLoading"
     :error="backtestError"
     mode="backtest"
-    @back="returnToList"
+    @back="returnFromBacktestView"
     @content-change="emit('contentChange')" />
 
   <InvestBacktestView
@@ -48,6 +57,7 @@
 
 <script setup lang="ts">
 import UiToast from '@/components/ui/Toast';
+import InvestBacktestHistoryList from './invest/InvestBacktestHistoryList.vue';
 import InvestBacktestView from './invest/InvestBacktestView.vue';
 import InvestStrategyEditor from './invest/InvestStrategyEditor.vue';
 import InvestStrategyList from './invest/InvestStrategyList.vue';
@@ -81,6 +91,12 @@ const {
   toggleCompareSelection,
   startCompare,
   onFundCodeInput,
-  selectFund
+  selectFund,
+  historyStrategyName,
+  backtestHistoryEntries,
+  backtestHistoryLoading,
+  openBacktestRecords,
+  openHistoryEntry,
+  returnFromBacktestView
 } = useInvestTabState(event => emit(event));
 </script>

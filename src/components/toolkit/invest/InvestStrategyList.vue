@@ -60,6 +60,10 @@
             <span class="invest-strategy-date">{{ s.startDate }} → {{ s.endDate || t('invest.today') }}</span>
           </div>
           <div class="invest-card-actions">
+            <UiButton native-type="button" preset="overlay-chip" @click="emit('backtestRecords', s.id)">
+              <span class="material-symbols-outlined">history</span>
+              <span>{{ t('invest.backtestRecordsBtn') }}</span>
+            </UiButton>
             <UiButton native-type="button" preset="overlay-chip" @click="emit('backtest', s.id)">
               <span class="material-symbols-outlined">analytics</span>
               <span>{{ t('invest.backtestBtn') }}</span>
@@ -95,6 +99,7 @@ const emit = defineEmits<{
   (e: 'edit', id: string): void;
   (e: 'delete', id: string): void;
   (e: 'backtest', id: string): void;
+  (e: 'backtestRecords', id: string): void;
   (e: 'toggleCompare', id: string): void;
   (e: 'startCompare'): void;
 }>();
