@@ -15,7 +15,7 @@
         "label": "main",
         "title": "PulseCoreLite Overlay",
         "url": "index.html",
-        "width": 420,
+        "width": 380,
         "height": 260,
         "resizable": false,
         "maximizable": false,

@@ -11,6 +11,18 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#app,
+.app-root {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.app-root {
+  min-height: 100vh;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -42,9 +54,5 @@ body * {
     'wght' 500,
     'GRAD' 0,
     'opsz' 24;
-}
-
-.app-root {
-  min-height: 100vh;
 }
 

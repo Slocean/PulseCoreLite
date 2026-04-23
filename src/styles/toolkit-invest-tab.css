@@ -282,6 +282,9 @@
 .invest-backtest {
   display: grid;
   gap: 8px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .invest-loading {
@@ -317,6 +320,8 @@
 .invest-summary-grid {
   display: grid;
   gap: 8px;
+  width: 100%;
+  min-width: 0;
 }
 
 .invest-summary-card {
@@ -326,6 +331,9 @@
   padding: 10px 12px;
   display: grid;
   gap: 8px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .invest-summary-name {
@@ -378,6 +386,8 @@
 
 .invest-purchases-panel {
   margin-top: 2px;
+  width: 100%;
+  min-width: 0;
 }
 
 .invest-table-wrap {
@@ -462,7 +472,7 @@
   table-layout: fixed;
 }
 
-/* 主窗宽度由 src/config MAIN_WINDOW_WIDTH 与 --pulse-main-window-width 决定；列宽按常见内容区估算 */
+/* 主窗宽度由 Tauri/ src/config 决定，内容区横向 100% 铺满；列宽按常见内容区估算 */
 .invest-table .col-date   { width: 90px; }
 .invest-table .col-tags   { width: 85px; }
 .invest-table .col-nav    { width: 68px; }

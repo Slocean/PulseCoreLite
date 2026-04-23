@@ -1,14 +1,15 @@
 .overlay-shell {
-  display: inline-flex;
-  align-items: flex-start;
+  display: block;
   padding: 0;
-  width: fit-content;
+  width: 100%;
   height: fit-content;
+  min-height: 0;
   background: transparent;
 }
 
 .overlay-widget {
-  width: var(--pulse-main-window-width, 420px);
+  width: 100%;
+  min-width: 0;
   max-width: none;
   padding: 0;
   position: relative;
