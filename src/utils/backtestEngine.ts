@@ -118,6 +118,11 @@ export function runBacktest(
 
     // Rule-based trades (each rule fires at most once per day)
     if (strategy.rules) {
+      // Current profit rate: (market value - net invested) / net invested * 100
+      const netInvestedSoFar = totalCashIn - totalCashOut;
+      const marketValue = totalShares * navRecord.nav;
+      const profitPct = netInvestedSoFar > 0 ? ((marketValue - netInvestedSoFar) / netInvestedSoFar) * 100 : 0;
+
       for (const rule of strategy.rules) {
         if (!rule.enabled) continue;
 
@@ -134,6 +139,12 @@ export function runBacktest(
             break;
           case 'daily_change_below':
             conditionMet = dailyChangePct < rule.threshold;
+            break;
+          case 'profit_pct_above':
+            conditionMet = netInvestedSoFar > 0 && profitPct > rule.threshold;
+            break;
+          case 'profit_pct_below':
+            conditionMet = netInvestedSoFar > 0 && profitPct < rule.threshold;
             break;
         }
 

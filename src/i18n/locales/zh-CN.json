@@ -658,6 +658,8 @@
     "condNavBelow": "净值低于",
     "condDailyChangeAbove": "当日涨跌幅高于",
     "condDailyChangeBelow": "当日涨跌幅低于",
+    "condProfitPctAbove": "累计盈利率高于",
+    "condProfitPctBelow": "累计盈利率低于",
     "amtAbsolute": "固定金额(¥)",
     "amtPercent": "百分比(%)",
     "ruleAmtHintBuyPct": "占当前持仓市值的百分比",

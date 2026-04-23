@@ -658,6 +658,8 @@
     "condNavBelow": "NAV below",
     "condDailyChangeAbove": "Daily change >",
     "condDailyChangeBelow": "Daily change <",
+    "condProfitPctAbove": "Profit rate >",
+    "condProfitPctBelow": "Profit rate <",
     "amtAbsolute": "Fixed (¥)",
     "amtPercent": "Percent (%)",
     "ruleAmtHintBuyPct": "% of current portfolio value",

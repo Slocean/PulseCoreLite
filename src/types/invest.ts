@@ -5,7 +5,9 @@ export type ConditionType =
   | 'nav_above'           // current NAV > threshold
   | 'nav_below'           // current NAV < threshold
   | 'daily_change_above'  // daily change % > threshold
-  | 'daily_change_below'; // daily change % < threshold
+  | 'daily_change_below'  // daily change % < threshold
+  | 'profit_pct_above'    // current profit rate % > threshold (e.g. 20 means profit > 20%)
+  | 'profit_pct_below';   // current profit rate % < threshold (e.g. -10 means loss > 10%)
 
 export type RuleAction = 'buy' | 'sell';
 
@@ -17,7 +19,7 @@ export type AmountType =
 export interface InvestRule {
   id: string;
   condition: ConditionType;
-  /** NAV value (nav_* conditions) or percentage (daily_change_* conditions) */
+  /** NAV value (nav_* conditions), percentage (daily_change_* / profit_pct_* conditions) */
   threshold: number;
   action: RuleAction;
   amountType: AmountType;

@@ -182,11 +182,11 @@
             <input
               v-model.number="rule.threshold"
               type="number"
-              step="0.001"
+              :step="isNavCondition(rule.condition) ? 0.001 : 1"
               class="invest-rule-input"
-              :placeholder="isNavCondition(rule.condition) ? '1.000' : '5'" />
+              :placeholder="getThresholdPlaceholder(rule.condition)" />
             <span class="invest-rule-unit">
-              {{ isNavCondition(rule.condition) ? t('invest.ruleNavUnit') : t('invest.rulePctUnit') }}
+              {{ getThresholdUnit(rule.condition) }}
             </span>
           </div>
 
@@ -308,7 +308,9 @@ const conditionOptions = computed(() => [
   { value: 'nav_above',          label: t('invest.condNavAbove') },
   { value: 'nav_below',          label: t('invest.condNavBelow') },
   { value: 'daily_change_above', label: t('invest.condDailyChangeAbove') },
-  { value: 'daily_change_below', label: t('invest.condDailyChangeBelow') }
+  { value: 'daily_change_below', label: t('invest.condDailyChangeBelow') },
+  { value: 'profit_pct_above',   label: t('invest.condProfitPctAbove') },
+  { value: 'profit_pct_below',   label: t('invest.condProfitPctBelow') }
 ]);
 
 const actionOptions = computed(() => [
@@ -330,6 +332,17 @@ const monthDaySelectOptions = computed(() =>
 
 function isNavCondition(cond: ConditionType): boolean {
   return cond === 'nav_above' || cond === 'nav_below';
+}
+
+function getThresholdUnit(cond: ConditionType): string {
+  return isNavCondition(cond) ? t('invest.ruleNavUnit') : t('invest.rulePctUnit');
+}
+
+function getThresholdPlaceholder(cond: ConditionType): string {
+  if (isNavCondition(cond)) return '1.000';
+  if (cond === 'profit_pct_above') return '20';
+  if (cond === 'profit_pct_below') return '-10';
+  return '5';
 }
 
 function getRuleAmountHint(rule: InvestRule): string {
