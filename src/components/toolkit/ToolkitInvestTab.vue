@@ -34,7 +34,8 @@
     :entries="backtestHistoryEntries"
     :loading="backtestHistoryLoading"
     @back="returnToList"
-    @open="openHistoryEntry" />
+    @open="openHistoryEntry"
+    @delete-batch="deleteBatchBacktestEntries" />
 
   <InvestBacktestView
     v-else-if="viewMode === 'backtest'"
@@ -97,6 +98,7 @@ const {
   backtestHistoryLoading,
   openBacktestRecords,
   openHistoryEntry,
+  deleteBatchBacktestEntries,
   returnFromBacktestView
 } = useInvestTabState(event => emit(event));
 </script>

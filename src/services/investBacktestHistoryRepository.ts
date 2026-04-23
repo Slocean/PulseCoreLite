@@ -48,3 +48,9 @@ export async function removeInvestBacktestHistoryForStrategy(strategyId: string)
   const items = await loadInvestBacktestHistoryItems();
   await saveItems(items.filter(i => i.strategyId !== strategyId));
 }
+
+export async function removeInvestBacktestEntriesByIds(ids: string[]): Promise<void> {
+  const set = new Set(ids);
+  const items = await loadInvestBacktestHistoryItems();
+  await saveItems(items.filter(i => !set.has(i.id)));
+}

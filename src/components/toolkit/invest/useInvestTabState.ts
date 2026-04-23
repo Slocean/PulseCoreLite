@@ -5,6 +5,7 @@ import { useToastService } from '@/composables/useToastService';
 import {
   appendInvestBacktestRecord,
   loadInvestBacktestHistoryItems,
+  removeInvestBacktestEntriesByIds,
   removeInvestBacktestHistoryForStrategy,
   sortHistoryEntriesForStrategy
 } from '@/services/investBacktestHistoryRepository';
@@ -145,6 +146,20 @@ export function useInvestTabState(emit: InvestTabEmit) {
   async function openBacktestRecords(strategyId: string) {
     historyStrategyId.value = strategyId;
     viewMode.value = 'backtestHistory';
+    backtestHistoryLoading.value = true;
+    emit('contentChange');
+    try {
+      await refreshBacktestHistoryEntries();
+    } finally {
+      backtestHistoryLoading.value = false;
+      emit('contentChange');
+    }
+  }
+
+  async function deleteBatchBacktestEntries(ids: string[]) {
+    if (ids.length === 0) return;
+    await removeInvestBacktestEntriesByIds(ids);
+    showToast(t('invest.backtestBatchDeleteSuccess', { n: ids.length }), { variant: 'success' });
     backtestHistoryLoading.value = true;
     emit('contentChange');
     try {
@@ -413,6 +428,7 @@ export function useInvestTabState(emit: InvestTabEmit) {
     backtestHistoryLoading,
     openBacktestRecords,
     openHistoryEntry,
+    deleteBatchBacktestEntries,
     returnFromBacktestView
   };
 }
