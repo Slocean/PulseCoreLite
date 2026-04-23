@@ -619,6 +619,7 @@
     "backtestTitle": "Backtest Result",
     "backtestMetricsPanel": "Result metrics",
     "compareTitle": "Strategy Comparison",
+    "compareDataPanel": "Comparison data",
     "loading": "Fetching data...",
     "metricInvested": "Total Invested",
     "metricValue": "Current Value",

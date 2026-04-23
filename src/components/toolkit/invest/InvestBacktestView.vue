@@ -1,11 +1,17 @@
 <template>
   <div class="invest-backtest">
-    <div class="invest-editor-header">
+    <div
+      class="invest-editor-header"
+      :class="{ 'invest-editor-header--bar-title-left': mode === 'compare' }">
       <UiButton native-type="button" preset="toolkit-link" @click="emit('back')">
         <span class="material-symbols-outlined">arrow_back</span>
         <span>{{ t('invest.backToList') }}</span>
       </UiButton>
-      <span class="invest-editor-title">{{ title }}</span>
+      <span
+        class="invest-editor-title"
+        :class="{ 'invest-editor-title--from-left': mode === 'compare' }">
+        {{ headerBarTitle }}
+      </span>
     </div>
 
     <div v-if="loading" class="invest-loading">
@@ -220,10 +226,27 @@ const title = computed(() =>
   props.mode === 'compare' ? t('invest.compareTitle') : t('invest.backtestTitle')
 );
 
+/** 顶栏：对比模式为「策略对比 - 基金代码」（多基金时去重后 · 连接） */
+const compareFundCodesLabel = computed(() => {
+  if (props.mode !== 'compare' || props.results.length === 0) {
+    return '';
+  }
+  const codes = [...new Set(props.results.map(r => r.fundCode).filter(Boolean))];
+  return codes.join(' · ');
+});
+
+const headerBarTitle = computed(() => {
+  if (props.mode === 'compare') {
+    const codes = compareFundCodesLabel.value;
+    return codes ? `${t('invest.compareTitle')} - ${codes}` : t('invest.compareTitle');
+  }
+  return t('invest.backtestTitle');
+});
+
 /** 单条结果时：与「回测指标 / 策略对比」同一行展示策略名与基金；多条时仅在正文展示 */
 const summaryHeaderTitle = computed(() => {
   if (props.results.length !== 1) {
-    return props.mode === 'compare' ? t('invest.compareTitle') : t('invest.backtestMetricsPanel');
+    return props.mode === 'compare' ? t('invest.compareDataPanel') : t('invest.backtestMetricsPanel');
   }
   const r = props.results[0]!;
   const base = props.mode === 'compare' ? t('invest.compareTitle') : t('invest.backtestMetricsPanel');
