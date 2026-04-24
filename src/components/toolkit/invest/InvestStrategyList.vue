@@ -48,15 +48,24 @@
                 @change="emit('toggleCompare', s.id)" />
             </label>
             <span class="invest-tag">{{ formatFrequency(s.frequency) }}</span>
-            <span class="invest-tag invest-tag--amount">¥{{ s.amount.toLocaleString() }}</span>
+            <span class="invest-tag invest-tag--fund-count">
+              {{ t('invest.fundCount', { n: s.funds.length }) }}
+            </span>
           </div>
         </template>
 
         <div class="invest-card-body">
           <div class="invest-card-meta">
-            <span class="invest-strategy-meta">
-              {{ s.fundCode }}<template v-if="s.fundName"> · {{ s.fundName }}</template>
-            </span>
+            <div class="invest-strategy-funds">
+              <span
+                v-for="fund in s.funds"
+                :key="fund.id"
+                class="invest-strategy-fund-tag">
+                <span class="invest-strategy-fund-code">{{ fund.fundCode }}</span>
+                <span v-if="fund.fundName" class="invest-strategy-fund-name"> {{ fund.fundName }}</span>
+                <span class="invest-strategy-fund-amount">¥{{ fund.amount.toLocaleString() }}</span>
+              </span>
+            </div>
             <span class="invest-strategy-date">{{ s.startDate }} → {{ s.endDate || t('invest.today') }}</span>
           </div>
           <div class="invest-card-actions">
@@ -130,3 +139,47 @@ function formatFrequency(freq: InvestFrequency): string {
   return map[freq];
 }
 </script>
+
+<style scoped>
+.invest-tag--fund-count {
+  background: rgba(80, 140, 255, 0.1);
+  border: 1px solid rgba(80, 140, 255, 0.25);
+  color: rgba(160, 190, 255, 0.85);
+}
+
+.invest-strategy-funds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.invest-strategy-fund-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  font-size: 11px;
+}
+
+.invest-strategy-fund-code {
+  color: rgba(80, 160, 255, 0.85);
+  font-weight: 500;
+}
+
+.invest-strategy-fund-name {
+  color: rgba(255, 255, 255, 0.5);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invest-strategy-fund-amount {
+  color: rgba(80, 220, 140, 0.8);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+</style>

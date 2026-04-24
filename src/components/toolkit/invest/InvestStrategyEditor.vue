@@ -13,6 +13,7 @@
       </span>
     </div>
 
+    <!-- Basic Info: strategy name -->
     <UiCollapsiblePanel
       class="toolkit-card"
       :title="t('invest.basicInfo')"
@@ -35,51 +36,10 @@
             :placeholder="t('invest.placeholderName')"
             autocomplete="off" />
         </div>
-
-        <div class="invest-form-row">
-          <label class="overlay-config-label" :for="fundCodeId">{{ t('invest.labelFundCode') }}</label>
-          <div class="invest-fund-search-wrap">
-            <input
-              :id="fundCodeId"
-              :value="form.fundCode"
-              type="text"
-              class="invest-input"
-              :placeholder="t('invest.placeholderFundCode')"
-              autocomplete="off"
-              @input="emit('fundCodeInput', ($event.target as HTMLInputElement).value)" />
-            <div v-if="fundSearchResults.length > 0" class="invest-fund-dropdown">
-              <button
-                v-for="r in fundSearchResults"
-                :key="r.code"
-                type="button"
-                class="invest-fund-option"
-                @click="emit('selectFund', r)">
-                <span class="invest-fund-option-code">{{ r.code }}</span>
-                <span class="invest-fund-option-name">{{ r.name }}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="form.fundName" class="invest-form-row">
-          <label class="overlay-config-label">{{ t('invest.labelFundName') }}</label>
-          <span class="invest-fund-name-display">{{ form.fundName }}</span>
-        </div>
-
-        <div class="invest-form-row">
-          <label class="overlay-config-label" :for="amountId">{{ t('invest.labelAmount') }}</label>
-          <input
-            :id="amountId"
-            v-model.number="form.amount"
-            type="number"
-            min="1"
-            step="100"
-            class="invest-input invest-input--narrow"
-            autocomplete="off" />
-        </div>
       </div>
     </UiCollapsiblePanel>
 
+    <!-- Schedule Info -->
     <UiCollapsiblePanel
       class="toolkit-card"
       :title="t('invest.scheduleInfo')"
@@ -138,103 +98,188 @@
       </div>
     </UiCollapsiblePanel>
 
-    <!-- Advanced conditional rules -->
+    <!-- Fund Entries -->
     <UiCollapsiblePanel
       class="toolkit-card"
-      :title="t('invest.rulesTitle')"
-      :model-value="rulesOpen"
+      :title="t('invest.fundsTitle')"
+      :model-value="fundsOpen"
       header-mode="split"
       header-class="toolkit-section-header"
       split-title-preset="toolkit-collapse-title"
       split-toggle-preset="toolkit-collapse-icon"
       title-class="toolkit-section-title"
       indicator-class="toolkit-collapse-indicator"
-      @toggle="rulesOpen = $event">
-      <div class="invest-rules-list">
-        <div v-if="form.rules.length === 0" class="invest-rules-empty">
-          <span class="material-symbols-outlined invest-rules-empty-icon">rule</span>
-          <span>{{ t('invest.rulesEmpty') }}</span>
-        </div>
+      @toggle="fundsOpen = $event">
 
+      <div class="invest-fund-entries">
         <div
-          v-for="(rule, idx) in form.rules"
-          :key="rule.id"
-          class="invest-rule-row"
-          :class="{ 'invest-rule-row--disabled': !rule.enabled }">
+          v-for="(fund, idx) in form.funds"
+          :key="fund.id"
+          class="invest-fund-entry">
 
-          <!-- Enable toggle -->
-          <button
-            type="button"
-            class="invest-rule-toggle"
-            :class="{ 'invest-rule-toggle--on': rule.enabled }"
-            :title="t('invest.ruleEnabled')"
-            @click="rule.enabled = !rule.enabled">
-            <span class="material-symbols-outlined">
-              {{ rule.enabled ? 'toggle_on' : 'toggle_off' }}
+          <!-- Fund entry header -->
+          <div class="invest-fund-entry-header">
+            <span class="invest-fund-entry-label">
+              {{ t('invest.fundEntryTitle', { n: idx + 1 }) }}
+              <span v-if="fund.fundCode" class="invest-fund-entry-code"> · {{ fund.fundCode }}</span>
+              <span v-if="fund.fundName" class="invest-fund-entry-name"> · {{ fund.fundName }}</span>
             </span>
-          </button>
-
-          <!-- Condition -->
-          <UiSelect v-model="rule.condition" :options="conditionOptions" :width="138" />
-
-          <!-- Threshold -->
-          <div class="invest-rule-input-wrap">
-            <input
-              v-model.number="rule.threshold"
-              type="number"
-              :step="isNavCondition(rule.condition) ? 0.001 : 1"
-              class="invest-rule-input"
-              :placeholder="getThresholdPlaceholder(rule.condition)" />
-            <span class="invest-rule-unit">
-              {{ getThresholdUnit(rule.condition) }}
-            </span>
+            <button
+              v-if="form.funds.length > 1"
+              type="button"
+              class="invest-fund-entry-remove"
+              :title="t('invest.removeFundBtn')"
+              @click="emit('removeFund', idx)">
+              <span class="material-symbols-outlined">close</span>
+            </button>
           </div>
 
-          <!-- Arrow separator -->
-          <span class="invest-rule-arrow material-symbols-outlined">arrow_forward</span>
+          <!-- Fund code search -->
+          <div class="invest-fund-entry-body">
+            <div class="invest-form-row">
+              <label class="overlay-config-label" :for="`fund-code-${fund.id}`">{{ t('invest.labelFundCode') }}</label>
+              <div class="invest-fund-search-wrap">
+                <input
+                  :id="`fund-code-${fund.id}`"
+                  :value="fund.fundCode"
+                  type="text"
+                  class="invest-input"
+                  :placeholder="t('invest.placeholderFundCode')"
+                  autocomplete="off"
+                  @input="emit('fundCodeInput', ($event.target as HTMLInputElement).value, idx)"
+                  @blur="onFundInputBlur" />
+                <div
+                  v-if="fundSearchActiveIdx === idx && fundSearchResults.length > 0"
+                  class="invest-fund-dropdown">
+                  <button
+                    v-for="r in fundSearchResults"
+                    :key="r.code"
+                    type="button"
+                    class="invest-fund-option"
+                    @click="emit('selectFund', r, idx)">
+                    <span class="invest-fund-option-code">{{ r.code }}</span>
+                    <span class="invest-fund-option-name">{{ r.name }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
 
-          <!-- Action -->
-          <UiSelect
-            v-model="rule.action"
-            :options="actionOptions"
-            :width="76"
-            :class="rule.action === 'buy' ? 'invest-rule-action--buy' : 'invest-rule-action--sell'" />
+            <div v-if="fund.fundName" class="invest-form-row">
+              <label class="overlay-config-label">{{ t('invest.labelFundName') }}</label>
+              <span class="invest-fund-name-display">{{ fund.fundName }}</span>
+            </div>
 
-          <!-- Amount type -->
-          <UiSelect v-model="rule.amountType" :options="amountTypeOptions" :width="96" />
+            <div class="invest-form-row">
+              <label class="overlay-config-label" :for="`fund-amount-${fund.id}`">{{ t('invest.labelAmount') }}</label>
+              <input
+                :id="`fund-amount-${fund.id}`"
+                v-model.number="fund.amount"
+                type="number"
+                min="1"
+                step="100"
+                class="invest-input invest-input--narrow"
+                autocomplete="off" />
+            </div>
 
-          <!-- Amount value -->
-          <div class="invest-rule-input-wrap">
-            <input
-              v-model.number="rule.amount"
-              type="number"
-              min="0"
-              :step="rule.amountType === 'absolute' ? 100 : 1"
-              class="invest-rule-input"
-              :placeholder="rule.amountType === 'absolute' ? '1000' : '10'" />
-            <span class="invest-rule-unit">
-              {{ rule.amountType === 'absolute' ? '¥' : '%' }}
-            </span>
+            <!-- Per-fund rules -->
+            <div class="invest-fund-rules">
+              <div class="invest-fund-rules-label">
+                <span class="overlay-config-label">{{ t('invest.rulesTitle') }}</span>
+              </div>
+
+              <div v-if="!fund.rules || fund.rules.length === 0" class="invest-rules-empty">
+                <span class="material-symbols-outlined invest-rules-empty-icon">rule</span>
+                <span>{{ t('invest.rulesEmpty') }}</span>
+              </div>
+
+              <div
+                v-for="(rule, rIdx) in (fund.rules ?? [])"
+                :key="rule.id"
+                class="invest-rule-row"
+                :class="{ 'invest-rule-row--disabled': !rule.enabled }">
+
+                <!-- Enable toggle -->
+                <button
+                  type="button"
+                  class="invest-rule-toggle"
+                  :class="{ 'invest-rule-toggle--on': rule.enabled }"
+                  :title="t('invest.ruleEnabled')"
+                  @click="rule.enabled = !rule.enabled">
+                  <span class="material-symbols-outlined">
+                    {{ rule.enabled ? 'toggle_on' : 'toggle_off' }}
+                  </span>
+                </button>
+
+                <!-- Condition -->
+                <UiSelect v-model="rule.condition" :options="conditionOptions" :width="138" />
+
+                <!-- Threshold -->
+                <div class="invest-rule-input-wrap">
+                  <input
+                    v-model.number="rule.threshold"
+                    type="number"
+                    :step="isNavCondition(rule.condition) ? 0.001 : 1"
+                    class="invest-rule-input"
+                    :placeholder="getThresholdPlaceholder(rule.condition)" />
+                  <span class="invest-rule-unit">
+                    {{ getThresholdUnit(rule.condition) }}
+                  </span>
+                </div>
+
+                <!-- Arrow separator -->
+                <span class="invest-rule-arrow material-symbols-outlined">arrow_forward</span>
+
+                <!-- Action -->
+                <UiSelect
+                  v-model="rule.action"
+                  :options="actionOptions"
+                  :width="76"
+                  :class="rule.action === 'buy' ? 'invest-rule-action--buy' : 'invest-rule-action--sell'" />
+
+                <!-- Amount type -->
+                <UiSelect v-model="rule.amountType" :options="amountTypeOptions" :width="96" />
+
+                <!-- Amount value -->
+                <div class="invest-rule-input-wrap">
+                  <input
+                    v-model.number="rule.amount"
+                    type="number"
+                    min="0"
+                    :step="rule.amountType === 'absolute' ? 100 : 1"
+                    class="invest-rule-input"
+                    :placeholder="rule.amountType === 'absolute' ? '1000' : '10'" />
+                  <span class="invest-rule-unit">
+                    {{ rule.amountType === 'absolute' ? '¥' : '%' }}
+                  </span>
+                </div>
+
+                <!-- Hint -->
+                <span class="invest-rule-hint" :title="getRuleAmountHint(rule)">
+                  <span class="material-symbols-outlined">info</span>
+                </span>
+
+                <!-- Delete rule -->
+                <button
+                  type="button"
+                  class="invest-rule-delete"
+                  :title="t('invest.cancelBtn')"
+                  @click="removeRule(fund, rIdx)">
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              </div>
+
+              <UiButton native-type="button" preset="overlay-chip" class="invest-rules-add-btn" @click="addRule(fund)">
+                <span class="material-symbols-outlined">add</span>
+                <span>{{ t('invest.addRuleBtn') }}</span>
+              </UiButton>
+            </div>
           </div>
-
-          <!-- Hint -->
-          <span class="invest-rule-hint" :title="getRuleAmountHint(rule)">
-            <span class="material-symbols-outlined">info</span>
-          </span>
-
-          <!-- Delete -->
-          <button
-            type="button"
-            class="invest-rule-delete"
-            :title="t('invest.cancelBtn')"
-            @click="form.rules.splice(idx, 1)">
-            <span class="material-symbols-outlined">close</span>
-          </button>
         </div>
 
-        <UiButton native-type="button" preset="overlay-chip" class="invest-rules-add-btn" @click="addRule">
+        <!-- Add fund button -->
+        <UiButton native-type="button" preset="overlay-chip" class="invest-add-fund-btn" @click="emit('addFund')">
           <span class="material-symbols-outlined">add</span>
-          <span>{{ t('invest.addRuleBtn') }}</span>
+          <span>{{ t('invest.addFundBtn') }}</span>
         </UiButton>
       </div>
     </UiCollapsiblePanel>
@@ -258,23 +303,27 @@ import UiButton from '@/components/ui/Button';
 import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiDateInput from '@/components/ui/DateInput';
 import UiSelect from '@/components/ui/Select';
-import type { ConditionType, FundSearchResult, InvestFrequency, InvestRule } from '@/types/invest';
+import type {
+  ConditionType,
+  FundSearchResult,
+  InvestFrequency,
+  InvestFundEntry,
+  InvestRule
+} from '@/types/invest';
 
 const props = defineProps<{
   editingId: string | null;
   form: {
     name: string;
-    fundCode: string;
-    fundName: string;
     frequency: InvestFrequency;
-    amount: number;
     startDate: string;
     endDate: string;
     weekday: number;
     monthDay: number;
-    rules: InvestRule[];
+    funds: InvestFundEntry[];
   };
   fundSearchResults: FundSearchResult[];
+  fundSearchActiveIdx: number;
   frequencyOptions: readonly { value: InvestFrequency; labelKey: string }[];
   weekdayOptions: readonly { value: number; labelKey: string }[];
   monthDayOptions: { value: number; label: string }[];
@@ -283,19 +332,19 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'back'): void;
   (e: 'save'): void;
-  (e: 'fundCodeInput', value: string): void;
-  (e: 'selectFund', result: FundSearchResult): void;
+  (e: 'fundCodeInput', value: string, fundIdx: number): void;
+  (e: 'selectFund', result: FundSearchResult, fundIdx: number): void;
+  (e: 'addFund'): void;
+  (e: 'removeFund', fundIdx: number): void;
 }>();
 
 const { t } = useI18n();
 
 const basicInfoOpen = ref(true);
 const scheduleOpen = ref(true);
-const rulesOpen = ref(true);
+const fundsOpen = ref(true);
 
 const nameId = useId();
-const fundCodeId = useId();
-const amountId = useId();
 
 const weekdaySelectOptions = computed(() =>
   props.weekdayOptions.map(opt => ({
@@ -350,8 +399,9 @@ function getRuleAmountHint(rule: InvestRule): string {
   return rule.action === 'buy' ? t('invest.ruleAmtHintBuyPct') : t('invest.ruleAmtHintSellPct');
 }
 
-function addRule() {
-  props.form.rules.push({
+function addRule(fund: InvestFundEntry) {
+  if (!fund.rules) fund.rules = [];
+  fund.rules.push({
     id: crypto.randomUUID(),
     condition: 'nav_below',
     threshold: 1.0,
@@ -361,31 +411,128 @@ function addRule() {
     enabled: true
   });
 }
+
+function removeRule(fund: InvestFundEntry, rIdx: number) {
+  fund.rules?.splice(rIdx, 1);
+}
+
+function onFundInputBlur() {
+  // Small delay to allow dropdown click to register before hiding
+  setTimeout(() => {
+    // dropdown hide is handled by fundSearchActiveIdx in parent
+  }, 150);
+}
 </script>
 
 <style scoped>
-/* ── Rule list container ───────────────────────────── */
-.invest-rules-list {
+/* ── Fund entries container ─────────────────────────── */
+.invest-fund-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Single fund entry card ─────────────────────────── */
+.invest-fund-entry {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  overflow: visible;
+}
+
+.invest-fund-entry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.025);
+  border-radius: 10px 10px 0 0;
+}
+
+.invest-fund-entry-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.invest-fund-entry-code {
+  font-size: 11px;
+  color: rgba(80, 160, 255, 0.8);
+  font-weight: 500;
+}
+
+.invest-fund-entry-name {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 400;
+}
+
+.invest-fund-entry-remove {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: rgba(255, 80, 80, 0.55);
+  border-radius: 4px;
+  transition: color 140ms ease, background 140ms ease;
+  -webkit-app-region: no-drag;
+}
+
+.invest-fund-entry-remove:hover {
+  color: rgba(255, 80, 80, 0.9);
+  background: rgba(255, 80, 80, 0.1);
+}
+
+.invest-fund-entry-remove .material-symbols-outlined {
+  font-size: 15px;
+}
+
+.invest-fund-entry-body {
+  padding: 10px 12px 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
+/* ── Add fund button ─────────────────────────────────── */
+.invest-add-fund-btn {
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+/* ── Per-fund rules section ──────────────────────────── */
+.invest-fund-rules {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.invest-fund-rules-label {
+  padding-bottom: 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ── Rule list ───────────────────────────────────────── */
 .invest-rules-empty {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 4px;
-  color: rgba(255, 255, 255, 0.42);
+  padding: 8px 4px;
+  color: rgba(255, 255, 255, 0.38);
   font-size: 12px;
 }
 
 .invest-rules-empty-icon {
-  font-size: 18px;
+  font-size: 16px;
   opacity: 0.6;
 }
 
-/* ── Single rule row ──────────────────────────────── */
 .invest-rule-row {
   display: flex;
   align-items: center;
@@ -402,7 +549,6 @@ function addRule() {
   opacity: 0.45;
 }
 
-/* ── Enable toggle ────────────────────────────────── */
 .invest-rule-toggle {
   flex-shrink: 0;
   background: transparent;
@@ -424,7 +570,6 @@ function addRule() {
   font-size: 22px;
 }
 
-/* ── Action select buy/sell tint ─────────────────── */
 .invest-rule-action--buy :deep(.ui-select-trigger-text) {
   color: rgba(80, 220, 140, 0.92);
 }
@@ -433,7 +578,6 @@ function addRule() {
   color: rgba(255, 100, 100, 0.92);
 }
 
-/* ── Number inputs with unit suffix ──────────────── */
 .invest-rule-input-wrap {
   display: flex;
   align-items: center;
@@ -459,7 +603,6 @@ function addRule() {
   outline: none;
 }
 
-/* Remove number input spinner */
 .invest-rule-input::-webkit-inner-spin-button,
 .invest-rule-input::-webkit-outer-spin-button {
   -webkit-appearance: none;
@@ -473,14 +616,12 @@ function addRule() {
   white-space: nowrap;
 }
 
-/* ── Arrow separator ──────────────────────────────── */
 .invest-rule-arrow {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.3);
   flex-shrink: 0;
 }
 
-/* ── Info hint icon ───────────────────────────────── */
 .invest-rule-hint {
   display: grid;
   place-items: center;
@@ -493,7 +634,6 @@ function addRule() {
   color: rgba(255, 255, 255, 0.3);
 }
 
-/* ── Delete button ────────────────────────────────── */
 .invest-rule-delete {
   margin-left: auto;
   flex-shrink: 0;
@@ -518,9 +658,8 @@ function addRule() {
   font-size: 15px;
 }
 
-/* ── Add button ───────────────────────────────────── */
 .invest-rules-add-btn {
   align-self: flex-start;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 </style>

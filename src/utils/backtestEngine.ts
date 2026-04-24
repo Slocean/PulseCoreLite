@@ -1,6 +1,7 @@
 import type {
   BacktestResult,
   FundNavRecord,
+  InvestFundEntry,
   InvestStrategy,
   PurchaseRecord,
   TradeRecord
@@ -68,8 +69,43 @@ function findNavOnOrAfter(
   return null;
 }
 
+/**
+ * Run backtest for a specific fund entry within a strategy.
+ * The strategy provides schedule parameters; the fund entry provides fund-specific data.
+ */
+export function runBacktestForFund(
+  strategy: InvestStrategy,
+  fund: InvestFundEntry,
+  navHistory: FundNavRecord[]
+): BacktestResult {
+  return _runBacktestCore(strategy, fund.fundCode, fund.fundName, fund.amount, fund.rules, navHistory);
+}
+
+/** @deprecated Use runBacktestForFund instead */
 export function runBacktest(
   strategy: InvestStrategy,
+  navHistory: FundNavRecord[]
+): BacktestResult {
+  const fund = strategy.funds?.[0];
+  if (fund) {
+    return runBacktestForFund(strategy, fund, navHistory);
+  }
+  // Legacy strategy format (fundCode/amount at top level)
+  const legacy = strategy as unknown as {
+    fundCode: string;
+    fundName?: string;
+    amount: number;
+    rules?: InvestStrategy['funds'][number]['rules'];
+  };
+  return _runBacktestCore(strategy, legacy.fundCode ?? '', legacy.fundName, legacy.amount ?? 1000, legacy.rules, navHistory);
+}
+
+function _runBacktestCore(
+  strategy: InvestStrategy,
+  fundCode: string,
+  fundName: string | undefined,
+  amount: number,
+  rules: InvestFundEntry['rules'],
   navHistory: FundNavRecord[]
 ): BacktestResult {
   const navMap = new Map<string, FundNavRecord>();
@@ -100,14 +136,14 @@ export function runBacktest(
 
     // Scheduled buy
     if (investTradingDates.has(date)) {
-      const shares = strategy.amount / navRecord.nav;
-      totalCashIn += strategy.amount;
+      const shares = amount / navRecord.nav;
+      totalCashIn += amount;
       totalShares += shares;
       tradeRecords.push({
         date,
         nav: navRecord.nav,
         action: 'buy',
-        amount: strategy.amount,
+        amount,
         shares,
         triggerType: 'scheduled',
         totalShares,
@@ -117,13 +153,13 @@ export function runBacktest(
     }
 
     // Rule-based trades (each rule fires at most once per day)
-    if (strategy.rules) {
+    if (rules) {
       // Current profit rate: (market value - net invested) / net invested * 100
       const netInvestedSoFar = totalCashIn - totalCashOut;
       const marketValue = totalShares * navRecord.nav;
       const profitPct = netInvestedSoFar > 0 ? ((marketValue - netInvestedSoFar) / netInvestedSoFar) * 100 : 0;
 
-      for (const rule of strategy.rules) {
+      for (const rule of rules) {
         if (!rule.enabled) continue;
 
         let conditionMet = false;
@@ -240,8 +276,8 @@ export function runBacktest(
   return {
     strategyId: strategy.id,
     strategyName: strategy.name,
-    fundCode: strategy.fundCode,
-    fundName: strategy.fundName,
+    fundCode,
+    fundName,
     totalInvested: netInvested,
     totalShares,
     currentNav,

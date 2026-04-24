@@ -17,30 +17,60 @@ import type {
   FundSearchResult,
   InvestBacktestHistoryEntry,
   InvestFrequency,
+  InvestFundEntry,
   InvestRule,
   InvestStrategy,
   InvestStrategyStore
 } from '@/types/invest';
-import { runBacktest } from '@/utils/backtestEngine';
+import { runBacktestForFund } from '@/utils/backtestEngine';
 
 type InvestTabEmit = (event: 'contentChange') => void;
 
 type ViewMode = 'list' | 'editor' | 'backtest' | 'compare' | 'backtestHistory';
 
+function newFundEntry(): InvestFundEntry {
+  return {
+    id: crypto.randomUUID(),
+    fundCode: '',
+    fundName: '',
+    amount: 1000,
+    rules: []
+  };
+}
+
 function newStrategyForm() {
   return {
     id: '',
     name: '',
-    fundCode: '',
-    fundName: '',
     frequency: 'monthly' as InvestFrequency,
-    amount: 1000,
     startDate: '',
     endDate: '',
     weekday: 1,
     monthDay: 1,
-    rules: [] as InvestRule[]
+    funds: [] as InvestFundEntry[]
   };
+}
+
+/** Migrate legacy strategy format (fundCode/amount at top level) to v2 funds[] format */
+function migrateStrategy(raw: unknown): InvestStrategy {
+  const s = raw as Record<string, unknown>;
+  if (!s['funds'] || !Array.isArray(s['funds']) || (s['funds'] as unknown[]).length === 0) {
+    const legacyCode = s['fundCode'] as string | undefined;
+    if (legacyCode) {
+      s['funds'] = [
+        {
+          id: crypto.randomUUID(),
+          fundCode: legacyCode,
+          fundName: s['fundName'] as string | undefined,
+          amount: (s['amount'] as number | undefined) ?? 1000,
+          rules: s['rules']
+        }
+      ];
+    } else {
+      s['funds'] = [];
+    }
+  }
+  return s as unknown as InvestStrategy;
 }
 
 export function useInvestTabState(emit: InvestTabEmit) {
@@ -54,7 +84,7 @@ export function useInvestTabState(emit: InvestTabEmit) {
 
   const form = reactive(newStrategyForm());
 
-  const backtestResult = ref<BacktestResult | null>(null);
+  const backtestResults = ref<BacktestResult[]>([]);
   const backtestLoading = ref(false);
   const backtestError = ref('');
 
@@ -74,12 +104,14 @@ export function useInvestTabState(emit: InvestTabEmit) {
   });
 
   const fundSearchResults = ref<FundSearchResult[]>([]);
+  const fundSearchActiveIdx = ref<number>(-1);
   const fundSearchLoading = ref(false);
   let fundSearchTimer: ReturnType<typeof setTimeout> | null = null;
 
   async function loadStrategies() {
     const stored = await storageRepository.getJson<InvestStrategyStore>(storageKeys.investStrategies);
-    strategies.value = stored?.strategies ?? [];
+    const raw = stored?.strategies ?? [];
+    strategies.value = raw.map(s => migrateStrategy(s));
   }
 
   async function saveStrategies() {
@@ -94,9 +126,11 @@ export function useInvestTabState(emit: InvestTabEmit) {
     oneYearAgo.setFullYear(today.getFullYear() - 1);
     Object.assign(form, newStrategyForm(), {
       startDate: formatDateInput(oneYearAgo),
-      endDate: formatDateInput(today)
+      endDate: formatDateInput(today),
+      funds: [newFundEntry()]
     });
     fundSearchResults.value = [];
+    fundSearchActiveIdx.value = -1;
     viewMode.value = 'editor';
     emit('contentChange');
   }
@@ -108,24 +142,25 @@ export function useInvestTabState(emit: InvestTabEmit) {
     Object.assign(form, {
       id: s.id,
       name: s.name,
-      fundCode: s.fundCode,
-      fundName: s.fundName ?? '',
       frequency: s.frequency,
-      amount: s.amount,
       startDate: s.startDate,
       endDate: s.endDate ?? '',
       weekday: s.weekday ?? 1,
       monthDay: s.monthDay ?? 1,
-      rules: s.rules ? s.rules.map(r => ({ ...r })) : []
+      funds: s.funds.map(f => ({
+        ...f,
+        rules: f.rules ? f.rules.map(r => ({ ...r })) : []
+      }))
     });
     fundSearchResults.value = [];
+    fundSearchActiveIdx.value = -1;
     viewMode.value = 'editor';
     emit('contentChange');
   }
 
   function returnToList() {
     viewMode.value = 'list';
-    backtestResult.value = null;
+    backtestResults.value = [];
     backtestError.value = '';
     compareResults.value = [];
     backtestReturnTarget.value = 'list';
@@ -174,7 +209,7 @@ export function useInvestTabState(emit: InvestTabEmit) {
     const entry = backtestHistoryEntries.value.find(x => x.id === entryId);
     if (!entry) return;
     backtestReturnTarget.value = 'history';
-    backtestResult.value = entry.result;
+    backtestResults.value = [entry.result];
     backtestError.value = '';
     backtestLoading.value = false;
     viewMode.value = 'backtest';
@@ -183,7 +218,7 @@ export function useInvestTabState(emit: InvestTabEmit) {
 
   async function returnFromBacktestView() {
     if (backtestReturnTarget.value === 'history' && historyStrategyId.value) {
-      backtestResult.value = null;
+      backtestResults.value = [];
       backtestError.value = '';
       viewMode.value = 'backtestHistory';
       backtestHistoryLoading.value = true;
@@ -204,9 +239,15 @@ export function useInvestTabState(emit: InvestTabEmit) {
       showToast(t('invest.errorNameRequired'), { variant: 'error' });
       return;
     }
-    if (!form.fundCode.trim()) {
+    if (form.funds.length === 0) {
       showToast(t('invest.errorFundRequired'), { variant: 'error' });
       return;
+    }
+    for (const fund of form.funds) {
+      if (!fund.fundCode.trim()) {
+        showToast(t('invest.errorFundCodeRequired'), { variant: 'error' });
+        return;
+      }
     }
     if (!form.startDate) {
       showToast(t('invest.errorStartRequired'), { variant: 'error' });
@@ -214,21 +255,26 @@ export function useInvestTabState(emit: InvestTabEmit) {
     }
 
     const now = new Date().toISOString();
+    const funds: InvestFundEntry[] = form.funds.map(f => ({
+      id: f.id,
+      fundCode: f.fundCode.trim(),
+      fundName: f.fundName?.trim() || undefined,
+      amount: f.amount,
+      rules: f.rules && f.rules.length > 0 ? f.rules.map(r => ({ ...r })) : undefined
+    }));
+
     if (editingId.value) {
       const idx = strategies.value.findIndex(s => s.id === editingId.value);
       if (idx !== -1) {
         strategies.value[idx] = {
           ...strategies.value[idx],
           name: form.name.trim(),
-          fundCode: form.fundCode.trim(),
-          fundName: form.fundName.trim() || undefined,
+          funds,
           frequency: form.frequency,
-          amount: form.amount,
           startDate: form.startDate,
           endDate: form.endDate || undefined,
           weekday: form.frequency === 'weekly' ? form.weekday : undefined,
           monthDay: form.frequency === 'monthly' ? form.monthDay : undefined,
-          rules: form.rules.length > 0 ? form.rules.map(r => ({ ...r })) : undefined,
           updatedAt: now
         };
       }
@@ -236,15 +282,12 @@ export function useInvestTabState(emit: InvestTabEmit) {
       const strategy: InvestStrategy = {
         id: crypto.randomUUID(),
         name: form.name.trim(),
-        fundCode: form.fundCode.trim(),
-        fundName: form.fundName.trim() || undefined,
+        funds,
         frequency: form.frequency,
-        amount: form.amount,
         startDate: form.startDate,
         endDate: form.endDate || undefined,
         weekday: form.frequency === 'weekly' ? form.weekday : undefined,
         monthDay: form.frequency === 'monthly' ? form.monthDay : undefined,
-        rules: form.rules.length > 0 ? form.rules.map(r => ({ ...r })) : undefined,
         createdAt: now,
         updatedAt: now
       };
@@ -268,31 +311,36 @@ export function useInvestTabState(emit: InvestTabEmit) {
 
   async function startBacktest(strategyId: string) {
     const strategy = strategies.value.find(s => s.id === strategyId);
-    if (!strategy) return;
+    if (!strategy || strategy.funds.length === 0) return;
 
     backtestReturnTarget.value = 'list';
     historyStrategyId.value = null;
     backtestLoading.value = true;
     backtestError.value = '';
-    backtestResult.value = null;
+    backtestResults.value = [];
     viewMode.value = 'backtest';
     emit('contentChange');
 
     try {
       const endDate = strategy.endDate || formatDateInput(new Date());
-      const navHistory = await investApi.fetchFundHistory(
-        strategy.fundCode,
-        strategy.startDate,
-        endDate
-      );
-      if (navHistory.length === 0) {
-        backtestError.value = t('invest.errorNoNavData');
-        return;
+      const results: BacktestResult[] = [];
+
+      for (const fund of strategy.funds) {
+        const navHistory = await investApi.fetchFundHistory(fund.fundCode, strategy.startDate, endDate);
+        if (navHistory.length === 0) {
+          backtestError.value = t('invest.errorNoNavDataForFund', { code: fund.fundCode });
+          return;
+        }
+        results.push(runBacktestForFund(strategy, fund, navHistory));
       }
-      const result = runBacktest(strategy, navHistory);
-      backtestResult.value = result;
+
+      backtestResults.value = results;
+
+      // Save each fund's result separately to history
       try {
-        await appendInvestBacktestRecord(strategy.id, result);
+        for (const result of results) {
+          await appendInvestBacktestRecord(strategy.id, result);
+        }
       } catch {
         showToast(t('invest.backtestSaveHistoryFailed'), { variant: 'error' });
       }
@@ -327,15 +375,13 @@ export function useInvestTabState(emit: InvestTabEmit) {
       const results: BacktestResult[] = [];
       for (const id of selectedForCompare.value) {
         const strategy = strategies.value.find(s => s.id === id);
-        if (!strategy) continue;
+        if (!strategy || strategy.funds.length === 0) continue;
         const endDate = strategy.endDate || formatDateInput(new Date());
-        const navHistory = await investApi.fetchFundHistory(
-          strategy.fundCode,
-          strategy.startDate,
-          endDate
-        );
+        // Use first fund for compare mode
+        const fund = strategy.funds[0];
+        const navHistory = await investApi.fetchFundHistory(fund.fundCode, strategy.startDate, endDate);
         if (navHistory.length > 0) {
-          results.push(runBacktest(strategy, navHistory));
+          results.push(runBacktestForFund(strategy, fund, navHistory));
         }
       }
       compareResults.value = results;
@@ -347,8 +393,11 @@ export function useInvestTabState(emit: InvestTabEmit) {
     }
   }
 
-  function onFundCodeInput(value: string) {
-    form.fundCode = value;
+  function onFundCodeInput(value: string, fundIdx: number) {
+    if (fundIdx < 0 || fundIdx >= form.funds.length) return;
+    form.funds[fundIdx].fundCode = value;
+    fundSearchActiveIdx.value = fundIdx;
+
     if (fundSearchTimer) clearTimeout(fundSearchTimer);
     if (!value.trim()) {
       fundSearchResults.value = [];
@@ -366,10 +415,24 @@ export function useInvestTabState(emit: InvestTabEmit) {
     }, 400);
   }
 
-  function selectFund(result: FundSearchResult) {
-    form.fundCode = result.code;
-    form.fundName = result.name;
+  function selectFund(result: FundSearchResult, fundIdx: number) {
+    if (fundIdx < 0 || fundIdx >= form.funds.length) return;
+    form.funds[fundIdx].fundCode = result.code;
+    form.funds[fundIdx].fundName = result.name;
     fundSearchResults.value = [];
+    fundSearchActiveIdx.value = -1;
+  }
+
+  function addFundEntry() {
+    form.funds.push(newFundEntry());
+  }
+
+  function removeFundEntry(idx: number) {
+    form.funds.splice(idx, 1);
+    if (fundSearchActiveIdx.value === idx) {
+      fundSearchResults.value = [];
+      fundSearchActiveIdx.value = -1;
+    }
   }
 
   const frequencyOptions = [
@@ -402,13 +465,14 @@ export function useInvestTabState(emit: InvestTabEmit) {
     editingId,
     loading,
     form,
-    backtestResult,
+    backtestResults,
     backtestLoading,
     backtestError,
     compareResults,
     compareLoading,
     selectedForCompare,
     fundSearchResults,
+    fundSearchActiveIdx,
     fundSearchLoading,
     frequencyOptions,
     weekdayOptions,
@@ -423,6 +487,8 @@ export function useInvestTabState(emit: InvestTabEmit) {
     startCompare,
     onFundCodeInput,
     selectFund,
+    addFundEntry,
+    removeFundEntry,
     historyStrategyName,
     backtestHistoryEntries,
     backtestHistoryLoading,

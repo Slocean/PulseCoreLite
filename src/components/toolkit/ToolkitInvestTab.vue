@@ -19,6 +19,7 @@
     :editing-id="editingId"
     :form="form"
     :fund-search-results="fundSearchResults"
+    :fund-search-active-idx="fundSearchActiveIdx"
     :frequency-options="frequencyOptions"
     :weekday-options="weekdayOptions"
     :month-day-options="monthDayOptions"
@@ -26,6 +27,8 @@
     @save="saveStrategy"
     @fund-code-input="onFundCodeInput"
     @select-fund="selectFund"
+    @add-fund="addFundEntry"
+    @remove-fund="removeFundEntry"
     @content-change="emit('contentChange')" />
 
   <InvestBacktestHistoryList
@@ -39,7 +42,7 @@
 
   <InvestBacktestView
     v-else-if="viewMode === 'backtest'"
-    :results="backtestResult ? [backtestResult] : []"
+    :results="backtestResults"
     :loading="backtestLoading"
     :error="backtestError"
     mode="backtest"
@@ -73,13 +76,14 @@ const {
   viewMode,
   editingId,
   form,
-  backtestResult,
+  backtestResults,
   backtestLoading,
   backtestError,
   compareResults,
   compareLoading,
   selectedForCompare,
   fundSearchResults,
+  fundSearchActiveIdx,
   frequencyOptions,
   weekdayOptions,
   monthDayOptions,
@@ -93,6 +97,8 @@ const {
   startCompare,
   onFundCodeInput,
   selectFund,
+  addFundEntry,
+  removeFundEntry,
   historyStrategyName,
   backtestHistoryEntries,
   backtestHistoryLoading,

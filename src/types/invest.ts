@@ -28,19 +28,27 @@ export interface InvestRule {
   enabled: boolean;
 }
 
+/** A single fund slot within a strategy, with its own amount and conditional rules */
+export interface InvestFundEntry {
+  id: string;
+  fundCode: string;
+  fundName?: string;
+  /** Base amount to invest each scheduled date */
+  amount: number;
+  /** Optional condition-based trading rules for this fund */
+  rules?: InvestRule[];
+}
+
 export interface InvestStrategy {
   id: string;
   name: string;
-  fundCode: string;
-  fundName?: string;
+  /** Multi-fund entries (v2 format) */
+  funds: InvestFundEntry[];
   frequency: InvestFrequency;
-  amount: number;
   startDate: string;
   endDate?: string;
   weekday?: number;
   monthDay?: number;
-  /** Optional condition-based trading rules checked every trading day */
-  rules?: InvestRule[];
   createdAt: string;
   updatedAt: string;
 }
