@@ -11,6 +11,10 @@
           <span class="material-symbols-outlined">compare_arrows</span>
           <span>{{ t('invest.compareBtn') }}({{ selectedForCompare.size }})</span>
         </UiButton>
+        <UiButton native-type="button" preset="overlay-chip" @click="emit('compareHistory')">
+          <span class="material-symbols-outlined">history</span>
+          <span>{{ t('invest.compareHistoryBtn') }}</span>
+        </UiButton>
         <UiButton native-type="button" preset="overlay-primary" @click="emit('create')">
           <span class="material-symbols-outlined">add</span>
           <span>{{ t('invest.createBtn') }}</span>
@@ -177,6 +181,7 @@ const emit = defineEmits<{
   (e: 'backtestRecords', id: string): void;
   (e: 'toggleCompare', id: string): void;
   (e: 'startCompare'): void;
+  (e: 'compareHistory'): void;
 }>();
 
 const { t } = useI18n();

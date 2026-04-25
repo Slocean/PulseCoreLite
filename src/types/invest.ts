@@ -132,3 +132,20 @@ export interface InvestBacktestHistoryStore {
   version: 1;
   items: InvestBacktestHistoryEntry[];
 }
+
+/** One saved strategy-comparison run; stores all compared results together */
+export interface InvestCompareHistoryEntry {
+  id: string;
+  createdAt: string;
+  /** IDs of compared strategies, in order */
+  strategyIds: string[];
+  /** Display names snapshot at the time of comparison */
+  strategyNames: string[];
+  /** One BacktestResult per compared strategy (navHistory stripped for space) */
+  results: BacktestResult[];
+}
+
+export interface InvestCompareHistoryStore {
+  version: 1;
+  items: InvestCompareHistoryEntry[];
+}

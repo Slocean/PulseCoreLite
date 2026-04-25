@@ -12,6 +12,7 @@
     @backtest-records="openBacktestRecords"
     @toggle-compare="toggleCompareSelection"
     @start-compare="startCompare"
+    @compare-history="openCompareHistory"
     @content-change="emit('contentChange')" />
 
   <InvestStrategyEditor
@@ -40,6 +41,14 @@
     @open="openHistoryEntry"
     @delete-batch="deleteBatchBacktestEntries" />
 
+  <InvestCompareHistoryList
+    v-else-if="viewMode === 'compareHistory'"
+    :entries="compareHistoryEntries"
+    :loading="compareHistoryLoading"
+    @back="returnToList"
+    @open="openCompareHistoryEntry"
+    @delete-batch="deleteBatchCompareEntries" />
+
   <InvestBacktestView
     v-else-if="viewMode === 'backtest'"
     :results="backtestResults"
@@ -55,7 +64,7 @@
     :loading="compareLoading"
     error=""
     mode="compare"
-    @back="returnToList"
+    @back="returnFromBacktestView"
     @content-change="emit('contentChange')" />
 </template>
 
@@ -63,6 +72,7 @@
 import UiToast from '@/components/ui/Toast';
 import InvestBacktestHistoryList from './invest/InvestBacktestHistoryList.vue';
 import InvestBacktestView from './invest/InvestBacktestView.vue';
+import InvestCompareHistoryList from './invest/InvestCompareHistoryList.vue';
 import InvestStrategyEditor from './invest/InvestStrategyEditor.vue';
 import InvestStrategyList from './invest/InvestStrategyList.vue';
 import { useInvestTabState } from './invest/useInvestTabState';
@@ -105,6 +115,11 @@ const {
   openBacktestRecords,
   openHistoryEntry,
   deleteBatchBacktestEntries,
-  returnFromBacktestView
+  returnFromBacktestView,
+  compareHistoryEntries,
+  compareHistoryLoading,
+  openCompareHistory,
+  openCompareHistoryEntry,
+  deleteBatchCompareEntries
 } = useInvestTabState(event => emit(event));
 </script>

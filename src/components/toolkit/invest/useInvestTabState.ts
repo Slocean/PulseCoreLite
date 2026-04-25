@@ -4,9 +4,12 @@ import { useI18n } from 'vue-i18n';
 import { useToastService } from '@/composables/useToastService';
 import {
   appendInvestBacktestRecord,
+  appendInvestCompareRecord,
   loadInvestBacktestHistoryItems,
+  loadInvestCompareHistoryItems,
   removeInvestBacktestEntriesByIds,
   removeInvestBacktestHistoryForStrategy,
+  removeInvestCompareEntriesByIds,
   sortHistoryEntriesForStrategy
 } from '@/services/investBacktestHistoryRepository';
 import { storageKeys, storageRepository } from '@/services/storageRepository';
@@ -16,6 +19,7 @@ import type {
   FundNavRecord,
   FundSearchResult,
   InvestBacktestHistoryEntry,
+  InvestCompareHistoryEntry,
   InvestFrequency,
   InvestFundEntry,
   InvestRule,
@@ -26,7 +30,7 @@ import { runBacktestForFund } from '@/utils/backtestEngine';
 
 type InvestTabEmit = (event: 'contentChange') => void;
 
-type ViewMode = 'list' | 'editor' | 'backtest' | 'compare' | 'backtestHistory';
+type ViewMode = 'list' | 'editor' | 'backtest' | 'compare' | 'backtestHistory' | 'compareHistory';
 
 function newFundEntry(): InvestFundEntry {
   return {
@@ -92,10 +96,14 @@ export function useInvestTabState(emit: InvestTabEmit) {
   const compareLoading = ref(false);
   const selectedForCompare = ref<Set<string>>(new Set());
 
-  const backtestReturnTarget = ref<'list' | 'history'>('list');
+  const backtestReturnTarget = ref<'list' | 'history' | 'compareHistory'>('list');
   const historyStrategyId = ref<string | null>(null);
   const backtestHistoryEntries = ref<InvestBacktestHistoryEntry[]>([]);
   const backtestHistoryLoading = ref(false);
+
+  const compareHistoryEntries = ref<InvestCompareHistoryEntry[]>([]);
+  const compareHistoryLoading = ref(false);
+  const compareReturnEntryId = ref<string | null>(null);
 
   const historyStrategyName = computed(() => {
     const id = historyStrategyId.value;
@@ -166,6 +174,8 @@ export function useInvestTabState(emit: InvestTabEmit) {
     backtestReturnTarget.value = 'list';
     historyStrategyId.value = null;
     backtestHistoryEntries.value = [];
+    compareHistoryEntries.value = [];
+    compareReturnEntryId.value = null;
     emit('contentChange');
   }
 
@@ -227,6 +237,19 @@ export function useInvestTabState(emit: InvestTabEmit) {
         await refreshBacktestHistoryEntries();
       } finally {
         backtestHistoryLoading.value = false;
+        emit('contentChange');
+      }
+    } else if (backtestReturnTarget.value === 'compareHistory') {
+      backtestResults.value = [];
+      backtestError.value = '';
+      compareResults.value = [];
+      viewMode.value = 'compareHistory';
+      compareHistoryLoading.value = true;
+      emit('contentChange');
+      try {
+        compareHistoryEntries.value = await loadInvestCompareHistoryItems();
+      } finally {
+        compareHistoryLoading.value = false;
         emit('contentChange');
       }
     } else {
@@ -368,11 +391,15 @@ export function useInvestTabState(emit: InvestTabEmit) {
 
     compareLoading.value = true;
     compareResults.value = [];
+    backtestReturnTarget.value = 'list';
     viewMode.value = 'compare';
     emit('contentChange');
 
     try {
       const results: BacktestResult[] = [];
+      const ids: string[] = [];
+      const names: string[] = [];
+
       for (const id of selectedForCompare.value) {
         const strategy = strategies.value.find(s => s.id === id);
         if (!strategy || strategy.funds.length === 0) continue;
@@ -382,13 +409,61 @@ export function useInvestTabState(emit: InvestTabEmit) {
         const navHistory = await investApi.fetchFundHistory(fund.fundCode, strategy.startDate, endDate);
         if (navHistory.length > 0) {
           results.push(runBacktestForFund(strategy, fund, navHistory));
+          ids.push(strategy.id);
+          names.push(strategy.name);
         }
       }
+
       compareResults.value = results;
+
+      if (results.length >= 2) {
+        try {
+          await appendInvestCompareRecord(ids, names, results);
+        } catch {
+          showToast(t('invest.backtestSaveHistoryFailed'), { variant: 'error' });
+        }
+      }
     } catch (e) {
       showToast(String(e), { variant: 'error' });
     } finally {
       compareLoading.value = false;
+      emit('contentChange');
+    }
+  }
+
+  async function openCompareHistory() {
+    viewMode.value = 'compareHistory';
+    compareHistoryLoading.value = true;
+    emit('contentChange');
+    try {
+      compareHistoryEntries.value = await loadInvestCompareHistoryItems();
+    } finally {
+      compareHistoryLoading.value = false;
+      emit('contentChange');
+    }
+  }
+
+  function openCompareHistoryEntry(entryId: string) {
+    const entry = compareHistoryEntries.value.find(x => x.id === entryId);
+    if (!entry) return;
+    compareReturnEntryId.value = entryId;
+    backtestReturnTarget.value = 'compareHistory';
+    compareResults.value = entry.results;
+    compareLoading.value = false;
+    viewMode.value = 'compare';
+    emit('contentChange');
+  }
+
+  async function deleteBatchCompareEntries(ids: string[]) {
+    if (ids.length === 0) return;
+    await removeInvestCompareEntriesByIds(ids);
+    showToast(t('invest.compareDeleteSuccess', { n: ids.length }), { variant: 'success' });
+    compareHistoryLoading.value = true;
+    emit('contentChange');
+    try {
+      compareHistoryEntries.value = await loadInvestCompareHistoryItems();
+    } finally {
+      compareHistoryLoading.value = false;
       emit('contentChange');
     }
   }
@@ -495,7 +570,13 @@ export function useInvestTabState(emit: InvestTabEmit) {
     openBacktestRecords,
     openHistoryEntry,
     deleteBatchBacktestEntries,
-    returnFromBacktestView
+    returnFromBacktestView,
+    compareHistoryEntries,
+    compareHistoryLoading,
+    compareReturnEntryId,
+    openCompareHistory,
+    openCompareHistoryEntry,
+    deleteBatchCompareEntries
   };
 }
 
@@ -506,4 +587,4 @@ function formatDateInput(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-export type { BacktestResult, FundNavRecord, InvestBacktestHistoryEntry, InvestStrategy };
+export type { BacktestResult, FundNavRecord, InvestBacktestHistoryEntry, InvestCompareHistoryEntry, InvestStrategy };
