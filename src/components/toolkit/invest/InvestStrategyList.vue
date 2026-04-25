@@ -1,6 +1,10 @@
 <template>
   <div class="invest-list">
     <div class="invest-list-header">
+      <UiButton v-if="showBack" native-type="button" preset="toolkit-link" @click="emit('back')">
+        <span class="material-symbols-outlined">arrow_back</span>
+        <span>{{ t('invest.backToHub') }}</span>
+      </UiButton>
       <span class="invest-list-title">{{ t('invest.strategiesTitle') }}</span>
       <div class="invest-list-actions">
         <UiButton
@@ -171,9 +175,12 @@ import type { InvestFrequency, InvestStrategy } from '@/types/invest';
 defineProps<{
   strategies: InvestStrategy[];
   selectedForCompare: Set<string>;
+  /** When true, show a back-to-hub button in the header */
+  showBack?: boolean;
 }>();
 
 const emit = defineEmits<{
+  (e: 'back'): void;
   (e: 'create'): void;
   (e: 'edit', id: string): void;
   (e: 'delete', id: string): void;
