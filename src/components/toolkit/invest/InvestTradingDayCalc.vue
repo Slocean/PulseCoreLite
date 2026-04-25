@@ -92,8 +92,65 @@
           {{ rangeResult.startIso }} → {{ rangeResult.endIso }}
           &nbsp;（{{ rangeResult.totalDays }} 日历天）
         </span>
+        <button type="button" class="invest-trading-detail-btn" @click="openDetail">
+          <span class="material-symbols-outlined">calendar_view_day</span>
+          {{ t('invest.tradingDayDetailBtn') }}
+        </button>
       </div>
     </div>
+
+    <!-- Detail Dialog -->
+    <UiDialog
+      :open="detailOpen"
+      :title="t('invest.tradingDayDetailTitle')"
+      :show-actions="false"
+      @cancel="detailOpen = false">
+      <template #body>
+        <div v-if="detailLoading" class="invest-trading-detail-loading">
+          <span class="invest-trading-spinner material-symbols-outlined">autorenew</span>
+        </div>
+        <div v-else-if="detailError" class="invest-trading-error" style="padding:8px 0">
+          <span class="material-symbols-outlined" style="font-size:13px">wifi_off</span>
+          {{ t('invest.tradingDayNetError') }}
+        </div>
+        <div v-else class="invest-trading-detail-list">
+          <!-- Summary strip -->
+          <div class="invest-trading-detail-summary">
+            <span class="invest-trading-detail-summary-item invest-trading-detail-summary--trade">
+              <span class="invest-trading-detail-dot invest-trading-detail-dot--trade"></span>
+              {{ t('invest.tradingDayDetailTrade') }}
+              <b>{{ detailItems.filter(d => d.isTrading).length }}</b>
+            </span>
+            <span class="invest-trading-detail-summary-item invest-trading-detail-summary--holiday">
+              <span class="invest-trading-detail-dot invest-trading-detail-dot--holiday"></span>
+              {{ t('invest.tradingDayDetailHoliday') }}
+              <b>{{ detailItems.filter(d => d.type === 'holiday').length }}</b>
+            </span>
+            <span class="invest-trading-detail-summary-item invest-trading-detail-summary--makeup">
+              <span class="invest-trading-detail-dot invest-trading-detail-dot--makeup"></span>
+              {{ t('invest.tradingDayDetailMakeup') }}
+              <b>{{ detailItems.filter(d => d.type === 'makeup').length }}</b>
+            </span>
+          </div>
+          <!-- Day rows -->
+          <div
+            v-for="day in detailItems"
+            :key="day.iso"
+            class="invest-trading-detail-row"
+            :class="`invest-trading-detail-row--${day.type}`">
+            <span class="invest-trading-detail-row-dot"></span>
+            <span class="invest-trading-detail-row-date">{{ day.iso }}</span>
+            <span class="invest-trading-detail-row-dow">
+              周{{ weekdayNames[day.dow] }}
+            </span>
+            <span class="invest-trading-detail-row-name">{{ day.name ?? '' }}</span>
+            <span class="invest-trading-detail-row-status">
+              {{ day.isTrading ? t('invest.tradingDayIsTrading') : t('invest.tradingDayNotTrading') }}
+            </span>
+          </div>
+        </div>
+      </template>
+    </UiDialog>
 
     <!-- Section 3: Nearest trading day -->
     <div class="toolkit-card invest-trading-section">
@@ -152,11 +209,14 @@ import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
 import UiDateInput from '@/components/ui/DateInput';
+import UiDialog from '@/components/ui/Dialog';
 import {
   isTradingDay,
   countTradingDays,
   findNearbyTradingDays,
-  WEEKDAY_ZH
+  getDailyDetails,
+  WEEKDAY_ZH,
+  type DayDetail
 } from '@/utils/tradingCalendar';
 
 const emit = defineEmits<{
@@ -225,6 +285,28 @@ async function calcRange() {
     rangeError.value = true;
   } finally {
     rangeLoading.value = false;
+  }
+}
+
+// ── Range detail dialog ───────────────────────────────────────────────────────
+
+const detailOpen = ref(false);
+const detailLoading = ref(false);
+const detailError = ref(false);
+const detailItems = ref<DayDetail[]>([]);
+
+async function openDetail() {
+  if (!rangeResult.value) return;
+  detailOpen.value = true;
+  detailLoading.value = true;
+  detailError.value = false;
+  detailItems.value = [];
+  try {
+    detailItems.value = await getDailyDetails(rangeResult.value.startIso, rangeResult.value.endIso);
+  } catch {
+    detailError.value = true;
+  } finally {
+    detailLoading.value = false;
   }
 }
 
@@ -440,4 +522,134 @@ async function findNearest() {
   font-weight: 600;
   white-space: nowrap;
 }
+
+/* Detail button */
+.invest-trading-detail-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  margin-left: auto;
+}
+.invest-trading-detail-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.85);
+}
+.invest-trading-detail-btn .material-symbols-outlined {
+  font-size: 13px;
+}
+
+/* Detail dialog content */
+.invest-trading-detail-loading {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+.invest-trading-detail-summary {
+  display: flex;
+  gap: 12px;
+  padding: 6px 0 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.invest-trading-detail-summary-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+}
+.invest-trading-detail-summary-item b {
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.85);
+}
+.invest-trading-detail-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.invest-trading-detail-dot--trade  { background: rgba(80, 220, 140, 0.8); }
+.invest-trading-detail-dot--holiday { background: rgba(255, 120, 100, 0.8); }
+.invest-trading-detail-dot--makeup  { background: rgba(180, 130, 255, 0.8); }
+
+/* Day rows */
+.invest-trading-detail-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.invest-trading-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.invest-trading-detail-row:not(:last-child) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* Row dot (left indicator) */
+.invest-trading-detail-row-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.invest-trading-detail-row--trading  .invest-trading-detail-row-dot { background: rgba(80, 220, 140, 0.75); }
+.invest-trading-detail-row--makeup   .invest-trading-detail-row-dot { background: rgba(180, 130, 255, 0.8); }
+.invest-trading-detail-row--holiday  .invest-trading-detail-row-dot { background: rgba(255, 120, 100, 0.75); }
+.invest-trading-detail-row--weekend  .invest-trading-detail-row-dot { background: rgba(255, 255, 255, 0.15); }
+
+/* Row colors */
+.invest-trading-detail-row--weekend { opacity: 0.45; }
+.invest-trading-detail-row--holiday .invest-trading-detail-row-date,
+.invest-trading-detail-row--holiday .invest-trading-detail-row-dow { color: rgba(255, 120, 100, 0.85); }
+.invest-trading-detail-row--makeup  .invest-trading-detail-row-date,
+.invest-trading-detail-row--makeup  .invest-trading-detail-row-dow { color: rgba(180, 130, 255, 0.9); }
+.invest-trading-detail-row--trading .invest-trading-detail-row-date { color: rgba(255, 255, 255, 0.88); }
+
+.invest-trading-detail-row-date {
+  font-variant-numeric: tabular-nums;
+  min-width: 82px;
+  flex-shrink: 0;
+}
+.invest-trading-detail-row-dow {
+  min-width: 30px;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 11px;
+}
+.invest-trading-detail-row-name {
+  flex: 1;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.invest-trading-detail-row--holiday .invest-trading-detail-row-name { color: rgba(255, 120, 100, 0.6); }
+.invest-trading-detail-row--makeup  .invest-trading-detail-row-name { color: rgba(180, 130, 255, 0.6); }
+
+.invest-trading-detail-row-status {
+  font-size: 10px;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.3);
+}
+.invest-trading-detail-row--trading .invest-trading-detail-row-status { color: rgba(80, 220, 140, 0.6); }
+.invest-trading-detail-row--makeup  .invest-trading-detail-row-status { color: rgba(180, 130, 255, 0.6); }
+.invest-trading-detail-row--holiday .invest-trading-detail-row-status { color: rgba(255, 120, 100, 0.5); }
 </style>

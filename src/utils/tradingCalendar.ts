@@ -182,6 +182,78 @@ export async function countTradingDays(
   return { count, totalDays };
 }
 
+// ── Day type classification ───────────────────────────────────────────────────
+
+/** How a specific date is classified for trading purposes */
+export type DayType =
+  | 'trading'   // normal weekday → open
+  | 'makeup'    // weekend makeup workday (补班) → open
+  | 'holiday'   // public holiday on weekday → closed
+  | 'weekend';  // regular weekend → closed
+
+export interface DayDetail {
+  iso: string;
+  dow: number;      // 0=Sun … 6=Sat
+  isTrading: boolean;
+  type: DayType;
+  /** Holiday / makeup name from API, e.g. "劳动节", "劳动节后补班" */
+  name?: string;
+}
+
+/**
+ * Returns a day-by-day breakdown for [startIso, endIso] inclusive.
+ * Useful for rendering a detailed calendar view.
+ */
+export async function getDailyDetails(
+  startIso: string,
+  endIso: string
+): Promise<DayDetail[]> {
+  const [sy, sm, sd] = startIso.split('-').map(Number);
+  const [ey, em, ed] = endIso.split('-').map(Number);
+  const start = new Date(sy, sm - 1, sd);
+  const end = new Date(ey, em - 1, ed);
+  if (start > end) return [];
+
+  const yearMap = await ensureYearsLoaded(startIso, endIso);
+  const details: DayDetail[] = [];
+  const cur = new Date(start);
+
+  while (cur <= end) {
+    const iso = isoFromDate(cur);
+    const dow = cur.getDay();
+    const yData = yearMap[cur.getFullYear()] ?? {};
+    const mmdd = iso.slice(5);
+    const entry = yData[mmdd];
+    const weekend = dow === 0 || dow === 6;
+
+    let type: DayType;
+    let isTrading: boolean;
+
+    if (entry !== undefined) {
+      if (entry.holiday) {
+        // Public holiday (may fall on weekday or weekend)
+        type = 'holiday';
+        isTrading = false;
+      } else {
+        // Makeup workday (补班) — always on a weekend
+        type = 'makeup';
+        isTrading = true;
+      }
+    } else if (weekend) {
+      type = 'weekend';
+      isTrading = false;
+    } else {
+      type = 'trading';
+      isTrading = true;
+    }
+
+    details.push({ iso, dow, isTrading, type, name: entry?.name });
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  return details;
+}
+
 export interface NearbyResult {
   prevIso: string;
   prevDow: number;
