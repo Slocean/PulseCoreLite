@@ -581,6 +581,8 @@
     "emptyHint": "No strategies yet. Click \"New Strategy\" to get started.",
     "backtestBtn": "Backtest",
     "backtestRecordsBtn": "History",
+    "allocationChartBtn": "Allocation",
+    "allocationChartTitle": "Fund Allocation",
     "backtestRecordsTitle": "Backtest history",
     "backtestHistoryLoading": "Loading…",
     "backtestHistoryEmpty": "No saved backtests yet. A record is saved automatically after each successful backtest.",

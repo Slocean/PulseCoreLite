@@ -581,6 +581,8 @@
     "emptyHint": "暂无策略，点击「新建策略」开始",
     "backtestBtn": "回测",
     "backtestRecordsBtn": "回测记录",
+    "allocationChartBtn": "持仓比例",
+    "allocationChartTitle": "持仓比例",
     "backtestRecordsTitle": "回测记录",
     "backtestHistoryLoading": "正在加载…",
     "backtestHistoryEmpty": "暂无已保存的回测。运行「回测」成功后会自动保存一条记录。",
