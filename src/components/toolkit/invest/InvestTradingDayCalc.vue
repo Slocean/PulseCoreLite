@@ -69,8 +69,6 @@
         <div class="invest-trading-date-wrap">
           <UiDateInput v-model="rangeEnd" :min="rangeStart" />
         </div>
-      </div>
-      <div class="invest-trading-row invest-trading-row--actions">
         <UiButton
           native-type="button"
           preset="overlay-chip"
