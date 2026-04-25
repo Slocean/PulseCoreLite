@@ -84,18 +84,33 @@
         <span class="material-symbols-outlined" style="font-size:13px">wifi_off</span>
         {{ t('invest.tradingDayNetError') }}
       </div>
-      <div v-else-if="rangeResult !== null" class="invest-trading-result">
-        <span class="invest-trading-result-count">
-          {{ t('invest.tradingDayCount', { n: rangeResult.count }) }}
-        </span>
-        <span class="invest-trading-result-detail">
-          {{ rangeResult.startIso }} → {{ rangeResult.endIso }}
-          &nbsp;（{{ rangeResult.totalDays }} 日历天）
-        </span>
-        <button type="button" class="invest-trading-detail-btn" @click="openDetail">
-          <span class="material-symbols-outlined">calendar_view_day</span>
-          {{ t('invest.tradingDayDetailBtn') }}
-        </button>
+      <div v-else-if="rangeResult !== null" class="invest-trading-result invest-trading-result--col">
+        <!-- Two counts side by side -->
+        <div class="invest-trading-counts">
+          <div class="invest-trading-count-item">
+            <span class="invest-trading-count-label">{{ t('invest.tradingDayCountLabel') }}</span>
+            <span class="invest-trading-count-val invest-trading-count-val--trade">
+              {{ rangeResult.tradingDays }}
+            </span>
+          </div>
+          <div class="invest-trading-count-sep">/</div>
+          <div class="invest-trading-count-item">
+            <span class="invest-trading-count-label">{{ t('invest.tradingDayWorkdayLabel') }}</span>
+            <span class="invest-trading-count-val invest-trading-count-val--work">
+              {{ rangeResult.workdays }}
+            </span>
+          </div>
+        </div>
+        <div class="invest-trading-result-foot">
+          <span class="invest-trading-result-detail">
+            {{ rangeResult.startIso }} → {{ rangeResult.endIso }}
+            &nbsp;（{{ rangeResult.totalDays }} 日历天）
+          </span>
+          <button type="button" class="invest-trading-detail-btn" @click="openDetail">
+            <span class="material-symbols-outlined">calendar_view_day</span>
+            {{ t('invest.tradingDayDetailBtn') }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -116,20 +131,20 @@
         <div v-else class="invest-trading-detail-list">
           <!-- Summary strip -->
           <div class="invest-trading-detail-summary">
-            <span class="invest-trading-detail-summary-item invest-trading-detail-summary--trade">
+            <span class="invest-trading-detail-summary-item">
               <span class="invest-trading-detail-dot invest-trading-detail-dot--trade"></span>
-              {{ t('invest.tradingDayDetailTrade') }}
+              {{ t('invest.tradingDayCountLabel') }}
               <b>{{ detailItems.filter(d => d.isTrading).length }}</b>
             </span>
-            <span class="invest-trading-detail-summary-item invest-trading-detail-summary--holiday">
-              <span class="invest-trading-detail-dot invest-trading-detail-dot--holiday"></span>
-              {{ t('invest.tradingDayDetailHoliday') }}
-              <b>{{ detailItems.filter(d => d.type === 'holiday').length }}</b>
-            </span>
-            <span class="invest-trading-detail-summary-item invest-trading-detail-summary--makeup">
+            <span class="invest-trading-detail-summary-item">
               <span class="invest-trading-detail-dot invest-trading-detail-dot--makeup"></span>
               {{ t('invest.tradingDayDetailMakeup') }}
               <b>{{ detailItems.filter(d => d.type === 'makeup').length }}</b>
+            </span>
+            <span class="invest-trading-detail-summary-item">
+              <span class="invest-trading-detail-dot invest-trading-detail-dot--holiday"></span>
+              {{ t('invest.tradingDayDetailHoliday') }}
+              <b>{{ detailItems.filter(d => d.type === 'holiday').length }}</b>
             </span>
           </div>
           <!-- Day rows -->
@@ -264,7 +279,13 @@ const rangeEnd = ref('');
 const rangeLoading = ref(false);
 const rangeError = ref(false);
 
-interface RangeResult { count: number; totalDays: number; startIso: string; endIso: string }
+interface RangeResult {
+  tradingDays: number;
+  workdays: number;
+  totalDays: number;
+  startIso: string;
+  endIso: string;
+}
 const rangeResult = ref<RangeResult | null>(null);
 
 async function calcRange() {
@@ -274,9 +295,10 @@ async function calcRange() {
   rangeError.value = false;
   rangeResult.value = null;
   try {
-    const { count, totalDays } = await countTradingDays(rangeStart.value, rangeEnd.value);
+    const { tradingDays, workdays, totalDays } = await countTradingDays(rangeStart.value, rangeEnd.value);
     rangeResult.value = {
-      count,
+      tradingDays,
+      workdays,
       totalDays,
       startIso: rangeStart.value,
       endIso: rangeEnd.value
@@ -521,6 +543,49 @@ async function findNearest() {
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* Two-count result layout */
+.invest-trading-result--col {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.invest-trading-counts {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.invest-trading-count-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.invest-trading-count-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.38);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.invest-trading-count-val {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.invest-trading-count-val--trade { color: rgba(80, 160, 255, 0.92); }
+.invest-trading-count-val--work  { color: rgba(80, 220, 140, 0.85); }
+.invest-trading-count-sep {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.18);
+  padding-top: 12px;
+}
+.invest-trading-result-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
 }
 
 /* Detail button */

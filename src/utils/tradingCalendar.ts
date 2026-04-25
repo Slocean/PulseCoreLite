@@ -119,19 +119,22 @@ function isWeekend(iso: string): boolean {
   return dow === 0 || dow === 6;
 }
 
-/** Core decision using pre-loaded year data.
+/** Core decision: is this an A-share trading day?
  *
  * API keys are MM-DD (not YYYY-MM-DD).
- * `holiday: true`  → this day is a public holiday → NON-trading
- * `holiday: false` → this day is a makeup workday (补班) → TRADING (even on weekends)
+ *
+ * Any day present in the API data → market CLOSED:
+ *   holiday=true  → public holiday (weekday turned rest day)
+ *   holiday=false → makeup workday 补班 (weekend turned work day, but stock
+ *                   exchanges do NOT open on weekends regardless)
+ *
+ * Days absent from the API follow the standard rule:
+ *   weekday → market OPEN, weekend → market CLOSED
  */
 function checkTrading(iso: string, yearData: Record<string, HolidayEntry>): boolean {
   const mmdd = iso.slice(5); // "2026-05-01" → "05-01"
-  const entry = yearData[mmdd];
-  if (entry !== undefined) {
-    return !entry.holiday; // holiday=true → closed; holiday=false → makeup workday (open)
-  }
-  return !isWeekend(iso); // normal day: weekday=trading, weekend=non-trading
+  if (mmdd in yearData) return false; // any special day → market closed
+  return !isWeekend(iso);
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -150,13 +153,18 @@ export async function isTradingDay(iso: string): Promise<TradingDayResult> {
 }
 
 export interface CountResult {
-  count: number;
+  /** A-share trading days (weekdays minus public holidays) */
+  tradingDays: number;
+  /** Human workdays = trading days + makeup weekend workdays (补班) */
+  workdays: number;
   totalDays: number;
 }
 
 /**
- * Counts trading days in [startIso, endIso] inclusive.
- * Fetches all required years in parallel.
+ * Counts trading days AND workdays in [startIso, endIso] inclusive.
+ *
+ * - tradingDays: days when the A-share market is open
+ * - workdays   : days employees must work (trading days + 补班 makeup days)
  */
 export async function countTradingDays(
   startIso: string,
@@ -166,35 +174,54 @@ export async function countTradingDays(
   const [ey, em, ed] = endIso.split('-').map(Number);
   const start = new Date(sy, sm - 1, sd);
   const end = new Date(ey, em - 1, ed);
-  if (start > end) return { count: 0, totalDays: 0 };
+  if (start > end) return { tradingDays: 0, workdays: 0, totalDays: 0 };
 
   const totalDays = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
   const yearMap = await ensureYearsLoaded(startIso, endIso);
 
-  let count = 0;
+  let tradingDays = 0;
+  let workdays = 0;
   const cur = new Date(start);
+
   while (cur <= end) {
     const iso = isoFromDate(cur);
     const yData = yearMap[cur.getFullYear()] ?? {};
-    if (checkTrading(iso, yData)) count++;
+    const mmdd = iso.slice(5);
+    const entry = yData[mmdd];
+    const weekend = cur.getDay() === 0 || cur.getDay() === 6;
+
+    if (entry !== undefined) {
+      if (!entry.holiday) {
+        // Makeup workday (补班): employees work but market is closed
+        workdays++;
+      }
+      // holiday=true: neither a trading day nor a workday
+    } else if (!weekend) {
+      // Regular weekday: both a trading day and a workday
+      tradingDays++;
+      workdays++;
+    }
+    // Regular weekend: neither
+
     cur.setDate(cur.getDate() + 1);
   }
-  return { count, totalDays };
+  return { tradingDays, workdays, totalDays };
 }
 
 // ── Day type classification ───────────────────────────────────────────────────
 
-/** How a specific date is classified for trading purposes */
+/** How a specific date is classified */
 export type DayType =
-  | 'trading'   // normal weekday → open
-  | 'makeup'    // weekend makeup workday (补班) → open
-  | 'holiday'   // public holiday on weekday → closed
-  | 'weekend';  // regular weekend → closed
+  | 'trading'   // normal weekday, not a holiday → market OPEN, workday
+  | 'makeup'    // weekend makeup workday (补班) → market CLOSED, but workday
+  | 'holiday'   // public holiday on weekday → market CLOSED, not a workday
+  | 'weekend';  // regular weekend → market CLOSED, not a workday
 
 export interface DayDetail {
   iso: string;
-  dow: number;      // 0=Sun … 6=Sat
-  isTrading: boolean;
+  dow: number;       // 0=Sun … 6=Sat
+  isTrading: boolean; // A-share market open?
+  isWorkday: boolean; // Employees must work (trading day OR makeup day)?
   type: DayType;
   /** Holiday / makeup name from API, e.g. "劳动节", "劳动节后补班" */
   name?: string;
@@ -228,26 +255,31 @@ export async function getDailyDetails(
 
     let type: DayType;
     let isTrading: boolean;
+    let isWorkday: boolean;
 
     if (entry !== undefined) {
       if (entry.holiday) {
-        // Public holiday (may fall on weekday or weekend)
+        // Public holiday — market closed, not a regular workday
         type = 'holiday';
         isTrading = false;
+        isWorkday = false;
       } else {
-        // Makeup workday (补班) — always on a weekend
+        // Makeup workday (补班) — employees work, but stock market is CLOSED on weekends
         type = 'makeup';
-        isTrading = true;
+        isTrading = false;
+        isWorkday = true;
       }
     } else if (weekend) {
       type = 'weekend';
       isTrading = false;
+      isWorkday = false;
     } else {
       type = 'trading';
       isTrading = true;
+      isWorkday = true;
     }
 
-    details.push({ iso, dow, isTrading, type, name: entry?.name });
+    details.push({ iso, dow, isTrading, isWorkday, type, name: entry?.name });
     cur.setDate(cur.getDate() + 1);
   }
 
