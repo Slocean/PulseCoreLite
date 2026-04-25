@@ -119,13 +119,19 @@ function isWeekend(iso: string): boolean {
   return dow === 0 || dow === 6;
 }
 
-/** Core decision using pre-loaded year data. */
+/** Core decision using pre-loaded year data.
+ *
+ * API keys are MM-DD (not YYYY-MM-DD).
+ * `holiday: true`  → this day is a public holiday → NON-trading
+ * `holiday: false` → this day is a makeup workday (补班) → TRADING (even on weekends)
+ */
 function checkTrading(iso: string, yearData: Record<string, HolidayEntry>): boolean {
-  const entry = yearData[iso];
+  const mmdd = iso.slice(5); // "2026-05-01" → "05-01"
+  const entry = yearData[mmdd];
   if (entry !== undefined) {
-    return entry.rest === 0; // rest=0 → makeup workday; rest=1 → holiday
+    return !entry.holiday; // holiday=true → closed; holiday=false → makeup workday (open)
   }
-  return !isWeekend(iso); // normal weekday = trading, weekend = non-trading
+  return !isWeekend(iso); // normal day: weekday=trading, weekend=non-trading
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
