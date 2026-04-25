@@ -9,7 +9,7 @@
       <span class="invest-editor-title">{{ t('invest.tradingDayTitle') }}</span>
     </div>
 
-    <!-- Note -->
+    <!-- Info note -->
     <div class="invest-trading-note">
       <span class="material-symbols-outlined invest-trading-note-icon">info</span>
       <span>{{ t('invest.tradingDayNote') }}</span>
@@ -20,24 +20,37 @@
       <div class="invest-trading-section-title">{{ t('invest.tradingDaySingleTitle') }}</div>
       <div class="invest-trading-row">
         <label class="invest-trading-label">{{ t('invest.tradingDayDate') }}</label>
-        <input
-          v-model="singleDate"
-          type="date"
-          class="invest-input invest-input--date"
-          :max="maxDate" />
-        <UiButton native-type="button" preset="overlay-chip" @click="checkSingle">
-          {{ t('invest.tradingDayCheckBtn') }}
+        <div class="invest-trading-date-wrap">
+          <UiDateInput v-model="singleDate" />
+        </div>
+        <UiButton
+          native-type="button"
+          preset="overlay-chip"
+          :disabled="singleLoading"
+          @click="checkSingle">
+          <span v-if="singleLoading" class="invest-trading-spinner material-symbols-outlined">autorenew</span>
+          <span v-else>{{ t('invest.tradingDayCheckBtn') }}</span>
         </UiButton>
       </div>
-      <div v-if="singleResult !== null" class="invest-trading-result">
+      <div v-if="singleError" class="invest-trading-error">
+        <span class="material-symbols-outlined" style="font-size:13px">wifi_off</span>
+        {{ t('invest.tradingDayNetError') }}
+      </div>
+      <div v-else-if="singleResult !== null" class="invest-trading-result">
         <span
           class="invest-trading-result-badge"
-          :class="singleResult.isTrading ? 'invest-trading-result-badge--yes' : 'invest-trading-result-badge--no'">
-          <span class="material-symbols-outlined">{{ singleResult.isTrading ? 'check_circle' : 'cancel' }}</span>
-          {{ singleResult.isTrading ? t('invest.tradingDayIsTrading') : t('invest.tradingDayNotTrading') }}
+          :class="singleResult.isTrading
+            ? 'invest-trading-result-badge--yes'
+            : 'invest-trading-result-badge--no'">
+          <span class="material-symbols-outlined">
+            {{ singleResult.isTrading ? 'check_circle' : 'cancel' }}
+          </span>
+          {{ singleResult.isTrading
+            ? t('invest.tradingDayIsTrading')
+            : t('invest.tradingDayNotTrading') }}
         </span>
         <span class="invest-trading-result-detail">
-          {{ singleResult.dateLabel }} &nbsp;·&nbsp; 星期{{ weekdayNames[singleResult.weekday] }}
+          {{ singleResult.iso }} &nbsp;·&nbsp; 星期{{ weekdayNames[singleResult.dow] }}
         </span>
       </div>
     </div>
@@ -47,32 +60,36 @@
       <div class="invest-trading-section-title">{{ t('invest.tradingDayRangeTitle') }}</div>
       <div class="invest-trading-row">
         <label class="invest-trading-label">{{ t('invest.tradingDayStartDate') }}</label>
-        <input
-          v-model="rangeStart"
-          type="date"
-          class="invest-input invest-input--date"
-          :max="rangeEnd || maxDate" />
+        <div class="invest-trading-date-wrap">
+          <UiDateInput v-model="rangeStart" :max="rangeEnd || undefined" />
+        </div>
       </div>
       <div class="invest-trading-row">
         <label class="invest-trading-label">{{ t('invest.tradingDayEndDate') }}</label>
-        <input
-          v-model="rangeEnd"
-          type="date"
-          class="invest-input invest-input--date"
-          :min="rangeStart"
-          :max="maxDate" />
+        <div class="invest-trading-date-wrap">
+          <UiDateInput v-model="rangeEnd" :min="rangeStart" />
+        </div>
       </div>
       <div class="invest-trading-row invest-trading-row--actions">
-        <UiButton native-type="button" preset="overlay-chip" @click="calcRange">
-          {{ t('invest.tradingDayCalcBtn') }}
+        <UiButton
+          native-type="button"
+          preset="overlay-chip"
+          :disabled="rangeLoading"
+          @click="calcRange">
+          <span v-if="rangeLoading" class="invest-trading-spinner material-symbols-outlined">autorenew</span>
+          <span v-else>{{ t('invest.tradingDayCalcBtn') }}</span>
         </UiButton>
       </div>
-      <div v-if="rangeResult !== null" class="invest-trading-result">
+      <div v-if="rangeError" class="invest-trading-error">
+        <span class="material-symbols-outlined" style="font-size:13px">wifi_off</span>
+        {{ t('invest.tradingDayNetError') }}
+      </div>
+      <div v-else-if="rangeResult !== null" class="invest-trading-result">
         <span class="invest-trading-result-count">
           {{ t('invest.tradingDayCount', { n: rangeResult.count }) }}
         </span>
         <span class="invest-trading-result-detail">
-          {{ rangeResult.startLabel }} → {{ rangeResult.endLabel }}
+          {{ rangeResult.startIso }} → {{ rangeResult.endIso }}
           &nbsp;（{{ rangeResult.totalDays }} 日历天）
         </span>
       </div>
@@ -83,20 +100,27 @@
       <div class="invest-trading-section-title">{{ t('invest.tradingDayNearestTitle') }}</div>
       <div class="invest-trading-row">
         <label class="invest-trading-label">{{ t('invest.tradingDayDate') }}</label>
-        <input
-          v-model="nearestDate"
-          type="date"
-          class="invest-input invest-input--date"
-          :max="maxDate" />
-        <UiButton native-type="button" preset="overlay-chip" @click="findNearest">
-          {{ t('invest.tradingDayCheckBtn') }}
+        <div class="invest-trading-date-wrap">
+          <UiDateInput v-model="nearestDate" />
+        </div>
+        <UiButton
+          native-type="button"
+          preset="overlay-chip"
+          :disabled="nearestLoading"
+          @click="findNearest">
+          <span v-if="nearestLoading" class="invest-trading-spinner material-symbols-outlined">autorenew</span>
+          <span v-else>{{ t('invest.tradingDayCheckBtn') }}</span>
         </UiButton>
       </div>
-      <div v-if="nearestResult !== null" class="invest-trading-nearest">
+      <div v-if="nearestError" class="invest-trading-error">
+        <span class="material-symbols-outlined" style="font-size:13px">wifi_off</span>
+        {{ t('invest.tradingDayNetError') }}
+      </div>
+      <div v-else-if="nearestResult !== null" class="invest-trading-nearest">
         <div class="invest-trading-nearest-item">
           <span class="invest-trading-nearest-label">{{ t('invest.tradingDayPrev') }}</span>
           <span class="invest-trading-nearest-value invest-trading-nearest-value--prev">
-            {{ nearestResult.prev }}
+            {{ nearestResult.prevIso }}
             <span class="invest-trading-nearest-dow">星期{{ weekdayNames[nearestResult.prevDow] }}</span>
           </span>
         </div>
@@ -106,14 +130,14 @@
             :class="nearestResult.todayIsTrading
               ? 'invest-trading-result-badge--yes'
               : 'invest-trading-result-badge--no'">
-            {{ nearestResult.todayLabel }}
+            {{ nearestDate }}
             {{ nearestResult.todayIsTrading ? '✓' : '✗' }}
           </span>
         </div>
         <div class="invest-trading-nearest-item">
           <span class="invest-trading-nearest-label">{{ t('invest.tradingDayNext') }}</span>
           <span class="invest-trading-nearest-value invest-trading-nearest-value--next">
-            {{ nearestResult.next }}
+            {{ nearestResult.nextIso }}
             <span class="invest-trading-nearest-dow">星期{{ weekdayNames[nearestResult.nextDow] }}</span>
           </span>
         </div>
@@ -127,6 +151,13 @@ import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
+import UiDateInput from '@/components/ui/DateInput';
+import {
+  isTradingDay,
+  countTradingDays,
+  findNearbyTradingDays,
+  WEEKDAY_ZH
+} from '@/utils/tradingCalendar';
 
 const emit = defineEmits<{
   (e: 'back'): void;
@@ -134,131 +165,89 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-// Chinese weekday names (Sun=0 ... Sat=6)
-const weekdayNames = ['日', '一', '二', '三', '四', '五', '六'];
+const weekdayNames = WEEKDAY_ZH;
+const today = new Date().toISOString().slice(0, 10);
 
-const maxDate = new Date().toISOString().slice(0, 10);
+// ── Section 1: Single date check ─────────────────────────────────────────────
 
-// ── Section 1: Single date ────────────────────────────────────────────────
+const singleDate = ref(today);
+const singleLoading = ref(false);
+const singleError = ref(false);
 
-const singleDate = ref(maxDate);
-
-interface SingleResult {
-  isTrading: boolean;
-  weekday: number;
-  dateLabel: string;
-}
+interface SingleResult { isTrading: boolean; iso: string; dow: number }
 const singleResult = ref<SingleResult | null>(null);
 
-function isWeekday(d: Date): boolean {
-  const day = d.getDay();
-  return day !== 0 && day !== 6;
+async function checkSingle() {
+  if (!singleDate.value || singleLoading.value) return;
+  singleLoading.value = true;
+  singleError.value = false;
+  singleResult.value = null;
+  try {
+    const info = await isTradingDay(singleDate.value);
+    const [y, m, d] = singleDate.value.split('-').map(Number);
+    singleResult.value = {
+      isTrading: info.isTrading,
+      iso: singleDate.value,
+      dow: new Date(y, m - 1, d).getDay()
+    };
+  } catch {
+    singleError.value = true;
+  } finally {
+    singleLoading.value = false;
+  }
 }
 
-function parseDateLocal(str: string): Date {
-  const [y, m, d] = str.split('-').map(Number);
-  return new Date(y, m - 1, d);
-}
-
-function formatDateLabel(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-function checkSingle() {
-  if (!singleDate.value) return;
-  const d = parseDateLocal(singleDate.value);
-  singleResult.value = {
-    isTrading: isWeekday(d),
-    weekday: d.getDay(),
-    dateLabel: formatDateLabel(d)
-  };
-}
-
-// ── Section 2: Range ──────────────────────────────────────────────────────
+// ── Section 2: Range calculation ─────────────────────────────────────────────
 
 const rangeStart = ref('');
 const rangeEnd = ref('');
+const rangeLoading = ref(false);
+const rangeError = ref(false);
 
-interface RangeResult {
-  count: number;
-  totalDays: number;
-  startLabel: string;
-  endLabel: string;
-}
+interface RangeResult { count: number; totalDays: number; startIso: string; endIso: string }
 const rangeResult = ref<RangeResult | null>(null);
 
-function countWeekdays(start: Date, end: Date): number {
-  if (start > end) return 0;
-  const totalDays = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
-  const fullWeeks = Math.floor(totalDays / 7);
-  let count = fullWeeks * 5;
-  const remainder = totalDays % 7;
-  const startDow = start.getDay(); // 0=Sun
-  for (let i = 0; i < remainder; i++) {
-    const dow = (startDow + i) % 7;
-    if (dow !== 0 && dow !== 6) count++;
+async function calcRange() {
+  if (!rangeStart.value || !rangeEnd.value || rangeLoading.value) return;
+  if (rangeStart.value > rangeEnd.value) return;
+  rangeLoading.value = true;
+  rangeError.value = false;
+  rangeResult.value = null;
+  try {
+    const { count, totalDays } = await countTradingDays(rangeStart.value, rangeEnd.value);
+    rangeResult.value = {
+      count,
+      totalDays,
+      startIso: rangeStart.value,
+      endIso: rangeEnd.value
+    };
+  } catch {
+    rangeError.value = true;
+  } finally {
+    rangeLoading.value = false;
   }
-  return count;
 }
 
-function calcRange() {
-  if (!rangeStart.value || !rangeEnd.value) return;
-  const s = parseDateLocal(rangeStart.value);
-  const e = parseDateLocal(rangeEnd.value);
-  if (s > e) return;
-  const totalDays = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
-  rangeResult.value = {
-    count: countWeekdays(s, e),
-    totalDays,
-    startLabel: formatDateLabel(s),
-    endLabel: formatDateLabel(e)
-  };
-}
+// ── Section 3: Nearest trading day ───────────────────────────────────────────
 
-// ── Section 3: Nearest trading day ───────────────────────────────────────
+const nearestDate = ref(today);
+const nearestLoading = ref(false);
+const nearestError = ref(false);
 
-const nearestDate = ref(maxDate);
+const nearestResult = ref<Awaited<ReturnType<typeof findNearbyTradingDays>> | null>(null);
 
-interface NearestResult {
-  prev: string;
-  prevDow: number;
-  todayLabel: string;
-  todayIsTrading: boolean;
-  next: string;
-  nextDow: number;
-}
-const nearestResult = ref<NearestResult | null>(null);
-
-function prevTradingDay(d: Date): Date {
-  const p = new Date(d);
-  p.setDate(p.getDate() - 1);
-  while (!isWeekday(p)) p.setDate(p.getDate() - 1);
-  return p;
-}
-
-function nextTradingDay(d: Date): Date {
-  const n = new Date(d);
-  n.setDate(n.getDate() + 1);
-  while (!isWeekday(n)) n.setDate(n.getDate() + 1);
-  return n;
-}
-
-function findNearest() {
-  if (!nearestDate.value) return;
-  const d = parseDateLocal(nearestDate.value);
-  const prev = prevTradingDay(d);
-  const next = nextTradingDay(d);
-  nearestResult.value = {
-    prev: formatDateLabel(prev),
-    prevDow: prev.getDay(),
-    todayLabel: formatDateLabel(d),
-    todayIsTrading: isWeekday(d),
-    next: formatDateLabel(next),
-    nextDow: next.getDay()
-  };
+async function findNearest() {
+  if (!nearestDate.value || nearestLoading.value) return;
+  nearestLoading.value = true;
+  nearestError.value = false;
+  nearestResult.value = null;
+  try {
+    nearestResult.value = await findNearbyTradingDays(nearestDate.value);
+  } catch {
+    nearestError.value = true;
+  } finally {
+    nearestLoading.value = false;
+  }
 }
 </script>
 
@@ -274,9 +263,9 @@ function findNearest() {
   gap: 6px;
   padding: 8px 10px;
   border-radius: 7px;
-  background: rgba(255, 200, 80, 0.07);
-  border: 1px solid rgba(255, 200, 80, 0.18);
-  color: rgba(255, 200, 80, 0.8);
+  background: rgba(80, 160, 255, 0.06);
+  border: 1px solid rgba(80, 160, 255, 0.16);
+  color: rgba(120, 180, 255, 0.8);
   font-size: 11px;
   line-height: 1.5;
 }
@@ -318,6 +307,31 @@ function findNearest() {
   color: rgba(255, 255, 255, 0.55);
   flex-shrink: 0;
   min-width: 52px;
+}
+
+.invest-trading-date-wrap {
+  flex: 1;
+  min-width: 0;
+  max-width: 200px;
+}
+
+/* Loading spinner */
+.invest-trading-spinner {
+  font-size: 15px;
+  animation: invest-spin 0.8s linear infinite;
+}
+@keyframes invest-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error */
+.invest-trading-error {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: rgba(255, 120, 100, 0.85);
+  padding: 4px 0;
 }
 
 /* Result area */
