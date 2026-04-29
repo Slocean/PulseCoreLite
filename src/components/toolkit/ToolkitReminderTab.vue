@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <UiToast channel="toolkit" />
 
   <ReminderListPanel
@@ -35,7 +35,6 @@
       :weekly-input-time="weeklyInputTime"
       :monthly-input-days="monthlyInputDays"
       :monthly-input-time="monthlyInputTime"
-      :smtp-test-to="smtpTestTo"
       :smtp-testing="smtpTestSending"
       :channel-options="channelOptions"
       :weekday-options="weekdayOptions"
@@ -55,7 +54,6 @@
       @update:weekly-input-time="updateWeeklyInputTime"
       @update:monthly-input-days="updateMonthlyInputDays"
       @update:monthly-input-time="updateMonthlyInputTime"
-      @update:smtp-test-to="updateSmtpTestTo"
       @send-smtp-test-email="sendSmtpTestEmail"
       @content-image-change="handleContentImageChange" />
 
@@ -141,7 +139,6 @@ const {
   smtpDialogOpen,
   smtpSaving,
   smtpForm,
-  smtpTestTo,
   smtpTestSending,
   smtpSecurityOptions,
   formatWeekday,
@@ -151,7 +148,6 @@ const {
   updateWeeklyInputTime,
   updateMonthlyInputDays,
   updateMonthlyInputTime,
-  updateSmtpTestTo,
   closeAllowCloseWarning,
   dismissAllowCloseWarning,
   handleAdvancedImageChange,

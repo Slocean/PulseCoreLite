@@ -1,7 +1,8 @@
 use chrono::Utc;
 use lettre::{
-    message::Mailbox, transport::smtp::authentication::Credentials, AsyncSmtpTransport,
-    AsyncTransport, Message, Tokio1Executor,
+    message::{header::ContentType, Mailbox, MultiPart, SinglePart},
+    transport::smtp::authentication::Credentials,
+    AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
 };
 #[cfg(windows)]
 use std::process::Command;
@@ -498,8 +499,13 @@ pub(crate) fn normalize_task_reminder_store(input: TaskReminderStore) -> TaskRem
     }
 }
 
-async fn send_reminder_email_internal(request: SendReminderEmailRequest) -> CmdResult<()> {
-    let smtp = request.smtp;
+async fn send_email_internal(
+    smtp: SmtpEmailConfig,
+    to_address: String,
+    subject: String,
+    plain_body: String,
+    html_body: Option<String>,
+) -> CmdResult<()> {
     if smtp.host.trim().is_empty() {
         return Err("smtp host is empty".to_string());
     }
@@ -512,7 +518,7 @@ async fn send_reminder_email_internal(request: SendReminderEmailRequest) -> CmdR
     if smtp.from_email.trim().is_empty() {
         return Err("smtp from email is empty".to_string());
     }
-    if request.to.trim().is_empty() {
+    if to_address.trim().is_empty() {
         return Err("mail recipient is empty".to_string());
     }
 
@@ -526,18 +532,33 @@ async fn send_reminder_email_internal(request: SendReminderEmailRequest) -> CmdR
             .parse()
             .map_err(|e| format!("invalid from mailbox: {e}"))?
     };
-    let to: Mailbox = request
-        .to
+    let to: Mailbox = to_address
         .trim()
         .parse()
         .map_err(|e| format!("invalid recipient email: {e}"))?;
 
-    let message = Message::builder()
-        .from(from)
-        .to(to)
-        .subject(request.subject)
-        .body(request.body)
-        .map_err(|e| format!("failed to build email: {e}"))?;
+    let builder = Message::builder().from(from).to(to).subject(subject);
+    let message = if let Some(html) = html_body {
+        builder
+            .multipart(
+                MultiPart::alternative()
+                    .singlepart(
+                        SinglePart::builder()
+                            .header(ContentType::TEXT_PLAIN)
+                            .body(plain_body),
+                    )
+                    .singlepart(
+                        SinglePart::builder()
+                            .header(ContentType::TEXT_HTML)
+                            .body(html),
+                    ),
+            )
+            .map_err(|e| format!("failed to build email: {e}"))?
+    } else {
+        builder
+            .body(plain_body)
+            .map_err(|e| format!("failed to build email: {e}"))?
+    };
 
     let creds = Credentials::new(smtp.username, smtp.password);
     let host = smtp.host.trim().to_string();
@@ -568,6 +589,17 @@ async fn send_reminder_email_internal(request: SendReminderEmailRequest) -> CmdR
         .await
         .map_err(|e| format!("failed to send email: {e}"))?;
     Ok(())
+}
+
+async fn send_reminder_email_internal(request: SendReminderEmailRequest) -> CmdResult<()> {
+    send_email_internal(
+        request.smtp,
+        request.to,
+        request.subject,
+        request.body,
+        None,
+    )
+    .await
 }
 
 #[tauri::command]
@@ -620,6 +652,211 @@ pub async fn save_task_reminder_store(
     Ok(normalized)
 }
 
+fn html_escape(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#39;")
+}
+
+fn html_with_line_breaks(value: &str) -> String {
+    html_escape(value).replace('\n', "<br />")
+}
+
+fn is_http_url(value: &str) -> bool {
+    let normalized = value.trim().to_ascii_lowercase();
+    normalized.starts_with("https://") || normalized.starts_with("http://")
+}
+
+fn is_supported_image_src(value: &str) -> bool {
+    let normalized = value.trim().to_ascii_lowercase();
+    is_http_url(&normalized) || normalized.starts_with("data:image/")
+}
+
+fn looks_like_html_content(value: &str) -> bool {
+    let normalized = value.trim_start().to_ascii_lowercase();
+    normalized.starts_with("<!doctype")
+        || normalized.starts_with("<html")
+        || (normalized.contains('<') && normalized.contains('>'))
+}
+
+fn reminder_plain_body(reminder: &TaskReminder) -> String {
+    let content = reminder.content.trim();
+    if content.is_empty() {
+        return reminder.title.clone();
+    }
+
+    match reminder.content_type.as_str() {
+        "web" => format!("{}\n\nOpen web page:\n{content}", reminder.title),
+        "image" => format!("{}\n\nImage:\n{content}", reminder.title),
+        _ => reminder.content.clone(),
+    }
+}
+
+fn reminder_email_shell(title: &str, inner_html: String) -> String {
+    format!(
+        r#"<!doctype html>
+<html>
+  <body style="margin:0;padding:24px;background:#f6f8fb;color:#172033;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+    <main style="max-width:720px;margin:0 auto;background:#ffffff;border:1px solid #dde5f0;border-radius:16px;padding:24px;">
+      <h1 style="margin:0 0 18px;font-size:22px;line-height:1.35;color:#101827;">{}</h1>
+      {}
+    </main>
+  </body>
+</html>"#,
+        html_escape(title),
+        inner_html
+    )
+}
+
+fn simple_markdown_to_email_html(value: &str) -> String {
+    let normalized = value.replace("\r\n", "\n").replace('\r', "\n");
+    let mut html = String::new();
+    let mut paragraph: Vec<String> = Vec::new();
+    let mut list_open = false;
+    let mut code_open = false;
+    let mut code_lines: Vec<String> = Vec::new();
+
+    let flush_paragraph = |html: &mut String, paragraph: &mut Vec<String>| {
+        if paragraph.is_empty() {
+            return;
+        }
+        html.push_str("<p style=\"margin:0 0 14px;line-height:1.65;\">");
+        html.push_str(&html_with_line_breaks(&paragraph.join("\n")));
+        html.push_str("</p>");
+        paragraph.clear();
+    };
+    let close_list = |html: &mut String, list_open: &mut bool| {
+        if *list_open {
+            html.push_str("</ul>");
+            *list_open = false;
+        }
+    };
+
+    for line in normalized.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("```") {
+            if code_open {
+                html.push_str("<pre style=\"margin:0 0 14px;padding:12px;border-radius:10px;background:#101827;color:#e8eef7;overflow:auto;\"><code>");
+                html.push_str(&html_escape(&code_lines.join("\n")));
+                html.push_str("</code></pre>");
+                code_lines.clear();
+                code_open = false;
+            } else {
+                flush_paragraph(&mut html, &mut paragraph);
+                close_list(&mut html, &mut list_open);
+                code_open = true;
+            }
+            continue;
+        }
+        if code_open {
+            code_lines.push(line.to_string());
+            continue;
+        }
+        if trimmed.is_empty() {
+            flush_paragraph(&mut html, &mut paragraph);
+            close_list(&mut html, &mut list_open);
+            continue;
+        }
+        if let Some(text) = trimmed.strip_prefix("# ") {
+            flush_paragraph(&mut html, &mut paragraph);
+            close_list(&mut html, &mut list_open);
+            html.push_str("<h2 style=\"margin:0 0 12px;font-size:20px;line-height:1.35;\">");
+            html.push_str(&html_escape(text));
+            html.push_str("</h2>");
+            continue;
+        }
+        if let Some(text) = trimmed
+            .strip_prefix("- ")
+            .or_else(|| trimmed.strip_prefix("* "))
+        {
+            flush_paragraph(&mut html, &mut paragraph);
+            if !list_open {
+                html.push_str("<ul style=\"margin:0 0 14px;padding-left:22px;line-height:1.65;\">");
+                list_open = true;
+            }
+            html.push_str("<li>");
+            html.push_str(&html_with_line_breaks(text));
+            html.push_str("</li>");
+            continue;
+        }
+        paragraph.push(line.to_string());
+    }
+
+    if code_open {
+        html.push_str("<pre style=\"margin:0 0 14px;padding:12px;border-radius:10px;background:#101827;color:#e8eef7;overflow:auto;\"><code>");
+        html.push_str(&html_escape(&code_lines.join("\n")));
+        html.push_str("</code></pre>");
+    }
+    flush_paragraph(&mut html, &mut paragraph);
+    close_list(&mut html, &mut list_open);
+
+    if html.is_empty() {
+        "<p style=\"margin:0;line-height:1.65;\">No content.</p>".to_string()
+    } else {
+        html
+    }
+}
+
+fn reminder_html_body(reminder: &TaskReminder) -> Option<String> {
+    let content = reminder.content.trim();
+    match reminder.content_type.as_str() {
+        "markdown" => Some(reminder_email_shell(
+            &reminder.title,
+            simple_markdown_to_email_html(content),
+        )),
+        "web" => {
+            if looks_like_html_content(content) {
+                return Some(if content.to_ascii_lowercase().contains("<html") {
+                    content.to_string()
+                } else {
+                    reminder_email_shell(&reminder.title, content.to_string())
+                });
+            }
+
+            let inner = if is_http_url(content) {
+                let safe_url = html_escape(content);
+                format!(
+                    r#"<p style="margin:0 0 14px;line-height:1.65;">Most email clients block embedded web pages, so this reminder is sent as a safe link card.</p>
+<p style="margin:0 0 18px;"><a href="{0}" style="display:inline-block;padding:11px 16px;border-radius:10px;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:600;">Open web page</a></p>
+<p style="margin:0;color:#526070;line-height:1.6;word-break:break-all;">{0}</p>"#,
+                    safe_url
+                )
+            } else if content.is_empty() {
+                "<p style=\"margin:0;line-height:1.65;\">No web URL configured.</p>".to_string()
+            } else {
+                format!(
+                    "<p style=\"margin:0;line-height:1.65;word-break:break-all;\">{}</p>",
+                    html_escape(content)
+                )
+            };
+            Some(reminder_email_shell(&reminder.title, inner))
+        }
+        "image" => {
+            let inner = if is_supported_image_src(content) {
+                let safe_src = html_escape(content);
+                format!(
+                    r#"<p style="margin:0 0 14px;line-height:1.65;">Image reminder:</p>
+<img src="{0}" alt="{1}" style="display:block;max-width:100%;height:auto;border-radius:12px;border:1px solid #dde5f0;" />"#,
+                    safe_src,
+                    html_escape(&reminder.title)
+                )
+            } else if content.is_empty() {
+                "<p style=\"margin:0;line-height:1.65;\">No image configured.</p>".to_string()
+            } else {
+                format!(
+                    "<p style=\"margin:0;line-height:1.65;word-break:break-all;\">{}</p>",
+                    html_escape(content)
+                )
+            };
+            Some(reminder_email_shell(&reminder.title, inner))
+        }
+        _ => None,
+    }
+}
+
 pub(crate) async fn trigger_task_reminder_backend(
     app: &AppHandle,
     smtp_config: Option<SmtpEmailConfig>,
@@ -657,17 +894,14 @@ pub(crate) async fn trigger_task_reminder_backend(
     if target.is_empty() {
         return Err("recipient email is empty; configure SMTP from email first".to_string());
     }
-    let request = SendReminderEmailRequest {
+    send_email_internal(
         smtp,
-        to: target,
-        subject: format!("[PulseCore] {}", reminder.title),
-        body: if reminder.content.trim().is_empty() {
-            reminder.title.clone()
-        } else {
-            reminder.content.clone()
-        },
-    };
-    send_reminder_email_internal(request).await
+        target,
+        format!("[PulseCore] {}", reminder.title),
+        reminder_plain_body(reminder),
+        reminder_html_body(reminder),
+    )
+    .await
 }
 
 #[tauri::command]

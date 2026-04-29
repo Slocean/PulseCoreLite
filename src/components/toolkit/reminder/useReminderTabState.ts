@@ -66,7 +66,6 @@ export function useReminderTabState(emit: ReminderTabEmit) {
   const weeklyInputTime = ref('09:00');
   const monthlyInputDays = ref<number[]>([new Date().getDate()]);
   const monthlyInputTime = ref('09:00');
-  const smtpTestTo = ref('');
   const smtpForm = reactive<SmtpEmailConfig>({
     host: '',
     port: 587,
@@ -174,7 +173,6 @@ export function useReminderTabState(emit: ReminderTabEmit) {
     await load();
     if (smtpConfig.value) {
       Object.assign(smtpForm, smtpConfig.value);
-      smtpTestTo.value = smtpConfig.value.fromEmail ?? '';
     }
     nextTick(() => emit('contentChange'));
   });
@@ -224,7 +222,6 @@ export function useReminderTabState(emit: ReminderTabEmit) {
   const updateWeeklyInputTime = makeRefUpdater(weeklyInputTime);
   const updateMonthlyInputDays = makeRefUpdater(monthlyInputDays);
   const updateMonthlyInputTime = makeRefUpdater(monthlyInputTime);
-  const updateSmtpTestTo = makeRefUpdater(smtpTestTo);
 
   async function processImageFile(
     file: File,
@@ -481,7 +478,6 @@ export function useReminderTabState(emit: ReminderTabEmit) {
     clearTip();
     if (smtpConfig.value) {
       Object.assign(smtpForm, smtpConfig.value);
-      smtpTestTo.value = smtpTestTo.value || smtpConfig.value.fromEmail || '';
     }
     smtpDialogOpen.value = true;
   }
@@ -491,7 +487,6 @@ export function useReminderTabState(emit: ReminderTabEmit) {
     smtpSaving.value = true;
     try {
       await saveSmtpConfig({ ...smtpForm });
-      smtpTestTo.value = smtpTestTo.value || smtpForm.fromEmail || '';
       smtpDialogOpen.value = false;
       notify(t('toolkit.reminderSmtpSaveSuccess'), 'success');
     } catch (error) {
@@ -503,10 +498,14 @@ export function useReminderTabState(emit: ReminderTabEmit) {
 
   async function sendSmtpTestEmail() {
     clearTip();
+    if (!form.email.trim()) {
+      notify(t('toolkit.reminderErrorEmailRequired'), 'warning');
+      return;
+    }
     smtpTestSending.value = true;
     showToast(t('toolkit.reminderSmtpTesting'), { variant: 'primary', durationMs: 0, closable: true });
     try {
-      await testSmtpConfig({ ...smtpForm }, smtpTestTo.value);
+      await testSmtpConfig({ ...smtpForm }, form.email);
       hideToast();
       notify(t('toolkit.reminderSmtpTestSuccess'), 'success');
     } catch (error) {
@@ -596,7 +595,6 @@ export function useReminderTabState(emit: ReminderTabEmit) {
     smtpDialogOpen,
     smtpSaving,
     smtpForm,
-    smtpTestTo,
     smtpTestSending,
     smtpSecurityOptions,
     formatWeekday,
@@ -606,7 +604,6 @@ export function useReminderTabState(emit: ReminderTabEmit) {
     updateWeeklyInputTime,
     updateMonthlyInputDays,
     updateMonthlyInputTime,
-    updateSmtpTestTo,
     closeAllowCloseWarning,
     dismissAllowCloseWarning,
     handleAdvancedImageChange,

@@ -92,6 +92,9 @@ export function useTaskReminders() {
     if (!hasAnySchedule(normalized)) {
       throw new Error('toolkit.reminderErrorNoSchedule');
     }
+    if (normalized.channel === 'email' && !normalized.email) {
+      throw new Error('toolkit.reminderErrorEmailRequired');
+    }
 
     if (!inputTitle) {
       const existing = reminders.value.find(item => item.id === normalized.id);
@@ -145,7 +148,9 @@ export function useTaskReminders() {
     }
     if (inTauri()) {
       await api.triggerTaskReminderNow(normalized);
+      return;
     }
+    throw new Error('toolkit.reminderErrorEmailRuntimeRequired');
   }
 
   async function saveSmtpConfig(config: SmtpEmailConfig) {

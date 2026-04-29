@@ -27,8 +27,8 @@
       <p v-if="form.channel === 'email'" class="toolkit-profile-hint">{{ t('toolkit.reminderEmailHint') }}</p>
       <template v-if="form.channel === 'email'">
         <label class="toolkit-field">
-          <span>{{ t('toolkit.reminderSmtpTestTo') }}</span>
-          <input v-model.trim="smtpTestToModel" type="email" placeholder="name@example.com" />
+          <span>{{ t('toolkit.reminderEmail') }}</span>
+          <input v-model.trim="form.email" type="email" placeholder="name@example.com" autocomplete="email" />
         </label>
         <div class="toolkit-actions">
           <UiButton native-type="button" preset="overlay-primary" :loading="smtpTesting" @click="emit('sendSmtpTestEmail')">
@@ -132,7 +132,7 @@
     <div class="toolkit-grid">
       <label class="toolkit-field toolkit-field--inline toolkit-field--inline-select">
         <UiSelect v-model="form.contentType" :options="contentTypeOptions" :aria-label="t('toolkit.reminderContentType')" />
-        <textarea v-if="form.contentType === 'text' || form.contentType === 'markdown'" v-model="form.content" rows="4" />
+        <textarea v-if="form.contentType === 'text' || form.contentType === 'markdown' || form.contentType === 'web'" v-model="form.content" rows="4" />
         <ReminderImageInput
           v-else-if="form.contentType === 'image'"
           v-model="form.content"
@@ -184,7 +184,6 @@ const props = defineProps<{
   weeklyInputTime: string;
   monthlyInputDays: number[];
   monthlyInputTime: string;
-  smtpTestTo: string;
   smtpTesting: boolean;
   channelOptions: SelectOption[];
   weekdayOptions: SelectOption[];
@@ -207,7 +206,6 @@ const emit = defineEmits<{
   (event: 'update:weeklyInputTime', value: string): void;
   (event: 'update:monthlyInputDays', value: number[]): void;
   (event: 'update:monthlyInputTime', value: string): void;
-  (event: 'update:smtpTestTo', value: string): void;
   (event: 'sendSmtpTestEmail'): void;
   (event: 'contentImageChange', value: Event): void;
 }>();
@@ -240,11 +238,6 @@ const monthlyInputDaysModel = computed({
 const monthlyInputTimeModel = computed({
   get: () => props.monthlyInputTime,
   set: value => emit('update:monthlyInputTime', value)
-});
-
-const smtpTestToModel = computed({
-  get: () => props.smtpTestTo,
-  set: value => emit('update:smtpTestTo', value)
 });
 
 const channelOptions = computed(() => props.channelOptions);
