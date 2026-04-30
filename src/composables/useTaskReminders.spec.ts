@@ -75,6 +75,7 @@ describe('useTaskReminders', () => {
     expect(remindersApi.reminders.value[0].weeklySlots).toEqual([{ weekday: 7, time: '09:01' }, { weekday: 1, time: '10:20' }]);
     expect(remindersApi.reminders.value[0].monthlySlots).toEqual([{ day: 31, time: '11:02' }, { day: 1, time: '04:05' }]);
     expect(remindersApi.reminders.value[0].contentType).toBe('text');
+    expect(remindersApi.reminders.value[0].updatedAt).toBe('2026-01-01T00:00:00.000Z');
 
     expect(remindersApi.smtpConfig.value).toEqual({
       host: 'smtp.example.com',

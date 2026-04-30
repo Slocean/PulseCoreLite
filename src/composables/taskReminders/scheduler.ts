@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   MonthlyReminderSlot,
   ReminderChannel,
   ReminderContentType,
@@ -125,7 +125,7 @@ export function normalizeReminder(input: TaskReminder): TaskReminder {
     content: input.content ?? '',
     advancedSettings: normalizeAdvancedSettings(input.advancedSettings),
     createdAt: input.createdAt || nowIso(),
-    updatedAt: nowIso()
+    updatedAt: input.updatedAt || nowIso()
   };
 }
 

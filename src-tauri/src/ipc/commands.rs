@@ -447,7 +447,11 @@ fn normalize_task_reminder(input: TaskReminder) -> TaskReminder {
     } else {
         input.created_at
     };
-    let updated_at = Utc::now().to_rfc3339();
+    let updated_at = if input.updated_at.trim().is_empty() {
+        Utc::now().to_rfc3339()
+    } else {
+        input.updated_at
+    };
 
     let advanced_settings = normalize_advanced_settings(input.advanced_settings, &channel);
 
@@ -636,7 +640,17 @@ pub async fn save_task_reminder_store(
     state: State<'_, SharedState>,
     store: TaskReminderStore,
 ) -> CmdResult<TaskReminderStore> {
-    let normalized = normalize_task_reminder_store(store);
+    let mut normalized = normalize_task_reminder_store(store);
+    if let Some(disk) = read_task_reminder_store_file(&app) {
+        let disk = normalize_task_reminder_store(disk);
+        for incoming in &mut normalized.reminders {
+            if let Some(existing) = disk.reminders.iter().find(|item| {
+                item.id == incoming.id && item.updated_at == incoming.updated_at
+            }) {
+                *incoming = existing.clone();
+            }
+        }
+    }
     write_task_reminder_store_file(&app, &normalized)?;
 
     {
