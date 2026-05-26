@@ -4,7 +4,7 @@ import type { AppLanguage } from '../types';
 import zhCN from './locales/zh-CN.json';
 
 interface LocaleMessages {
-  [key: string]: string | LocaleMessages;
+  [key: string]: string | string[] | LocaleMessages;
 }
 
 const FALLBACK_LOCALE: AppLanguage = 'en-US';
