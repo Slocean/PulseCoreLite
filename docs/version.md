@@ -1,3 +1,17 @@
+## v1.9.2
+
+- 工具箱新增投资策略页签，支持策略创建与管理、条件交易规则与定投回测，并优化编辑器交互（折叠面板、统一选择器与日期输入组件）。
+- 回测体验全面升级：可展开交易记录表格、虚拟滚动、可折叠指标面板、回测历史记录与批量删除，并修复收益率与年化收益率计算问题。
+- 新增策略对比历史、资金管理与分配图表、利润百分比条件；补充 DCA 与交易日计算器（含节假日处理与明细弹窗）。
+- 新增 Epic 转 Steam 游戏同步能力，支持启动目录与启动参数配置，以及状态刷新与自动刷新。
+- 优化任务提醒与邮件提醒校验逻辑，改进提醒时间戳处理；主窗口加宽至 400px 以适配投资工具布局，并同步窗口尺寸配置。
+
+- Added an Investment Strategy tab in Toolkit with strategy creation/management, conditional trading rules, and DCA backtesting, plus refined editor interactions (collapsible panels, unified select and date inputs).
+- Upgraded the backtest experience with expandable trade-record rows, virtual scrolling, a collapsible metrics panel, backtest history, and batch delete; fixed return rate and annualized return calculations.
+- Added strategy comparison history, fund management with allocation charts, and profit-percentage conditions; introduced DCA and trading-day calculators with holiday handling and a detail dialog.
+- Added Epic-to-Steam game sync with start-directory and launch-option configuration, plus status refresh and auto-refresh.
+- Improved task and email reminder validation and timestamp handling; widened the main window to 400px for the investment toolkit and synced window-size configuration.
+
 ## v1.9.1
 
 - 设置面板新增“本地 AI”配置区，可分别选择模型目录与启动器目录；AI Runtime 包可直接使用内置启动器，Lite 包也支持手动指定启动器路径。
