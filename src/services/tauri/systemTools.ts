@@ -6,5 +6,6 @@ export const systemToolsApi = {
   applyContextMenuStyle: (style: ContextMenuStyle) =>
     tauriInvoke<SystemToolsStatus>('apply_context_menu_style', { style }),
   disableWindowsUpdatePermanently: () => tauriInvoke<void>('disable_windows_update_permanently'),
+  restoreWindowsUpdatePermanently: () => tauriInvoke<void>('restore_windows_update_permanently'),
   launchMasActivation: () => tauriInvoke<void>('launch_mas_activation')
 };

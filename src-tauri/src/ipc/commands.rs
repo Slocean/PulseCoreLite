@@ -2229,6 +2229,11 @@ pub fn disable_windows_update_permanently() -> CmdResult<()> {
 }
 
 #[tauri::command]
+pub fn restore_windows_update_permanently() -> CmdResult<()> {
+    crate::system_tools::restore_windows_update_settings()
+}
+
+#[tauri::command]
 pub fn launch_mas_activation() -> CmdResult<()> {
     crate::system_tools::launch_mas_activation()
 }

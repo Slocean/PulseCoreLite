@@ -281,6 +281,15 @@ fn disable_windows_update_permanently() -> ToolResult<()> {
 }
 
 #[cfg(windows)]
+fn restore_windows_update() -> ToolResult<()> {
+    let script = "$ErrorActionPreference='SilentlyContinue'; Remove-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU' -Name 'NoAutoUpdate' -ErrorAction SilentlyContinue; Remove-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU' -Name 'AUOptions' -ErrorAction SilentlyContinue; Remove-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate' -Name 'DisableWindowsUpdateAccess' -ErrorAction SilentlyContinue; Remove-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate' -Name 'SetDisableUXWUAccess' -ErrorAction SilentlyContinue; foreach($svc in @('UsoSvc','WaaSMedicSvc')){ Set-Service -Name $svc -StartupType Manual -ErrorAction SilentlyContinue }; Set-Service -Name wuauserv -StartupType Automatic -ErrorAction SilentlyContinue; Start-Service -Name wuauserv -ErrorAction SilentlyContinue";
+    let args = format!(
+        "-NoExit -NoProfile -ExecutionPolicy Bypass -Command \"{script}\""
+    );
+    spawn_elevated_powershell_visible(&args)
+}
+
+#[cfg(windows)]
 fn run_mas_activation() -> ToolResult<()> {
     let args = format!(
         "-NoExit -NoProfile -ExecutionPolicy Bypass -Command \"{}\"",
@@ -322,6 +331,18 @@ pub fn disable_windows_update() -> ToolResult<()> {
     #[cfg(windows)]
     {
         return disable_windows_update_permanently();
+    }
+
+    #[cfg(not(windows))]
+    {
+        Err("System tools are only supported on Windows.".to_string())
+    }
+}
+
+pub fn restore_windows_update_settings() -> ToolResult<()> {
+    #[cfg(windows)]
+    {
+        return restore_windows_update();
     }
 
     #[cfg(not(windows))]

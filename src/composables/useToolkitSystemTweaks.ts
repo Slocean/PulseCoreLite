@@ -60,15 +60,52 @@ export function useToolkitSystemTweaks(t: Translate) {
     try {
       await api.disableWindowsUpdatePermanently();
       showToast(t('toolkit.systemUpdateDisableLaunched'), { variant: 'info' });
-      window.setTimeout(() => {
-        void refreshStatus();
-      }, 3000);
+      scheduleUpdateStatusRefresh();
     } catch (error) {
       errorMessage.value = error instanceof Error ? error.message : String(error);
       showToast(t('toolkit.systemUpdateDisableFailed'), { variant: 'error' });
     } finally {
       pendingAction.value = null;
     }
+  }
+
+  async function restoreWindowsUpdate() {
+    if (!runtimeSupported.value || pendingAction.value) {
+      return;
+    }
+    const confirmed = await confirmAction(
+      t('toolkit.systemUpdateRestoreConfirmTitle'),
+      t('toolkit.systemUpdateRestoreConfirmMessage')
+    );
+    if (!confirmed) {
+      return;
+    }
+    pendingAction.value = 'update';
+    errorMessage.value = '';
+    try {
+      await api.restoreWindowsUpdatePermanently();
+      showToast(t('toolkit.systemUpdateRestoreLaunched'), { variant: 'info' });
+      scheduleUpdateStatusRefresh();
+    } catch (error) {
+      errorMessage.value = error instanceof Error ? error.message : String(error);
+      showToast(t('toolkit.systemUpdateRestoreFailed'), { variant: 'error' });
+    } finally {
+      pendingAction.value = null;
+    }
+  }
+
+  function scheduleUpdateStatusRefresh() {
+    window.setTimeout(() => {
+      void refreshStatus();
+    }, 3000);
+  }
+
+  async function toggleWindowsUpdate() {
+    if (status.value.windowsUpdateDisabled) {
+      await restoreWindowsUpdate();
+      return;
+    }
+    await disableWindowsUpdate();
   }
 
   async function applyContextMenuStyle() {
@@ -134,7 +171,7 @@ export function useToolkitSystemTweaks(t: Translate) {
     runtimeSupported,
     contextMenuDirty,
     refreshStatus,
-    disableWindowsUpdate,
+    toggleWindowsUpdate,
     applyContextMenuStyle,
     activateWindows,
     activateOffice

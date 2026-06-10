@@ -37,9 +37,13 @@
       <UiButton
         native-type="button"
         preset="overlay-primary"
-        :disabled="loading || !runtimeSupported || pendingAction != null || status.windowsUpdateDisabled"
-        @click="disableWindowsUpdate">
-        {{ t('toolkit.systemUpdateDisableAction') }}
+        :disabled="loading || !runtimeSupported || pendingAction != null"
+        @click="toggleWindowsUpdate">
+        {{
+          status.windowsUpdateDisabled
+            ? t('toolkit.systemUpdateRestoreAction')
+            : t('toolkit.systemUpdateDisableAction')
+        }}
       </UiButton>
     </div>
   </UiCollapsiblePanel>
@@ -158,7 +162,7 @@ const {
   errorMessage,
   runtimeSupported,
   contextMenuDirty,
-  disableWindowsUpdate,
+  toggleWindowsUpdate,
   applyContextMenuStyle,
   activateWindows,
   activateOffice

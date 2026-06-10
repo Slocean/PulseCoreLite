@@ -396,6 +396,7 @@ pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Bu
         commands::get_system_tools_status,
         commands::apply_context_menu_style,
         commands::disable_windows_update_permanently,
+        commands::restore_windows_update_permanently,
         commands::launch_mas_activation
     ])
 }
