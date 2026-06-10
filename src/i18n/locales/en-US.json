@@ -366,7 +366,7 @@
     "systemUpdateDisableFailed": "Failed to start the disable-update operation.",
     "systemUpdateRestoreFailed": "Failed to start the restore-update operation.",
     "systemContextMenuTitle": "Context Menu Style",
-    "systemContextMenuHint": "Switch between the Windows 11 compact menu and the Windows 10 classic menu. Explorer will restart automatically.",
+    "systemContextMenuHint": "Switch the Windows 11 File Explorer context menu style. Explorer restarts automatically. Right-click on the desktop or in a folder to verify.",
     "systemContextMenuStyle": "Menu Style",
     "systemContextMenuWin11": "Windows 11 Modern",
     "systemContextMenuWin10": "Windows 10 Classic",

@@ -2,10 +2,14 @@ use crate::types::SystemToolsStatus;
 
 type ToolResult<T> = Result<T, String>;
 
-const CONTEXT_MENU_CLSID_KEY: &str =
-    "Software\\Classes\\CLSID\\{86e1f1ea-8689-11cf-16b5-444553540000}";
 const CONTEXT_MENU_INPROC_KEY: &str =
-    "Software\\Classes\\CLSID\\{86e1f1ea-8689-11cf-16b5-444553540000}\\InprocServer32";
+    "Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\\InprocServer32";
+const LEGACY_WRONG_CONTEXT_MENU_CLSID_KEY: &str =
+    "Software\\Classes\\CLSID\\{86e1f1ea-8689-11cf-16b5-444553540000}";
+const CONTEXT_MENU_CLASSIC_REG_TARGET: &str =
+    r"HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32";
+const CONTEXT_MENU_MODERN_REG_TARGET: &str =
+    r"HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}";
 const WU_AU_POLICY_KEY: &str = "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU";
 const WU_POLICY_KEY: &str = "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate";
 const ACTIVATION_PS_COMMAND: &str = "irm https://get.activated.win | iex";
@@ -32,38 +36,6 @@ fn open_registry_key(
     let status = unsafe { RegOpenKeyExW(hive, path_w.as_ptr(), 0, access, &mut key) };
     if status != 0 {
         return Err(format!("open registry key failed: {status}"));
-    }
-    Ok(key)
-}
-
-#[cfg(windows)]
-fn create_registry_key(
-    hive: windows_sys::Win32::System::Registry::HKEY,
-    path: &str,
-    access: u32,
-) -> ToolResult<windows_sys::Win32::System::Registry::HKEY> {
-    use windows_sys::Win32::System::Registry::{RegCreateKeyExW, REG_OPTION_NON_VOLATILE, REG_SZ};
-
-    let mut key: windows_sys::Win32::System::Registry::HKEY = std::ptr::null_mut();
-    let path_w = to_wide(path);
-    let mut disposition: u32 = 0;
-    let status = unsafe {
-        RegCreateKeyExW(
-            hive,
-            path_w.as_ptr(),
-            0,
-            std::ptr::null(),
-            REG_OPTION_NON_VOLATILE,
-            access,
-            std::ptr::null_mut(),
-            &mut key,
-            &mut disposition,
-        )
-    };
-    let _ = disposition;
-    let _ = REG_SZ;
-    if status != 0 {
-        return Err(format!("create registry key failed: {status}"));
     }
     Ok(key)
 }
@@ -101,42 +73,6 @@ fn reg_query_dword(
 }
 
 #[cfg(windows)]
-fn reg_set_string(
-    hive: windows_sys::Win32::System::Registry::HKEY,
-    path: &str,
-    name: &str,
-    value: &str,
-) -> ToolResult<()> {
-    use windows_sys::Win32::System::Registry::{RegCloseKey, RegSetValueExW, KEY_SET_VALUE, REG_SZ};
-
-    let key = create_registry_key(hive, path, KEY_SET_VALUE)?;
-    let name_w = to_wide(if name.is_empty() { "" } else { name });
-    let data = to_wide(value);
-    let data_len = (data.len() * 2) as u32;
-    let status = unsafe {
-        RegSetValueExW(
-            key,
-            if name.is_empty() {
-                std::ptr::null()
-            } else {
-                name_w.as_ptr()
-            },
-            0,
-            REG_SZ,
-            data.as_ptr() as *const u8,
-            data_len,
-        )
-    };
-    unsafe {
-        RegCloseKey(key);
-    }
-    if status != 0 {
-        return Err(format!("set registry string failed: {status}"));
-    }
-    Ok(())
-}
-
-#[cfg(windows)]
 fn reg_key_exists(
     hive: windows_sys::Win32::System::Registry::HKEY,
     path: &str,
@@ -169,21 +105,18 @@ fn reg_delete_tree(
 
 #[cfg(windows)]
 fn restart_explorer() -> ToolResult<()> {
-    use std::os::windows::process::CommandExt;
-    use std::process::Command;
+    use std::{os::windows::process::CommandExt, process::Command, thread, time::Duration};
 
     const CREATE_NO_WINDOW: u32 = 0x08000000;
-    let script = "Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1; Start-Process explorer";
-    let status = Command::new("powershell.exe")
+    let _ = Command::new("taskkill")
         .creation_flags(CREATE_NO_WINDOW)
-        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script])
-        .status()
+        .args(["/f", "/im", "explorer.exe"])
+        .status();
+    thread::sleep(Duration::from_millis(800));
+    Command::new("explorer.exe")
+        .spawn()
         .map_err(|err| format!("failed to restart explorer: {err}"))?;
-    if status.success() {
-        Ok(())
-    } else {
-        Err(format!("restart explorer exited with status {status}"))
-    }
+    Ok(())
 }
 
 #[cfg(windows)]
@@ -243,31 +176,46 @@ fn is_windows_update_disabled() -> bool {
 }
 
 #[cfg(windows)]
-fn set_context_menu_style(style: &str) -> ToolResult<()> {
+fn run_hidden_reg(args: &[&str]) -> ToolResult<std::process::Output> {
+    use std::os::windows::process::CommandExt;
+    use std::process::Command;
+
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+    Command::new("reg.exe")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args(args)
+        .output()
+        .map_err(|err| format!("failed to run reg.exe: {err}"))
+}
+
+#[cfg(windows)]
+fn cleanup_legacy_wrong_context_menu_key() {
     use windows_sys::Win32::System::Registry::HKEY_CURRENT_USER;
 
-    match style {
-        "win10" => {
-            reg_set_string(
-                HKEY_CURRENT_USER,
-                CONTEXT_MENU_INPROC_KEY,
-                "",
-                "",
-            )?;
-            reg_set_string(
-                HKEY_CURRENT_USER,
-                CONTEXT_MENU_INPROC_KEY,
-                "ThreadingModel",
-                "Apartment",
-            )?;
-        }
-        "win11" => {
-            if reg_key_exists(HKEY_CURRENT_USER, CONTEXT_MENU_CLSID_KEY) {
-                reg_delete_tree(HKEY_CURRENT_USER, CONTEXT_MENU_CLSID_KEY)?;
-            }
-        }
-        _ => return Err("unsupported context menu style".to_string()),
+    if reg_key_exists(HKEY_CURRENT_USER, LEGACY_WRONG_CONTEXT_MENU_CLSID_KEY) {
+        let _ = reg_delete_tree(HKEY_CURRENT_USER, LEGACY_WRONG_CONTEXT_MENU_CLSID_KEY);
     }
+}
+
+#[cfg(windows)]
+fn set_context_menu_style(style: &str) -> ToolResult<()> {
+    cleanup_legacy_wrong_context_menu_key();
+
+    let output = match style {
+        "win10" => run_hidden_reg(&["add", CONTEXT_MENU_CLASSIC_REG_TARGET, "/f", "/ve"])?,
+        "win11" => run_hidden_reg(&["delete", CONTEXT_MENU_MODERN_REG_TARGET, "/f"])?,
+        _ => return Err("unsupported context menu style".to_string()),
+    };
+
+    if !output.status.success() && style != "win11" {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!(
+            "reg.exe failed ({:?}): {stdout}{stderr}",
+            output.status.code()
+        ));
+    }
+
     restart_explorer()
 }
 

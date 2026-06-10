@@ -364,7 +364,7 @@
     "systemUpdateDisableFailed": "启动禁止更新操作失败。",
     "systemUpdateRestoreFailed": "启动恢复更新操作失败。",
     "systemContextMenuTitle": "右键菜单样式",
-    "systemContextMenuHint": "切换 Windows 11 新版右键菜单与 Windows 10 经典菜单，应用后会自动重启资源管理器。",
+    "systemContextMenuHint": "切换 Windows 11 文件资源管理器右键菜单样式，应用后会自动重启资源管理器。请在桌面或文件夹空白处右键验证效果。",
     "systemContextMenuStyle": "菜单样式",
     "systemContextMenuWin11": "Windows 11 新版",
     "systemContextMenuWin10": "Windows 10 经典",
