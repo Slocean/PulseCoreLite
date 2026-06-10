@@ -13,15 +13,10 @@
     indicator-class="toolkit-collapse-indicator"
     @toggle="handlePanelToggle">
     <template #header-actions>
-      <button
-        type="button"
-        class="toolkit-system-hint-trigger"
-        :class="{ 'toolkit-system-hint-trigger--active': hintOpen }"
-        :aria-expanded="hintOpen"
-        :aria-label="t('toolkit.systemStartupHintLabel')"
-        @click.stop="hintOpen = !hintOpen">
-        <span class="material-symbols-outlined" aria-hidden="true">info</span>
-      </button>
+      <SystemToolHintTrigger
+        :active="hintOpen"
+        :label="t('toolkit.systemToolHintLabel')"
+        @toggle="hintOpen = !hintOpen" />
     </template>
 
     <div v-if="hintOpen" class="toolkit-system-hint-panel" role="note">
@@ -84,6 +79,8 @@
       </div>
     </div>
   </UiCollapsiblePanel>
+
+  <SystemToolsPanels @contentChange="emit('contentChange')" />
 </template>
 
 <script setup lang="ts">
@@ -94,6 +91,8 @@ import UiButton from '@/components/ui/Button';
 import UiCollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import UiSwitch from '@/components/ui/Switch';
 import UiToast from '@/components/ui/Toast';
+import SystemToolsPanels from '@/components/toolkit/SystemToolsPanels.vue';
+import SystemToolHintTrigger from '@/components/toolkit/SystemToolHintTrigger.vue';
 import { useToolkitStartupItems } from '@/composables/useToolkitStartupItems';
 
 const emit = defineEmits<{

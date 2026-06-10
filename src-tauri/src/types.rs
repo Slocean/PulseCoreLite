@@ -474,3 +474,10 @@ pub struct StartupItem {
     pub enabled: bool,
     pub writable: bool,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SystemToolsStatus {
+    pub context_menu_style: String,
+    pub windows_update_disabled: bool,
+}

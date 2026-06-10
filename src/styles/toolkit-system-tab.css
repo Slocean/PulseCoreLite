@@ -43,6 +43,28 @@
   overflow-wrap: anywhere;
 }
 
+.toolkit-system-actions--dual {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.toolkit-system-tool-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.toolkit-system-tool-row {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.toolkit-system-tool-row :deep(.ui-select) {
+  width: 100%;
+}
+
 .toolkit-system-summary {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -215,6 +237,10 @@
 
 @media (max-width: 360px) {
   .toolkit-system-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .toolkit-system-actions--dual {
     grid-template-columns: minmax(0, 1fr);
   }
 }

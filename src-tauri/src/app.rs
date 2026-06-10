@@ -392,6 +392,10 @@ pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Bu
         commands::fetch_fund_history,
         commands::search_fund,
         commands::list_startup_items,
-        commands::set_startup_item_enabled
+        commands::set_startup_item_enabled,
+        commands::get_system_tools_status,
+        commands::apply_context_menu_style,
+        commands::disable_windows_update_permanently,
+        commands::launch_mas_activation
     ])
 }

@@ -2212,3 +2212,23 @@ pub fn list_startup_items(app: AppHandle) -> CmdResult<Vec<crate::types::Startup
 pub fn set_startup_item_enabled(app: AppHandle, id: String, enabled: bool) -> CmdResult<()> {
     crate::startup_items::set_startup_item_enabled(&app, id, enabled)
 }
+
+#[tauri::command]
+pub fn get_system_tools_status() -> CmdResult<crate::types::SystemToolsStatus> {
+    crate::system_tools::get_system_tools_status()
+}
+
+#[tauri::command]
+pub fn apply_context_menu_style(style: String) -> CmdResult<crate::types::SystemToolsStatus> {
+    crate::system_tools::apply_context_menu_style(style)
+}
+
+#[tauri::command]
+pub fn disable_windows_update_permanently() -> CmdResult<()> {
+    crate::system_tools::disable_windows_update()
+}
+
+#[tauri::command]
+pub fn launch_mas_activation() -> CmdResult<()> {
+    crate::system_tools::launch_mas_activation()
+}

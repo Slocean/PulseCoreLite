@@ -9,6 +9,7 @@ import { aiApi } from './tauri/ai';
 import { gameSyncApi } from './tauri/gameSync';
 import { investApi } from './tauri/invest';
 import { startupApi } from './tauri/startup';
+import { systemToolsApi } from './tauri/systemTools';
 
 export const tauriApi = {
   telemetry: telemetryApi,
@@ -20,7 +21,8 @@ export const tauriApi = {
   ai: aiApi,
   gameSync: gameSyncApi,
   invest: investApi,
-  startup: startupApi
+  startup: startupApi,
+  systemTools: systemToolsApi
 };
 
 export const api = {
@@ -33,5 +35,6 @@ export const api = {
   ...aiApi,
   ...gameSyncApi,
   ...investApi,
-  ...startupApi
+  ...startupApi,
+  ...systemToolsApi
 };

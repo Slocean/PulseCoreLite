@@ -7,6 +7,7 @@ mod local_ai;
 mod native_taskbar;
 mod profiler;
 mod startup_items;
+mod system_tools;
 mod state;
 mod types;
 
