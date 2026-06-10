@@ -1,3 +1,19 @@
+## v1.9.3
+
+- 工具箱新增「系统」页签，集中提供 Windows 系统维护与调优能力。
+- 新增开机自启项管理：可浏览注册表、启动文件夹等来源的自启程序，查看启用状态与启动命令，并支持一键开关（只读项会明确标注）。
+- 新增 Windows 更新管理：可永久禁止系统自动更新，并在已禁用时一键恢复；界面会实时显示当前更新状态。
+- 新增 Win10/Win11 右键菜单切换：可在经典右键菜单与 Windows 11 默认菜单之间选择并应用，应用后自动重启资源管理器。
+- 新增 Windows / Office 激活入口，可一键启动 MAS 激活脚本（需联网，并可能触发 UAC 提权）。
+- 系统工具卡片采用可折叠布局，说明文字统一为标题旁 info 图标展开/收起；优化窄面板下的列表滚动与操作区布局。
+
+- Added a System tab in Toolkit for Windows maintenance and tuning tools in one place.
+- Added startup item management to browse autostart entries from the registry, Startup folders, and similar sources, with enable/disable toggles, command preview, and read-only indicators where changes are not allowed.
+- Added Windows Update controls to permanently disable automatic updates and restore them later, with live status display in the UI.
+- Added a Win10/Win11 context menu switcher to apply the classic or Windows 11 default menu, then restart Explorer automatically.
+- Added Windows and Office activation shortcuts that launch the MAS activation script (requires network access and may prompt for UAC elevation).
+- Refined system tool cards with collapsible panels, inline info hints via header icons, and improved scrolling and action layout for the narrow toolkit panel.
+
 ## v1.9.2
 
 - 工具箱新增投资策略页签，支持策略创建与管理、条件交易规则与定投回测，并优化编辑器交互（折叠面板、统一选择器与日期输入组件）。
