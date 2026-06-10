@@ -70,17 +70,17 @@
       {{ t('toolkit.systemContextMenuHint') }}
     </div>
 
-    <div class="toolkit-system-tool-row">
-      <span class="overlay-config-label">{{ t('toolkit.systemContextMenuStyle') }}</span>
+    <div class="toolkit-system-context-row">
       <UiSelect
         v-model="selectedContextMenuStyle"
+        class="toolkit-system-context-select"
         :options="contextMenuOptions"
+        :placeholder="t('toolkit.systemContextMenuStyle')"
         :disabled="loading || !runtimeSupported || pendingAction != null" />
-    </div>
-    <div class="toolkit-system-actions">
       <UiButton
         native-type="button"
         preset="overlay-primary"
+        class="toolkit-system-context-apply"
         :disabled="loading || !runtimeSupported || pendingAction != null || !contextMenuDirty"
         @click="applyContextMenuStyle">
         {{ t('toolkit.systemContextMenuApply') }}
