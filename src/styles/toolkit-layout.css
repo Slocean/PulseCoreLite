@@ -17,13 +17,15 @@ html.window-toolkit body {
 
 .toolkit-page {
   width: 100%;
-  max-width: none;
+  max-width: 100%;
+  min-width: 0;
   padding: 10px;
   display: grid;
   align-content: start;
   gap: 8px;
   background: rgba(11, 14, 20, var(--overlay-bg-opacity, 1));
   transform: translateZ(0);
+  overflow-x: hidden;
 }
 
 .toolkit-header {
@@ -76,6 +78,9 @@ html.window-toolkit body {
   display: grid;
   gap: 6px;
   align-content: start;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .toolkit-section-header {

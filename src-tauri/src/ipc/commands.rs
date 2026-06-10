@@ -2202,3 +2202,13 @@ pub async fn search_fund(keyword: String) -> CmdResult<Vec<FundSearchResult>> {
 
     Ok(results)
 }
+
+#[tauri::command]
+pub fn list_startup_items(app: AppHandle) -> CmdResult<Vec<crate::types::StartupItem>> {
+    crate::startup_items::list_startup_items(&app)
+}
+
+#[tauri::command]
+pub fn set_startup_item_enabled(app: AppHandle, id: String, enabled: bool) -> CmdResult<()> {
+    crate::startup_items::set_startup_item_enabled(&app, id, enabled)
+}

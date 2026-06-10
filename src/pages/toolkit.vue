@@ -43,6 +43,7 @@
     <ToolkitGameSyncTab v-else-if="activeTab === 'game-sync'" @contentChange="handleContentChange" />
     <ToolkitHardwareTab v-else-if="activeTab === 'hardware'" @contentChange="handleContentChange" />
     <ToolkitAiTab v-else-if="activeTab === 'ai'" @contentChange="handleContentChange" />
+    <ToolkitSystemTab v-else-if="activeTab === 'system'" @contentChange="handleContentChange" />
     <ToolkitReminderTab v-else @contentChange="handleContentChange" />
   </section>
 </template>
@@ -58,12 +59,13 @@ import ToolkitGameSyncTab from '../components/toolkit/ToolkitGameSyncTab.vue';
 import ToolkitHardwareTab from '../components/toolkit/ToolkitHardwareTab.vue';
 import ToolkitReminderTab from '../components/toolkit/ToolkitReminderTab.vue';
 import ToolkitShutdownTab from '../components/toolkit/ToolkitShutdownTab.vue';
+import ToolkitSystemTab from '../components/toolkit/ToolkitSystemTab.vue';
 import ToolkitTabs from '../components/toolkit/ToolkitTabs.vue';
 import { useOverlayPrefs } from '../composables/useOverlayPrefs';
 import { useToolkitVisualLayer } from '../composables/useToolkitVisualLayer';
 import { useToolkitWindowController } from '../composables/useToolkitWindowController';
 
-type ToolkitTab = 'shutdown' | 'cleanup' | 'game-sync' | 'hardware' | 'ai' | 'reminder';
+type ToolkitTab = 'shutdown' | 'cleanup' | 'game-sync' | 'hardware' | 'ai' | 'system' | 'reminder';
 
 const { t } = useI18n();
 const { prefs } = useOverlayPrefs();
@@ -76,6 +78,7 @@ const tabs = computed(() => [
   { id: 'game-sync' as const, label: t('toolkit.tabGameSync') },
   { id: 'hardware' as const, label: t('toolkit.tabHardware') },
   { id: 'ai' as const, label: t('toolkit.tabAi') },
+  { id: 'system' as const, label: t('toolkit.tabSystem') },
   { id: 'reminder' as const, label: t('toolkit.tabReminder') }
 ]);
 

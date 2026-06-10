@@ -463,3 +463,14 @@ pub struct SyncEpicGamesResult {
     pub synced_game_ids: Vec<String>,
     pub warnings: Vec<String>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StartupItem {
+    pub id: String,
+    pub name: String,
+    pub command: String,
+    pub source: String,
+    pub enabled: bool,
+    pub writable: bool,
+}

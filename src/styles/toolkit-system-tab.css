@@ -1,0 +1,220 @@
+.toolkit-system-panel :deep(.ui-collapsible-panel),
+.toolkit-system-panel :deep(.ui-collapsible-panel > div) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.toolkit-system-hint-trigger {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.toolkit-system-hint-trigger:hover,
+.toolkit-system-hint-trigger:focus-visible,
+.toolkit-system-hint-trigger--active {
+  color: rgba(0, 242, 255, 0.88);
+  outline: none;
+  box-shadow: 0 0 0 1px rgba(0, 242, 255, 0.35);
+}
+
+.toolkit-system-hint-trigger .material-symbols-outlined {
+  font-size: 16px;
+}
+
+.toolkit-system-hint-panel {
+  margin-bottom: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 242, 255, 0.22);
+  background: rgba(0, 242, 255, 0.06);
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.82);
+  overflow-wrap: anywhere;
+}
+
+.toolkit-system-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.toolkit-system-stat {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.16));
+}
+
+.toolkit-system-stat .overlay-config-label {
+  font-size: 10px;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.toolkit-system-value {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  color: rgba(0, 242, 255, 0.9);
+}
+
+.toolkit-system-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 2px 0;
+}
+
+.toolkit-system-actions :deep(.ui-button) {
+  width: 100%;
+  --btn-min-height: 38px;
+  --btn-height: 38px;
+  --btn-padding: 0 14px;
+  --btn-font-size: 12px;
+  --btn-radius: 10px;
+}
+
+.toolkit-system-empty {
+  padding: 12px 0;
+  color: var(--overlay-muted, rgba(255, 255, 255, 0.55));
+  font-size: 12px;
+}
+
+.toolkit-system-list {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  max-height: 320px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.toolkit-page--embedded .toolkit-system-list {
+  max-height: 148px;
+}
+
+.toolkit-system-item {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.toolkit-system-item--disabled {
+  opacity: 0.72;
+}
+
+.toolkit-system-item-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+
+.toolkit-system-item-main {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.toolkit-system-item-name {
+  display: block;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toolkit-system-item-switch {
+  flex: 0 0 auto;
+}
+
+.toolkit-system-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  min-width: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--overlay-muted, rgba(255, 255, 255, 0.55));
+}
+
+.toolkit-system-item-meta > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toolkit-system-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.toolkit-system-badge--on {
+  color: #7dffb0;
+  background: rgba(56, 176, 104, 0.16);
+}
+
+.toolkit-system-badge--off {
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.toolkit-system-readonly {
+  color: #ffb86b;
+}
+
+.toolkit-system-item-command {
+  margin-top: 8px;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.68);
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+@media (max-width: 360px) {
+  .toolkit-system-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

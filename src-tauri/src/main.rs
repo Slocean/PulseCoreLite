@@ -6,6 +6,7 @@ mod ipc;
 mod local_ai;
 mod native_taskbar;
 mod profiler;
+mod startup_items;
 mod state;
 mod types;
 
