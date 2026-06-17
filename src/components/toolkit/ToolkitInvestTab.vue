@@ -10,6 +10,11 @@
     @back="subView = 'hub'"
     @content-change="emit('contentChange')" />
 
+  <InvestPositionCalc
+    v-else-if="subView === 'position'"
+    @back="subView = 'hub'"
+    @content-change="emit('contentChange')" />
+
   <!-- Hub menu -->
   <div v-else class="invest-hub">
     <div class="invest-hub-header">
@@ -28,6 +33,12 @@
         <span class="invest-hub-card-desc">{{ t('invest.hubTradingDayDesc') }}</span>
         <span class="material-symbols-outlined invest-hub-card-arrow">chevron_right</span>
       </button>
+      <button type="button" class="invest-hub-card" @click="subView = 'position'">
+        <span class="material-symbols-outlined invest-hub-card-icon">calculate</span>
+        <span class="invest-hub-card-title">{{ t('invest.hubPositionCalcTitle') }}</span>
+        <span class="invest-hub-card-desc">{{ t('invest.hubPositionCalcDesc') }}</span>
+        <span class="material-symbols-outlined invest-hub-card-arrow">chevron_right</span>
+      </button>
     </div>
   </div>
 </template>
@@ -37,9 +48,10 @@ import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import InvestDcaPage from './invest/InvestDcaPage.vue';
+import InvestPositionCalc from './invest/InvestPositionCalc.vue';
 import InvestTradingDayCalc from './invest/InvestTradingDayCalc.vue';
 
-type InvestSubView = 'hub' | 'dca' | 'tradingDay';
+type InvestSubView = 'hub' | 'dca' | 'tradingDay' | 'position';
 
 const emit = defineEmits<{
   (event: 'contentChange'): void;
