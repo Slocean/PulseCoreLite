@@ -1,3 +1,15 @@
+## v1.9.4
+
+- 投资策略工具箱新增「持仓成本计算」，支持加仓与减仓两种场景。
+- 加仓计算：输入持仓股数、当前盈亏、持仓成本、当前股价、加仓股价与加仓股数，可得出加仓后的新持仓成本、剩余股数与新盈亏比例。
+- 减仓计算：输入字段同上，按 A 股常规算法（部分卖出后均价不变）计算新持仓成本，并展示本次实现盈亏。
+- 补充中英文文案与单元测试，确保成本与盈亏计算准确。
+
+- Added a Position Cost Calculator to the Investment Strategy toolkit for both adding and reducing shares.
+- Add-shares mode accepts current holdings, P/L, average cost, current price, add price, and shares to add, then outputs the new average cost, remaining shares, and updated P/L.
+- Reduce-shares mode uses the same inputs and follows the standard A-share rule (average cost unchanged after a partial sell), with realized P/L for the sold portion.
+- Added bilingual copy and unit tests to keep cost and P/L calculations accurate.
+
 ## v1.9.3
 
 - 工具箱新增「系统」页签，集中提供 Windows 系统维护与调优能力。
