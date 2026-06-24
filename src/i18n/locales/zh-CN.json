@@ -191,6 +191,7 @@
     "tabs": "工具标签页",
     "tabShutdown": "定时关机",
     "tabCleanup": "自动清理",
+    "tabGame": "游戏工具",
     "tabGameSync": "游戏同步",
     "tabHardware": "硬件分析",
     "tabAi": "AI",
@@ -628,6 +629,12 @@
       "hour": "小时",
       "minute": "分钟"
     }
+  },
+  "gameTools": {
+    "backToHub": "返回",
+    "hubTitle": "游戏工具",
+    "hubSyncTitle": "游戏同步",
+    "hubSyncDesc": "扫描 Epic 游戏并同步为当前 Steam 用户的非 Steam 快捷方式"
   },
   "invest": {
     "strategiesTitle": "定投策略",

@@ -191,6 +191,7 @@
     "tabs": "Toolkit tabs",
     "tabShutdown": "Shutdown",
     "tabCleanup": "Auto Cleanup",
+    "tabGame": "Game Tools",
     "tabGameSync": "Game Sync",
     "tabHardware": "Hardware",
     "tabAi": "AI",
@@ -628,6 +629,12 @@
       "hour": "Hour",
       "minute": "Minute"
     }
+  },
+  "gameTools": {
+    "backToHub": "Back",
+    "hubTitle": "Game Tools",
+    "hubSyncTitle": "Game Sync",
+    "hubSyncDesc": "Scan Epic games and sync them as non-Steam shortcuts for the current Steam user"
   },
   "invest": {
     "strategiesTitle": "DCA Strategies",

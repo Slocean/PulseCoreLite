@@ -40,7 +40,7 @@
 
     <ToolkitShutdownTab v-if="activeTab === 'shutdown'" @contentChange="handleContentChange" />
     <ToolkitCleanupTab v-else-if="activeTab === 'cleanup'" @contentChange="handleContentChange" />
-    <ToolkitGameSyncTab v-else-if="activeTab === 'game-sync'" @contentChange="handleContentChange" />
+    <ToolkitGameTab v-else-if="activeTab === 'game'" @contentChange="handleContentChange" />
     <ToolkitHardwareTab v-else-if="activeTab === 'hardware'" @contentChange="handleContentChange" />
     <ToolkitAiTab v-else-if="activeTab === 'ai'" @contentChange="handleContentChange" />
     <ToolkitSystemTab v-else-if="activeTab === 'system'" @contentChange="handleContentChange" />
@@ -55,7 +55,7 @@ import { useI18n } from 'vue-i18n';
 import UiButton from '@/components/ui/Button';
 import ToolkitAiTab from '../components/toolkit/ToolkitAiTab.vue';
 import ToolkitCleanupTab from '../components/toolkit/ToolkitCleanupTab.vue';
-import ToolkitGameSyncTab from '../components/toolkit/ToolkitGameSyncTab.vue';
+import ToolkitGameTab from '../components/toolkit/ToolkitGameTab.vue';
 import ToolkitHardwareTab from '../components/toolkit/ToolkitHardwareTab.vue';
 import ToolkitReminderTab from '../components/toolkit/ToolkitReminderTab.vue';
 import ToolkitShutdownTab from '../components/toolkit/ToolkitShutdownTab.vue';
@@ -65,7 +65,7 @@ import { useOverlayPrefs } from '../composables/useOverlayPrefs';
 import { useToolkitVisualLayer } from '../composables/useToolkitVisualLayer';
 import { useToolkitWindowController } from '../composables/useToolkitWindowController';
 
-type ToolkitTab = 'shutdown' | 'cleanup' | 'game-sync' | 'hardware' | 'ai' | 'system' | 'reminder';
+type ToolkitTab = 'shutdown' | 'cleanup' | 'game' | 'hardware' | 'ai' | 'system' | 'reminder';
 
 const { t } = useI18n();
 const { prefs } = useOverlayPrefs();
@@ -75,7 +75,7 @@ const pageRef = ref<HTMLElement | null>(null);
 const tabs = computed(() => [
   { id: 'shutdown' as const, label: t('toolkit.tabShutdown') },
   { id: 'cleanup' as const, label: t('toolkit.tabCleanup') },
-  { id: 'game-sync' as const, label: t('toolkit.tabGameSync') },
+  { id: 'game' as const, label: t('toolkit.tabGame') },
   { id: 'hardware' as const, label: t('toolkit.tabHardware') },
   { id: 'ai' as const, label: t('toolkit.tabAi') },
   { id: 'system' as const, label: t('toolkit.tabSystem') },

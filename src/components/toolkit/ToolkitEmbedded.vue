@@ -20,7 +20,7 @@
 
     <ToolkitShutdownTab v-if="activeTab === 'shutdown'" @contentChange="handleContentChange" />
     <ToolkitCleanupTab v-else-if="activeTab === 'cleanup'" @contentChange="handleContentChange" />
-    <ToolkitGameSyncTab v-else-if="activeTab === 'game-sync'" @contentChange="handleContentChange" />
+    <ToolkitGameTab v-else-if="activeTab === 'game'" @contentChange="handleContentChange" />
     <ToolkitHardwareTab v-else-if="activeTab === 'hardware'" @contentChange="handleContentChange" />
     <ToolkitInvestTab v-else-if="activeTab === 'invest'" @contentChange="handleContentChange" />
     <ToolkitSystemTab v-else-if="activeTab === 'system'" @contentChange="handleContentChange" />
@@ -34,7 +34,7 @@ import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
 import ToolkitCleanupTab from './ToolkitCleanupTab.vue';
-import ToolkitGameSyncTab from './ToolkitGameSyncTab.vue';
+import ToolkitGameTab from './ToolkitGameTab.vue';
 import ToolkitHardwareTab from './ToolkitHardwareTab.vue';
 import ToolkitInvestTab from './ToolkitInvestTab.vue';
 import ToolkitReminderTab from './ToolkitReminderTab.vue';
@@ -42,7 +42,7 @@ import ToolkitShutdownTab from './ToolkitShutdownTab.vue';
 import ToolkitSystemTab from './ToolkitSystemTab.vue';
 import ToolkitTabs from './ToolkitTabs.vue';
 
-type ToolkitTab = 'shutdown' | 'cleanup' | 'game-sync' | 'hardware' | 'invest' | 'system' | 'reminder';
+type ToolkitTab = 'shutdown' | 'cleanup' | 'game' | 'hardware' | 'invest' | 'system' | 'reminder';
 
 const emit = defineEmits<{
   (event: 'openStandalone'): void;
@@ -54,7 +54,7 @@ const activeTab = ref<ToolkitTab>('shutdown');
 const tabs = computed(() => [
   { id: 'shutdown' as const, label: t('toolkit.tabShutdown') },
   { id: 'cleanup' as const, label: t('toolkit.tabCleanup') },
-  { id: 'game-sync' as const, label: t('toolkit.tabGameSync') },
+  { id: 'game' as const, label: t('toolkit.tabGame') },
   { id: 'hardware' as const, label: t('toolkit.tabHardware') },
   { id: 'invest' as const, label: t('toolkit.tabInvest') },
   { id: 'system' as const, label: t('toolkit.tabSystem') },
