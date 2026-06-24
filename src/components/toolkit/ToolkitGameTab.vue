@@ -1,5 +1,17 @@
 <template>
-  <div v-if="subView === 'sync'" class="game-tool-view">
+  <div v-if="subView === 'market'" class="game-tool-view">
+    <div class="invest-editor-header">
+      <UiButton native-type="button" preset="toolkit-link" @click="subView = 'hub'">
+        <span class="material-symbols-outlined">arrow_back</span>
+        <span>{{ t('gameTools.backToHub') }}</span>
+      </UiButton>
+      <span class="invest-editor-title">{{ t('steamMarket.title') }}</span>
+    </div>
+
+    <ToolkitSteamMarketTab @contentChange="emit('contentChange')" />
+  </div>
+
+  <div v-else-if="subView === 'sync'" class="game-tool-view">
     <div class="invest-editor-header">
       <UiButton native-type="button" preset="toolkit-link" @click="subView = 'hub'">
         <span class="material-symbols-outlined">arrow_back</span>
@@ -16,6 +28,12 @@
       <span class="game-hub-title">{{ t('gameTools.hubTitle') }}</span>
     </div>
     <div class="game-hub-grid">
+      <button type="button" class="game-hub-card" @click="subView = 'market'">
+        <span class="material-symbols-outlined game-hub-card-icon">sell</span>
+        <span class="game-hub-card-title">{{ t('gameTools.hubSteamMarketTitle') }}</span>
+        <span class="game-hub-card-desc">{{ t('gameTools.hubSteamMarketDesc') }}</span>
+        <span class="material-symbols-outlined game-hub-card-arrow">chevron_right</span>
+      </button>
       <button type="button" class="game-hub-card" @click="subView = 'sync'">
         <span class="material-symbols-outlined game-hub-card-icon">sync</span>
         <span class="game-hub-card-title">{{ t('gameTools.hubSyncTitle') }}</span>
@@ -32,8 +50,9 @@ import { useI18n } from 'vue-i18n';
 
 import UiButton from '@/components/ui/Button';
 import ToolkitGameSyncTab from './ToolkitGameSyncTab.vue';
+import ToolkitSteamMarketTab from './ToolkitSteamMarketTab.vue';
 
-type GameToolSubView = 'hub' | 'sync';
+type GameToolSubView = 'hub' | 'sync' | 'market';
 
 const emit = defineEmits<{
   (event: 'contentChange'): void;

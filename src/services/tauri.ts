@@ -8,6 +8,7 @@ import { reminderApi } from './tauri/reminder';
 import { aiApi } from './tauri/ai';
 import { gameSyncApi } from './tauri/gameSync';
 import { investApi } from './tauri/invest';
+import { steamMarketApi } from './tauri/steamMarket';
 import { startupApi } from './tauri/startup';
 import { systemToolsApi } from './tauri/systemTools';
 
@@ -20,6 +21,7 @@ export const tauriApi = {
   reminder: reminderApi,
   ai: aiApi,
   gameSync: gameSyncApi,
+  steamMarket: steamMarketApi,
   invest: investApi,
   startup: startupApi,
   systemTools: systemToolsApi
@@ -34,6 +36,7 @@ export const api = {
   ...reminderApi,
   ...aiApi,
   ...gameSyncApi,
+  ...steamMarketApi,
   ...investApi,
   ...startupApi,
   ...systemToolsApi

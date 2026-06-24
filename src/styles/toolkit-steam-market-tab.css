@@ -1,0 +1,125 @@
+.toolkit-steam-market-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.toolkit-steam-market-stat {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.18));
+}
+
+.toolkit-steam-market-value {
+  font-size: 13px;
+  color: rgba(0, 242, 255, 0.9);
+  font-weight: 600;
+}
+
+.toolkit-steam-market-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.toolkit-steam-market-actions :deep(.ui-button) {
+  width: 100%;
+}
+
+.toolkit-steam-market-strategy {
+  display: grid;
+  gap: 8px;
+}
+
+.toolkit-steam-market-strategy-row {
+  display: grid;
+  gap: 6px;
+}
+
+.toolkit-steam-market-list {
+  display: grid;
+  gap: 8px;
+  max-height: 360px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.toolkit-steam-market-item {
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.toolkit-steam-market-item:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.toolkit-steam-market-card {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.toolkit-steam-market-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.toolkit-steam-market-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.toolkit-steam-market-meta,
+.toolkit-steam-market-price {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.45;
+}
+
+.toolkit-steam-market-price {
+  color: rgba(160, 220, 255, 0.85);
+}
+
+.toolkit-steam-market-empty,
+.toolkit-steam-market-note {
+  padding: 12px 10px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.toolkit-steam-market-note {
+  border-style: solid;
+  border-color: rgba(80, 160, 255, 0.18);
+  background: rgba(80, 160, 255, 0.08);
+}
+
+.toolkit-steam-market-advanced {
+  display: grid;
+  gap: 8px;
+}
+
+.toolkit-steam-market-cookie-input {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+}
+
+@media (max-width: 420px) {
+  .toolkit-steam-market-actions {
+    grid-template-columns: 1fr;
+  }
+}

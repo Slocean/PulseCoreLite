@@ -8,6 +8,7 @@ export * from './reminder';
 export * from './ai';
 export * from './gameSync';
 export * from './invest';
+export * from './steamMarket';
 
 export interface AppBootstrap {
   settings: AppSettings;

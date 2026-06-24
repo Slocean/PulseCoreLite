@@ -4,7 +4,7 @@ use chrono::{Datelike, Local, Timelike};
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::{
-    ipc::{commands, game_sync},
+    ipc::{commands, game_sync, steam_market},
     state::SharedState,
     types::TaskReminder,
 };
@@ -389,6 +389,17 @@ pub fn register_invoke_handler(builder: tauri::Builder<tauri::Wry>) -> tauri::Bu
         commands::trigger_task_reminder_now,
         game_sync::scan_epic_games_for_sync,
         game_sync::sync_epic_games_to_steam,
+        steam_market::start_steam_market_login,
+        steam_market::capture_steam_market_login,
+        steam_market::cancel_steam_market_login,
+        steam_market::save_steam_market_session,
+        steam_market::get_steam_market_session_status,
+        steam_market::clear_steam_market_session,
+        steam_market::scan_steam_marketable_inventory,
+        steam_market::refresh_steam_market_prices,
+        steam_market::preview_steam_market_sell_plan,
+        steam_market::sell_steam_market_items,
+        steam_market::get_steam_market_listings,
         commands::fetch_fund_history,
         commands::search_fund,
         commands::list_startup_items,

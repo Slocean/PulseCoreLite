@@ -481,3 +481,151 @@ pub struct SystemToolsStatus {
     pub context_menu_style: String,
     pub windows_update_disabled: bool,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamMarketSessionStatus {
+    pub logged_in: bool,
+    pub steam_id: Option<String>,
+    pub persona_name: Option<String>,
+    pub currency_label: Option<String>,
+    pub saved_at: Option<String>,
+    pub login_window_open: bool,
+    pub message: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamMarketSessionInput {
+    pub session_id: String,
+    pub steam_login_secure: String,
+    pub steam_country: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamMarketItem {
+    pub id: String,
+    pub asset_id: String,
+    pub class_id: String,
+    pub instance_id: String,
+    pub app_id: u32,
+    pub context_id: String,
+    pub name: String,
+    pub market_hash_name: String,
+    pub icon_url: Option<String>,
+    pub amount: u32,
+    pub marketable: bool,
+    pub tradable: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamMarketInventoryGroup {
+    pub app_id: u32,
+    pub context_id: String,
+    pub app_label: String,
+    pub items: Vec<SteamMarketItem>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamMarketInventoryScanResult {
+    pub steam_id: String,
+    pub groups: Vec<SteamMarketInventoryGroup>,
+    pub total_marketable: usize,
+    pub warnings: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamMarketPriceQuote {
+    pub item_id: String,
+    pub market_hash_name: String,
+    pub lowest_sell_cents: Option<u64>,
+    pub highest_buy_cents: Option<u64>,
+    pub median_sell_cents: Option<u64>,
+    pub currency_label: String,
+    pub volume: Option<u64>,
+    pub stale: bool,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamMarketSellStrategy {
+    pub mode: String,
+    pub discount_cents: Option<u64>,
+    pub discount_percent: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamMarketSellPlanItem {
+    pub item: SteamMarketItem,
+    pub reference_mode: String,
+    pub reference_cents: Option<u64>,
+    pub seller_receives_cents: u64,
+    pub buyer_pays_cents: Option<u64>,
+    pub skipped: bool,
+    pub skip_reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamMarketSellPlanResult {
+    pub items: Vec<SteamMarketSellPlanItem>,
+    pub total_seller_receives_cents: u64,
+    pub warnings: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamMarketSellItemRequest {
+    pub asset_id: String,
+    pub app_id: u32,
+    pub context_id: String,
+    pub amount: u32,
+    pub seller_receives_cents: u64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamMarketSellBatchRequest {
+    pub items: Vec<SteamMarketSellItemRequest>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamMarketSellItemResult {
+    pub asset_id: String,
+    pub success: bool,
+    pub message: String,
+    pub requires_confirmation: bool,
+    pub listing_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamMarketSellBatchResult {
+    pub results: Vec<SteamMarketSellItemResult>,
+    pub success_count: usize,
+    pub failure_count: usize,
+    pub confirmation_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamMarketListingItem {
+    pub listing_id: String,
+    pub name: String,
+    pub price_cents: u64,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SteamMarketListingsResult {
+    pub items: Vec<SteamMarketListingItem>,
+    pub total: usize,
+}
